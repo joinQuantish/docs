@@ -42,13 +42,14 @@
       },
       "Market": {
         "type": "object",
+        "description": "Market object with metadata. Note: `/v1/markets/list` does not include `end_date`.",
         "properties": {
           "token_id": { "type": "string", "description": "Polymarket CLOB token identifier" },
           "question": { "type": "string", "description": "Market question text" },
           "slug": { "type": "string", "description": "URL-friendly slug" },
           "outcomes": { "type": "array", "items": { "type": "string" }, "description": "Possible outcomes (e.g. [\"Yes\", \"No\"])" },
           "condition_id": { "type": "string", "description": "CTF condition identifier" },
-          "end_date": { "type": "string", "format": "date-time", "description": "Market expiry date (ISO 8601)" },
+          "end_date": { "type": "string", "format": "date-time", "description": "Market expiry date (ISO 8601). Present on /v1/markets, absent on /v1/markets/list." },
           "category": { "type": "string", "description": "Market category" },
           "market_type": { "type": "string", "description": "Market type (e.g. \"binary\")" },
           "image": { "type": "string", "description": "Market image URL" },
@@ -70,7 +71,7 @@
               "description": { "type": "string", "description": "Full market description" },
               "liquidity": { "type": "number", "description": "Total market liquidity" },
               "volume": { "type": "number", "description": "All-time trading volume" },
-              "last_status": { "type": ["string", "null"], "description": "\"Pending\" or \"Confirmed\" (null if no trades)" }
+              "last_status": { "type": ["string", "null"], "enum": ["pending", "confirmed", null], "description": "\"pending\" or \"confirmed\" (null if no trades)" }
             }
           }
         ]
@@ -119,42 +120,30 @@
       },
       "Settlement": {
         "type": "object",
+        "description": "Settlement event from Redis. All values are returned as strings. The `trades_json` field is a JSON-encoded string containing the maker fills array.",
         "properties": {
+          "id": { "type": "string", "description": "Redis stream entry ID" },
           "tx_hash": { "type": "string", "description": "Polygon transaction hash" },
-          "status": { "type": "string", "enum": ["Pending", "Confirmed"], "description": "\"Pending\" (mempool) or \"Confirmed\" (on-chain)" },
-          "detected_at": { "type": "integer", "description": "When the TX was first seen (Unix ms)" },
-          "confirmed_at": { "type": ["integer", "null"], "description": "When the TX was confirmed (null if pending)" },
-          "block_number": { "type": ["integer", "null"], "description": "Block number (null if pending)" },
+          "status": { "type": "string", "enum": ["pending", "confirmed"], "description": "\"pending\" (mempool) or \"confirmed\" (on-chain)" },
+          "detected_at": { "type": "string", "description": "When the TX was first seen (Unix ms, as string)" },
+          "block_number": { "type": "string", "description": "Block number (\"0\" if pending)" },
           "taker_wallet": { "type": "string", "description": "Taker's wallet address" },
           "taker_token": { "type": "string", "description": "Polymarket token ID being traded" },
           "taker_side": { "type": "string", "enum": ["BUY", "SELL"], "description": "BUY or SELL" },
-          "taker_price": { "type": "number", "description": "Execution price" },
-          "taker_size": { "type": "number", "description": "Trade size in USD" },
-          "trades": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "maker_wallet": { "type": "string" },
-                "maker_order_id": { "type": "string" },
-                "matched_amount": { "type": "number" },
-                "price": { "type": "number" }
-              }
-            },
-            "description": "Individual maker fills within this settlement"
-          }
+          "taker_price": { "type": "string", "description": "Execution price (as string, e.g. \"0.72\")" },
+          "taker_size": { "type": "string", "description": "Trade size in USD (as string, e.g. \"500.00\")" },
+          "trades_json": { "type": "string", "description": "JSON-encoded array of maker fills. Parse with JSON.parse(). Each fill has: `maker`, `signer`, `taker`, `token_id`, `side`, `price`, `size`, `maker_amount`, `taker_amount`." }
         }
       },
       "Candle": {
         "type": "object",
         "properties": {
-          "timestamp": { "type": "integer", "description": "Candle open time (Unix seconds)" },
+          "timestamp": { "type": "integer", "description": "Candle open time (Unix milliseconds)" },
           "open": { "type": "number", "description": "Opening price" },
           "high": { "type": "number", "description": "Highest price" },
           "low": { "type": "number", "description": "Lowest price" },
           "close": { "type": "number", "description": "Closing price" },
-          "volume": { "type": "number", "description": "Total volume in USD" },
-          "trade_count": { "type": "integer", "description": "Number of trades in the candle" }
+          "volume": { "type": "number", "description": "Total volume in USD" }
         }
       },
       "SearchResult": {
@@ -170,8 +159,22 @@
           "active": { "type": "boolean" },
           "token_ids": { "type": "array", "items": { "type": "string" }, "description": "All token IDs for this market" },
           "image": { "type": "string" },
+          "icon": { "type": "string" },
+          "neg_risk": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
           "last_price": { "type": ["number", "null"] },
           "volume_24h": { "type": "number" }
+        }
+      },
+      "WalletActivity": {
+        "type": "object",
+        "properties": {
+          "last_active": { "type": ["integer", "null"], "description": "Last activity timestamp (Unix ms)" },
+          "trade_count": { "type": "integer" },
+          "trade_volume_usd": { "type": "number" },
+          "transfer_count": { "type": "integer" },
+          "deposit_count": { "type": "integer" },
+          "deposit_volume_usd": { "type": "number" }
         }
       }
     }
@@ -288,7 +291,7 @@
       "get": {
         "operationId": "listMarkets",
         "summary": "Filtered market listing",
-        "description": "Filtered, sorted, and paginated market listing. Supports category filtering, volume thresholds, and activity filters.",
+        "description": "Filtered, sorted, and paginated market listing. Supports category filtering, volume thresholds, and activity filters. Note: does not include `end_date` in market objects.",
         "tags": ["Markets"],
         "parameters": [
           { "name": "count", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 500 }, "description": "Results per page. Max 500." },
@@ -371,7 +374,14 @@
                     "question": { "type": "string" },
                     "slug": { "type": "string" },
                     "outcomes": { "type": "array", "items": { "type": "string" } },
+                    "condition_id": { "type": "string" },
+                    "end_date": { "type": "string", "format": "date-time" },
                     "category": { "type": "string" },
+                    "market_type": { "type": "string" },
+                    "image": { "type": "string" },
+                    "icon": { "type": "string" },
+                    "neg_risk": { "type": "boolean" },
+                    "created_at": { "type": "string", "format": "date-time" },
                     "price": {
                       "type": "object",
                       "properties": { "last": { "type": ["number", "null"] } }
@@ -440,7 +450,7 @@
       "get": {
         "operationId": "getRecentSettlements",
         "summary": "Recent settlements",
-        "description": "Returns the most recent decoded settlement transactions. Includes both **pending** (mempool) and **confirmed** (on-chain) settlements. The `status` field is the killer feature — pending settlements are decoded from the mempool ~2 seconds before on-chain confirmation.",
+        "description": "Returns the most recent decoded settlement transactions. Includes both **pending** (mempool) and **confirmed** (on-chain) settlements. Pending settlements are decoded from the mempool ~2 seconds before on-chain confirmation.",
         "tags": ["Settlements"],
         "parameters": [
           { "name": "count", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 1000 }, "description": "Number of settlements to return. Max 1000." }
@@ -521,6 +531,82 @@
         }
       }
     },
+    "/v1/wallets/{addr}": {
+      "get": {
+        "operationId": "getWalletActivity",
+        "summary": "Wallet activity",
+        "description": "Returns wallet activity summary including trade count, volume, deposits, and last active time.",
+        "tags": ["Wallets"],
+        "parameters": [
+          { "name": "addr", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Ethereum wallet address (0x...)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet activity summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "wallet": { "type": "string" },
+                    "activity": { "$ref": "#/components/schemas/WalletActivity" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rpc": {
+      "post": {
+        "operationId": "jsonRpcProxy",
+        "summary": "JSON-RPC proxy",
+        "description": "JSON-RPC 2.0 compatible endpoint. Proxies standard `eth_*` methods to the Polygon node with caching. Also supports custom `pn_*` methods: `pn_getMarketPrice`, `pn_getRecentTrades`, `pn_getPendingSettlements`, `pn_getWalletActivity`, `pn_getStatus`. Supports single and batch requests.",
+        "tags": ["RPC"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "jsonrpc": { "type": "string", "enum": ["2.0"] },
+                  "method": { "type": "string", "description": "RPC method name (eth_* or pn_*)" },
+                  "params": { "type": "array", "description": "Method parameters" },
+                  "id": { "type": ["integer", "string"], "description": "Request identifier" }
+                },
+                "required": ["jsonrpc", "method", "id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON-RPC response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "jsonrpc": { "type": "string" },
+                    "result": { "description": "Method-specific result" },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": { "type": "integer" },
+                        "message": { "type": "string" }
+                      }
+                    },
+                    "id": { "type": ["integer", "string"] }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/status": {
       "get": {
         "operationId": "getStatus",
@@ -546,9 +632,12 @@
                     "state": {
                       "type": "object",
                       "properties": {
-                        "markets_tracked": { "type": "integer" },
-                        "metadata_entries": { "type": "integer" },
-                        "recent_events": { "type": "integer" }
+                        "market_count": { "type": "integer", "description": "Total markets in the state engine" },
+                        "wallet_count": { "type": "integer", "description": "Tracked wallet count" },
+                        "metadata_count": { "type": "integer", "description": "Number of enriched market metadata entries" },
+                        "events_buffered": { "type": "integer", "description": "Events in the recent-events buffer" },
+                        "events_processed": { "type": "integer", "description": "Total events processed since startup" },
+                        "latest_block": { "type": "integer", "description": "Latest block number seen" }
                       }
                     }
                   }
@@ -619,8 +708,22 @@
         "tags": ["System"],
         "security": [],
         "responses": {
-          "200": { "description": "Ready", "content": { "application/json": { "schema": { "type": "object", "properties": { "node_connected": { "type": "boolean" }, "redis_connected": { "type": "boolean" } } } } } },
-          "503": { "description": "Not ready", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "200": {
+            "description": "Ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "enum": ["ready", "not ready"] },
+                    "node": { "type": "boolean", "description": "Whether the Bor node is connected" },
+                    "redis": { "type": "boolean", "description": "Whether Redis is connected" }
+                  }
+                }
+              }
+            }
+          },
+          "503": { "description": "Not ready", "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string" }, "node": { "type": "boolean" }, "redis": { "type": "boolean" } } } } } }
         }
       }
     }
@@ -629,6 +732,8 @@
     { "name": "Markets", "description": "Market discovery, search, and metadata" },
     { "name": "Pricing", "description": "OHLCV candles and market statistics" },
     { "name": "Settlements", "description": "Decoded mempool and on-chain settlements" },
+    { "name": "Wallets", "description": "Wallet activity and tracking" },
+    { "name": "RPC", "description": "JSON-RPC 2.0 compatible proxy" },
     { "name": "System", "description": "API keys, health checks, and status" }
   ]
 }

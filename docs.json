@@ -68,6 +68,18 @@
             ]
           },
           {
+            "group": "Wallets",
+            "pages": [
+              "api-reference/wallets/wallet-activity"
+            ]
+          },
+          {
+            "group": "RPC",
+            "pages": [
+              "api-reference/rpc/json-rpc-proxy"
+            ]
+          },
+          {
             "group": "System",
             "pages": [
               "api-reference/system/system-status",
