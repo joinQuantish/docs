@@ -14,83 +14,94 @@
       "dark": "#0a0f1a"
     }
   },
-  "topbarLinks": [
-    {
-      "name": "API Status",
-      "url": "https://polynode.dev/v1/status"
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "authentication"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/websocket",
+              "guides/errors",
+              "guides/rate-limits"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "openapi": "/openapi.json",
+        "groups": [
+          {
+            "group": "Markets",
+            "pages": [
+              "api-reference/markets/top-markets",
+              "api-reference/markets/market-detail",
+              "api-reference/markets/market-by-slug",
+              "api-reference/markets/market-by-condition-id",
+              "api-reference/markets/filtered-market-listing",
+              "api-reference/markets/search-markets"
+            ]
+          },
+          {
+            "group": "Pricing",
+            "pages": [
+              "api-reference/pricing/market-statistics",
+              "api-reference/pricing/ohlcv-candles"
+            ]
+          },
+          {
+            "group": "Settlements",
+            "pages": [
+              "api-reference/settlements/recent-settlements",
+              "api-reference/settlements/settlements-by-wallet",
+              "api-reference/settlements/settlements-by-token"
+            ]
+          },
+          {
+            "group": "System",
+            "pages": [
+              "api-reference/system/system-status",
+              "api-reference/system/generate-api-key",
+              "api-reference/system/health-check",
+              "api-reference/system/readiness-check"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/joinQuantish/polygon-node",
+          "icon": "github"
+        }
+      ]
     }
-  ],
-  "topbarCtaButton": {
-    "name": "Get API Key",
-    "url": "https://polynode.dev"
   },
-  "anchors": [
-    {
-      "name": "GitHub",
-      "icon": "github",
-      "url": "https://github.com/joinQuantish/polygon-node"
+  "navbar": {
+    "links": [
+      {
+        "label": "API Status",
+        "href": "https://polynode.dev/v1/status"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get API Key",
+      "href": "https://polynode.dev"
     }
-  ],
-  "tabs": [
-    {
-      "name": "API Reference",
-      "url": "api-reference",
-      "openapi": "/openapi.json"
-    }
-  ],
-  "navigation": [
-    {
-      "group": "Getting Started",
-      "pages": [
-        "introduction",
-        "quickstart",
-        "authentication"
-      ]
-    },
-    {
-      "group": "Guides",
-      "pages": [
-        "guides/websocket",
-        "guides/errors",
-        "guides/rate-limits"
-      ]
-    },
-    {
-      "group": "Markets",
-      "pages": [
-        "api-reference/markets/top-markets",
-        "api-reference/markets/market-detail",
-        "api-reference/markets/market-by-slug",
-        "api-reference/markets/market-by-condition-id",
-        "api-reference/markets/filtered-market-listing",
-        "api-reference/markets/search-markets"
-      ]
-    },
-    {
-      "group": "Pricing",
-      "pages": [
-        "api-reference/pricing/market-statistics",
-        "api-reference/pricing/ohlcv-candles"
-      ]
-    },
-    {
-      "group": "Settlements",
-      "pages": [
-        "api-reference/settlements/recent-settlements",
-        "api-reference/settlements/settlements-by-wallet",
-        "api-reference/settlements/settlements-by-token"
-      ]
-    },
-    {
-      "group": "System",
-      "pages": [
-        "api-reference/system/system-status",
-        "api-reference/system/generate-api-key",
-        "api-reference/system/health-check",
-        "api-reference/system/readiness-check"
-      ]
-    }
-  ],
+  },
   "api": {
     "baseUrl": "https://polynode.dev",
     "auth": {
