@@ -1405,6 +1405,11 @@
             "type": "integer",
             "format": "int64"
           },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Normalized timestamp (alias for detected_at). Present on all event types for consistent access."
+          },
           "event_title": {
             "type": [
               "string",

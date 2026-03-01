@@ -34,7 +34,15 @@ After connecting, send a JSON subscribe message:
 }
 ```
 
-You'll receive an acknowledgment followed by a **snapshot** of up to 20 recent matching events, then live updates.
+You'll receive an acknowledgment followed by a **snapshot** of recent matching events, then live updates.
+
+## Server heartbeat
+
+The server sends a heartbeat every 30 seconds:
+- A WebSocket-level **Ping** frame (handled automatically by all WS clients)
+- A text message: `{"type": "heartbeat", "ts": 1772386305181}`
+
+If you don't receive a heartbeat within ~35 seconds, the connection is likely dead — reconnect.
 
 ## Subscription types
 
@@ -58,12 +66,21 @@ All filters are optional. Omit filters to receive all events of the subscription
 | `wallets` | string[] | Filter by wallet addresses |
 | `tokens` | string[] | Filter by token IDs |
 | `markets` | string[] | Alias for `tokens` |
+| `slugs` | string[] | Filter by market slugs (e.g. `["bitcoin-100k-2026"]`). Resolved to token IDs at subscribe time. |
+| `condition_ids` | string[] | Filter by Polymarket condition IDs. Resolved to token IDs at subscribe time. |
 | `side` | string | `"BUY"` or `"SELL"` |
 | `min_size` | number | Minimum trade size in USD |
 | `status` | string | `"pending"`, `"confirmed"`, or `"all"` (default) |
 | `event_types` | string[] | Override default event types |
+| `snapshot_count` | number | Number of events in the initial snapshot (default 20, max 200) |
+
+<Tip>
+Use `slugs` or `condition_ids` instead of raw `tokens` when you know the market by its URL slug or condition ID. The server resolves them to token IDs once at subscribe time — no performance cost after that.
+</Tip>
 
 ## Event types
+
+All events include a top-level **`timestamp`** field (Unix ms) — use this instead of switching on `detected_at` / `timestamp` / `confirmed_at` per event type.
 
 All trade-related events include **enrichment fields** (`market_title`, `outcome`, `market_slug`, `event_title`) resolved from metadata.
 
@@ -74,6 +91,7 @@ A Polymarket settlement — either pending (pre-chain) or confirmed (on-chain).
 ```json
 {
   "type": "settlement",
+  "timestamp": 1709136043000,
   "data": {
     "tx_hash": "0x1a2b3c4d5e6f...",
     "status": "Pending",
@@ -106,6 +124,7 @@ A confirmed trade execution on Polymarket.
 ```json
 {
   "type": "trade",
+  "timestamp": 1709136045000,
   "data": {
     "tx_hash": "0x5e6f7a8b9c0d...",
     "block_number": 54321000,
@@ -132,6 +151,7 @@ Notification when a pending settlement is confirmed on-chain.
 ```json
 {
   "type": "status_update",
+  "timestamp": 1709136045000,
   "data": {
     "tx_hash": "0x1a2b3c4d5e6f...",
     "token_id": "21742633...",
@@ -152,6 +172,7 @@ New block summary with Polymarket-specific stats.
 ```json
 {
   "type": "block",
+  "timestamp": 1709136045000,
   "data": {
     "block_number": 54321000,
     "block_hash": "0xblockhash...",
@@ -171,6 +192,7 @@ Polymarket position transfer between wallets.
 ```json
 {
   "type": "position_change",
+  "timestamp": 1709136045000,
   "data": {
     "tx_hash": "0xdef456...",
     "block_number": 54321000,
@@ -190,6 +212,7 @@ USDC deposit or withdrawal on Polymarket.
 ```json
 {
   "type": "deposit",
+  "timestamp": 1709136045000,
   "data": {
     "tx_hash": "0xccc789...",
     "block_number": 54321000,
@@ -209,13 +232,29 @@ USDC deposit or withdrawal on Polymarket.
 
 ## Keepalive
 
-Send periodic pings to prevent timeout:
+The server sends automatic heartbeats every 30 seconds (see above). You can also send client-side pings:
 
 ```json
 {"action": "ping"}
 ```
 
 Response: `{"type": "pong"}`
+
+## Error messages
+
+Invalid messages return structured errors:
+
+```json
+{"type": "error", "code": "invalid_json", "message": "Message is not valid JSON."}
+```
+
+```json
+{
+  "type": "error",
+  "code": "invalid_message",
+  "message": "Expected: {\"action\": \"subscribe\"|\"unsubscribe\"|\"ping\", ...}"
+}
+```
 
 ## JSON-RPC subscriptions
 
@@ -258,15 +297,28 @@ ws.onmessage = (event) => {
 };
 ```
 
-### Monitor a specific market
+### Monitor a specific market (by slug)
 
 ```javascript
 ws.send(JSON.stringify({
   action: "subscribe",
   type: "markets",
   filters: {
-    markets: ["21742633..."],
+    slugs: ["bitcoin-100k-2026"],
     status: "pending",  // Only pre-chain events
+  },
+}));
+```
+
+### Monitor by token ID
+
+```javascript
+ws.send(JSON.stringify({
+  action: "subscribe",
+  type: "markets",
+  filters: {
+    tokens: ["21742633..."],
+    snapshot_count: 50,  // Get last 50 events on connect
   },
 }));
 ```
