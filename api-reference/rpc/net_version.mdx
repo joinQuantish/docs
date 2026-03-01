@@ -1,0 +1,41 @@
+---
+title: "net_version"
+description: "Returns the current network ID."
+---
+
+## net_version
+
+Returns the current network ID as a string. Polygon PoS returns `"137"`.
+
+**Cache**: 24 hours (immutable)
+
+### Parameters
+
+None.
+
+### Returns
+
+`String` — network ID.
+
+### Example
+
+```bash cURL
+curl -s -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "net_version",
+    "params": [],
+    "id": 1
+  }'
+```
+
+### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": "137"
+}
+```

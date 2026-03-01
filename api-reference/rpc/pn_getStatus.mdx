@@ -1,0 +1,55 @@
+---
+title: "pn_getStatus"
+description: "Returns state engine summary statistics."
+---
+
+## pn_getStatus
+
+Returns a summary of the PolyNode state engine including market count, wallet count, events processed, and latest block.
+
+### Parameters
+
+None.
+
+### Returns
+
+`Object` — state engine summary.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `market_count` | number | Number of tracked markets |
+| `wallet_count` | number | Number of tracked wallets |
+| `metadata_count` | number | Number of markets with metadata |
+| `events_buffered` | number | Events in the ring buffer |
+| `events_processed` | number | Total events processed since startup |
+| `latest_block` | number | Latest block number seen |
+
+### Example
+
+```bash cURL
+curl -s -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "pn_getStatus",
+    "params": [],
+    "id": 1
+  }'
+```
+
+### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "market_count": 4521,
+    "wallet_count": 12847,
+    "metadata_count": 69420,
+    "events_buffered": 10000,
+    "events_processed": 2847103,
+    "latest_block": 85123456
+  }
+}
+```

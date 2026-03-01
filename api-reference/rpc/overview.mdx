@@ -1,0 +1,81 @@
+---
+title: "RPC Overview"
+description: "PolyNode exposes a full Polygon JSON-RPC endpoint alongside its custom REST API."
+---
+
+## What is PolyNode RPC?
+
+PolyNode runs a full Polygon PoS node and exposes a standard JSON-RPC 2.0 interface. You can use it as a drop-in replacement for any Polygon RPC provider — with the bonus of custom `pn_*` methods for Polymarket-specific data.
+
+## Endpoint
+
+```
+POST https://polynode.dev/rpc
+```
+
+All RPC calls go through a single endpoint as POST requests with a JSON-RPC 2.0 body.
+
+## Standard vs Custom Methods
+
+| Prefix | Source | Description |
+|--------|--------|-------------|
+| `eth_*` | Polygon node | Standard Ethereum JSON-RPC methods, proxied to the full node with intelligent caching |
+| `net_*` | Polygon node | Network info methods |
+| `txpool_*` | Polygon node | Transaction pool methods |
+| `pn_*` | PolyNode state engine | Custom Polymarket methods served from in-memory indexed data |
+
+## Authentication
+
+RPC requests do **not** require an API key — the `/rpc` endpoint is currently open. Rate limiting applies at the IP level.
+
+## Request Format
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "eth_blockNumber",
+  "params": [],
+  "id": 1
+}
+```
+
+## Batch Requests
+
+Send an array of requests to process up to 100 calls in a single HTTP request:
+
+```json
+[
+  {"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1},
+  {"jsonrpc": "2.0", "method": "eth_gasPrice", "params": [], "id": 2}
+]
+```
+
+Returns an array of responses in matching order. Maximum 100 requests per batch.
+
+## Caching
+
+PolyNode applies intelligent caching to reduce load on the underlying node:
+
+| Cache Tier | TTL | Methods |
+|------------|-----|---------|
+| Passthrough | 0s | `eth_sendRawTransaction`, `eth_call`, `eth_estimateGas`, `eth_getTransactionCount` |
+| Short | 2s | `eth_blockNumber`, `eth_gasPrice`, `net_peerCount` |
+| Medium | 30s | `eth_getBlockByNumber`, `eth_getBlockByHash`, `eth_getLogs`, `txpool_status` |
+| Permanent | 24h | `eth_getTransactionReceipt`, `eth_chainId`, `net_version` |
+
+Custom `pn_*` methods are served directly from the in-memory state engine with no caching layer — the data is always live.
+
+## Historical Data
+
+PolyNode's full node maintains recent block data. For deep historical queries (blocks older than ~24 hours), pair with an archive node provider.
+
+## Error Codes
+
+Standard JSON-RPC 2.0 error codes:
+
+| Code | Message | Description |
+|------|---------|-------------|
+| -32700 | Parse error | Invalid JSON |
+| -32600 | Invalid Request | Missing required fields or empty batch |
+| -32601 | Method not found | Unknown method name |
+| -32603 | Internal error | Node unavailable or processing failure |

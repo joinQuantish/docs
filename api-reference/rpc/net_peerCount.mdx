@@ -1,0 +1,41 @@
+---
+title: "net_peerCount"
+description: "Returns the number of peers connected to the node."
+---
+
+## net_peerCount
+
+Returns the number of peers currently connected to the Polygon node.
+
+**Cache**: 2 seconds
+
+### Parameters
+
+None.
+
+### Returns
+
+`QUANTITY` — hex-encoded number of connected peers.
+
+### Example
+
+```bash cURL
+curl -s -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "net_peerCount",
+    "params": [],
+    "id": 1
+  }'
+```
+
+### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": "0x32"
+}
+```

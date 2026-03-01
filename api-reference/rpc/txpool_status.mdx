@@ -1,0 +1,44 @@
+---
+title: "txpool_status"
+description: "Returns the number of transactions in the txpool."
+---
+
+## txpool_status
+
+Returns the number of pending and queued transactions in the node's transaction pool.
+
+**Cache**: 30 seconds
+
+### Parameters
+
+None.
+
+### Returns
+
+`Object` — txpool status with `pending` and `queued` counts (hex).
+
+### Example
+
+```bash cURL
+curl -s -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "txpool_status",
+    "params": [],
+    "id": 1
+  }'
+```
+
+### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "pending": "0x12",
+    "queued": "0x3"
+  }
+}
+```

@@ -1,0 +1,41 @@
+---
+title: "eth_gasPrice"
+description: "Returns the current gas price in wei."
+---
+
+## eth_gasPrice
+
+Returns the current gas price on Polygon PoS in wei.
+
+**Cache**: 2 seconds
+
+### Parameters
+
+None.
+
+### Returns
+
+`QUANTITY` — hex-encoded gas price in wei.
+
+### Example
+
+```bash cURL
+curl -s -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "eth_gasPrice",
+    "params": [],
+    "id": 1
+  }'
+```
+
+### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": "0x6fc23ac00"
+}
+```

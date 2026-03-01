@@ -1,0 +1,47 @@
+---
+title: "eth_estimateGas"
+description: "Estimates gas needed for a transaction."
+---
+
+## eth_estimateGas
+
+Generates and returns an estimate of how much gas is necessary to allow a transaction to complete.
+
+**Cache**: None (passthrough)
+
+### Parameters
+
+| Position | Type | Description |
+|----------|------|-------------|
+| 0 | `Object` | Transaction call object (`from`, `to`, `data`, `value`, etc.) |
+
+### Returns
+
+`QUANTITY` — estimated gas amount (hex).
+
+### Example
+
+```bash cURL
+curl -s -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "eth_estimateGas",
+    "params": [{
+      "from": "0xabcdef...",
+      "to": "0x123456...",
+      "data": "0x..."
+    }],
+    "id": 1
+  }'
+```
+
+### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": "0x5208"
+}
+```

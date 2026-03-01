@@ -1,0 +1,55 @@
+---
+title: "pn_getRecentTrades"
+description: "Returns recent decoded settlement events."
+---
+
+## pn_getRecentTrades
+
+Returns recent decoded settlement events from the in-memory ring buffer. Optionally filter by token ID.
+
+### Parameters
+
+| Position | Type | Description |
+|----------|------|-------------|
+| 0 | `String` | Token ID filter (empty string for all tokens) |
+| 1 | `Number` | Number of results (default: 20) |
+
+### Returns
+
+`Array` — array of settlement event objects.
+
+### Example
+
+```bash cURL
+curl -s -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "pn_getRecentTrades",
+    "params": ["", 5],
+    "id": 1
+  }'
+```
+
+### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": [
+    {
+      "event_type": "settlement",
+      "tx_hash": "0xabc123...",
+      "status": "confirmed",
+      "detected_at": 1709136043000,
+      "taker_wallet": "0x...",
+      "taker_token": "21742633...",
+      "taker_side": "BUY",
+      "taker_price": 0.72,
+      "taker_size": 500.00,
+      "trades": []
+    }
+  ]
+}
+```

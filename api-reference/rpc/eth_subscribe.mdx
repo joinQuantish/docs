@@ -1,0 +1,100 @@
+---
+title: "eth_subscribe"
+description: "Subscribe to real-time events via WebSocket."
+---
+
+## eth_subscribe
+
+Creates a subscription for real-time events over a WebSocket connection. PolyNode supports standard Ethereum subscription types via its full Polygon node.
+
+<Note>
+For Polymarket-specific streaming (settlements, trades, whale alerts), use PolyNode's custom [WebSocket subscriptions](/guides/websocket) instead — they provide decoded, filtered data.
+</Note>
+
+### Connection
+
+```
+wss://polynode.dev/ws?key=pn_live_YOUR_KEY
+```
+
+### Subscription Types
+
+#### newHeads
+
+Subscribe to new block headers as they are produced.
+
+```json
+{"jsonrpc": "2.0", "method": "eth_subscribe", "params": ["newHeads"], "id": 1}
+```
+
+**Response (notification):**
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "eth_subscription",
+  "params": {
+    "subscription": "0x1",
+    "result": {
+      "number": "0x5125d84",
+      "hash": "0x...",
+      "parentHash": "0x...",
+      "timestamp": "0x...",
+      "gasUsed": "0x...",
+      "gasLimit": "0x..."
+    }
+  }
+}
+```
+
+#### logs
+
+Subscribe to new logs matching a filter.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "eth_subscribe",
+  "params": ["logs", {
+    "address": "0xe3f18acc55091e2c48d883fc8c8413319d4ab7b0",
+    "topics": []
+  }],
+  "id": 1
+}
+```
+
+#### newPendingTransactions
+
+Subscribe to new pending transaction hashes as they enter the mempool.
+
+```json
+{"jsonrpc": "2.0", "method": "eth_subscribe", "params": ["newPendingTransactions"], "id": 1}
+```
+
+### Unsubscribe
+
+```json
+{"jsonrpc": "2.0", "method": "eth_unsubscribe", "params": ["0x1"], "id": 2}
+```
+
+### Example
+
+```javascript
+const ws = new WebSocket("wss://polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.onopen = () => {
+  // Subscribe to new block headers
+  ws.send(JSON.stringify({
+    jsonrpc: "2.0",
+    method: "eth_subscribe",
+    params: ["newHeads"],
+    id: 1
+  }));
+};
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.params) {
+    console.log("New block:", parseInt(msg.params.result.number, 16));
+  }
+};
+```

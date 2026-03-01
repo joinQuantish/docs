@@ -1,0 +1,52 @@
+---
+title: "eth_getBlockByNumber"
+description: "Returns block data by block number."
+---
+
+## eth_getBlockByNumber
+
+Returns information about a block by block number.
+
+**Cache**: 30 seconds
+
+### Parameters
+
+| Position | Type | Description |
+|----------|------|-------------|
+| 0 | `QUANTITY\|TAG` | Block number (hex) or tag: `latest`, `earliest`, `pending` |
+| 1 | `Boolean` | If `true`, returns full transaction objects; if `false`, only transaction hashes |
+
+### Returns
+
+`Object` — block object, or `null` if not found.
+
+### Example
+
+```bash cURL
+curl -s -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "eth_getBlockByNumber",
+    "params": ["latest", false],
+    "id": 1
+  }'
+```
+
+### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "number": "0x5125d84",
+    "hash": "0x...",
+    "parentHash": "0x...",
+    "timestamp": "0x...",
+    "transactions": ["0x...", "0x..."],
+    "gasUsed": "0x...",
+    "gasLimit": "0x..."
+  }
+}
+```

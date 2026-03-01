@@ -1,0 +1,44 @@
+---
+title: "eth_getTransactionCount"
+description: "Returns the number of transactions sent from an address (nonce)."
+---
+
+## eth_getTransactionCount
+
+Returns the number of transactions sent from an address. This is the account's nonce.
+
+**Cache**: None (passthrough)
+
+### Parameters
+
+| Position | Type | Description |
+|----------|------|-------------|
+| 0 | `DATA` | Address (20 bytes) |
+| 1 | `QUANTITY\|TAG` | Block number (hex) or tag: `latest`, `earliest`, `pending` |
+
+### Returns
+
+`QUANTITY` — number of transactions sent from this address (hex).
+
+### Example
+
+```bash cURL
+curl -s -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "eth_getTransactionCount",
+    "params": ["0xabcdef...", "latest"],
+    "id": 1
+  }'
+```
+
+### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": "0x29"
+}
+```

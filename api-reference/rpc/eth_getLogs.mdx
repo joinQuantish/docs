@@ -1,0 +1,65 @@
+---
+title: "eth_getLogs"
+description: "Returns logs matching a filter object."
+---
+
+## eth_getLogs
+
+Returns an array of log objects matching the given filter criteria.
+
+**Cache**: 30 seconds
+
+### Parameters
+
+| Position | Type | Description |
+|----------|------|-------------|
+| 0 | `Object` | Filter object (see below) |
+
+**Filter Object:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `fromBlock` | `QUANTITY\|TAG` | Start block (hex or tag) |
+| `toBlock` | `QUANTITY\|TAG` | End block (hex or tag) |
+| `address` | `DATA\|Array` | Contract address(es) to filter |
+| `topics` | `Array` | Topic filters (up to 4 positions) |
+
+### Returns
+
+`Array` — array of log objects.
+
+### Example
+
+```bash cURL
+curl -s -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "eth_getLogs",
+    "params": [{
+      "fromBlock": "0x5125d80",
+      "toBlock": "latest",
+      "address": "0xe3f18acc55091e2c48d883fc8c8413319d4ab7b0"
+    }],
+    "id": 1
+  }'
+```
+
+### Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": [
+    {
+      "address": "0xe3f18acc55091e2c48d883fc8c8413319d4ab7b0",
+      "topics": ["0x..."],
+      "data": "0x...",
+      "blockNumber": "0x5125d82",
+      "transactionHash": "0x...",
+      "logIndex": "0x0"
+    }
+  ]
+}
+```
