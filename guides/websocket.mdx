@@ -1,0 +1,130 @@
+---
+title: WebSocket Streaming
+description: Real-time event streaming with filtered subscriptions.
+---
+
+Connect via WebSocket for real-time Polymarket events. Supports filtered subscriptions with multiple event types.
+
+## Connecting
+
+```
+wss://polynode.dev/ws?key=pn_live_YOUR_KEY
+```
+
+The API key must be passed as a query parameter.
+
+## Subscribing
+
+After connecting, send a JSON subscribe message:
+
+```json
+{
+  "action": "subscribe",
+  "type": "settlements",
+  "filters": {
+    "tokens": ["21742633..."],
+    "side": "BUY",
+    "min_size": 100,
+    "status": "pending"
+  }
+}
+```
+
+You'll receive an acknowledgment followed by a **snapshot** of recent matching events, then live updates.
+
+## Subscription types
+
+| Type | Events | Description |
+|------|--------|-------------|
+| `settlements` | settlement | Decoded mempool + confirmed settlements (default) |
+| `trades` | settlement, trade, status_update | All trade activity |
+| `prices` | settlement, trade | Price-moving events for specific markets |
+| `blocks` | block | New block notifications |
+| `wallets` | settlement, trade, position_change, deposit, status_update | All activity for specific wallets |
+| `markets` | settlement, trade, position_change, status_update | All activity for specific markets |
+| `large_trades` | settlement, trade | Whale alerts ($1K+ default min_size) |
+| `global` | all | Unfiltered stream of everything |
+
+## Filters
+
+All filters are optional. Omit filters to receive all events of the subscription type.
+
+| Filter | Type | Description |
+|--------|------|-------------|
+| `wallets` | string[] | Filter by wallet addresses |
+| `tokens` | string[] | Filter by token IDs |
+| `markets` | string[] | Alias for `tokens` |
+| `side` | string | `"BUY"` or `"SELL"` |
+| `min_size` | number | Minimum trade size in USD |
+| `status` | string | `"pending"`, `"confirmed"`, or `"all"` (default) |
+| `event_types` | string[] | Override default event types |
+
+## Event format
+
+```json
+{
+  "type": "settlement",
+  "data": {
+    "tx_hash": "0x1a2b3c...",
+    "status": "Pending",
+    "detected_at": 1709136043000,
+    "taker_wallet": "0xabcdef...",
+    "taker_token": "21742633...",
+    "taker_side": "BUY",
+    "taker_price": 0.72,
+    "taker_size": 500.00
+  }
+}
+```
+
+## Unsubscribing
+
+```json
+{"action": "unsubscribe"}
+```
+
+## Keepalive
+
+Send periodic pings to prevent timeout:
+
+```json
+{"action": "ping"}
+```
+
+Response: `{"type": "pong"}`
+
+## Examples
+
+### Track whale trades
+
+```javascript
+const ws = new WebSocket("wss://polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.onopen = () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "large_trades",
+    filters: { min_size: 5000 },
+  }));
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.type === "settlement") {
+    console.log(`Whale: ${data.data.taker_side} $${data.data.taker_size} @ ${data.data.taker_price}`);
+  }
+};
+```
+
+### Monitor a specific market
+
+```javascript
+ws.send(JSON.stringify({
+  action: "subscribe",
+  type: "markets",
+  filters: {
+    markets: ["21742633..."],
+    status: "pending",  // Only mempool events
+  },
+}));
+```

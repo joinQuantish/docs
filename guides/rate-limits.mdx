@@ -1,0 +1,74 @@
+---
+title: Rate Limits
+description: Rate limiting details and best practices.
+---
+
+PolyNode uses per-key rate limiting to ensure fair usage.
+
+## Default limits
+
+| Endpoint | Limit |
+|----------|-------|
+| All authenticated endpoints | 120 requests per minute per key |
+| `POST /v1/keys` (key generation) | 3 per IP per hour |
+| WebSocket connections | 1 per key (shared subscription channel) |
+
+## How it works
+
+- Rate limits are tracked per API key using a sliding window.
+- When you exceed the limit, you'll receive a `429 Too Many Requests` response.
+- The error message includes a Unix timestamp for when you can retry.
+
+## Best practices
+
+### Use WebSocket for real-time data
+
+Instead of polling REST endpoints, connect via WebSocket for live updates:
+
+```javascript
+// Instead of polling /v1/markets every 5 seconds (12 req/min)...
+// Use WebSocket (1 connection, unlimited events)
+const ws = new WebSocket("wss://polynode.dev/ws?key=pn_live_YOUR_KEY");
+ws.send(JSON.stringify({
+  action: "subscribe",
+  type: "settlements",
+}));
+```
+
+### Cache metadata locally
+
+Market metadata (question, slug, outcomes) changes infrequently. Cache it and only refresh periodically:
+
+```javascript
+// Fetch full market list once
+const markets = await fetch("/v1/markets?count=1000", { headers })
+  .then((r) => r.json());
+
+// Cache by token_id
+const cache = new Map(markets.markets.map((m) => [m.token_id, m]));
+
+// Use cache for lookups, refresh every 5 minutes
+```
+
+### Batch where possible
+
+Use `/v1/markets?count=1000` instead of individual `/v1/markets/:id` calls to reduce requests.
+
+### Use filtered subscriptions
+
+WebSocket subscriptions with filters reduce message volume and processing overhead:
+
+```json
+{
+  "action": "subscribe",
+  "type": "settlements",
+  "filters": {
+    "tokens": ["specific-token-id"],
+    "min_size": 100
+  }
+}
+```
+
+## Requesting higher limits
+
+Contact us for custom rate limits for production applications.

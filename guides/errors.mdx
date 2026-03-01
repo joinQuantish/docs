@@ -1,0 +1,94 @@
+---
+title: Errors
+description: Error format, status codes, and troubleshooting.
+---
+
+All errors return a JSON object with an `error` field.
+
+## Error format
+
+```json
+{
+  "error": "Human-readable error message."
+}
+```
+
+## Status codes
+
+| Code | Meaning | When |
+|------|---------|------|
+| 200 | OK | Successful request |
+| 201 | Created | API key generated successfully |
+| 400 | Bad Request | Invalid parameters (e.g. bad candle resolution, missing `q` param) |
+| 401 | Unauthorized | Missing or malformed API key |
+| 403 | Forbidden | API key is invalid or inactive |
+| 404 | Not Found | Market, wallet, or token not found |
+| 429 | Too Many Requests | Rate limit exceeded |
+| 500 | Internal Server Error | Server-side error (Redis, state engine) |
+| 503 | Service Unavailable | Node disconnected or Redis down |
+
+## Common errors
+
+### Missing API key
+
+```json 401
+{
+  "error": "Missing or invalid API key. Use x-api-key header or ?key= param."
+}
+```
+
+**Fix**: Include your API key as a header (`x-api-key: pn_live_...`) or query parameter (`?key=pn_live_...`).
+
+### Invalid API key
+
+```json 403
+{
+  "error": "Invalid or inactive API key."
+}
+```
+
+**Fix**: Verify your key is correct. Keys cannot be retrieved after creation — generate a new one if lost.
+
+### Rate limited
+
+```json 429
+{
+  "error": "Rate limit exceeded. Retry after 1709136060."
+}
+```
+
+**Fix**: Wait until the timestamp, or reduce request frequency. Default limit is 120 requests per minute.
+
+### Market not found
+
+```json 404
+{
+  "error": "Market 0x123... not found"
+}
+```
+
+**Fix**: Verify the token ID. Use `/v1/search` to find the correct token.
+
+### Invalid resolution
+
+```json 400
+{
+  "error": "Invalid resolution. Use: 1m, 5m, 15m, 1h, 4h, 1d"
+}
+```
+
+### Missing search query
+
+```json 400
+{
+  "error": "Missing required query parameter 'q'"
+}
+```
+
+### Key generation rate limit
+
+```json 429
+{
+  "error": "Too many key generation requests. Max 3 per hour."
+}
+```

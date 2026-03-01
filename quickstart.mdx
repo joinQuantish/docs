@@ -1,0 +1,132 @@
+---
+title: Quickstart
+description: Generate an API key and make your first request in 30 seconds.
+---
+
+## 1. Generate an API key
+
+<CodeGroup>
+```bash cURL
+curl -s -X POST https://polynode.dev/v1/keys \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-bot"}'
+```
+
+```python Python
+import requests
+
+resp = requests.post("https://polynode.dev/v1/keys", json={"name": "my-bot"})
+key = resp.json()["api_key"]
+print(key)  # pn_live_a1b2c3d4e5f6...
+```
+
+```typescript TypeScript
+const resp = await fetch("https://polynode.dev/v1/keys", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ name: "my-bot" }),
+});
+const { api_key } = await resp.json();
+```
+</CodeGroup>
+
+```json Response
+{
+  "api_key": "pn_live_a1b2c3d4e5f6...",
+  "name": "my-bot",
+  "rate_limit_per_minute": 120,
+  "message": "Store this key securely — it cannot be retrieved again."
+}
+```
+
+<Warning>
+  Save the `api_key` immediately. It cannot be retrieved after creation.
+</Warning>
+
+## 2. Make your first request
+
+Fetch the top 5 markets by 24h volume:
+
+<CodeGroup>
+```bash cURL
+curl -s "https://polynode.dev/v1/markets?count=5" \
+  -H "x-api-key: pn_live_YOUR_KEY" | jq
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://polynode.dev/v1/markets",
+    params={"count": 5},
+    headers={"x-api-key": "pn_live_YOUR_KEY"},
+)
+print(resp.json())
+```
+
+```typescript TypeScript
+const resp = await fetch("https://polynode.dev/v1/markets?count=5", {
+  headers: { "x-api-key": "pn_live_YOUR_KEY" },
+});
+const data = await resp.json();
+```
+</CodeGroup>
+
+```json Response
+{
+  "count": 5,
+  "total": 69482,
+  "markets": [
+    {
+      "token_id": "21742633...",
+      "question": "Will Bitcoin hit $100K in 2026?",
+      "last_price": 0.72,
+      "volume_24h": 48293.50,
+      "slug": "bitcoin-100k-2026",
+      "outcomes": ["Yes", "No"],
+      "category": "Crypto"
+    }
+  ]
+}
+```
+
+## 3. Stream live settlements
+
+Connect via WebSocket to receive real-time decoded settlements:
+
+```javascript
+const ws = new WebSocket("wss://polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.onopen = () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "settlements",
+  }));
+};
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type === "settlement") {
+    console.log(`${msg.data.taker_side} $${msg.data.taker_size} @ ${msg.data.taker_price}`);
+  }
+};
+```
+
+You'll receive a snapshot of recent events, then live updates as settlements are detected in the mempool.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/authentication">
+    API key management and auth methods
+  </Card>
+  <Card title="WebSocket" icon="plug" href="/guides/websocket">
+    Real-time streaming with filtered subscriptions
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Full endpoint reference with playground
+  </Card>
+  <Card title="Rate Limits" icon="gauge" href="/guides/rate-limits">
+    Usage limits and best practices
+  </Card>
+</CardGroup>

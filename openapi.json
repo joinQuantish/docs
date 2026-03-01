@@ -1,0 +1,634 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PolyNode API",
+    "version": "1.0.0",
+    "description": "Real-time Polymarket data API. Decoded settlement transactions from the mempool — 2 seconds before on-chain confirmation. OHLCV candles, wallet tracking, and market metadata for 69,000+ markets.",
+    "contact": {
+      "name": "PolyNode",
+      "url": "https://polynode.dev"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://polynode.dev",
+      "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "API key with `pn_live_` prefix. Pass via `x-api-key` header or `?key=` query parameter."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Human-readable error message"
+          }
+        },
+        "required": ["error"]
+      },
+      "Market": {
+        "type": "object",
+        "properties": {
+          "token_id": { "type": "string", "description": "Polymarket CLOB token identifier" },
+          "question": { "type": "string", "description": "Market question text" },
+          "slug": { "type": "string", "description": "URL-friendly slug" },
+          "outcomes": { "type": "array", "items": { "type": "string" }, "description": "Possible outcomes (e.g. [\"Yes\", \"No\"])" },
+          "condition_id": { "type": "string", "description": "CTF condition identifier" },
+          "end_date": { "type": "string", "format": "date-time", "description": "Market expiry date (ISO 8601)" },
+          "category": { "type": "string", "description": "Market category" },
+          "market_type": { "type": "string", "description": "Market type (e.g. \"binary\")" },
+          "image": { "type": "string", "description": "Market image URL" },
+          "icon": { "type": "string", "description": "Market icon URL" },
+          "neg_risk": { "type": "boolean", "description": "Whether the market uses neg-risk framework" },
+          "created_at": { "type": "string", "format": "date-time", "description": "When the market was created" },
+          "last_price": { "type": ["number", "null"], "description": "Last settlement price (null if no trades)" },
+          "volume_24h": { "type": "number", "description": "24-hour trading volume in USD" },
+          "trade_count_24h": { "type": "integer", "description": "Number of trades in last 24 hours" },
+          "last_trade_at": { "type": ["integer", "null"], "description": "Unix timestamp (ms) of last trade" }
+        }
+      },
+      "MarketDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Market" },
+          {
+            "type": "object",
+            "properties": {
+              "description": { "type": "string", "description": "Full market description" },
+              "liquidity": { "type": "number", "description": "Total market liquidity" },
+              "volume": { "type": "number", "description": "All-time trading volume" },
+              "last_status": { "type": ["string", "null"], "description": "\"Pending\" or \"Confirmed\" (null if no trades)" }
+            }
+          }
+        ]
+      },
+      "MarketBySlug": {
+        "type": "object",
+        "properties": {
+          "condition_id": { "type": "string", "description": "CTF condition identifier" },
+          "question": { "type": "string" },
+          "slug": { "type": "string" },
+          "outcomes": { "type": "array", "items": { "type": "string" } },
+          "end_date": { "type": "string", "format": "date-time" },
+          "category": { "type": "string" },
+          "market_type": { "type": "string" },
+          "active": { "type": "boolean", "description": "Whether the market is accepting orders" },
+          "closed": { "type": "boolean", "description": "Whether the market has resolved" },
+          "image": { "type": "string" },
+          "icon": { "type": "string" },
+          "neg_risk": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "liquidity": { "type": "number" },
+          "volume": { "type": "number" },
+          "description": { "type": "string" },
+          "event_slug": { "type": "string", "description": "Parent event slug" },
+          "event_title": { "type": "string", "description": "Parent event title" },
+          "group_item_title": { "type": "string", "description": "Title within the event group" },
+          "outcome_prices": {
+            "type": "object",
+            "additionalProperties": { "type": "number" },
+            "description": "Map of outcome name to last price"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "token_id": { "type": "string" },
+                "last_price": { "type": ["number", "null"] },
+                "volume_24h": { "type": "number" },
+                "trade_count_24h": { "type": "integer" },
+                "last_trade_at": { "type": ["integer", "null"] }
+              }
+            }
+          }
+        }
+      },
+      "Settlement": {
+        "type": "object",
+        "properties": {
+          "tx_hash": { "type": "string", "description": "Polygon transaction hash" },
+          "status": { "type": "string", "enum": ["Pending", "Confirmed"], "description": "\"Pending\" (mempool) or \"Confirmed\" (on-chain)" },
+          "detected_at": { "type": "integer", "description": "When the TX was first seen (Unix ms)" },
+          "confirmed_at": { "type": ["integer", "null"], "description": "When the TX was confirmed (null if pending)" },
+          "block_number": { "type": ["integer", "null"], "description": "Block number (null if pending)" },
+          "taker_wallet": { "type": "string", "description": "Taker's wallet address" },
+          "taker_token": { "type": "string", "description": "Polymarket token ID being traded" },
+          "taker_side": { "type": "string", "enum": ["BUY", "SELL"], "description": "BUY or SELL" },
+          "taker_price": { "type": "number", "description": "Execution price" },
+          "taker_size": { "type": "number", "description": "Trade size in USD" },
+          "trades": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "maker_wallet": { "type": "string" },
+                "maker_order_id": { "type": "string" },
+                "matched_amount": { "type": "number" },
+                "price": { "type": "number" }
+              }
+            },
+            "description": "Individual maker fills within this settlement"
+          }
+        }
+      },
+      "Candle": {
+        "type": "object",
+        "properties": {
+          "timestamp": { "type": "integer", "description": "Candle open time (Unix seconds)" },
+          "open": { "type": "number", "description": "Opening price" },
+          "high": { "type": "number", "description": "Highest price" },
+          "low": { "type": "number", "description": "Lowest price" },
+          "close": { "type": "number", "description": "Closing price" },
+          "volume": { "type": "number", "description": "Total volume in USD" },
+          "trade_count": { "type": "integer", "description": "Number of trades in the candle" }
+        }
+      },
+      "SearchResult": {
+        "type": "object",
+        "properties": {
+          "condition_id": { "type": "string" },
+          "question": { "type": "string" },
+          "slug": { "type": "string" },
+          "outcomes": { "type": "array", "items": { "type": "string" } },
+          "end_date": { "type": "string", "format": "date-time" },
+          "category": { "type": "string" },
+          "market_type": { "type": "string" },
+          "active": { "type": "boolean" },
+          "token_ids": { "type": "array", "items": { "type": "string" }, "description": "All token IDs for this market" },
+          "image": { "type": "string" },
+          "last_price": { "type": ["number", "null"] },
+          "volume_24h": { "type": "number" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/v1/markets": {
+      "get": {
+        "operationId": "getMarkets",
+        "summary": "Top markets",
+        "description": "Returns the top markets sorted by 24h trading volume, enriched with metadata.",
+        "tags": ["Markets"],
+        "parameters": [
+          {
+            "name": "count",
+            "in": "query",
+            "schema": { "type": "integer", "default": 100, "maximum": 1000 },
+            "description": "Number of markets to return. Max 1000."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of top markets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": { "type": "integer", "description": "Number of markets returned" },
+                    "total": { "type": "integer", "description": "Total markets tracked by the system" },
+                    "markets": { "type": "array", "items": { "$ref": "#/components/schemas/Market" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Rate limit exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/markets/{token_id}": {
+      "get": {
+        "operationId": "getMarketDetail",
+        "summary": "Market detail",
+        "description": "Returns detailed data for a single market by its CLOB token ID, including full metadata.",
+        "tags": ["Markets"],
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Polymarket CLOB token identifier"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market detail",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarketDetail" } } }
+          },
+          "404": { "description": "Market not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/markets/slug/{slug}": {
+      "get": {
+        "operationId": "getMarketBySlug",
+        "summary": "Market by slug",
+        "description": "Look up a market by its Polymarket URL slug. Returns full metadata, all token IDs, and outcome prices.",
+        "tags": ["Markets"],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "The market's URL slug (e.g. \"bitcoin-100k-2026\")"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market data with tokens and outcome prices",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarketBySlug" } } }
+          },
+          "404": { "description": "No market found with that slug", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/markets/condition/{id}": {
+      "get": {
+        "operationId": "getMarketByCondition",
+        "summary": "Market by condition ID",
+        "description": "Look up a market by its CTF condition ID. Same response format as slug lookup.",
+        "tags": ["Markets"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "CTF condition identifier (hex)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market data with tokens and outcome prices",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarketBySlug" } } }
+          },
+          "404": { "description": "No market found with that condition ID", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/markets/list": {
+      "get": {
+        "operationId": "listMarkets",
+        "summary": "Filtered market listing",
+        "description": "Filtered, sorted, and paginated market listing. Supports category filtering, volume thresholds, and activity filters.",
+        "tags": ["Markets"],
+        "parameters": [
+          { "name": "count", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 500 }, "description": "Results per page. Max 500." },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["volume", "price", "updated"], "default": "volume" }, "description": "Sort field." },
+          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "Filter by category (case-insensitive substring match)." },
+          { "name": "min_volume", "in": "query", "schema": { "type": "number", "default": 0 }, "description": "Minimum 24h volume in USD." },
+          { "name": "active_only", "in": "query", "schema": { "type": "boolean", "default": false }, "description": "Only markets with trade activity in last hour." },
+          { "name": "cursor", "in": "query", "schema": { "type": "integer", "default": 0 }, "description": "Pagination offset." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated market list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": { "type": "integer" },
+                    "total": { "type": "integer" },
+                    "cursor": { "type": "integer" },
+                    "next_cursor": { "type": ["integer", "null"], "description": "Next page offset, null if no more results" },
+                    "markets": { "type": "array", "items": { "$ref": "#/components/schemas/Market" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/search": {
+      "get": {
+        "operationId": "searchMarkets",
+        "summary": "Search markets",
+        "description": "Full-text search across 35K+ market questions. Sub-millisecond response times.",
+        "tags": ["Markets"],
+        "parameters": [
+          { "name": "q", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Search query (case-insensitive substring match)." },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "maximum": 100 }, "description": "Max results. Max 100." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": { "type": "string" },
+                    "count": { "type": "integer" },
+                    "total": { "type": "integer" },
+                    "results": { "type": "array", "items": { "$ref": "#/components/schemas/SearchResult" } }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing required `q` parameter", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/stats/{token_id}": {
+      "get": {
+        "operationId": "getMarketStats",
+        "summary": "Market statistics",
+        "description": "Comprehensive market statistics including current prices and 24-hour OHLCV data computed from hourly candles.",
+        "tags": ["Pricing"],
+        "parameters": [
+          { "name": "token_id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Polymarket CLOB token identifier" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market stats with 24h OHLCV",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token_id": { "type": "string" },
+                    "question": { "type": "string" },
+                    "slug": { "type": "string" },
+                    "outcomes": { "type": "array", "items": { "type": "string" } },
+                    "category": { "type": "string" },
+                    "price": {
+                      "type": "object",
+                      "properties": { "last": { "type": ["number", "null"] } }
+                    },
+                    "volume_24h": { "type": "number" },
+                    "trade_count_24h": { "type": "integer" },
+                    "last_trade_at": { "type": ["integer", "null"] },
+                    "ohlcv_24h": {
+                      "type": "object",
+                      "description": "24-hour OHLCV (present if candle data exists)",
+                      "properties": {
+                        "open": { "type": "number" },
+                        "high": { "type": "number" },
+                        "low": { "type": "number" },
+                        "close": { "type": "number" },
+                        "volume": { "type": "number" },
+                        "candle_count": { "type": "integer" }
+                      }
+                    },
+                    "liquidity": { "type": "number" },
+                    "volume": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Market not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/candles/{token_id}": {
+      "get": {
+        "operationId": "getCandles",
+        "summary": "OHLCV candles",
+        "description": "Returns OHLCV (Open, High, Low, Close, Volume) price candles for a market token. Built from live settlement data.",
+        "tags": ["Pricing"],
+        "parameters": [
+          { "name": "token_id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Polymarket CLOB token identifier" },
+          { "name": "resolution", "in": "query", "schema": { "type": "string", "enum": ["1m", "5m", "15m", "1h", "4h", "1d"], "default": "1h" }, "description": "Candle resolution." },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 1000 }, "description": "Max candles to return. Max 1000." }
+        ],
+        "responses": {
+          "200": {
+            "description": "OHLCV candle data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token_id": { "type": "string" },
+                    "question": { "type": "string" },
+                    "slug": { "type": "string" },
+                    "resolution": { "type": "string" },
+                    "count": { "type": "integer" },
+                    "candles": { "type": "array", "items": { "$ref": "#/components/schemas/Candle" } }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid resolution value", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/settlements/recent": {
+      "get": {
+        "operationId": "getRecentSettlements",
+        "summary": "Recent settlements",
+        "description": "Returns the most recent decoded settlement transactions. Includes both **pending** (mempool) and **confirmed** (on-chain) settlements. The `status` field is the killer feature — pending settlements are decoded from the mempool ~2 seconds before on-chain confirmation.",
+        "tags": ["Settlements"],
+        "parameters": [
+          { "name": "count", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 1000 }, "description": "Number of settlements to return. Max 1000." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent settlements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": { "type": "integer" },
+                    "settlements": { "type": "array", "items": { "$ref": "#/components/schemas/Settlement" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/settlements/wallet/{addr}": {
+      "get": {
+        "operationId": "getSettlementsByWallet",
+        "summary": "Settlements by wallet",
+        "description": "Returns settlements involving a specific wallet address. Useful for tracking whale activity or monitoring your own trades.",
+        "tags": ["Settlements"],
+        "parameters": [
+          { "name": "addr", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Ethereum wallet address (0x...)" },
+          { "name": "count", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 1000 }, "description": "Max results. Max 1000." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet settlements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "wallet": { "type": "string" },
+                    "count": { "type": "integer" },
+                    "settlements": { "type": "array", "items": { "$ref": "#/components/schemas/Settlement" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/settlements/token/{id}": {
+      "get": {
+        "operationId": "getSettlementsByToken",
+        "summary": "Settlements by token",
+        "description": "Returns settlements for a specific Polymarket token ID. Useful for monitoring activity on a particular market.",
+        "tags": ["Settlements"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Polymarket CLOB token identifier" },
+          { "name": "count", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 1000 }, "description": "Max results. Max 1000." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token settlements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token_id": { "type": "string" },
+                    "count": { "type": "integer" },
+                    "settlements": { "type": "array", "items": { "$ref": "#/components/schemas/Settlement" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/status": {
+      "get": {
+        "operationId": "getStatus",
+        "summary": "System status",
+        "description": "Returns comprehensive system status including node connectivity, stream lengths, and memory usage.",
+        "tags": ["System"],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "System status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "node_connected": { "type": "boolean", "description": "Whether the Bor node WebSocket is connected" },
+                    "uptime_seconds": { "type": "integer", "description": "API server uptime in seconds" },
+                    "stream_length": { "type": "integer", "description": "Number of entries in the settlements Redis stream" },
+                    "events_stream_length": { "type": "integer", "description": "Number of entries in the unified events stream" },
+                    "pending_txs": { "type": "integer", "description": "Number of currently pending (unconfirmed) transactions" },
+                    "ws_subscribers": { "type": "integer", "description": "Active WebSocket subscriber count" },
+                    "redis_memory": { "type": "string", "description": "Redis memory usage (human-readable)" },
+                    "state": {
+                      "type": "object",
+                      "properties": {
+                        "markets_tracked": { "type": "integer" },
+                        "metadata_entries": { "type": "integer" },
+                        "recent_events": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/keys": {
+      "post": {
+        "operationId": "generateApiKey",
+        "summary": "Generate API key",
+        "description": "Generate a new API key. Rate limited to 3 per IP per hour. The key cannot be retrieved after creation — store it securely.",
+        "tags": ["System"],
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "description": "Label for the key. Defaults to \"unnamed\"." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "API key created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "api_key": { "type": "string", "description": "The API key (pn_live_...). Store securely." },
+                    "name": { "type": "string" },
+                    "rate_limit_per_minute": { "type": "integer" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "429": { "description": "Too many key generation requests (max 3 per hour)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "operationId": "healthCheck",
+        "summary": "Health check",
+        "description": "Liveness probe. Returns 200 if the API server is running.",
+        "tags": ["System"],
+        "security": [],
+        "responses": {
+          "200": { "description": "ok", "content": { "text/plain": { "schema": { "type": "string", "example": "ok" } } } }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "operationId": "readinessCheck",
+        "summary": "Readiness check",
+        "description": "Readiness probe. Returns 200 if the node is synced and Redis is connected.",
+        "tags": ["System"],
+        "security": [],
+        "responses": {
+          "200": { "description": "Ready", "content": { "application/json": { "schema": { "type": "object", "properties": { "node_connected": { "type": "boolean" }, "redis_connected": { "type": "boolean" } } } } } },
+          "503": { "description": "Not ready", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Markets", "description": "Market discovery, search, and metadata" },
+    { "name": "Pricing", "description": "OHLCV candles and market statistics" },
+    { "name": "Settlements", "description": "Decoded mempool and on-chain settlements" },
+    { "name": "System", "description": "API keys, health checks, and status" }
+  ]
+}

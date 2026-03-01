@@ -1,0 +1,65 @@
+---
+title: Authentication
+description: API key generation, authentication methods, and security.
+---
+
+All API endpoints (except `/healthz`, `/readyz`, and `POST /v1/keys`) require an API key.
+
+## Passing the key
+
+Two methods are supported:
+
+<Tabs>
+  <Tab title="Header (recommended)">
+    ```bash
+    curl -H "x-api-key: pn_live_YOUR_KEY" https://polynode.dev/v1/markets
+    ```
+  </Tab>
+  <Tab title="Query parameter">
+    ```bash
+    curl "https://polynode.dev/v1/markets?key=pn_live_YOUR_KEY"
+    ```
+  </Tab>
+</Tabs>
+
+For WebSocket connections, use the query parameter:
+
+```
+wss://polynode.dev/ws?key=pn_live_YOUR_KEY
+```
+
+## Key format
+
+API keys use the prefix `pn_live_` followed by a random string. Legacy keys with `qm_live_` prefix are also accepted.
+
+## Generating a key
+
+```bash
+curl -s -X POST https://polynode.dev/v1/keys \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-app"}'
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string (optional) | Label for the key. Defaults to "unnamed". |
+
+Key generation is rate limited to **3 per IP per hour**.
+
+<Warning>
+  The raw API key is returned only once. It cannot be retrieved after creation — store it securely.
+</Warning>
+
+## Security
+
+- API keys are **SHA-256 hashed** before storage. The raw key is never persisted.
+- All traffic should use HTTPS in production.
+- Rotate keys by generating a new one and decommissioning the old one.
+
+## Error responses
+
+| Status | Error | Fix |
+|--------|-------|-----|
+| 401 | Missing or invalid API key | Include your key as `x-api-key` header or `?key=` param |
+| 403 | Invalid or inactive API key | Verify your key is correct, or generate a new one |
+| 429 | Rate limit exceeded | Reduce request frequency. Default: 120 req/min |
