@@ -3,7 +3,7 @@ title: WebSocket Streaming
 description: Real-time event streaming with filtered subscriptions.
 ---
 
-Connect via WebSocket for real-time Polymarket events. Supports filtered subscriptions with multiple event types.
+Connect via WebSocket for real-time Polymarket events. Supports filtered subscriptions with multiple event types, including pending mempool transactions.
 
 ## Connecting
 
@@ -12,6 +12,10 @@ wss://polynode.dev/ws?key=pn_live_YOUR_KEY
 ```
 
 The API key must be passed as a query parameter.
+
+PolyNode WebSocket supports two protocols on the same connection:
+- **Custom PolyNode protocol** — subscribe to decoded Polymarket events with filters
+- **JSON-RPC protocol** — standard `eth_subscribe` / `eth_unsubscribe` for raw Polygon data
 
 ## Subscribing
 
@@ -30,7 +34,7 @@ After connecting, send a JSON subscribe message:
 }
 ```
 
-You'll receive an acknowledgment followed by a **snapshot** of recent matching events, then live updates.
+You'll receive an acknowledgment followed by a **snapshot** of up to 20 recent matching events, then live updates.
 
 ## Subscription types
 
@@ -59,20 +63,140 @@ All filters are optional. Omit filters to receive all events of the subscription
 | `status` | string | `"pending"`, `"confirmed"`, or `"all"` (default) |
 | `event_types` | string[] | Override default event types |
 
-## Event format
+## Event types
+
+All trade-related events include **enrichment fields** (`market_title`, `outcome`, `market_slug`, `event_title`) resolved from metadata.
+
+### settlement
+
+Decoded `matchOrders` transaction — either pending (from mempool) or confirmed (from block).
 
 ```json
 {
   "type": "settlement",
   "data": {
-    "tx_hash": "0x1a2b3c...",
+    "tx_hash": "0x1a2b3c4d5e6f...",
     "status": "Pending",
     "detected_at": 1709136043000,
-    "taker_wallet": "0xabcdef...",
-    "taker_token": "21742633...",
+    "taker_wallet": "0xabcdef1234567890...",
+    "taker_token": "21742633143463906290569404...",
     "taker_side": "BUY",
     "taker_price": 0.72,
-    "taker_size": 500.00
+    "taker_size": 500.00,
+    "market_title": "Will Bitcoin hit $100K in 2026?",
+    "outcome": "Yes",
+    "market_slug": "bitcoin-100k-2026",
+    "event_title": "Bitcoin Price Milestones",
+    "trades": [
+      {
+        "maker_wallet": "0x999888777666...",
+        "maker_order_id": "0xorder123...",
+        "matched_amount": 500.00,
+        "price": 0.72
+      }
+    ]
+  }
+}
+```
+
+### trade
+
+`OrderFilled` event from the CTF Exchange contract.
+
+```json
+{
+  "type": "trade",
+  "data": {
+    "tx_hash": "0x5e6f7a8b9c0d...",
+    "block_number": 54321000,
+    "log_index": 42,
+    "timestamp": 1709136045000,
+    "exchange": "CtfExchange",
+    "maker": "0x999888777666...",
+    "taker": "0xabcdef1234567890...",
+    "token_id": "21742633143463906290569404...",
+    "side": "BUY",
+    "price": 0.72,
+    "size": 500.00,
+    "market_title": "Will Bitcoin hit $100K in 2026?",
+    "outcome": "Yes",
+    "market_slug": "bitcoin-100k-2026"
+  }
+}
+```
+
+### status_update
+
+Notification when a pending settlement confirms on-chain.
+
+```json
+{
+  "type": "status_update",
+  "data": {
+    "tx_hash": "0x1a2b3c4d5e6f...",
+    "token_id": "21742633...",
+    "block_number": 54321000,
+    "confirmed_at": 1709136045000,
+    "pending_detected_at": 1709136043000,
+    "latency_ms": 2000,
+    "market_title": "Will Bitcoin hit $100K in 2026?",
+    "outcome": "Yes"
+  }
+}
+```
+
+### block
+
+New block summary with Polymarket-specific stats.
+
+```json
+{
+  "type": "block",
+  "data": {
+    "block_number": 54321000,
+    "block_hash": "0xblockhash...",
+    "timestamp": 1709136045000,
+    "tx_count": 150,
+    "polymarket_tx_count": 12,
+    "settlement_count": 8,
+    "trade_volume_usd": 34500.00
+  }
+}
+```
+
+### position_change
+
+ERC-1155 conditional token transfer.
+
+```json
+{
+  "type": "position_change",
+  "data": {
+    "tx_hash": "0xdef456...",
+    "block_number": 54321000,
+    "from": "0xaaa111...",
+    "to": "0xbbb222...",
+    "token_id": "21742633...",
+    "amount": 1000000000,
+    "transfer_type": "Single"
+  }
+}
+```
+
+### deposit
+
+USDC.e transfer to/from Polymarket contracts.
+
+```json
+{
+  "type": "deposit",
+  "data": {
+    "tx_hash": "0xccc789...",
+    "block_number": 54321000,
+    "from": "0xuser123...",
+    "to": "0xpolymarket_contract...",
+    "amount": 5000000000,
+    "direction": "Deposit"
   }
 }
 ```
@@ -93,6 +217,21 @@ Send periodic pings to prevent timeout:
 
 Response: `{"type": "pong"}`
 
+## JSON-RPC subscriptions
+
+PolyNode also supports standard Ethereum JSON-RPC subscriptions on the same WebSocket connection, making it a drop-in replacement for Alchemy/Infura WebSocket endpoints.
+
+```json
+{"jsonrpc": "2.0", "method": "eth_subscribe", "params": ["newHeads"], "id": 1}
+{"jsonrpc": "2.0", "method": "eth_subscribe", "params": ["newPendingTransactions"], "id": 2}
+{"jsonrpc": "2.0", "method": "eth_subscribe", "params": ["logs", {"address": "0x..."}], "id": 3}
+{"jsonrpc": "2.0", "method": "eth_unsubscribe", "params": ["0xsubscription_id"], "id": 4}
+```
+
+<Note>
+JSON-RPC subscriptions and PolyNode subscriptions coexist on the same WebSocket connection. You can use both simultaneously.
+</Note>
+
 ## Examples
 
 ### Track whale trades
@@ -109,9 +248,12 @@ ws.onopen = () => {
 };
 
 ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  if (data.type === "settlement") {
-    console.log(`Whale: ${data.data.taker_side} $${data.data.taker_size} @ ${data.data.taker_price}`);
+  const msg = JSON.parse(event.data);
+  if (msg.type === "settlement") {
+    console.log(
+      `Whale: ${msg.data.taker_side} $${msg.data.taker_size} @ ${msg.data.taker_price}`,
+      `on "${msg.data.market_title}" (${msg.data.outcome})`
+    );
   }
 };
 ```
@@ -124,7 +266,18 @@ ws.send(JSON.stringify({
   type: "markets",
   filters: {
     markets: ["21742633..."],
-    status: "pending",  // Only mempool events
+    status: "pending",  // Only mempool events — the killer feature
   },
 }));
+```
+
+### Track a wallet
+
+```javascript
+ws.send(JSON.stringify({
+  action: "subscribe",
+  type: "wallets",
+  filters: { wallets: ["0xabcdef..."] },
+}));
+// Receives: settlements, trades, position changes, deposits, status updates
 ```

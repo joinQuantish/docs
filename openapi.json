@@ -2,12 +2,15 @@
   "openapi": "3.1.0",
   "info": {
     "title": "PolyNode API",
-    "version": "1.0.0",
-    "description": "Real-time Polymarket data API. Decoded settlement transactions from the mempool — 2 seconds before on-chain confirmation. OHLCV candles, wallet tracking, and market metadata for 69,000+ markets.",
+    "description": "Real-time Polymarket data API with decoded mempool settlements, OHLCV candles, and full Polygon JSON-RPC proxy.",
     "contact": {
       "name": "PolyNode",
       "url": "https://polynode.dev"
-    }
+    },
+    "license": {
+      "name": ""
+    },
+    "version": "2.0.0"
   },
   "servers": [
     {
@@ -15,571 +18,65 @@
       "description": "Production"
     }
   ],
-  "security": [
-    {
-      "apiKey": []
-    }
-  ],
-  "components": {
-    "securitySchemes": {
-      "apiKey": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "x-api-key",
-        "description": "API key with `pn_live_` prefix. Pass via `x-api-key` header or `?key=` query parameter."
-      }
-    },
-    "schemas": {
-      "Error": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "string",
-            "description": "Human-readable error message"
-          }
-        },
-        "required": ["error"]
-      },
-      "Market": {
-        "type": "object",
-        "description": "Market object with metadata. Note: `/v1/markets/list` does not include `end_date`.",
-        "properties": {
-          "token_id": { "type": "string", "description": "Polymarket CLOB token identifier" },
-          "question": { "type": "string", "description": "Market question text" },
-          "slug": { "type": "string", "description": "URL-friendly slug" },
-          "outcomes": { "type": "array", "items": { "type": "string" }, "description": "Possible outcomes (e.g. [\"Yes\", \"No\"])" },
-          "condition_id": { "type": "string", "description": "CTF condition identifier" },
-          "end_date": { "type": "string", "format": "date-time", "description": "Market expiry date (ISO 8601). Present on /v1/markets, absent on /v1/markets/list." },
-          "category": { "type": "string", "description": "Market category" },
-          "market_type": { "type": "string", "description": "Market type (e.g. \"binary\")" },
-          "image": { "type": "string", "description": "Market image URL" },
-          "icon": { "type": "string", "description": "Market icon URL" },
-          "neg_risk": { "type": "boolean", "description": "Whether the market uses neg-risk framework" },
-          "created_at": { "type": "string", "format": "date-time", "description": "When the market was created" },
-          "last_price": { "type": ["number", "null"], "description": "Last settlement price (null if no trades)" },
-          "volume_24h": { "type": "number", "description": "24-hour trading volume in USD" },
-          "trade_count_24h": { "type": "integer", "description": "Number of trades in last 24 hours" },
-          "last_trade_at": { "type": ["integer", "null"], "description": "Unix timestamp (ms) of last trade" }
-        }
-      },
-      "MarketDetail": {
-        "allOf": [
-          { "$ref": "#/components/schemas/Market" },
-          {
-            "type": "object",
-            "properties": {
-              "description": { "type": "string", "description": "Full market description" },
-              "liquidity": { "type": "number", "description": "Total market liquidity" },
-              "volume": { "type": "number", "description": "All-time trading volume" },
-              "last_status": { "type": ["string", "null"], "enum": ["pending", "confirmed", null], "description": "\"pending\" or \"confirmed\" (null if no trades)" }
-            }
-          }
-        ]
-      },
-      "MarketBySlug": {
-        "type": "object",
-        "properties": {
-          "condition_id": { "type": "string", "description": "CTF condition identifier" },
-          "question": { "type": "string" },
-          "slug": { "type": "string" },
-          "outcomes": { "type": "array", "items": { "type": "string" } },
-          "end_date": { "type": "string", "format": "date-time" },
-          "category": { "type": "string" },
-          "market_type": { "type": "string" },
-          "active": { "type": "boolean", "description": "Whether the market is accepting orders" },
-          "closed": { "type": "boolean", "description": "Whether the market has resolved" },
-          "image": { "type": "string" },
-          "icon": { "type": "string" },
-          "neg_risk": { "type": "boolean" },
-          "created_at": { "type": "string", "format": "date-time" },
-          "liquidity": { "type": "number" },
-          "volume": { "type": "number" },
-          "description": { "type": "string" },
-          "event_slug": { "type": "string", "description": "Parent event slug" },
-          "event_title": { "type": "string", "description": "Parent event title" },
-          "group_item_title": { "type": "string", "description": "Title within the event group" },
-          "outcome_prices": {
-            "type": "object",
-            "additionalProperties": { "type": "number" },
-            "description": "Map of outcome name to last price"
-          },
-          "tokens": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "token_id": { "type": "string" },
-                "last_price": { "type": ["number", "null"] },
-                "volume_24h": { "type": "number" },
-                "trade_count_24h": { "type": "integer" },
-                "last_trade_at": { "type": ["integer", "null"] }
-              }
-            }
-          }
-        }
-      },
-      "Settlement": {
-        "type": "object",
-        "description": "Settlement event from Redis. All values are returned as strings. The `trades_json` field is a JSON-encoded string containing the maker fills array.",
-        "properties": {
-          "id": { "type": "string", "description": "Redis stream entry ID" },
-          "tx_hash": { "type": "string", "description": "Polygon transaction hash" },
-          "status": { "type": "string", "enum": ["pending", "confirmed"], "description": "\"pending\" (mempool) or \"confirmed\" (on-chain)" },
-          "detected_at": { "type": "string", "description": "When the TX was first seen (Unix ms, as string)" },
-          "block_number": { "type": "string", "description": "Block number (\"0\" if pending)" },
-          "taker_wallet": { "type": "string", "description": "Taker's wallet address" },
-          "taker_token": { "type": "string", "description": "Polymarket token ID being traded" },
-          "taker_side": { "type": "string", "enum": ["BUY", "SELL"], "description": "BUY or SELL" },
-          "taker_price": { "type": "string", "description": "Execution price (as string, e.g. \"0.72\")" },
-          "taker_size": { "type": "string", "description": "Trade size in USD (as string, e.g. \"500.00\")" },
-          "trades_json": { "type": "string", "description": "JSON-encoded array of maker fills. Parse with JSON.parse(). Each fill has: `maker`, `signer`, `taker`, `token_id`, `side`, `price`, `size`, `maker_amount`, `taker_amount`." }
-        }
-      },
-      "Candle": {
-        "type": "object",
-        "properties": {
-          "timestamp": { "type": "integer", "description": "Candle open time (Unix milliseconds)" },
-          "open": { "type": "number", "description": "Opening price" },
-          "high": { "type": "number", "description": "Highest price" },
-          "low": { "type": "number", "description": "Lowest price" },
-          "close": { "type": "number", "description": "Closing price" },
-          "volume": { "type": "number", "description": "Total volume in USD" }
-        }
-      },
-      "SearchResult": {
-        "type": "object",
-        "properties": {
-          "condition_id": { "type": "string" },
-          "question": { "type": "string" },
-          "slug": { "type": "string" },
-          "outcomes": { "type": "array", "items": { "type": "string" } },
-          "end_date": { "type": "string", "format": "date-time" },
-          "category": { "type": "string" },
-          "market_type": { "type": "string" },
-          "active": { "type": "boolean" },
-          "token_ids": { "type": "array", "items": { "type": "string" }, "description": "All token IDs for this market" },
-          "image": { "type": "string" },
-          "icon": { "type": "string" },
-          "neg_risk": { "type": "boolean" },
-          "created_at": { "type": "string", "format": "date-time" },
-          "last_price": { "type": ["number", "null"] },
-          "volume_24h": { "type": "number" }
-        }
-      },
-      "WalletActivity": {
-        "type": "object",
-        "properties": {
-          "last_active": { "type": ["integer", "null"], "description": "Last activity timestamp (Unix ms)" },
-          "trade_count": { "type": "integer" },
-          "trade_volume_usd": { "type": "number" },
-          "transfer_count": { "type": "integer" },
-          "deposit_count": { "type": "integer" },
-          "deposit_volume_usd": { "type": "number" }
-        }
-      }
-    }
-  },
   "paths": {
-    "/v1/markets": {
+    "/healthz": {
       "get": {
-        "operationId": "getMarkets",
-        "summary": "Top markets",
-        "description": "Returns the top markets sorted by 24h trading volume, enriched with metadata.",
-        "tags": ["Markets"],
-        "parameters": [
-          {
-            "name": "count",
-            "in": "query",
-            "schema": { "type": "integer", "default": 100, "maximum": 1000 },
-            "description": "Number of markets to return. Max 1000."
-          }
+        "tags": [
+          "System"
         ],
+        "summary": "Health check",
+        "description": "Liveness probe. Returns 200 OK if the server is running.",
+        "operationId": "healthz",
         "responses": {
           "200": {
-            "description": "List of top markets",
+            "description": "Server is alive",
             "content": {
-              "application/json": {
+              "text/plain": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "count": { "type": "integer", "description": "Number of markets returned" },
-                    "total": { "type": "integer", "description": "Total markets tracked by the system" },
-                    "markets": { "type": "array", "items": { "$ref": "#/components/schemas/Market" } }
-                  }
+                  "type": "string"
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Readiness check",
+        "description": "Returns 200 if node is connected and Redis is reachable, 503 otherwise.",
+        "operationId": "readyz",
+        "responses": {
+          "200": {
+            "description": "System ready"
           },
-          "401": { "description": "Missing or invalid API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "429": { "description": "Rate limit exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-    "/v1/markets/{token_id}": {
-      "get": {
-        "operationId": "getMarketDetail",
-        "summary": "Market detail",
-        "description": "Returns detailed data for a single market by its CLOB token ID, including full metadata.",
-        "tags": ["Markets"],
-        "parameters": [
-          {
-            "name": "token_id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" },
-            "description": "Polymarket CLOB token identifier"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Market detail",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarketDetail" } } }
-          },
-          "404": { "description": "Market not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-    "/v1/markets/slug/{slug}": {
-      "get": {
-        "operationId": "getMarketBySlug",
-        "summary": "Market by slug",
-        "description": "Look up a market by its Polymarket URL slug. Returns full metadata, all token IDs, and outcome prices.",
-        "tags": ["Markets"],
-        "parameters": [
-          {
-            "name": "slug",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" },
-            "description": "The market's URL slug (e.g. \"bitcoin-100k-2026\")"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Market data with tokens and outcome prices",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarketBySlug" } } }
-          },
-          "404": { "description": "No market found with that slug", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-    "/v1/markets/condition/{id}": {
-      "get": {
-        "operationId": "getMarketByCondition",
-        "summary": "Market by condition ID",
-        "description": "Look up a market by its CTF condition ID. Same response format as slug lookup.",
-        "tags": ["Markets"],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" },
-            "description": "CTF condition identifier (hex)"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Market data with tokens and outcome prices",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MarketBySlug" } } }
-          },
-          "404": { "description": "No market found with that condition ID", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-    "/v1/markets/list": {
-      "get": {
-        "operationId": "listMarkets",
-        "summary": "Filtered market listing",
-        "description": "Filtered, sorted, and paginated market listing. Supports category filtering, volume thresholds, and activity filters. Note: does not include `end_date` in market objects.",
-        "tags": ["Markets"],
-        "parameters": [
-          { "name": "count", "in": "query", "schema": { "type": "integer", "default": 50, "maximum": 500 }, "description": "Results per page. Max 500." },
-          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["volume", "price", "updated"], "default": "volume" }, "description": "Sort field." },
-          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "Filter by category (case-insensitive substring match)." },
-          { "name": "min_volume", "in": "query", "schema": { "type": "number", "default": 0 }, "description": "Minimum 24h volume in USD." },
-          { "name": "active_only", "in": "query", "schema": { "type": "boolean", "default": false }, "description": "Only markets with trade activity in last hour." },
-          { "name": "cursor", "in": "query", "schema": { "type": "integer", "default": 0 }, "description": "Pagination offset." }
-        ],
-        "responses": {
-          "200": {
-            "description": "Paginated market list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "count": { "type": "integer" },
-                    "total": { "type": "integer" },
-                    "cursor": { "type": "integer" },
-                    "next_cursor": { "type": ["integer", "null"], "description": "Next page offset, null if no more results" },
-                    "markets": { "type": "array", "items": { "$ref": "#/components/schemas/Market" } }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/search": {
-      "get": {
-        "operationId": "searchMarkets",
-        "summary": "Search markets",
-        "description": "Full-text search across 35K+ market questions. Sub-millisecond response times.",
-        "tags": ["Markets"],
-        "parameters": [
-          { "name": "q", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Search query (case-insensitive substring match)." },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "maximum": 100 }, "description": "Max results. Max 100." }
-        ],
-        "responses": {
-          "200": {
-            "description": "Search results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "query": { "type": "string" },
-                    "count": { "type": "integer" },
-                    "total": { "type": "integer" },
-                    "results": { "type": "array", "items": { "$ref": "#/components/schemas/SearchResult" } }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "description": "Missing required `q` parameter", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-    "/v1/stats/{token_id}": {
-      "get": {
-        "operationId": "getMarketStats",
-        "summary": "Market statistics",
-        "description": "Comprehensive market statistics including current prices and 24-hour OHLCV data computed from hourly candles.",
-        "tags": ["Pricing"],
-        "parameters": [
-          { "name": "token_id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Polymarket CLOB token identifier" }
-        ],
-        "responses": {
-          "200": {
-            "description": "Market stats with 24h OHLCV",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "token_id": { "type": "string" },
-                    "question": { "type": "string" },
-                    "slug": { "type": "string" },
-                    "outcomes": { "type": "array", "items": { "type": "string" } },
-                    "condition_id": { "type": "string" },
-                    "end_date": { "type": "string", "format": "date-time" },
-                    "category": { "type": "string" },
-                    "market_type": { "type": "string" },
-                    "image": { "type": "string" },
-                    "icon": { "type": "string" },
-                    "neg_risk": { "type": "boolean" },
-                    "created_at": { "type": "string", "format": "date-time" },
-                    "price": {
-                      "type": "object",
-                      "properties": { "last": { "type": ["number", "null"] } }
-                    },
-                    "volume_24h": { "type": "number" },
-                    "trade_count_24h": { "type": "integer" },
-                    "last_trade_at": { "type": ["integer", "null"] },
-                    "ohlcv_24h": {
-                      "type": "object",
-                      "description": "24-hour OHLCV (present if candle data exists)",
-                      "properties": {
-                        "open": { "type": "number" },
-                        "high": { "type": "number" },
-                        "low": { "type": "number" },
-                        "close": { "type": "number" },
-                        "volume": { "type": "number" },
-                        "candle_count": { "type": "integer" }
-                      }
-                    },
-                    "liquidity": { "type": "number" },
-                    "volume": { "type": "number" }
-                  }
-                }
-              }
-            }
-          },
-          "404": { "description": "Market not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-    "/v1/candles/{token_id}": {
-      "get": {
-        "operationId": "getCandles",
-        "summary": "OHLCV candles",
-        "description": "Returns OHLCV (Open, High, Low, Close, Volume) price candles for a market token. Built from live settlement data.",
-        "tags": ["Pricing"],
-        "parameters": [
-          { "name": "token_id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Polymarket CLOB token identifier" },
-          { "name": "resolution", "in": "query", "schema": { "type": "string", "enum": ["1m", "5m", "15m", "1h", "4h", "1d"], "default": "1h" }, "description": "Candle resolution." },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 1000 }, "description": "Max candles to return. Max 1000." }
-        ],
-        "responses": {
-          "200": {
-            "description": "OHLCV candle data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "token_id": { "type": "string" },
-                    "question": { "type": "string" },
-                    "slug": { "type": "string" },
-                    "resolution": { "type": "string" },
-                    "count": { "type": "integer" },
-                    "candles": { "type": "array", "items": { "$ref": "#/components/schemas/Candle" } }
-                  }
-                }
-              }
-            }
-          },
-          "400": { "description": "Invalid resolution value", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-    "/v1/settlements/recent": {
-      "get": {
-        "operationId": "getRecentSettlements",
-        "summary": "Recent settlements",
-        "description": "Returns the most recent decoded settlement transactions. Includes both **pending** (mempool) and **confirmed** (on-chain) settlements. Pending settlements are decoded from the mempool ~2 seconds before on-chain confirmation.",
-        "tags": ["Settlements"],
-        "parameters": [
-          { "name": "count", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 1000 }, "description": "Number of settlements to return. Max 1000." }
-        ],
-        "responses": {
-          "200": {
-            "description": "Recent settlements",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "count": { "type": "integer" },
-                    "settlements": { "type": "array", "items": { "$ref": "#/components/schemas/Settlement" } }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/settlements/wallet/{addr}": {
-      "get": {
-        "operationId": "getSettlementsByWallet",
-        "summary": "Settlements by wallet",
-        "description": "Returns settlements involving a specific wallet address. Useful for tracking whale activity or monitoring your own trades.",
-        "tags": ["Settlements"],
-        "parameters": [
-          { "name": "addr", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Ethereum wallet address (0x...)" },
-          { "name": "count", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 1000 }, "description": "Max results. Max 1000." }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet settlements",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "wallet": { "type": "string" },
-                    "count": { "type": "integer" },
-                    "settlements": { "type": "array", "items": { "$ref": "#/components/schemas/Settlement" } }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/settlements/token/{id}": {
-      "get": {
-        "operationId": "getSettlementsByToken",
-        "summary": "Settlements by token",
-        "description": "Returns settlements for a specific Polymarket token ID. Useful for monitoring activity on a particular market.",
-        "tags": ["Settlements"],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Polymarket CLOB token identifier" },
-          { "name": "count", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 1000 }, "description": "Max results. Max 1000." }
-        ],
-        "responses": {
-          "200": {
-            "description": "Token settlements",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "token_id": { "type": "string" },
-                    "count": { "type": "integer" },
-                    "settlements": { "type": "array", "items": { "$ref": "#/components/schemas/Settlement" } }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/wallets/{addr}": {
-      "get": {
-        "operationId": "getWalletActivity",
-        "summary": "Wallet activity",
-        "description": "Returns wallet activity summary including trade count, volume, deposits, and last active time.",
-        "tags": ["Wallets"],
-        "parameters": [
-          { "name": "addr", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Ethereum wallet address (0x...)" }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet activity summary",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "wallet": { "type": "string" },
-                    "activity": { "$ref": "#/components/schemas/WalletActivity" }
-                  }
-                }
-              }
-            }
+          "503": {
+            "description": "System not ready"
           }
         }
       }
     },
     "/rpc": {
       "post": {
-        "operationId": "jsonRpcProxy",
+        "tags": [
+          "RPC"
+        ],
         "summary": "JSON-RPC proxy",
-        "description": "JSON-RPC 2.0 compatible endpoint. Proxies standard `eth_*` methods to the Polygon node with caching. Also supports custom `pn_*` methods: `pn_getMarketPrice`, `pn_getRecentTrades`, `pn_getPendingSettlements`, `pn_getWalletActivity`, `pn_getStatus`. Supports single and batch requests.",
-        "tags": ["RPC"],
+        "description": "JSON-RPC 2.0 proxy supporting standard eth_*/net_* methods (forwarded to full Polygon node with caching) and custom pn_* methods (served from in-memory state). Supports single and batch requests (max 100 per batch).",
+        "operationId": "rpc_handler",
         "requestBody": {
-          "required": true,
+          "description": "JSON-RPC 2.0 request (single object or array for batch)",
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "jsonrpc": { "type": "string", "enum": ["2.0"] },
-                  "method": { "type": "string", "description": "RPC method name (eth_* or pn_*)" },
-                  "params": { "type": "array", "description": "Method parameters" },
-                  "id": { "type": ["integer", "string"], "description": "Request identifier" }
-                },
-                "required": ["jsonrpc", "method", "id"]
+                "$ref": "#/components/schemas/JsonRpcRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -587,19 +84,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "jsonrpc": { "type": "string" },
-                    "result": { "description": "Method-specific result" },
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": { "type": "integer" },
-                        "message": { "type": "string" }
-                      }
-                    },
-                    "id": { "type": ["integer", "string"] }
-                  }
+                  "$ref": "#/components/schemas/JsonRpcResponse"
                 }
               }
             }
@@ -607,65 +92,103 @@
         }
       }
     },
-    "/v1/status": {
+    "/v1/candles/{token_id}": {
       "get": {
-        "operationId": "getStatus",
-        "summary": "System status",
-        "description": "Returns comprehensive system status including node connectivity, stream lengths, and memory usage.",
-        "tags": ["System"],
-        "parameters": [],
+        "tags": [
+          "Pricing"
+        ],
+        "summary": "OHLCV candles",
+        "description": "Returns OHLCV price candles for a token at the specified resolution.",
+        "operationId": "get_candles",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "description": "Polymarket token ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resolution",
+            "in": "query",
+            "description": "Candle resolution: 1m, 5m, 15m, 1h, 4h, 1d (default: 1h)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of candles (default 100, max 1000)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "System status",
+            "description": "OHLCV candles"
+          },
+          "400": {
+            "description": "Invalid resolution",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "node_connected": { "type": "boolean", "description": "Whether the Bor node WebSocket is connected" },
-                    "uptime_seconds": { "type": "integer", "description": "API server uptime in seconds" },
-                    "stream_length": { "type": "integer", "description": "Number of entries in the settlements Redis stream" },
-                    "events_stream_length": { "type": "integer", "description": "Number of entries in the unified events stream" },
-                    "pending_txs": { "type": "integer", "description": "Number of currently pending (unconfirmed) transactions" },
-                    "ws_subscribers": { "type": "integer", "description": "Active WebSocket subscriber count" },
-                    "redis_memory": { "type": "string", "description": "Redis memory usage (human-readable)" },
-                    "state": {
-                      "type": "object",
-                      "properties": {
-                        "market_count": { "type": "integer", "description": "Total markets in the state engine" },
-                        "wallet_count": { "type": "integer", "description": "Tracked wallet count" },
-                        "metadata_count": { "type": "integer", "description": "Number of enriched market metadata entries" },
-                        "events_buffered": { "type": "integer", "description": "Events in the recent-events buffer" },
-                        "events_processed": { "type": "integer", "description": "Total events processed since startup" },
-                        "latest_block": { "type": "integer", "description": "Latest block number seen" }
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v1/keys": {
       "post": {
-        "operationId": "generateApiKey",
+        "tags": [
+          "System"
+        ],
         "summary": "Generate API key",
-        "description": "Generate a new API key. Rate limited to 3 per IP per hour. The key cannot be retrieved after creation — store it securely.",
-        "tags": ["System"],
-        "security": [],
+        "description": "Generates a new API key. Rate limited to 3 per IP per hour. The key is returned only once and cannot be retrieved again.",
+        "operationId": "create_api_key",
         "requestBody": {
+          "description": "Optional key name",
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "name": { "type": "string", "description": "Label for the key. Defaults to \"unnamed\"." }
-                }
+                "$ref": "#/components/schemas/CreateKeyBody"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "201": {
@@ -673,67 +196,1566 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "api_key": { "type": "string", "description": "The API key (pn_live_...). Store securely." },
-                    "name": { "type": "string" },
-                    "rate_limit_per_minute": { "type": "integer" },
-                    "message": { "type": "string" }
-                  }
+                  "$ref": "#/components/schemas/ApiKeyResponse"
                 }
               }
             }
           },
-          "429": { "description": "Too many key generation requests (max 3 per hour)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      }
-    },
-    "/healthz": {
-      "get": {
-        "operationId": "healthCheck",
-        "summary": "Health check",
-        "description": "Liveness probe. Returns 200 if the API server is running.",
-        "tags": ["System"],
-        "security": [],
-        "responses": {
-          "200": { "description": "ok", "content": { "text/plain": { "schema": { "type": "string", "example": "ok" } } } }
-        }
-      }
-    },
-    "/readyz": {
-      "get": {
-        "operationId": "readinessCheck",
-        "summary": "Readiness check",
-        "description": "Readiness probe. Returns 200 if the node is synced and Redis is connected.",
-        "tags": ["System"],
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Ready",
+          "429": {
+            "description": "Key generation rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": { "type": "string", "enum": ["ready", "not ready"] },
-                    "node": { "type": "boolean", "description": "Whether the Bor node is connected" },
-                    "redis": { "type": "boolean", "description": "Whether Redis is connected" }
-                  }
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/markets": {
+      "get": {
+        "tags": [
+          "Markets"
+        ],
+        "summary": "Top markets",
+        "description": "Returns top markets sorted by 24-hour volume. Includes metadata enrichment when available.",
+        "operationId": "get_markets",
+        "parameters": [
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Number of markets (default 100, max 1000)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top markets by volume"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/markets/condition/{id}": {
+      "get": {
+        "tags": [
+          "Markets"
+        ],
+        "summary": "Market by condition ID",
+        "description": "Looks up a market by its Polymarket condition ID. Returns full metadata, all token IDs with prices, and outcome prices.",
+        "operationId": "get_market_by_condition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Polymarket condition ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market data with all tokens"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
           },
-          "503": { "description": "Not ready", "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string" }, "node": { "type": "boolean" }, "redis": { "type": "boolean" } } } } } }
-        }
+          "404": {
+            "description": "Market not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/markets/list": {
+      "get": {
+        "tags": [
+          "Markets"
+        ],
+        "summary": "Filtered market listing",
+        "description": "Returns a filtered, paginated list of markets. Supports sorting, category filtering, and volume thresholds.",
+        "operationId": "get_markets_filtered",
+        "parameters": [
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Page size (default 50, max 500)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field: volume (default), price, updated",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Filter by category (case-insensitive substring match)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_volume",
+            "in": "query",
+            "description": "Minimum 24h volume in USD",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "active_only",
+            "in": "query",
+            "description": "Only markets with trades in the last hour",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Pagination cursor (offset)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Filtered market list with pagination"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/markets/slug/{slug}": {
+      "get": {
+        "tags": [
+          "Markets"
+        ],
+        "summary": "Market by slug",
+        "description": "Looks up a market by its URL slug. Returns full metadata, all token IDs with prices, and outcome prices.",
+        "operationId": "get_market_by_slug",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Market URL slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market data with all tokens"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Market not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/markets/{id}": {
+      "get": {
+        "tags": [
+          "Markets"
+        ],
+        "summary": "Market detail",
+        "description": "Returns detailed market data for a specific token ID, including metadata, liquidity, and description.",
+        "operationId": "get_market_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Polymarket token ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market detail"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Market not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/search": {
+      "get": {
+        "tags": [
+          "Markets"
+        ],
+        "summary": "Search markets",
+        "description": "Full-text search across all market questions. Sub-millisecond response times.",
+        "operationId": "search_markets",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Search query string",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max results (default 20, max 100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results"
+          },
+          "400": {
+            "description": "Missing query parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/settlements/recent": {
+      "get": {
+        "tags": [
+          "Settlements"
+        ],
+        "summary": "Recent settlements",
+        "description": "Returns the most recent decoded settlements (pending + confirmed) from the mempool and confirmed blocks.",
+        "operationId": "get_recent_settlements",
+        "parameters": [
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Number of settlements to return (default 100, max 1000)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key (alternative to x-api-key header)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of settlements"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/settlements/token/{id}": {
+      "get": {
+        "tags": [
+          "Settlements"
+        ],
+        "summary": "Settlements by token",
+        "description": "Returns settlements for a specific Polymarket token ID.",
+        "operationId": "get_token_settlements",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Polymarket token ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Number of settlements (default 100, max 1000)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settlements for token"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/settlements/wallet/{addr}": {
+      "get": {
+        "tags": [
+          "Settlements"
+        ],
+        "summary": "Settlements by wallet",
+        "description": "Returns settlements involving a specific wallet address.",
+        "operationId": "get_wallet_settlements",
+        "parameters": [
+          {
+            "name": "addr",
+            "in": "path",
+            "description": "Wallet address (0x...)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Number of settlements (default 100, max 1000)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settlements for wallet"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/stats/{token_id}": {
+      "get": {
+        "tags": [
+          "Pricing"
+        ],
+        "summary": "Market statistics",
+        "description": "Returns market statistics including last price, 24h volume, and 24-hour OHLCV derived from hourly candles.",
+        "operationId": "get_market_stats",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "description": "Polymarket token ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market statistics"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Market not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/status": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "System status",
+        "description": "Returns system status including node connectivity, uptime, stream lengths, and state engine summary.",
+        "operationId": "get_status",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "System status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/wallets/{addr}": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Wallet activity",
+        "description": "Returns activity summary for a wallet address including trade count, volume, transfers, and deposits.",
+        "operationId": "get_wallet_activity",
+        "parameters": [
+          {
+            "name": "addr",
+            "in": "path",
+            "description": "Wallet address (0x...)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet activity summary"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No activity found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     }
   },
-  "tags": [
-    { "name": "Markets", "description": "Market discovery, search, and metadata" },
-    { "name": "Pricing", "description": "OHLCV candles and market statistics" },
-    { "name": "Settlements", "description": "Decoded mempool and on-chain settlements" },
-    { "name": "Wallets", "description": "Wallet activity and tracking" },
-    { "name": "RPC", "description": "JSON-RPC 2.0 compatible proxy" },
-    { "name": "System", "description": "API keys, health checks, and status" }
+  "components": {
+    "schemas": {
+      "ApiKeyResponse": {
+        "type": "object",
+        "required": [
+          "api_key",
+          "name",
+          "rate_limit_per_minute",
+          "message"
+        ],
+        "properties": {
+          "api_key": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rate_limit_per_minute": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "BlockEvent": {
+        "type": "object",
+        "description": "Summary of a new confirmed block with Polymarket-relevant stats.",
+        "required": [
+          "block_number",
+          "block_hash",
+          "timestamp",
+          "parent_hash",
+          "tx_count",
+          "polymarket_tx_count",
+          "settlement_count",
+          "trade_volume_usd"
+        ],
+        "properties": {
+          "block_hash": {
+            "type": "string"
+          },
+          "block_number": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "parent_hash": {
+            "type": "string"
+          },
+          "polymarket_tx_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "settlement_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "trade_volume_usd": {
+            "type": "number",
+            "format": "double"
+          },
+          "tx_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "Candle": {
+        "type": "object",
+        "description": "A single OHLCV candle.",
+        "required": [
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume",
+          "timestamp"
+        ],
+        "properties": {
+          "close": {
+            "type": "number",
+            "format": "double"
+          },
+          "high": {
+            "type": "number",
+            "format": "double"
+          },
+          "low": {
+            "type": "number",
+            "format": "double"
+          },
+          "open": {
+            "type": "number",
+            "format": "double"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Candle bucket start timestamp (ms, floored to resolution)."
+          },
+          "volume": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "CandleResolution": {
+        "type": "string",
+        "description": "Supported candle resolutions.",
+        "enum": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d"
+        ]
+      },
+      "CreateKeyBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "DecodedTrade": {
+        "type": "object",
+        "description": "Decoded trade information from a matchOrders transaction.",
+        "required": [
+          "maker",
+          "signer",
+          "taker",
+          "token_id",
+          "side",
+          "price",
+          "size",
+          "maker_amount",
+          "taker_amount"
+        ],
+        "properties": {
+          "maker": {
+            "type": "string"
+          },
+          "maker_amount": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "side": {
+            "$ref": "#/components/schemas/TradeSide"
+          },
+          "signer": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number",
+            "format": "double"
+          },
+          "taker": {
+            "type": "string"
+          },
+          "taker_amount": {
+            "type": "string"
+          },
+          "token_id": {
+            "type": "string"
+          }
+        }
+      },
+      "DepositDirection": {
+        "type": "string",
+        "enum": [
+          "deposit",
+          "withdrawal"
+        ]
+      },
+      "DepositEvent": {
+        "type": "object",
+        "description": "USDC.e transfer to/from Polymarket contracts.",
+        "required": [
+          "tx_hash",
+          "block_number",
+          "log_index",
+          "timestamp",
+          "from",
+          "to",
+          "amount",
+          "direction"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "block_number": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "direction": {
+            "$ref": "#/components/schemas/DepositDirection"
+          },
+          "from": {
+            "type": "string"
+          },
+          "log_index": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "to": {
+            "type": "string"
+          },
+          "tx_hash": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "EventStatus": {
+        "type": "string",
+        "description": "Status of an event — pending (mempool) or confirmed (in a block).",
+        "enum": [
+          "pending",
+          "confirmed"
+        ]
+      },
+      "Exchange": {
+        "type": "string",
+        "description": "Which exchange contract emitted the event.",
+        "enum": [
+          "ctf_exchange",
+          "neg_risk_ctf_exchange"
+        ]
+      },
+      "JsonRpcError": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "JsonRpcRequest": {
+        "type": "object",
+        "description": "JSON-RPC request.",
+        "required": [
+          "method",
+          "id"
+        ],
+        "properties": {
+          "id": {},
+          "jsonrpc": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "params": {}
+        }
+      },
+      "JsonRpcResponse": {
+        "type": "object",
+        "description": "JSON-RPC response.",
+        "required": [
+          "jsonrpc",
+          "id"
+        ],
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonRpcError"
+              }
+            ]
+          },
+          "id": {},
+          "jsonrpc": {
+            "type": "string"
+          },
+          "result": {}
+        }
+      },
+      "MarketState": {
+        "type": "object",
+        "description": "Live state for a single market (identified by token ID).",
+        "required": [
+          "last_price",
+          "last_trade_at",
+          "volume_24h",
+          "trade_count_24h",
+          "last_status"
+        ],
+        "properties": {
+          "last_price": {
+            "type": "number",
+            "format": "double",
+            "description": "Last traded price (0-1 for binary, varies for multi-outcome)."
+          },
+          "last_status": {
+            "$ref": "#/components/schemas/EventStatus",
+            "description": "Last known event status for this market."
+          },
+          "last_trade_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Timestamp of last trade (ms)."
+          },
+          "trade_count_24h": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Rolling 24h trade count.",
+            "minimum": 0
+          },
+          "volume_24h": {
+            "type": "number",
+            "format": "double",
+            "description": "Rolling 24h volume in USD."
+          }
+        }
+      },
+      "PositionChangeEvent": {
+        "type": "object",
+        "description": "Token transfer from the Conditional Tokens (ERC-1155) contract.",
+        "required": [
+          "tx_hash",
+          "block_number",
+          "log_index",
+          "timestamp",
+          "from",
+          "to",
+          "token_id",
+          "amount",
+          "transfer_type"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "block_number": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "from": {
+            "type": "string"
+          },
+          "log_index": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "to": {
+            "type": "string"
+          },
+          "token_id": {
+            "type": "string"
+          },
+          "transfer_type": {
+            "$ref": "#/components/schemas/TransferType"
+          },
+          "tx_hash": {
+            "type": "string"
+          }
+        }
+      },
+      "SettlementEvent": {
+        "type": "object",
+        "description": "A decoded settlement event from matchOrders calldata.",
+        "required": [
+          "tx_hash",
+          "status",
+          "detected_at",
+          "taker_wallet",
+          "taker_token",
+          "taker_side",
+          "taker_price",
+          "taker_size",
+          "trades"
+        ],
+        "properties": {
+          "block_number": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "detected_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "event_title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Parent event title if this market is part of a group."
+          },
+          "market_slug": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "URL slug for the market (e.g. \"bitcoin-100k-2026\")."
+          },
+          "market_title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Human-readable market question (e.g. \"Will Bitcoin reach $100K?\")."
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Outcome name for this token (e.g. \"Yes\", \"No\", \"Trump\")."
+          },
+          "status": {
+            "$ref": "#/components/schemas/EventStatus"
+          },
+          "taker_price": {
+            "type": "number",
+            "format": "double"
+          },
+          "taker_side": {
+            "type": "string"
+          },
+          "taker_size": {
+            "type": "number",
+            "format": "double"
+          },
+          "taker_token": {
+            "type": "string"
+          },
+          "taker_wallet": {
+            "type": "string"
+          },
+          "trades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DecodedTrade"
+            }
+          },
+          "tx_hash": {
+            "type": "string"
+          }
+        }
+      },
+      "StateSummary": {
+        "type": "object",
+        "required": [
+          "market_count",
+          "wallet_count",
+          "metadata_count",
+          "events_buffered",
+          "events_processed",
+          "latest_block"
+        ],
+        "properties": {
+          "events_buffered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "events_processed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "latest_block": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "market_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "metadata_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wallet_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "StatusResponse": {
+        "type": "object",
+        "required": [
+          "node_connected",
+          "uptime_seconds",
+          "stream_length",
+          "events_stream_length",
+          "pending_txs",
+          "ws_subscribers",
+          "redis_memory",
+          "state"
+        ],
+        "properties": {
+          "events_stream_length": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "node_connected": {
+            "type": "boolean"
+          },
+          "pending_txs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "redis_memory": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/StateSummary"
+          },
+          "stream_length": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "uptime_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "ws_subscribers": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "StatusUpdateEvent": {
+        "type": "object",
+        "description": "Notification that a previously-pending settlement is now confirmed.",
+        "required": [
+          "tx_hash",
+          "token_id",
+          "block_number",
+          "confirmed_at",
+          "pending_detected_at",
+          "latency_ms"
+        ],
+        "properties": {
+          "block_number": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "confirmed_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "latency_ms": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Time from pending detection to block confirmation (ms)."
+          },
+          "market_title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pending_detected_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "token_id": {
+            "type": "string"
+          },
+          "tx_hash": {
+            "type": "string"
+          }
+        }
+      },
+      "TradeEvent": {
+        "type": "object",
+        "description": "A confirmed trade from OrderFilled event log on CTF Exchange.",
+        "required": [
+          "tx_hash",
+          "block_number",
+          "log_index",
+          "timestamp",
+          "exchange",
+          "maker",
+          "taker",
+          "token_id",
+          "side",
+          "price",
+          "size",
+          "maker_amount",
+          "taker_amount"
+        ],
+        "properties": {
+          "block_number": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "exchange": {
+            "$ref": "#/components/schemas/Exchange"
+          },
+          "log_index": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "maker": {
+            "type": "string"
+          },
+          "maker_amount": {
+            "type": "string"
+          },
+          "market_slug": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "market_title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "side": {
+            "$ref": "#/components/schemas/TradeSide"
+          },
+          "size": {
+            "type": "number",
+            "format": "double"
+          },
+          "taker": {
+            "type": "string"
+          },
+          "taker_amount": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "token_id": {
+            "type": "string"
+          },
+          "tx_hash": {
+            "type": "string"
+          }
+        }
+      },
+      "TradeSide": {
+        "type": "string",
+        "enum": [
+          "BUY",
+          "SELL"
+        ]
+      },
+      "TransferType": {
+        "type": "string",
+        "enum": [
+          "single",
+          "batch"
+        ]
+      },
+      "WalletActivity": {
+        "type": "object",
+        "description": "Activity summary for a tracked wallet.",
+        "required": [
+          "last_active",
+          "trade_count",
+          "trade_volume_usd",
+          "transfer_count",
+          "deposit_count",
+          "deposit_volume_usd"
+        ],
+        "properties": {
+          "deposit_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of USDC deposits/withdrawals.",
+            "minimum": 0
+          },
+          "deposit_volume_usd": {
+            "type": "number",
+            "format": "double",
+            "description": "Total deposit volume in USD."
+          },
+          "last_active": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Last activity timestamp (ms)."
+          },
+          "trade_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of trades in tracking window.",
+            "minimum": 0
+          },
+          "trade_volume_usd": {
+            "type": "number",
+            "format": "double",
+            "description": "Total trade volume in USD."
+          },
+          "transfer_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of token transfers.",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "api_key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      }
+    }
+  },
+  "security": [
+    {
+      "api_key": []
+    }
   ]
 }

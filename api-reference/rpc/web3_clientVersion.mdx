@@ -1,0 +1,34 @@
+---
+title: "web3_clientVersion"
+description: "Returns the PolyNode client version string."
+---
+
+## Parameters
+
+None.
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}'
+```
+</CodeGroup>
+
+## Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": "PolyNode/1.0.0/rust",
+  "id": 1
+}
+```
+
+This is handled locally by PolyNode — it identifies the node as PolyNode rather than the underlying Erigon client.
+
+## Cache
+
+**Local** — no network call, instant response.

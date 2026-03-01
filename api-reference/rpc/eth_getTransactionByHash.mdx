@@ -1,0 +1,47 @@
+---
+title: "eth_getTransactionByHash"
+description: "Returns transaction details by hash."
+---
+
+## Parameters
+
+| # | Type | Description |
+|---|------|-------------|
+| 1 | `string` | Transaction hash (32 bytes, hex-encoded) |
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_getTransactionByHash","params":["0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b"],"id":1}'
+```
+</CodeGroup>
+
+## Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "hash": "0x88df016429689c...",
+    "blockHash": "0x1d59ff54b1eb26b...",
+    "blockNumber": "0x5daf3b",
+    "from": "0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
+    "to": "0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb",
+    "value": "0x4e1003b28d9280000",
+    "gas": "0x76c0",
+    "gasPrice": "0x9184e72a000",
+    "input": "0x",
+    "nonce": "0x15"
+  },
+  "id": 1
+}
+```
+
+Returns `null` if the transaction is not found.
+
+## Cache
+
+**24 hours** — transaction data is immutable once confirmed.

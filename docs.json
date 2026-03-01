@@ -37,7 +37,7 @@
       },
       {
         "tab": "API Reference",
-        "openapi": "https://polynode.dev/openapi.json",
+        "openapi": "/openapi.json",
         "groups": [
           {
             "group": "Markets",
@@ -102,6 +102,10 @@
             "pages": [
               "api-reference/rpc/eth_blockNumber",
               "api-reference/rpc/eth_gasPrice",
+              "api-reference/rpc/eth_feeHistory",
+              "api-reference/rpc/eth_getBalance",
+              "api-reference/rpc/eth_getStorageAt",
+              "api-reference/rpc/eth_getCode",
               "api-reference/rpc/eth_getBlockByNumber",
               "api-reference/rpc/eth_getBlockByHash",
               "api-reference/rpc/eth_getLogs",
@@ -109,6 +113,7 @@
               "api-reference/rpc/eth_call",
               "api-reference/rpc/eth_estimateGas",
               "api-reference/rpc/eth_getTransactionCount",
+              "api-reference/rpc/eth_getTransactionByHash",
               "api-reference/rpc/eth_getTransactionReceipt",
               "api-reference/rpc/eth_chainId"
             ]
@@ -116,6 +121,7 @@
           {
             "group": "Network Methods",
             "pages": [
+              "api-reference/rpc/web3_clientVersion",
               "api-reference/rpc/net_version",
               "api-reference/rpc/net_peerCount",
               "api-reference/rpc/txpool_status"

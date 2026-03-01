@@ -1,0 +1,41 @@
+---
+title: "eth_feeHistory"
+description: "Returns historical gas fee data."
+---
+
+## Parameters
+
+| # | Type | Description |
+|---|------|-------------|
+| 1 | `string` | Number of blocks to return (hex) |
+| 2 | `string` | Newest block number (hex) or `"latest"` |
+| 3 | `number[]` | Reward percentiles to compute (e.g. `[25, 50, 75]`) |
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://polynode.dev/rpc \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_feeHistory","params":["0x5","latest",[25,50,75]],"id":1}'
+```
+</CodeGroup>
+
+## Response
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "baseFeePerGas": ["0x1b", "0x1c", "0x1a", "0x1b", "0x1c", "0x1d"],
+    "gasUsedRatio": [0.5, 0.3, 0.7, 0.4, 0.6],
+    "oldestBlock": "0x33bc7f0",
+    "reward": [["0x59682f00", "0x77359400", "0xb2d05e00"]]
+  },
+  "id": 1
+}
+```
+
+## Cache
+
+**2 seconds** — fee data changes every block.
