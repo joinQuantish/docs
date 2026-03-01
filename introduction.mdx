@@ -1,47 +1,32 @@
 ---
 title: Introduction
-description: Real-time Polymarket data API — decoded settlements from the mempool, 2 seconds before on-chain confirmation.
+description: Real-time Polymarket data API — settlements detected 2 seconds before on-chain confirmation.
 ---
 
 # PolyNode API
 
-PolyNode is a real-time data API for Polymarket. It runs a full Polygon node, decodes settlement transactions from the **mempool** (before they confirm on-chain), and serves them alongside OHLCV candles and enriched market metadata.
+PolyNode is a real-time data API for Polymarket. It detects settlement transactions **~2 seconds before on-chain confirmation** and serves them alongside OHLCV candles and enriched market metadata.
 
 ## What makes PolyNode different
 
 <CardGroup cols={2}>
-  <Card title="Mempool data" icon="bolt">
-    Decoded pending settlements ~2 seconds before on-chain confirmation. Nobody else offers this.
+  <Card title="Pre-chain data" icon="bolt">
+    Pending settlements ~2 seconds before on-chain confirmation. Nobody else offers this.
   </Card>
-  <Card title="Combined data" icon="layer-group">
+  <Card title="Enriched responses" icon="layer-group">
     Market metadata (question, slug, outcomes, images) enriched on every response. One call instead of separate APIs.
   </Card>
   <Card title="OHLCV candles" icon="chart-line">
     6 resolutions (1m, 5m, 15m, 1h, 4h, 1d) built from real settlement data.
   </Card>
-  <Card title="Self-hostable" icon="server">
-    Single Rust binary, under 2GB RAM. Run your own instance.
+  <Card title="Drop-in RPC" icon="server">
+    Full Polygon JSON-RPC endpoint. Swap your Alchemy URL and everything works.
   </Card>
 </CardGroup>
 
-## Architecture
+## How it works
 
-```
-Polygon P2P Network
-    │
-    ▼
-Bor Node (mempool monitoring)
-    │
-    ▼
-Rust API Server ← Gamma API (metadata)
-    │
-    ├── Redis (settlements, indexes, pub/sub)
-    ├── State Engine (in-memory markets, candles)
-    └── Archive Writer (JSONL daily files)
-    │
-    ▼
-REST API + WebSocket (your application)
-```
+PolyNode monitors the Polygon network for Polymarket activity and processes it in real time. Settlement transactions are detected before they confirm on-chain, enriched with market metadata, and delivered via REST API and WebSocket.
 
 ## Endpoints at a glance
 
@@ -56,7 +41,7 @@ REST API + WebSocket (your application)
 | `GET /v1/stats/:token_id` | Market statistics + 24h OHLCV |
 | `GET /v1/candles/:token_id` | OHLCV price candles |
 | `GET /v1/status` | System status |
-| `GET /v1/settlements/recent` | Recent decoded settlements |
+| `GET /v1/settlements/recent` | Recent settlements |
 | `GET /v1/settlements/wallet/:addr` | Settlements by wallet |
 | `GET /v1/settlements/token/:id` | Settlements by token |
 | `POST /v1/keys` | Generate API key |

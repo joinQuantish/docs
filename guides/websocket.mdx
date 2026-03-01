@@ -3,7 +3,7 @@ title: WebSocket Streaming
 description: Real-time event streaming with filtered subscriptions.
 ---
 
-Connect via WebSocket for real-time Polymarket events. Supports filtered subscriptions with multiple event types, including pending mempool transactions.
+Connect via WebSocket for real-time Polymarket events. Supports filtered subscriptions with multiple event types, including pre-chain pending transactions.
 
 ## Connecting
 
@@ -14,7 +14,7 @@ wss://polynode.dev/ws?key=pn_live_YOUR_KEY
 The API key must be passed as a query parameter.
 
 PolyNode WebSocket supports two protocols on the same connection:
-- **Custom PolyNode protocol** — subscribe to decoded Polymarket events with filters
+- **Custom PolyNode protocol** — subscribe to Polymarket events with filters
 - **JSON-RPC protocol** — standard `eth_subscribe` / `eth_unsubscribe` for raw Polygon data
 
 ## Subscribing
@@ -40,7 +40,7 @@ You'll receive an acknowledgment followed by a **snapshot** of up to 20 recent m
 
 | Type | Events | Description |
 |------|--------|-------------|
-| `settlements` | settlement | Decoded mempool + confirmed settlements (default) |
+| `settlements` | settlement | Pending + confirmed settlements (default) |
 | `trades` | settlement, trade, status_update | All trade activity |
 | `prices` | settlement, trade | Price-moving events for specific markets |
 | `blocks` | block | New block notifications |
@@ -69,7 +69,7 @@ All trade-related events include **enrichment fields** (`market_title`, `outcome
 
 ### settlement
 
-Decoded `matchOrders` transaction — either pending (from mempool) or confirmed (from block).
+A Polymarket settlement — either pending (pre-chain) or confirmed (on-chain).
 
 ```json
 {
@@ -101,7 +101,7 @@ Decoded `matchOrders` transaction — either pending (from mempool) or confirmed
 
 ### trade
 
-`OrderFilled` event from the CTF Exchange contract.
+A confirmed trade execution on Polymarket.
 
 ```json
 {
@@ -111,7 +111,7 @@ Decoded `matchOrders` transaction — either pending (from mempool) or confirmed
     "block_number": 54321000,
     "log_index": 42,
     "timestamp": 1709136045000,
-    "exchange": "CtfExchange",
+    "exchange": "Polymarket",
     "maker": "0x999888777666...",
     "taker": "0xabcdef1234567890...",
     "token_id": "21742633143463906290569404...",
@@ -127,7 +127,7 @@ Decoded `matchOrders` transaction — either pending (from mempool) or confirmed
 
 ### status_update
 
-Notification when a pending settlement confirms on-chain.
+Notification when a pending settlement is confirmed on-chain.
 
 ```json
 {
@@ -166,7 +166,7 @@ New block summary with Polymarket-specific stats.
 
 ### position_change
 
-ERC-1155 conditional token transfer.
+Polymarket position transfer between wallets.
 
 ```json
 {
@@ -185,7 +185,7 @@ ERC-1155 conditional token transfer.
 
 ### deposit
 
-USDC.e transfer to/from Polymarket contracts.
+USDC deposit or withdrawal on Polymarket.
 
 ```json
 {
@@ -266,7 +266,7 @@ ws.send(JSON.stringify({
   type: "markets",
   filters: {
     markets: ["21742633..."],
-    status: "pending",  // Only mempool events — the killer feature
+    status: "pending",  // Only pre-chain events
   },
 }));
 ```

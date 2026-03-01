@@ -92,7 +92,7 @@ const data = await resp.json();
 
 ## 3. Stream live settlements
 
-Connect via WebSocket to receive real-time decoded settlements:
+Connect via WebSocket to receive real-time settlements:
 
 ```javascript
 const ws = new WebSocket("wss://polynode.dev/ws?key=pn_live_YOUR_KEY");
@@ -112,7 +112,7 @@ ws.onmessage = (event) => {
 };
 ```
 
-You'll receive a snapshot of recent events, then live updates as settlements are detected in the mempool.
+You'll receive a snapshot of recent events, then live updates as new settlements are detected.
 
 ## Next steps
 

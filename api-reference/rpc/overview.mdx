@@ -5,7 +5,7 @@ description: "PolyNode exposes a full Polygon JSON-RPC endpoint alongside its cu
 
 ## What is PolyNode RPC?
 
-PolyNode runs a full Polygon PoS node and exposes a standard JSON-RPC 2.0 interface. You can use it as a drop-in replacement for any Polygon RPC provider — with the bonus of custom `pn_*` methods for Polymarket-specific data.
+PolyNode exposes a standard JSON-RPC 2.0 interface for the Polygon network. You can use it as a drop-in replacement for any Polygon RPC provider — with the bonus of custom `pn_*` methods for Polymarket-specific data.
 
 ## Endpoint
 
@@ -19,10 +19,10 @@ All RPC calls go through a single endpoint as POST requests with a JSON-RPC 2.0 
 
 | Prefix | Source | Description |
 |--------|--------|-------------|
-| `eth_*` | Polygon node | Standard Ethereum JSON-RPC methods, proxied to the full node with intelligent caching |
-| `net_*` | Polygon node | Network info methods |
-| `txpool_*` | Polygon node | Transaction pool methods |
-| `pn_*` | PolyNode state engine | Custom Polymarket methods served from in-memory indexed data |
+| `eth_*` | Polygon network | Standard Ethereum JSON-RPC methods with intelligent caching |
+| `net_*` | Polygon network | Network info methods |
+| `txpool_*` | Polygon network | Transaction pool methods |
+| `pn_*` | PolyNode | Custom Polymarket methods with sub-millisecond response times |
 
 ## Authentication
 
@@ -54,7 +54,7 @@ Returns an array of responses in matching order. Maximum 100 requests per batch.
 
 ## Caching
 
-PolyNode applies intelligent caching to reduce load on the underlying node:
+PolyNode applies intelligent caching for optimal performance:
 
 | Cache Tier | TTL | Methods |
 |------------|-----|---------|
@@ -64,11 +64,11 @@ PolyNode applies intelligent caching to reduce load on the underlying node:
 | Permanent | 24h | `eth_getTransactionReceipt`, `eth_getTransactionByHash`, `eth_chainId`, `net_version`, `eth_getCode` |
 | Local | instant | `web3_clientVersion` (returns `"PolyNode/1.0.0/rust"`), all `pn_*` methods |
 
-Custom `pn_*` methods are served directly from the in-memory state engine — always live, sub-millisecond response times.
+Custom `pn_*` methods return live data with sub-millisecond response times.
 
 ## Historical Data
 
-PolyNode's full node maintains recent block data. For deep historical queries (blocks older than ~24 hours), pair with an archive node provider.
+PolyNode maintains recent block data. For deep historical queries (blocks older than ~24 hours), pair with an archive node provider.
 
 ## Error Codes
 

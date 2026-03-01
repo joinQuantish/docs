@@ -5,10 +5,10 @@ description: "Subscribe to real-time events via WebSocket."
 
 ## eth_subscribe
 
-Creates a subscription for real-time events over a WebSocket connection. PolyNode supports standard Ethereum subscription types via its full Polygon node.
+Creates a subscription for real-time events over a WebSocket connection. PolyNode supports standard Ethereum subscription types.
 
 <Note>
-For Polymarket-specific streaming (settlements, trades, whale alerts), use PolyNode's custom [WebSocket subscriptions](/guides/websocket) instead — they provide decoded, filtered data.
+For Polymarket-specific streaming (settlements, trades, whale alerts), use PolyNode's custom [WebSocket subscriptions](/guides/websocket) instead — they provide enriched, filtered data.
 </Note>
 
 ### Connection
@@ -64,7 +64,7 @@ Subscribe to new logs matching a filter.
 
 #### newPendingTransactions
 
-Subscribe to new pending transaction hashes as they enter the mempool.
+Subscribe to new pending transaction hashes.
 
 ```json
 {"jsonrpc": "2.0", "method": "eth_subscribe", "params": ["newPendingTransactions"], "id": 1}

@@ -1,11 +1,11 @@
 ---
 title: "pn_getPendingSettlements"
-description: "Returns all currently pending settlement transactions from the mempool."
+description: "Returns all currently pending settlement transactions."
 ---
 
 ## pn_getPendingSettlements
 
-Returns all settlement transactions currently in the **pending** state — detected from the mempool but not yet confirmed in a block. This is PolyNode's core differentiator: you see settlements ~2 seconds before they appear on-chain.
+Returns all settlement transactions currently in the **pending** state — detected ~2 seconds before they confirm on-chain. This is PolyNode's core differentiator.
 
 ### Parameters
 
@@ -22,7 +22,7 @@ None.
 | `taker_side` | string | `"BUY"` or `"SELL"` |
 | `taker_price` | number | Execution price (0-1) |
 | `taker_size` | number | Size in USD |
-| `detected_at` | number | Timestamp when detected in mempool (ms) |
+| `detected_at` | number | Timestamp when detected (ms) |
 
 ### Example
 

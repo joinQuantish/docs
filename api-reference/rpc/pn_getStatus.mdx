@@ -1,11 +1,11 @@
 ---
 title: "pn_getStatus"
-description: "Returns state engine summary statistics."
+description: "Returns PolyNode system statistics."
 ---
 
 ## pn_getStatus
 
-Returns a summary of the PolyNode state engine including market count, wallet count, events processed, and latest block.
+Returns a summary of PolyNode system status including market count, wallet count, events processed, and latest block.
 
 ### Parameters
 
@@ -13,14 +13,14 @@ None.
 
 ### Returns
 
-`Object` — state engine summary.
+`Object` — system status summary.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `market_count` | number | Number of tracked markets |
 | `wallet_count` | number | Number of tracked wallets |
 | `metadata_count` | number | Number of markets with metadata |
-| `events_buffered` | number | Events in the ring buffer |
+| `events_buffered` | number | Events currently buffered |
 | `events_processed` | number | Total events processed since startup |
 | `latest_block` | number | Latest block number seen |
 
