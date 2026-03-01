@@ -176,7 +176,7 @@
       "name": "x-api-key"
     },
     "playground": {
-      "mode": "simple"
+      "mode": "interactive"
     }
   },
   "feedback": {
