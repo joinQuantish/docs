@@ -3,15 +3,18 @@ title: Rate Limits
 description: Rate limiting details and best practices.
 ---
 
-PolyNode uses per-key rate limiting to ensure fair usage.
+PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your plan.
 
-## Default limits
+## Tier limits
 
-| Endpoint | Limit |
-|----------|-------|
-| All authenticated endpoints | 120 requests per minute per key |
-| `POST /v1/keys` (key generation) | 3 per IP per hour |
-| WebSocket connections | 1 per key (shared subscription channel) |
+| | Free | Developer ($49/mo) | Pro ($99/mo) |
+|--|------|-----------|-----|
+| **Rate limit** | 120 req/min (2 QPS) | 6,000 req/min (100 QPS) | 18,000 req/min (300 QPS) |
+| **WebSocket connections** | 1 | 10 | Unlimited |
+| **API keys** | 1 | 3 | 10 |
+| **JSON-RPC proxy** | No | Yes | Yes |
+| **Snapshot size** | 20 | 100 | 200 |
+| **Key generation** | 1 per IP per day | Via dashboard | Via dashboard |
 
 ## How it works
 
@@ -28,7 +31,7 @@ Instead of polling REST endpoints, connect via WebSocket for live updates:
 ```javascript
 // Instead of polling /v1/markets every 5 seconds (12 req/min)...
 // Use WebSocket (1 connection, unlimited events)
-const ws = new WebSocket("wss://polynode.dev/ws?key=pn_live_YOUR_KEY");
+const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
 ws.send(JSON.stringify({
   action: "subscribe",
   type: "settlements",
@@ -69,6 +72,6 @@ WebSocket subscriptions with filters reduce message volume and processing overhe
 }
 ```
 
-## Requesting higher limits
+## Higher limits
 
-Contact us for custom rate limits for production applications.
+Upgrade your plan at [polynode.dev/pricing](https://polynode.dev/pricing) for higher rate limits, more WebSocket connections, and JSON-RPC proxy access.
