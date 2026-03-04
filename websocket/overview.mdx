@@ -19,6 +19,9 @@ PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement
   <Card title="Drop-in JSON-RPC" icon="server">
     Standard `eth_subscribe` works on the same connection. Replace your Alchemy/Infura WebSocket URL.
   </Card>
+  <Card title="Chainlink price feeds" icon="chart-line">
+    Real-time BTC/USD prices from Chainlink Data Streams (~1/second). Subscribe with `"type": "chainlink"` on the same connection.
+  </Card>
 </CardGroup>
 
 ## Quick start
@@ -80,16 +83,17 @@ wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY
 
 The API key is passed as a query parameter. Keys starting with `pn_live_` or `qm_live_` are accepted.
 
-## Two protocols, one connection
+## Three streams, one connection
 
-PolyNode supports two protocols on the same WebSocket:
+PolyNode supports multiple protocols on the same WebSocket:
 
-| Protocol | Purpose | Message format |
-|----------|---------|----------------|
-| **PolyNode** | Decoded Polymarket events with filtering | `{"action": "subscribe", ...}` |
-| **JSON-RPC** | Standard Ethereum subscriptions (`newHeads`, `newPendingTransactions`, `logs`) | `{"jsonrpc": "2.0", "method": "eth_subscribe", ...}` |
+| Stream | Purpose | Subscribe |
+|--------|---------|-----------|
+| **Settlements** | Decoded Polymarket events with filtering | `{"action": "subscribe", "type": "settlements"}` |
+| **Chainlink** | Real-time BTC/USD prices from Data Streams | `{"action": "subscribe", "type": "chainlink"}` |
+| **JSON-RPC** | Standard Ethereum subscriptions (`newHeads`, `logs`) | `{"jsonrpc": "2.0", "method": "eth_subscribe", ...}` |
 
-Both can run simultaneously on the same connection.
+All three can run simultaneously on the same connection.
 
 ## Heartbeat
 

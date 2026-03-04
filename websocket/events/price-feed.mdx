@@ -1,0 +1,133 @@
+---
+title: "Price Feed Event"
+sidebarTitle: "price_feed"
+description: "Real-time Chainlink Data Streams price updates — BTC/USD and more."
+icon: "chart-line"
+---
+
+Real-time price data from [Chainlink Data Streams](https://docs.chain.link/data-streams). Reports arrive approximately once per second per feed, streamed directly via WebSocket (not polling).
+
+Subscribe with `"type": "chainlink"` to receive price feed events.
+
+```json
+{
+  "type": "price_feed",
+  "feed": "BTC/USD",
+  "timestamp": 1772616170,
+  "data": {
+    "feed": "BTC/USD",
+    "feed_id": "0x00039d9e45394f473ab1f050a1b963e6b05351e52d71e507509ada0c95ed75b8",
+    "price": 71280.55,
+    "bid": 71279.77,
+    "ask": 71281.35,
+    "timestamp": 1772616170,
+    "source": "chainlink_data_streams"
+  }
+}
+```
+
+## Subscribing
+
+```json
+{"action": "subscribe", "type": "chainlink"}
+```
+
+With feed filter (only receive specific feeds):
+
+```json
+{
+  "action": "subscribe",
+  "type": "chainlink",
+  "filters": {
+    "feeds": ["BTC/USD"]
+  }
+}
+```
+
+Omit the `feeds` filter to receive all available price feeds.
+
+## Response
+
+```json
+{
+  "type": "subscribed",
+  "subscriber_id": "550e8400-e29b-41d4-a716-446655440000",
+  "subscription_type": "chainlink"
+}
+```
+
+<Note>
+Chainlink subscriptions do not include a snapshot — events start arriving with the next Chainlink report (~1 second).
+</Note>
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"price_feed"`.
+</ResponseField>
+
+<ResponseField name="feed" type="string" required>
+  Human-readable feed name (e.g. `"BTC/USD"`).
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Chainlink observation timestamp in Unix seconds.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="feed" type="string" required>
+      Feed name (e.g. `"BTC/USD"`).
+    </ResponseField>
+
+    <ResponseField name="feed_id" type="string" required>
+      Chainlink feed ID (0x-prefixed, 32 bytes hex). Identifies the specific data stream.
+    </ResponseField>
+
+    <ResponseField name="price" type="number" required>
+      Benchmark price in USD. This is the canonical price from the Chainlink report.
+    </ResponseField>
+
+    <ResponseField name="bid" type="number" required>
+      Best bid price in USD.
+    </ResponseField>
+
+    <ResponseField name="ask" type="number" required>
+      Best ask price in USD.
+    </ResponseField>
+
+    <ResponseField name="timestamp" type="number" required>
+      Observation timestamp in Unix seconds (from the Chainlink report, not the server).
+    </ResponseField>
+
+    <ResponseField name="source" type="string" required>
+      Always `"chainlink_data_streams"`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Available feeds
+
+| Feed | Feed ID | Cadence |
+|------|---------|---------|
+| BTC/USD | `0x00039d9e...b8` | ~1 report/second |
+
+More feeds will be added over time. Use the `feeds` filter to subscribe to specific ones.
+
+## Dual subscription
+
+Chainlink price feeds run on the same WebSocket connection as settlement subscriptions. Send both subscribe messages to receive both:
+
+```json
+{"action": "subscribe", "type": "settlements"}
+{"action": "subscribe", "type": "chainlink"}
+```
+
+Events arrive interleaved. Use the `type` field (`"settlement"` vs `"price_feed"`) to route them in your application.
+
+## Use cases
+
+- **Portfolio valuation** — combine BTC price with Polymarket positions for real-time PnL
+- **Hedging signals** — correlate BTC price moves with prediction market settlements
+- **Dashboards** — display live crypto prices alongside prediction market data
+- **Trading bots** — trigger Polymarket trades based on BTC price thresholds

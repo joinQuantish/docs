@@ -81,6 +81,12 @@ The `type` field selects a preset of event types. If you also set `filters.event
   Unfiltered stream of every event. High throughput — use with caution.
 </ResponseField>
 
+<ResponseField name="chainlink" type="string">
+  Events: `price_feed`
+
+  Real-time Chainlink Data Streams prices (~1/second). Use the `feeds` filter to select specific feeds (e.g. `["BTC/USD"]`). See [Price Feed Event](/websocket/events/price-feed).
+</ResponseField>
+
 ## Filters
 
 All filters are optional. Omit the `filters` object entirely to receive all events matching the subscription type.
@@ -156,6 +162,16 @@ All filters are optional. Omit the `filters` object entirely to receive all even
 
 <ParamField body="snapshot_count" type="number" default="20">
   Number of recent matching events to receive immediately after subscribing. Max: 200.
+</ParamField>
+
+### Price feed filtering
+
+<ParamField body="feeds" type="string[]">
+  Filter by price feed names. Only applies to `chainlink` subscriptions.
+  ```json
+  "feeds": ["BTC/USD"]
+  ```
+  Omit to receive all available feeds.
 </ParamField>
 
 ## Matching logic

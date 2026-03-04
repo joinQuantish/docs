@@ -98,6 +98,52 @@ ws.send(JSON.stringify({
 // Receives: settlements, trades, position changes, deposits, status updates
 ```
 
+### Chainlink price feed
+
+```javascript
+const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.on("open", () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "chainlink",
+    filters: { feeds: ["BTC/USD"] }
+  }));
+});
+
+ws.on("message", (data) => {
+  const msg = JSON.parse(data);
+  if (msg.type === "price_feed") {
+    const d = msg.data;
+    console.log(`BTC/USD: $${d.price.toFixed(2)} (bid: $${d.bid.toFixed(2)}, ask: $${d.ask.toFixed(2)})`);
+  }
+});
+```
+
+### Settlements + price feeds on same connection
+
+```javascript
+const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.on("open", () => {
+  // Subscribe to both — they're independent streams
+  ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
+  ws.send(JSON.stringify({ action: "subscribe", type: "chainlink" }));
+});
+
+ws.on("message", (data) => {
+  const msg = JSON.parse(data);
+  switch (msg.type) {
+    case "settlement":
+      console.log(`TRADE: ${msg.data.taker_side} ${msg.data.taker_size} @ ${msg.data.taker_price}`);
+      break;
+    case "price_feed":
+      console.log(`BTC: $${msg.data.price.toFixed(2)}`);
+      break;
+  }
+});
+```
+
 ## Python
 
 ### asyncio client with reconnection
@@ -159,6 +205,9 @@ wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
 ```
 
 ```bash
+# Subscribe to Chainlink BTC/USD prices
+{"action": "subscribe", "type": "chainlink"}
+
 # Subscribe to whale trades
 {"action": "subscribe", "type": "large_trades", "filters": {"min_size": 10000}}
 

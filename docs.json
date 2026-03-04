@@ -30,6 +30,7 @@
               "websocket/events/settlement",
               "websocket/events/status-update",
               "websocket/events/trade",
+              "websocket/events/price-feed",
               "websocket/events/block",
               "websocket/events/position-change",
               "websocket/events/deposit"
