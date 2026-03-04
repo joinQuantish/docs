@@ -1,0 +1,151 @@
+---
+title: "Best Practices"
+sidebarTitle: "Best Practices"
+description: "Patterns for correctly handling the pending-to-confirmed lifecycle, snapshots, and reconnection."
+---
+
+## The pending-to-confirmed lifecycle
+
+PolyNode detects Polymarket settlements in the mempool **before** they confirm on-chain. This means every settlement goes through two stages, delivered as **two separate WebSocket events**:
+
+1. **`settlement`** — the trade is detected in the mempool (`status: "pending"`)
+2. **`status_update`** — the trade confirms in a Polygon block (typically 2–4 seconds later)
+
+Link them together by `tx_hash`:
+
+```javascript
+const pending = new Map(); // tx_hash → settlement data
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.type === "settlement" && msg.data.status === "pending") {
+    pending.set(msg.data.tx_hash, {
+      ...msg.data,
+      received_at: Date.now(),
+    });
+    console.log(`PENDING: ${msg.data.taker_side} $${msg.data.taker_size}`);
+  }
+
+  if (msg.type === "status_update") {
+    const original = pending.get(msg.data.tx_hash);
+    if (original) {
+      const leadMs = msg.data.confirmed_at - original.received_at;
+      console.log(`CONFIRMED: ${msg.data.latency_ms}ms server lead, ${leadMs}ms client lead`);
+      pending.delete(msg.data.tx_hash);
+    }
+  }
+};
+```
+
+<Warning>
+These are **two separate events**, not an update to the original event. If you only listen for `settlement` events, you'll see pending trades but never know when they confirm.
+</Warning>
+
+## Handle the snapshot correctly
+
+When you subscribe, PolyNode sends a **snapshot** of recent events before streaming live data. The snapshot contains both `settlement` and `status_update` events mixed together.
+
+**The gotcha**: Settlement events in the snapshot always have their **original** status (`pending`), even if they were confirmed seconds ago. The corresponding `status_update` is a separate entry in the same snapshot.
+
+If you only process `settlement` events from the snapshot, you'll load stale "pending" settlements that are actually already confirmed — and their confirmation event will never arrive as a live message because it was already sent in the snapshot you ignored.
+
+### Correct snapshot handling
+
+```javascript
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.type === "snapshot") {
+    // Step 1: Collect all status updates from the snapshot
+    const confirmations = new Map();
+    for (const ev of msg.events) {
+      if (ev.type === "status_update" && ev.data) {
+        confirmations.set(ev.data.tx_hash, ev.data);
+      }
+    }
+
+    // Step 2: Process settlements, checking for matching confirmations
+    for (const ev of msg.events) {
+      if (ev.type === "settlement" && ev.data) {
+        const confirmation = confirmations.get(ev.data.tx_hash);
+        if (confirmation) {
+          // This settlement is already confirmed — use the confirmation data
+          handleConfirmedSettlement(ev.data, confirmation);
+        } else if (ev.data.status === "pending") {
+          // Genuinely pending — will receive a live status_update soon
+          handlePendingSettlement(ev.data);
+        }
+      }
+    }
+    return;
+  }
+
+  // Live events — standard handling
+  if (msg.type === "settlement") handlePendingSettlement(msg.data);
+  if (msg.type === "status_update") handleStatusUpdate(msg.data);
+};
+```
+
+## Add a stuck-pending timeout
+
+In rare cases, a `status_update` might be missed (e.g., network interruption, reconnection timing). Add a timeout so stale pending items don't get stuck forever:
+
+```javascript
+const PENDING_TIMEOUT_MS = 15_000; // 15 seconds
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [hash, data] of pending) {
+    if (now - data.received_at > PENDING_TIMEOUT_MS) {
+      console.log(`Timeout: ${hash} — no confirmation after 15s`);
+      pending.delete(hash);
+    }
+  }
+}, 5_000);
+```
+
+Under normal conditions, confirmations arrive within 2–5 seconds. A 15-second timeout is generous enough to never fire in normal operation but catches edge cases.
+
+## Reconnection with state recovery
+
+When reconnecting, use `snapshot_count` to recover recent state. The snapshot fills in events you missed during the disconnection:
+
+```javascript
+function connect() {
+  const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+  let delay = 1000;
+
+  ws.onopen = () => {
+    delay = 1000;
+    ws.send(JSON.stringify({
+      action: "subscribe",
+      type: "settlements",
+      filters: { snapshot_count: 100 }, // Catch up on missed events
+    }));
+  };
+
+  ws.onclose = () => {
+    setTimeout(connect, Math.min(delay *= 2, 30000));
+  };
+
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === "heartbeat") return;
+    // Handle snapshot + live events as above
+  };
+}
+```
+
+<Tip>
+The snapshot includes both `settlement` and `status_update` events from the recent buffer. Processing both event types from the snapshot (as shown above) ensures you have accurate state immediately after reconnection.
+</Tip>
+
+## Summary
+
+| Pattern | Why |
+|---------|-----|
+| Process **both** `settlement` and `status_update` events | Settlements and confirmations are separate events linked by `tx_hash` |
+| Process **both event types from the snapshot** | Snapshot settlements keep their original `pending` status — confirmations are separate entries |
+| Add a **stuck-pending timeout** (15s) | Safety net for missed confirmations during reconnection |
+| Use **`snapshot_count`** on reconnect | Recovers events missed during disconnection |
