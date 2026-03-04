@@ -8,7 +8,7 @@ Connect via WebSocket for real-time Polymarket events. Supports filtered subscri
 ## Connecting
 
 ```
-wss://polynode.dev/ws?key=pn_live_YOUR_KEY
+wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY
 ```
 
 The API key must be passed as a query parameter.
@@ -91,11 +91,11 @@ A Polymarket settlement — either pending (pre-chain) or confirmed (on-chain).
 ```json
 {
   "type": "settlement",
-  "timestamp": 1709136043000,
+  "timestamp": 1772500000000,
   "data": {
     "tx_hash": "0x1a2b3c4d5e6f...",
-    "status": "Pending",
-    "detected_at": 1709136043000,
+    "status": "pending",
+    "detected_at": 1772500000000,
     "taker_wallet": "0xabcdef1234567890...",
     "taker_token": "21742633143463906290569404...",
     "taker_side": "BUY",
@@ -107,10 +107,15 @@ A Polymarket settlement — either pending (pre-chain) or confirmed (on-chain).
     "event_title": "Bitcoin Price Milestones",
     "trades": [
       {
-        "maker_wallet": "0x999888777666...",
-        "maker_order_id": "0xorder123...",
-        "matched_amount": 500.00,
-        "price": 0.72
+        "maker": "0x999888777666...",
+        "signer": "0xabc123...",
+        "taker": "0x123456789...",
+        "token_id": "21742633...",
+        "side": "BUY",
+        "price": 0.72,
+        "size": 500.00,
+        "maker_amount": "500000",
+        "taker_amount": "694444"
       }
     ]
   }
@@ -124,12 +129,12 @@ A confirmed trade execution on Polymarket.
 ```json
 {
   "type": "trade",
-  "timestamp": 1709136045000,
+  "timestamp": 1772500002000,
   "data": {
     "tx_hash": "0x5e6f7a8b9c0d...",
     "block_number": 54321000,
     "log_index": 42,
-    "timestamp": 1709136045000,
+    "timestamp": 1772500002000,
     "exchange": "Polymarket",
     "maker": "0x999888777666...",
     "taker": "0xabcdef1234567890...",
@@ -151,13 +156,13 @@ Notification when a pending settlement is confirmed on-chain.
 ```json
 {
   "type": "status_update",
-  "timestamp": 1709136045000,
+  "timestamp": 1772500002000,
   "data": {
     "tx_hash": "0x1a2b3c4d5e6f...",
     "token_id": "21742633...",
     "block_number": 54321000,
-    "confirmed_at": 1709136045000,
-    "pending_detected_at": 1709136043000,
+    "confirmed_at": 1772500002000,
+    "pending_detected_at": 1772500000000,
     "latency_ms": 2000,
     "market_title": "Will Bitcoin hit $100K in 2026?",
     "outcome": "Yes"
@@ -172,11 +177,11 @@ New block summary with Polymarket-specific stats.
 ```json
 {
   "type": "block",
-  "timestamp": 1709136045000,
+  "timestamp": 1772500002000,
   "data": {
     "block_number": 54321000,
     "block_hash": "0xblockhash...",
-    "timestamp": 1709136045000,
+    "timestamp": 1772500002000,
     "tx_count": 150,
     "polymarket_tx_count": 12,
     "settlement_count": 8,
@@ -192,7 +197,7 @@ Polymarket position transfer between wallets.
 ```json
 {
   "type": "position_change",
-  "timestamp": 1709136045000,
+  "timestamp": 1772500002000,
   "data": {
     "tx_hash": "0xdef456...",
     "block_number": 54321000,
@@ -212,7 +217,7 @@ USDC deposit or withdrawal on Polymarket.
 ```json
 {
   "type": "deposit",
-  "timestamp": 1709136045000,
+  "timestamp": 1772500002000,
   "data": {
     "tx_hash": "0xccc789...",
     "block_number": 54321000,
@@ -276,7 +281,7 @@ JSON-RPC subscriptions and PolyNode subscriptions coexist on the same WebSocket 
 ### Track whale trades
 
 ```javascript
-const ws = new WebSocket("wss://polynode.dev/ws?key=pn_live_YOUR_KEY");
+const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.onopen = () => {
   ws.send(JSON.stringify({

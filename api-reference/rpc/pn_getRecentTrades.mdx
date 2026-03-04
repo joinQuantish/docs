@@ -21,7 +21,7 @@ Returns recent settlement events. Optionally filter by token ID.
 ### Example
 
 ```bash cURL
-curl -s -X POST https://polynode.dev/rpc \
+curl -s -X POST https://api.polynode.dev/rpc \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -42,7 +42,7 @@ curl -s -X POST https://polynode.dev/rpc \
       "event_type": "settlement",
       "tx_hash": "0xabc123...",
       "status": "confirmed",
-      "detected_at": 1709136043000,
+      "detected_at": 1772500000000,
       "taker_wallet": "0x...",
       "taker_token": "21742633...",
       "taker_side": "BUY",

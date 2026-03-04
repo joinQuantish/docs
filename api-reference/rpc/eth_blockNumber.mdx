@@ -21,7 +21,7 @@ None.
 
 <CodeGroup>
 ```bash cURL
-curl -s -X POST https://polynode.dev/rpc \
+curl -s -X POST https://api.polynode.dev/rpc \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -32,7 +32,7 @@ curl -s -X POST https://polynode.dev/rpc \
 ```
 
 ```bash wscat
-wscat -c wss://polynode.dev/ws
+wscat -c wss://api.polynode.dev/ws
 > {"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}
 ```
 </CodeGroup>

@@ -12,12 +12,12 @@ Two methods are supported:
 <Tabs>
   <Tab title="Header (recommended)">
     ```bash
-    curl -H "x-api-key: pn_live_YOUR_KEY" https://polynode.dev/v1/markets
+    curl -H "x-api-key: pn_live_YOUR_KEY" https://api.polynode.dev/v1/markets
     ```
   </Tab>
   <Tab title="Query parameter">
     ```bash
-    curl "https://polynode.dev/v1/markets?key=pn_live_YOUR_KEY"
+    curl "https://api.polynode.dev/v1/markets?key=pn_live_YOUR_KEY"
     ```
   </Tab>
 </Tabs>
@@ -25,7 +25,7 @@ Two methods are supported:
 For WebSocket connections, use the query parameter:
 
 ```
-wss://polynode.dev/ws?key=pn_live_YOUR_KEY
+wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY
 ```
 
 ## Key format
@@ -35,7 +35,7 @@ API keys use the prefix `pn_live_` followed by a random string. Legacy keys with
 ## Generating a key
 
 ```bash
-curl -s -X POST https://polynode.dev/v1/keys \
+curl -s -X POST https://api.polynode.dev/v1/keys \
   -H "Content-Type: application/json" \
   -d '{"name": "my-app"}'
 ```

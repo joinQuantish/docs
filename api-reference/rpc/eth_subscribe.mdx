@@ -14,7 +14,7 @@ For Polymarket-specific streaming (settlements, trades, whale alerts), use PolyN
 ### Connection
 
 ```
-wss://polynode.dev/ws?key=pn_live_YOUR_KEY
+wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY
 ```
 
 ### Subscription Types
@@ -79,7 +79,7 @@ Subscribe to new pending transaction hashes.
 ### Example
 
 ```javascript
-const ws = new WebSocket("wss://polynode.dev/ws?key=pn_live_YOUR_KEY");
+const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.onopen = () => {
   // Subscribe to new block headers

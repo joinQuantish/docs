@@ -40,6 +40,17 @@
         "openapi": "/openapi.json",
         "groups": [
           {
+            "group": "Historical Trades",
+            "pages": [
+              "api-reference/historical/database-status",
+              "api-reference/historical/query-trades",
+              "api-reference/historical/historical-candles",
+              "api-reference/historical/volume",
+              "api-reference/historical/wallet-statistics",
+              "api-reference/historical/token-statistics"
+            ]
+          },
+          {
             "group": "Markets",
             "pages": [
               "api-reference/markets/top-markets",
@@ -150,7 +161,7 @@
       "anchors": [
         {
           "anchor": "GitHub",
-          "href": "https://github.com/joinQuantish/polygon-node",
+          "href": "https://github.com/joinQuantish",
           "icon": "github"
         }
       ]
@@ -160,7 +171,7 @@
     "links": [
       {
         "label": "API Status",
-        "href": "https://polynode.dev/v1/status"
+        "href": "https://api.polynode.dev/v1/status"
       }
     ],
     "primary": {
@@ -170,7 +181,7 @@
     }
   },
   "api": {
-    "baseUrl": "https://polynode.dev",
+    "baseUrl": "https://api.polynode.dev",
     "auth": {
       "method": "key",
       "name": "x-api-key"

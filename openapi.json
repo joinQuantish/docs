@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "PolyNode API",
-    "description": "Real-time Polymarket data API with decoded mempool settlements, OHLCV candles, and full Polygon JSON-RPC proxy.",
+    "description": "Real-time Polymarket data API with decoded mempool settlements, historical trade database, OHLCV candles, and full Polygon JSON-RPC proxy.",
     "contact": {
       "name": "PolyNode",
       "url": "https://polynode.dev"
@@ -14,7 +14,7 @@
   },
   "servers": [
     {
-      "url": "https://polynode.dev",
+      "url": "https://api.polynode.dev",
       "description": "Production"
     }
   ],
@@ -961,6 +961,468 @@
           }
         ]
       }
+    },
+    "/v2/status": {
+      "get": {
+        "tags": [
+          "Historical"
+        ],
+        "summary": "Historical database status",
+        "description": "Returns the current state of the historical trades database: total trade count, block range, date range, and number of Parquet files.",
+        "operationId": "v2_status",
+        "responses": {
+          "200": {
+            "description": "Database status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoricalStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/trades": {
+      "get": {
+        "tags": [
+          "Historical"
+        ],
+        "summary": "Query historical trades",
+        "description": "Search and filter every Polymarket trade ever executed. Supports filtering by token, wallet, exchange, side, slug, time range, block range, and minimum size. Results are paginated and sorted by timestamp.",
+        "operationId": "v2_trades",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "query",
+            "description": "Filter by conditional token ID (uint256 string). Returns only trades for this specific market outcome.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "95574819681824277217892100655095768971756321387212973444675369470649177853957"
+          },
+          {
+            "name": "wallet",
+            "in": "query",
+            "description": "Filter by wallet address (matches both maker and taker). Case-insensitive.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "0x6c2ecdbf7b8b82bdd49f6bfbabdff8208d6b75ea"
+          },
+          {
+            "name": "maker",
+            "in": "query",
+            "description": "Filter by maker address only.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taker",
+            "in": "query",
+            "description": "Filter by taker address only.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "description": "Filter by exchange type.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ctf",
+                "negrisk"
+              ]
+            }
+          },
+          {
+            "name": "side",
+            "in": "query",
+            "description": "Filter by trade side (from maker's perspective).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BUY",
+                "SELL"
+              ]
+            }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "description": "Filter by market URL slug (e.g. `presidential-election-winner-2024`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "presidential-election-winner-2024"
+          },
+          {
+            "name": "from_ts",
+            "in": "query",
+            "description": "Start of time range (Unix timestamp in seconds).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1700000000
+          },
+          {
+            "name": "to_ts",
+            "in": "query",
+            "description": "End of time range (Unix timestamp in seconds).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "from_block",
+            "in": "query",
+            "description": "Start of block range (Polygon block number).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "to_block",
+            "in": "query",
+            "description": "End of block range (Polygon block number).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_size",
+            "in": "query",
+            "description": "Minimum trade size in tokens.",
+            "schema": {
+              "type": "number"
+            },
+            "example": 100
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results to return.",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 10000
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of results to skip (for pagination).",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "description": "Sort order by timestamp.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching trades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/candles/{token_id}": {
+      "get": {
+        "tags": [
+          "Historical"
+        ],
+        "summary": "Historical OHLCV candles",
+        "description": "Get OHLCV (open, high, low, close, volume) candles for a specific token from the full historical dataset. Supports resolutions from 1 minute to 1 week. Unlike v1 candles (which use recent Redis data), v2 candles cover all time since the market's first trade.",
+        "operationId": "v2_candles",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "description": "Conditional token ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resolution",
+            "in": "query",
+            "description": "Candle time resolution.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1m",
+                "5m",
+                "15m",
+                "1h",
+                "4h",
+                "1d",
+                "1w"
+              ],
+              "default": "1h"
+            }
+          },
+          {
+            "name": "from_ts",
+            "in": "query",
+            "description": "Start of time range (Unix timestamp in seconds).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "to_ts",
+            "in": "query",
+            "description": "End of time range (Unix timestamp in seconds).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of candles to return.",
+            "schema": {
+              "type": "integer",
+              "default": 500,
+              "minimum": 1,
+              "maximum": 5000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OHLCV candles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandlesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/volume": {
+      "get": {
+        "tags": [
+          "Historical"
+        ],
+        "summary": "Volume over time",
+        "description": "Get trading volume aggregated over time intervals. Optionally filter by token or wallet. Returns volume, notional value, trade count, and unique token count per interval.",
+        "operationId": "v2_volume",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "query",
+            "description": "Filter by conditional token ID.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "wallet",
+            "in": "query",
+            "description": "Filter by wallet address (matches both maker and taker).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "Aggregation interval.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1h",
+                "1d",
+                "1w",
+                "1M"
+              ],
+              "default": "1d"
+            }
+          },
+          {
+            "name": "from_ts",
+            "in": "query",
+            "description": "Start of time range (Unix timestamp in seconds).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "to_ts",
+            "in": "query",
+            "description": "End of time range (Unix timestamp in seconds).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of intervals to return.",
+            "schema": {
+              "type": "integer",
+              "default": 365,
+              "minimum": 1,
+              "maximum": 5000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Volume data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VolumeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/stats/wallet/{address}": {
+      "get": {
+        "tags": [
+          "Historical"
+        ],
+        "summary": "Wallet statistics",
+        "description": "Get aggregate trading statistics for a wallet address across all time. Includes total trades, buy/sell breakdown, volume, average price/size, number of unique markets, and first/last trade timestamps.",
+        "operationId": "v2_wallet_stats",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "Wallet address (0x...).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "0x6c2ecdbf7b8b82bdd49f6bfbabdff8208d6b75ea"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletStats"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Wallet not found"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/stats/token/{token_id}": {
+      "get": {
+        "tags": [
+          "Historical"
+        ],
+        "summary": "Token/market statistics",
+        "description": "Get aggregate trading statistics for a specific conditional token (market outcome). Includes total trades, volume, price range, unique wallets, and enriched market metadata (question, outcome, slug, category).",
+        "operationId": "v2_token_stats",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "description": "Conditional token ID.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenStats"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or missing API key"
+          },
+          "404": {
+            "description": "Token not found"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -1214,7 +1676,7 @@
       },
       "EventStatus": {
         "type": "string",
-        "description": "Status of an event — pending (mempool) or confirmed (in a block).",
+        "description": "Status of an event \u2014 pending (mempool) or confirmed (in a block).",
         "enum": [
           "pending",
           "confirmed"
@@ -1746,6 +2208,372 @@
             "format": "int64",
             "description": "Number of token transfers.",
             "minimum": 0
+          }
+        }
+      },
+      "HistoricalTrade": {
+        "type": "object",
+        "description": "A single historical trade (decoded OrderFilled event).",
+        "properties": {
+          "block_number": {
+            "type": "integer",
+            "description": "Polygon block number where the trade was confirmed."
+          },
+          "tx_hash": {
+            "type": "string",
+            "description": "Transaction hash."
+          },
+          "log_index": {
+            "type": "integer",
+            "description": "Log index within the transaction."
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "Block timestamp (Unix seconds)."
+          },
+          "exchange": {
+            "type": "string",
+            "enum": [
+              "ctf",
+              "negrisk"
+            ],
+            "description": "Exchange: `ctf` (standard) or `negrisk` (multi-outcome)."
+          },
+          "maker": {
+            "type": "string",
+            "description": "Maker wallet address."
+          },
+          "taker": {
+            "type": "string",
+            "description": "Taker wallet address."
+          },
+          "token_id": {
+            "type": "string",
+            "description": "Conditional token ID (uint256 as string)."
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "BUY",
+              "SELL"
+            ],
+            "description": "Trade side from maker's perspective."
+          },
+          "price": {
+            "type": "number",
+            "description": "Fill price (0-1 range for binary markets)."
+          },
+          "size": {
+            "type": "number",
+            "description": "Fill size in tokens."
+          },
+          "maker_amount": {
+            "type": "integer",
+            "description": "Raw maker amount (6 decimals)."
+          },
+          "taker_amount": {
+            "type": "integer",
+            "description": "Raw taker amount (6 decimals)."
+          },
+          "fee": {
+            "type": "integer",
+            "description": "Protocol fee (6 decimals)."
+          },
+          "question": {
+            "type": "string",
+            "description": "Market question (enriched from Gamma API)."
+          },
+          "outcome": {
+            "type": "string",
+            "description": "Outcome name (e.g. \"Yes\", \"No\", \"Trump\")."
+          },
+          "slug": {
+            "type": "string",
+            "description": "Market URL slug."
+          },
+          "category": {
+            "type": "string",
+            "description": "Market category."
+          }
+        }
+      },
+      "TradesResponse": {
+        "type": "object",
+        "properties": {
+          "trades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoricalTrade"
+            }
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of trades returned."
+          },
+          "query_ms": {
+            "type": "number",
+            "description": "Query execution time in milliseconds."
+          }
+        }
+      },
+      "HistoricalCandle": {
+        "type": "object",
+        "description": "An OHLCV candle from historical trade data.",
+        "properties": {
+          "bucket": {
+            "type": "integer",
+            "description": "Candle start time (Unix timestamp in seconds)."
+          },
+          "open": {
+            "type": "number",
+            "description": "Opening price."
+          },
+          "high": {
+            "type": "number",
+            "description": "Highest price."
+          },
+          "low": {
+            "type": "number",
+            "description": "Lowest price."
+          },
+          "close": {
+            "type": "number",
+            "description": "Closing price."
+          },
+          "volume": {
+            "type": "number",
+            "description": "Total volume in tokens."
+          },
+          "trades": {
+            "type": "integer",
+            "description": "Number of trades in this candle."
+          }
+        }
+      },
+      "CandlesResponse": {
+        "type": "object",
+        "properties": {
+          "candles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoricalCandle"
+            }
+          },
+          "count": {
+            "type": "integer"
+          },
+          "resolution": {
+            "type": "string"
+          },
+          "query_ms": {
+            "type": "number"
+          }
+        }
+      },
+      "VolumeInterval": {
+        "type": "object",
+        "description": "Volume data for a single time interval.",
+        "properties": {
+          "bucket": {
+            "type": "integer",
+            "description": "Interval start time (Unix timestamp in seconds)."
+          },
+          "volume": {
+            "type": "number",
+            "description": "Total volume in tokens."
+          },
+          "notional": {
+            "type": "number",
+            "description": "Total notional value (volume * price, in USDC)."
+          },
+          "trades": {
+            "type": "integer",
+            "description": "Number of trades."
+          },
+          "unique_tokens": {
+            "type": "integer",
+            "description": "Number of unique tokens traded."
+          }
+        }
+      },
+      "VolumeResponse": {
+        "type": "object",
+        "properties": {
+          "volume": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VolumeInterval"
+            }
+          },
+          "count": {
+            "type": "integer"
+          },
+          "interval": {
+            "type": "string"
+          },
+          "query_ms": {
+            "type": "number"
+          }
+        }
+      },
+      "WalletStats": {
+        "type": "object",
+        "description": "Aggregate trading statistics for a wallet.",
+        "properties": {
+          "wallet": {
+            "type": "string",
+            "description": "Wallet address."
+          },
+          "total_trades": {
+            "type": "integer",
+            "description": "Total number of trades."
+          },
+          "buys": {
+            "type": "integer",
+            "description": "Number of buy trades."
+          },
+          "sells": {
+            "type": "integer",
+            "description": "Number of sell trades."
+          },
+          "total_volume": {
+            "type": "number",
+            "description": "Total volume in tokens."
+          },
+          "total_notional": {
+            "type": "number",
+            "description": "Total notional value in USDC."
+          },
+          "avg_size": {
+            "type": "number",
+            "description": "Average trade size."
+          },
+          "avg_price": {
+            "type": "number",
+            "description": "Average trade price."
+          },
+          "unique_markets": {
+            "type": "integer",
+            "description": "Number of unique markets traded."
+          },
+          "first_trade": {
+            "type": "integer",
+            "description": "Timestamp of first trade."
+          },
+          "last_trade": {
+            "type": "integer",
+            "description": "Timestamp of last trade."
+          },
+          "ctf_trades": {
+            "type": "integer",
+            "description": "Trades on CTF Exchange."
+          },
+          "negrisk_trades": {
+            "type": "integer",
+            "description": "Trades on NegRisk Exchange."
+          },
+          "query_ms": {
+            "type": "number"
+          }
+        }
+      },
+      "TokenStats": {
+        "type": "object",
+        "description": "Aggregate trading statistics for a conditional token (market outcome).",
+        "properties": {
+          "token_id": {
+            "type": "string",
+            "description": "Conditional token ID."
+          },
+          "total_trades": {
+            "type": "integer"
+          },
+          "total_volume": {
+            "type": "number",
+            "description": "Total volume in tokens."
+          },
+          "total_notional": {
+            "type": "number",
+            "description": "Total notional value in USDC."
+          },
+          "avg_price": {
+            "type": "number"
+          },
+          "min_price": {
+            "type": "number"
+          },
+          "max_price": {
+            "type": "number"
+          },
+          "avg_size": {
+            "type": "number"
+          },
+          "unique_wallets": {
+            "type": "integer",
+            "description": "Number of unique wallets."
+          },
+          "first_trade": {
+            "type": "integer"
+          },
+          "last_trade": {
+            "type": "integer"
+          },
+          "question": {
+            "type": "string",
+            "description": "Market question."
+          },
+          "outcome": {
+            "type": "string",
+            "description": "Outcome name."
+          },
+          "slug": {
+            "type": "string",
+            "description": "Market URL slug."
+          },
+          "category": {
+            "type": "string",
+            "description": "Market category."
+          },
+          "query_ms": {
+            "type": "number"
+          }
+        }
+      },
+      "HistoricalStatus": {
+        "type": "object",
+        "description": "Status of the historical trades database.",
+        "properties": {
+          "total_trades": {
+            "type": "integer",
+            "description": "Total number of trades in the database."
+          },
+          "min_block": {
+            "type": "integer",
+            "description": "Earliest block number."
+          },
+          "max_block": {
+            "type": "integer",
+            "description": "Latest block number."
+          },
+          "min_timestamp": {
+            "type": "integer",
+            "description": "Earliest trade timestamp."
+          },
+          "max_timestamp": {
+            "type": "integer",
+            "description": "Latest trade timestamp."
+          },
+          "unique_tokens": {
+            "type": "integer",
+            "description": "Number of unique conditional tokens."
+          },
+          "unique_wallets": {
+            "type": "integer",
+            "description": "Number of unique wallet addresses."
+          },
+          "parquet_files": {
+            "type": "integer",
+            "description": "Number of Parquet data files."
           }
         }
       }

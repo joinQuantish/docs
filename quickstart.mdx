@@ -7,7 +7,7 @@ description: Generate an API key and make your first request in 30 seconds.
 
 <CodeGroup>
 ```bash cURL
-curl -s -X POST https://polynode.dev/v1/keys \
+curl -s -X POST https://api.polynode.dev/v1/keys \
   -H "Content-Type: application/json" \
   -d '{"name": "my-bot"}'
 ```
@@ -15,13 +15,13 @@ curl -s -X POST https://polynode.dev/v1/keys \
 ```python Python
 import requests
 
-resp = requests.post("https://polynode.dev/v1/keys", json={"name": "my-bot"})
+resp = requests.post("https://api.polynode.dev/v1/keys", json={"name": "my-bot"})
 key = resp.json()["api_key"]
 print(key)  # pn_live_a1b2c3d4e5f6...
 ```
 
 ```typescript TypeScript
-const resp = await fetch("https://polynode.dev/v1/keys", {
+const resp = await fetch("https://api.polynode.dev/v1/keys", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ name: "my-bot" }),
@@ -49,7 +49,7 @@ Fetch the top 5 markets by 24h volume:
 
 <CodeGroup>
 ```bash cURL
-curl -s "https://polynode.dev/v1/markets?count=5" \
+curl -s "https://api.polynode.dev/v1/markets?count=5" \
   -H "x-api-key: pn_live_YOUR_KEY" | jq
 ```
 
@@ -57,7 +57,7 @@ curl -s "https://polynode.dev/v1/markets?count=5" \
 import requests
 
 resp = requests.get(
-    "https://polynode.dev/v1/markets",
+    "https://api.polynode.dev/v1/markets",
     params={"count": 5},
     headers={"x-api-key": "pn_live_YOUR_KEY"},
 )
@@ -65,7 +65,7 @@ print(resp.json())
 ```
 
 ```typescript TypeScript
-const resp = await fetch("https://polynode.dev/v1/markets?count=5", {
+const resp = await fetch("https://api.polynode.dev/v1/markets?count=5", {
   headers: { "x-api-key": "pn_live_YOUR_KEY" },
 });
 const data = await resp.json();
@@ -78,13 +78,14 @@ const data = await resp.json();
   "total": 69482,
   "markets": [
     {
-      "token_id": "21742633...",
-      "question": "Will Bitcoin hit $100K in 2026?",
+      "token_id": "247024838963513327646981976118812247380",
+      "question": "Will Bitcoin reach $100k?",
       "last_price": 0.72,
       "volume_24h": 48293.50,
-      "slug": "bitcoin-100k-2026",
-      "outcomes": ["Yes", "No"],
-      "category": "Crypto"
+      "trade_count_24h": 677,
+      "last_trade_at": 1772512467000,
+      "slug": "bitcoin-100k",
+      "outcomes": ["Yes", "No"]
     }
   ]
 }
@@ -95,7 +96,7 @@ const data = await resp.json();
 Connect via WebSocket to receive real-time settlements:
 
 ```javascript
-const ws = new WebSocket("wss://polynode.dev/ws?key=pn_live_YOUR_KEY");
+const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.onopen = () => {
   ws.send(JSON.stringify({
