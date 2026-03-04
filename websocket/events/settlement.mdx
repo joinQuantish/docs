@@ -1,0 +1,171 @@
+---
+title: "Settlement Event"
+sidebarTitle: "settlement"
+description: "Decoded Polymarket settlement — pending (pre-chain) or confirmed (on-chain)."
+icon: "bolt"
+---
+
+The core PolyNode event. A decoded `matchOrders` transaction from the Polygon mempool or a confirmed block.
+
+**Pending settlements arrive ~2 seconds before on-chain confirmation.** This is the data that makes PolyNode unique.
+
+```json
+{
+  "type": "settlement",
+  "timestamp": 1772500000000,
+  "data": {
+    "event_type": "settlement",
+    "tx_hash": "0x1a2b3c4d5e6f...",
+    "status": "pending",
+    "detected_at": 1772500000000,
+    "block_number": null,
+    "taker_wallet": "0xabcdef1234567890...",
+    "taker_token": "21742633143463906290569404...",
+    "taker_side": "BUY",
+    "taker_price": 0.72,
+    "taker_size": 500.0,
+    "market_title": "Will Bitcoin hit $100K in 2026?",
+    "outcome": "Yes",
+    "market_slug": "bitcoin-100k-2026",
+    "event_title": "Bitcoin Price Milestones",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/...",
+    "trades": [
+      {
+        "maker": "0x999888777666...",
+        "signer": "0xabc123...",
+        "taker": "0xabcdef1234567890...",
+        "token_id": "21742633...",
+        "side": "BUY",
+        "price": 0.72,
+        "size": 500.0,
+        "maker_amount": "360000000",
+        "taker_amount": "500000000"
+      }
+    ]
+  }
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"settlement"`.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Unix milliseconds. Use this as the canonical event time.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="tx_hash" type="string" required>
+      Transaction hash (0x-prefixed).
+    </ResponseField>
+
+    <ResponseField name="status" type="string" required>
+      `"pending"` — detected in mempool, not yet confirmed.
+      `"confirmed"` — included in a block.
+    </ResponseField>
+
+    <ResponseField name="detected_at" type="number" required>
+      Unix milliseconds when the transaction was first seen in the mempool.
+    </ResponseField>
+
+    <ResponseField name="block_number" type="number | null" required>
+      Block number. `null` when `status` is `"pending"`, set when `"confirmed"`.
+    </ResponseField>
+
+    <ResponseField name="taker_wallet" type="string" required>
+      Taker (settler) wallet address.
+    </ResponseField>
+
+    <ResponseField name="taker_token" type="string" required>
+      Polymarket conditional token ID.
+    </ResponseField>
+
+    <ResponseField name="taker_side" type="string" required>
+      `"BUY"` or `"SELL"` — the taker's side of the trade.
+    </ResponseField>
+
+    <ResponseField name="taker_price" type="number" required>
+      Fill price (0.0–1.0 for binary markets).
+    </ResponseField>
+
+    <ResponseField name="taker_size" type="number" required>
+      Fill size in shares. Divide by 10^6 for USDC value.
+    </ResponseField>
+
+    <ResponseField name="market_title" type="string">
+      Human-readable market question. Enriched from Polymarket metadata.
+    </ResponseField>
+
+    <ResponseField name="outcome" type="string">
+      Outcome name (e.g. "Yes", "No", "Donald Trump"). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="market_slug" type="string">
+      Market URL slug (e.g. `"bitcoin-100k-2026"`). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="event_title" type="string">
+      Parent event title. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="market_image" type="string">
+      Market image URL. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="trades" type="object[]" required>
+      Array of matched maker orders in this settlement.
+      <Expandable title="trade fields">
+        <ResponseField name="maker" type="string" required>
+          Maker wallet address.
+        </ResponseField>
+        <ResponseField name="signer" type="string" required>
+          Order signer address (may differ from maker for smart contract wallets).
+        </ResponseField>
+        <ResponseField name="taker" type="string" required>
+          Taker wallet address.
+        </ResponseField>
+        <ResponseField name="token_id" type="string" required>
+          Conditional token ID.
+        </ResponseField>
+        <ResponseField name="side" type="string" required>
+          `"BUY"` or `"SELL"`.
+        </ResponseField>
+        <ResponseField name="price" type="number" required>
+          Fill price (0.0–1.0).
+        </ResponseField>
+        <ResponseField name="size" type="number" required>
+          Fill size in shares.
+        </ResponseField>
+        <ResponseField name="maker_amount" type="string" required>
+          Raw maker amount (6 decimal USDC or tokens).
+        </ResponseField>
+        <ResponseField name="taker_amount" type="string" required>
+          Raw taker amount (6 decimal USDC or tokens).
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Pending vs confirmed
+
+| Field | Pending | Confirmed |
+|-------|---------|-----------|
+| `status` | `"pending"` | `"confirmed"` |
+| `block_number` | `null` | block number |
+| `detected_at` | when mempool received TX | same value |
+| Latency | ~0ms from detection | ~2s after detection |
+
+<Tip>
+Subscribe with `"status": "pending"` to get the ~2 second edge. You'll receive a separate `status_update` event when the same transaction confirms on-chain, including `latency_ms`.
+</Tip>
+
+## Use cases
+
+- **Copy trading** — detect whale trades 2 seconds before confirmation and execute your own order
+- **Market making** — adjust spreads based on incoming settlements
+- **Analytics** — track real-time volume and price movements
+- **Alerts** — notify on large trades or specific wallet activity

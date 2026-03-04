@@ -1,0 +1,163 @@
+---
+title: "WebSocket Overview"
+sidebarTitle: "Overview"
+description: "Real-time Polymarket settlements, ~2 seconds before on-chain confirmation."
+---
+
+PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement transactions are decoded from the Polygon mempool and delivered to your connection **before they confirm on-chain**.
+
+<CardGroup cols={2}>
+  <Card title="~2 second edge" icon="bolt">
+    Settlements detected in the mempool, decoded and enriched, then pushed to you — typically 2 seconds before block confirmation.
+  </Card>
+  <Card title="Filtered subscriptions" icon="filter">
+    Subscribe by wallet, token, market slug, side, size, or event type. Only receive what you need.
+  </Card>
+  <Card title="Enriched events" icon="layer-group">
+    Every event includes market title, outcome name, slug, and image. No secondary lookups needed.
+  </Card>
+  <Card title="Drop-in JSON-RPC" icon="server">
+    Standard `eth_subscribe` works on the same connection. Replace your Alchemy/Infura WebSocket URL.
+  </Card>
+</CardGroup>
+
+## Quick start
+
+<Steps>
+  <Step title="Get an API key">
+    ```bash
+    curl -s -X POST https://api.polynode.dev/v1/keys \
+      -H "Content-Type: application/json" \
+      -d '{"name": "my-app"}'
+    ```
+    Save the `pn_live_...` key from the response.
+  </Step>
+
+  <Step title="Connect">
+    ```bash
+    wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
+    ```
+  </Step>
+
+  <Step title="Subscribe">
+    ```json
+    {
+      "action": "subscribe",
+      "type": "settlements",
+      "filters": {
+        "status": "pending",
+        "min_size": 100
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Receive events">
+    You'll get a `snapshot` of recent matching events, then live `settlement` events as they happen:
+    ```json
+    {
+      "type": "settlement",
+      "timestamp": 1772500000000,
+      "data": {
+        "tx_hash": "0x1a2b3c...",
+        "status": "pending",
+        "taker_side": "BUY",
+        "taker_price": 0.72,
+        "taker_size": 500.0,
+        "market_title": "Will Bitcoin hit $100K in 2026?",
+        "outcome": "Yes"
+      }
+    }
+    ```
+  </Step>
+</Steps>
+
+## Connection URL
+
+```
+wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY
+```
+
+The API key is passed as a query parameter. Keys starting with `pn_live_` or `qm_live_` are accepted.
+
+## Two protocols, one connection
+
+PolyNode supports two protocols on the same WebSocket:
+
+| Protocol | Purpose | Message format |
+|----------|---------|----------------|
+| **PolyNode** | Decoded Polymarket events with filtering | `{"action": "subscribe", ...}` |
+| **JSON-RPC** | Standard Ethereum subscriptions (`newHeads`, `newPendingTransactions`, `logs`) | `{"jsonrpc": "2.0", "method": "eth_subscribe", ...}` |
+
+Both can run simultaneously on the same connection.
+
+## Heartbeat
+
+The server sends a heartbeat every 30 seconds:
+
+- A WebSocket-level **Ping** frame (handled automatically by WS clients)
+- A text message: `{"type": "heartbeat", "ts": 1772386305181}`
+
+If no heartbeat arrives within ~35 seconds, the connection is dead — reconnect.
+
+You can also send a client-side ping:
+
+```json
+{"action": "ping"}
+```
+
+Response: `{"type": "pong"}`
+
+## Connection lifecycle
+
+```
+Connect → wss://api.polynode.dev/ws?key=pn_live_...
+    ↓
+Send → {"action": "subscribe", "type": "settlements", ...}
+    ↓
+Receive ← {"type": "snapshot", "count": 20, "events": [...]}
+Receive ← {"type": "subscribed", "subscriber_id": "..."}
+    ↓
+Receive ← {"type": "settlement", ...}     (live events)
+Receive ← {"type": "status_update", ...}
+Receive ← {"type": "heartbeat", ...}       (every 30s)
+    ↓
+Send → {"action": "unsubscribe"}
+Receive ← {"type": "unsubscribed"}
+```
+
+## Error handling
+
+Invalid messages return structured errors:
+
+```json
+{
+  "type": "error",
+  "code": "invalid_json",
+  "message": "Message is not valid JSON."
+}
+```
+
+| Error code | Cause |
+|------------|-------|
+| `invalid_json` | Message is not valid JSON |
+| `invalid_message` | Unknown action or missing required fields |
+| `unresolved_slugs` | Slug not found in market metadata |
+| `unresolved_condition_ids` | Condition ID not found in metadata |
+
+## Reconnection
+
+PolyNode does not send a close frame before disconnecting. Implement reconnection with exponential backoff:
+
+```javascript
+let delay = 1000;
+
+function connect() {
+  const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_...");
+  ws.onopen = () => {
+    delay = 1000; // Reset on success
+    ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
+  };
+  ws.onclose = () => setTimeout(connect, Math.min(delay *= 2, 30000));
+}
+```

@@ -1,0 +1,99 @@
+---
+title: "Status Update Event"
+sidebarTitle: "status_update"
+description: "Notification when a pending settlement confirms on-chain."
+icon: "circle-check"
+---
+
+Fired when a previously pending settlement is confirmed in a block. Links back to the original `settlement` event via `tx_hash` and includes the confirmation latency.
+
+```json
+{
+  "type": "status_update",
+  "timestamp": 1772500002000,
+  "data": {
+    "event_type": "status_update",
+    "tx_hash": "0x1a2b3c4d5e6f...",
+    "token_id": "21742633...",
+    "block_number": 54321000,
+    "confirmed_at": 1772500002000,
+    "pending_detected_at": 1772500000000,
+    "latency_ms": 2000,
+    "market_title": "Will Bitcoin hit $100K in 2026?",
+    "outcome": "Yes",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/..."
+  }
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"status_update"`.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Unix milliseconds of the confirmation.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="tx_hash" type="string" required>
+      Transaction hash — matches the original `settlement` event.
+    </ResponseField>
+
+    <ResponseField name="token_id" type="string" required>
+      Conditional token ID.
+    </ResponseField>
+
+    <ResponseField name="block_number" type="number" required>
+      Block where the transaction was included.
+    </ResponseField>
+
+    <ResponseField name="confirmed_at" type="number" required>
+      Unix milliseconds of block confirmation.
+    </ResponseField>
+
+    <ResponseField name="pending_detected_at" type="number" required>
+      Unix milliseconds when the transaction was first detected in the mempool.
+    </ResponseField>
+
+    <ResponseField name="latency_ms" type="number" required>
+      Time between mempool detection and block confirmation, in milliseconds. Typical values: 1500–3000ms.
+    </ResponseField>
+
+    <ResponseField name="market_title" type="string">
+      Market question. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="outcome" type="string">
+      Outcome name. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="market_image" type="string">
+      Market image URL. Enriched from metadata.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## How to use
+
+Match `status_update` events back to their `settlement` by `tx_hash`:
+
+```javascript
+const pending = new Map(); // tx_hash → settlement data
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.type === "settlement" && msg.data.status === "pending") {
+    pending.set(msg.data.tx_hash, msg.data);
+  }
+
+  if (msg.type === "status_update") {
+    const original = pending.get(msg.data.tx_hash);
+    console.log(`Confirmed in ${msg.data.latency_ms}ms`, original);
+    pending.delete(msg.data.tx_hash);
+  }
+};
+```

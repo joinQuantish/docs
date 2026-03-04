@@ -15,6 +15,36 @@
   "navigation": {
     "tabs": [
       {
+        "tab": "WebSocket",
+        "groups": [
+          {
+            "group": "Real-time Streaming",
+            "pages": [
+              "websocket/overview",
+              "websocket/subscribing"
+            ]
+          },
+          {
+            "group": "Event Reference",
+            "pages": [
+              "websocket/events/settlement",
+              "websocket/events/status-update",
+              "websocket/events/trade",
+              "websocket/events/block",
+              "websocket/events/position-change",
+              "websocket/events/deposit"
+            ]
+          },
+          {
+            "group": "More",
+            "pages": [
+              "websocket/json-rpc",
+              "websocket/examples"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Guides",
         "groups": [
           {
@@ -28,7 +58,6 @@
           {
             "group": "Guides",
             "pages": [
-              "guides/websocket",
               "guides/errors",
               "guides/rate-limits"
             ]

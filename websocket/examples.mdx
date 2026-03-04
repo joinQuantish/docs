@@ -1,0 +1,244 @@
+---
+title: "Examples"
+sidebarTitle: "Code Examples"
+description: "Complete WebSocket examples in JavaScript, Python, and wscat."
+---
+
+## JavaScript / Node.js
+
+### Track all pending settlements
+
+```javascript
+const WebSocket = require("ws");
+
+const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.on("open", () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "settlements",
+    filters: { status: "pending" }
+  }));
+});
+
+ws.on("message", (data) => {
+  const msg = JSON.parse(data);
+
+  switch (msg.type) {
+    case "snapshot":
+      console.log(`Loaded ${msg.count} recent settlements`);
+      break;
+    case "settlement":
+      const d = msg.data;
+      console.log(
+        `${d.status.toUpperCase()} | ${d.taker_side} ${d.taker_size} shares @ ${d.taker_price}`,
+        `| "${d.market_title}" (${d.outcome})`
+      );
+      break;
+    case "status_update":
+      console.log(`Confirmed: ${msg.data.tx_hash} in ${msg.data.latency_ms}ms`);
+      break;
+    case "heartbeat":
+      break; // ignore
+  }
+});
+
+// Reconnect on close
+ws.on("close", () => setTimeout(() => process.exit(1), 1000));
+```
+
+### Whale alerts ($5K+)
+
+```javascript
+const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.on("open", () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "large_trades",
+    filters: { min_size: 5000 }
+  }));
+});
+
+ws.on("message", (data) => {
+  const msg = JSON.parse(data);
+  if (msg.type === "settlement") {
+    const d = msg.data;
+    console.log(`WHALE ALERT: ${d.taker_side} $${d.taker_size.toFixed(0)} @ ${d.taker_price}`);
+    console.log(`  Market: ${d.market_title} (${d.outcome})`);
+    console.log(`  Wallet: ${d.taker_wallet}`);
+    console.log(`  TX: ${d.tx_hash}`);
+  }
+});
+```
+
+### Monitor a specific market by slug
+
+```javascript
+ws.send(JSON.stringify({
+  action: "subscribe",
+  type: "markets",
+  filters: {
+    slugs: ["presidential-election-winner-2028"],
+    snapshot_count: 100 // Get last 100 events
+  }
+}));
+```
+
+### Track a wallet
+
+```javascript
+ws.send(JSON.stringify({
+  action: "subscribe",
+  type: "wallets",
+  filters: {
+    wallets: ["0xabcdef1234567890abcdef1234567890abcdef12"]
+  }
+}));
+// Receives: settlements, trades, position changes, deposits, status updates
+```
+
+## Python
+
+### asyncio client with reconnection
+
+```python
+import asyncio
+import json
+import websockets
+
+API_KEY = "pn_live_YOUR_KEY"
+URL = f"wss://api.polynode.dev/ws?key={API_KEY}"
+
+async def connect():
+    while True:
+        try:
+            async with websockets.connect(URL) as ws:
+                # Subscribe to pending settlements
+                await ws.send(json.dumps({
+                    "action": "subscribe",
+                    "type": "settlements",
+                    "filters": {"status": "pending", "min_size": 100}
+                }))
+
+                async for message in ws:
+                    msg = json.loads(message)
+
+                    if msg["type"] == "snapshot":
+                        print(f"Loaded {msg['count']} recent events")
+
+                    elif msg["type"] == "settlement":
+                        d = msg["data"]
+                        print(f"{d['taker_side']} {d['taker_size']:.0f} @ {d['taker_price']:.2f}"
+                              f" | {d.get('market_title', 'unknown')}")
+
+                    elif msg["type"] == "status_update":
+                        print(f"Confirmed: {msg['data']['tx_hash'][:16]}..."
+                              f" ({msg['data']['latency_ms']}ms)")
+
+        except (websockets.ConnectionClosed, ConnectionError) as e:
+            print(f"Disconnected: {e}. Reconnecting in 3s...")
+            await asyncio.sleep(3)
+
+asyncio.run(connect())
+```
+
+## wscat (CLI)
+
+Quick testing from the command line:
+
+```bash
+# Install
+npm install -g wscat
+
+# Connect
+wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
+
+# Once connected, paste:
+{"action": "subscribe", "type": "settlements", "filters": {"status": "pending"}}
+```
+
+```bash
+# Subscribe to whale trades
+{"action": "subscribe", "type": "large_trades", "filters": {"min_size": 10000}}
+
+# Subscribe by market slug
+{"action": "subscribe", "type": "markets", "filters": {"slugs": ["bitcoin-100k-2026"]}}
+
+# Ping
+{"action": "ping"}
+
+# Unsubscribe
+{"action": "unsubscribe"}
+```
+
+## curl (WebSocket upgrade)
+
+```bash
+# Using websocat (Rust CLI tool)
+websocat "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
+
+# Then type:
+{"action":"subscribe","type":"settlements"}
+```
+
+## Common patterns
+
+### Reconnection with exponential backoff
+
+```javascript
+function createConnection() {
+  let delay = 1000;
+
+  function connect() {
+    const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+    ws.onopen = () => {
+      delay = 1000; // Reset backoff
+      ws.send(JSON.stringify({
+        action: "subscribe",
+        type: "settlements"
+      }));
+    };
+
+    ws.onclose = () => {
+      console.log(`Reconnecting in ${delay}ms...`);
+      setTimeout(connect, delay);
+      delay = Math.min(delay * 2, 30000); // Max 30s
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type !== "heartbeat") {
+        handleEvent(msg);
+      }
+    };
+  }
+
+  connect();
+}
+```
+
+### Pending-to-confirmed tracking
+
+```javascript
+const pending = new Map();
+
+function handleEvent(msg) {
+  if (msg.type === "settlement" && msg.data.status === "pending") {
+    pending.set(msg.data.tx_hash, {
+      ...msg.data,
+      received_at: Date.now()
+    });
+    console.log(`PENDING: ${msg.data.taker_side} ${msg.data.taker_size} @ ${msg.data.taker_price}`);
+  }
+
+  if (msg.type === "status_update") {
+    const original = pending.get(msg.data.tx_hash);
+    if (original) {
+      console.log(`CONFIRMED: ${msg.data.latency_ms}ms latency, block ${msg.data.block_number}`);
+      pending.delete(msg.data.tx_hash);
+    }
+  }
+}
+```

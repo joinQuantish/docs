@@ -1,0 +1,133 @@
+---
+title: "JSON-RPC Subscriptions"
+sidebarTitle: "JSON-RPC (eth_subscribe)"
+description: "Standard Ethereum WebSocket subscriptions on the same connection."
+---
+
+PolyNode supports standard Ethereum JSON-RPC subscriptions alongside PolyNode subscriptions on the same WebSocket connection. Use it as a drop-in replacement for Alchemy, Infura, or any other Polygon WebSocket provider.
+
+## Supported methods
+
+### eth_subscribe
+
+<CodeGroup>
+```json newHeads
+{
+  "jsonrpc": "2.0",
+  "method": "eth_subscribe",
+  "params": ["newHeads"],
+  "id": 1
+}
+```
+
+```json newPendingTransactions
+{
+  "jsonrpc": "2.0",
+  "method": "eth_subscribe",
+  "params": ["newPendingTransactions"],
+  "id": 2
+}
+```
+
+```json logs
+{
+  "jsonrpc": "2.0",
+  "method": "eth_subscribe",
+  "params": [
+    "logs",
+    { "address": "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E" }
+  ],
+  "id": 3
+}
+```
+</CodeGroup>
+
+**Response:**
+```json
+{
+  "jsonrpc": "2.0",
+  "result": "0xd6faaec427ce61541633fa48d822751c",
+  "id": 1
+}
+```
+
+### eth_unsubscribe
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "eth_unsubscribe",
+  "params": ["0xd6faaec427ce61541633fa48d822751c"],
+  "id": 4
+}
+```
+
+**Response:**
+```json
+{
+  "jsonrpc": "2.0",
+  "result": true,
+  "id": 4
+}
+```
+
+## Notification format
+
+Notifications follow standard Ethereum JSON-RPC format:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "eth_subscription",
+  "params": {
+    "subscription": "0xd6faaec427ce61541633fa48d822751c",
+    "result": {
+      "hash": "0x...",
+      "parentHash": "0x...",
+      "number": "0x33c5408",
+      "timestamp": "0x65d8f7a0"
+    }
+  }
+}
+```
+
+## Using both protocols
+
+PolyNode and JSON-RPC subscriptions coexist on the same connection:
+
+```javascript
+const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_...");
+
+ws.onopen = () => {
+  // PolyNode subscription — decoded Polymarket settlements
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "settlements",
+    filters: { status: "pending", min_size: 500 }
+  }));
+
+  // JSON-RPC subscription — raw block headers
+  ws.send(JSON.stringify({
+    jsonrpc: "2.0",
+    method: "eth_subscribe",
+    params: ["newHeads"],
+    id: 1
+  }));
+};
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.type === "settlement") {
+    // PolyNode decoded settlement
+    console.log("Settlement:", msg.data.market_title);
+  } else if (msg.jsonrpc === "2.0" && msg.method === "eth_subscription") {
+    // Standard Ethereum notification
+    console.log("New block:", msg.params.result.number);
+  }
+};
+```
+
+<Tip>
+If you're currently using Alchemy or Infura for `eth_subscribe`, you can switch to PolyNode's WebSocket URL and get Polygon RPC subscriptions **plus** decoded Polymarket data on the same connection.
+</Tip>

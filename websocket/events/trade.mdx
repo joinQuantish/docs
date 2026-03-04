@@ -1,0 +1,130 @@
+---
+title: "Trade Event"
+sidebarTitle: "trade"
+description: "Confirmed on-chain trade execution from Polymarket exchange contracts."
+icon: "arrow-right-arrow-left"
+---
+
+A confirmed trade from an on-chain `OrderFilled` event. These come from the CTF Exchange or NegRisk CTF Exchange contracts.
+
+```json
+{
+  "type": "trade",
+  "timestamp": 1772500002000,
+  "data": {
+    "event_type": "trade",
+    "tx_hash": "0x5e6f7a8b9c0d...",
+    "block_number": 54321000,
+    "log_index": 42,
+    "timestamp": 1772500002000,
+    "exchange": "ctf_exchange",
+    "maker": "0x999888777666...",
+    "taker": "0xabcdef1234567890...",
+    "token_id": "21742633143463906290569404...",
+    "side": "BUY",
+    "price": 0.72,
+    "size": 500.0,
+    "maker_amount": "360000000",
+    "taker_amount": "500000000",
+    "market_title": "Will Bitcoin hit $100K in 2026?",
+    "outcome": "Yes",
+    "market_slug": "bitcoin-100k-2026",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/..."
+  }
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"trade"`.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Unix milliseconds of the block.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="tx_hash" type="string" required>
+      Transaction hash.
+    </ResponseField>
+
+    <ResponseField name="block_number" type="number" required>
+      Block number.
+    </ResponseField>
+
+    <ResponseField name="log_index" type="number" required>
+      Log index within the transaction. `(tx_hash, log_index)` is globally unique.
+    </ResponseField>
+
+    <ResponseField name="timestamp" type="number" required>
+      Block timestamp in Unix milliseconds.
+    </ResponseField>
+
+    <ResponseField name="exchange" type="string" required>
+      `"ctf_exchange"` or `"neg_risk_ctf_exchange"`.
+    </ResponseField>
+
+    <ResponseField name="maker" type="string" required>
+      Maker wallet address.
+    </ResponseField>
+
+    <ResponseField name="taker" type="string" required>
+      Taker wallet address.
+    </ResponseField>
+
+    <ResponseField name="token_id" type="string" required>
+      Conditional token ID.
+    </ResponseField>
+
+    <ResponseField name="side" type="string" required>
+      `"BUY"` or `"SELL"`.
+    </ResponseField>
+
+    <ResponseField name="price" type="number" required>
+      Fill price (0.0–1.0 for binary markets).
+    </ResponseField>
+
+    <ResponseField name="size" type="number" required>
+      Fill size in shares.
+    </ResponseField>
+
+    <ResponseField name="maker_amount" type="string" required>
+      Raw maker amount (6 decimal precision).
+    </ResponseField>
+
+    <ResponseField name="taker_amount" type="string" required>
+      Raw taker amount (6 decimal precision).
+    </ResponseField>
+
+    <ResponseField name="market_title" type="string">
+      Market question. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="outcome" type="string">
+      Outcome name. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="market_slug" type="string">
+      Market URL slug. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="market_image" type="string">
+      Market image URL. Enriched from metadata.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Settlement vs trade
+
+| | Settlement | Trade |
+|---|-----------|-------|
+| Source | Decoded `matchOrders` calldata | `OrderFilled` event log |
+| Timing | Pending (pre-chain) or confirmed | Confirmed only |
+| Contains | Full settlement with all maker fills | Single maker-taker fill |
+| Use case | Early detection, copy trading | Accurate historical record |
+
+<Note>
+A single settlement can contain multiple trades (one per matched maker order). If you subscribe to both `settlement` and `trade`, you'll see the settlement first (from mempool), then individual trades (from the confirmed block).
+</Note>

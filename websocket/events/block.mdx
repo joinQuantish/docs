@@ -1,0 +1,78 @@
+---
+title: "Block Event"
+sidebarTitle: "block"
+description: "New Polygon block with Polymarket-specific statistics."
+icon: "cube"
+---
+
+Emitted for every new Polygon block. Includes Polymarket-specific aggregates — settlement count, trade volume, and how many of the block's transactions involved Polymarket.
+
+```json
+{
+  "type": "block",
+  "timestamp": 1772500002000,
+  "data": {
+    "event_type": "block",
+    "block_number": 54321000,
+    "block_hash": "0xblockhash...",
+    "timestamp": 1772500002000,
+    "parent_hash": "0xparenthash...",
+    "tx_count": 150,
+    "polymarket_tx_count": 12,
+    "settlement_count": 8,
+    "trade_volume_usd": 34500.0
+  }
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"block"`.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Block timestamp in Unix milliseconds.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="block_number" type="number" required>
+      Block height.
+    </ResponseField>
+
+    <ResponseField name="block_hash" type="string" required>
+      Block hash (0x-prefixed).
+    </ResponseField>
+
+    <ResponseField name="timestamp" type="number" required>
+      Block timestamp in Unix milliseconds.
+    </ResponseField>
+
+    <ResponseField name="parent_hash" type="string" required>
+      Parent block hash.
+    </ResponseField>
+
+    <ResponseField name="tx_count" type="number" required>
+      Total transactions in the block.
+    </ResponseField>
+
+    <ResponseField name="polymarket_tx_count" type="number" required>
+      Transactions involving Polymarket contracts.
+    </ResponseField>
+
+    <ResponseField name="settlement_count" type="number" required>
+      Number of Polymarket settlements in this block.
+    </ResponseField>
+
+    <ResponseField name="trade_volume_usd" type="number" required>
+      Total Polymarket trade volume in this block (USD).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Use cases
+
+- **Network monitoring** — track block production rate and Polymarket's share of network activity
+- **Volume dashboards** — aggregate `trade_volume_usd` over time for real-time volume charts
+- **Block explorer** — correlate settlements with their containing blocks

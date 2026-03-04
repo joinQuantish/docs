@@ -1,0 +1,81 @@
+---
+title: "Position Change Event"
+sidebarTitle: "position_change"
+description: "Polymarket position transfers between wallets."
+icon: "shuffle"
+---
+
+Emitted when conditional tokens are transferred between wallets (ERC-1155 `TransferSingle` or `TransferBatch` events on Polymarket's CTF contract).
+
+```json
+{
+  "type": "position_change",
+  "timestamp": 1772500002000,
+  "data": {
+    "event_type": "position_change",
+    "tx_hash": "0xdef456...",
+    "block_number": 54321000,
+    "log_index": 15,
+    "timestamp": 1772500002000,
+    "from": "0xaaa111...",
+    "to": "0xbbb222...",
+    "token_id": "21742633...",
+    "amount": 1000.0,
+    "transfer_type": "single"
+  }
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"position_change"`.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Block timestamp in Unix milliseconds.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="tx_hash" type="string" required>
+      Transaction hash.
+    </ResponseField>
+
+    <ResponseField name="block_number" type="number" required>
+      Block number.
+    </ResponseField>
+
+    <ResponseField name="log_index" type="number" required>
+      Log index within the transaction.
+    </ResponseField>
+
+    <ResponseField name="timestamp" type="number" required>
+      Block timestamp in Unix milliseconds.
+    </ResponseField>
+
+    <ResponseField name="from" type="string" required>
+      Sender wallet address.
+    </ResponseField>
+
+    <ResponseField name="to" type="string" required>
+      Receiver wallet address.
+    </ResponseField>
+
+    <ResponseField name="token_id" type="string" required>
+      Conditional token ID being transferred.
+    </ResponseField>
+
+    <ResponseField name="amount" type="number" required>
+      Number of tokens transferred.
+    </ResponseField>
+
+    <ResponseField name="transfer_type" type="string" required>
+      `"single"` (TransferSingle) or `"batch"` (TransferBatch).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<Note>
+Position changes from settlements are **not** duplicated here — the `settlement` event already contains the trade details. This event tracks non-trade transfers: wallet migrations, OTC deals, and smart contract interactions.
+</Note>

@@ -1,0 +1,205 @@
+---
+title: "Subscriptions & Filters"
+sidebarTitle: "Subscriptions & Filters"
+description: "Subscription types, filter options, and how event matching works."
+---
+
+## Subscribe message
+
+Send a JSON message after connecting to start receiving events:
+
+```json
+{
+  "action": "subscribe",
+  "type": "settlements",
+  "filters": {
+    "wallets": ["0x1234..."],
+    "tokens": ["21742633..."],
+    "slugs": ["bitcoin-100k-2026"],
+    "condition_ids": ["0xabc..."],
+    "side": "BUY",
+    "status": "pending",
+    "min_size": 100,
+    "max_size": 10000,
+    "event_types": ["settlement", "status_update"],
+    "snapshot_count": 50
+  }
+}
+```
+
+All fields except `action` are optional.
+
+## Subscription types
+
+The `type` field selects a preset of event types. If you also set `filters.event_types`, it overrides the preset.
+
+<ResponseField name="settlements" type="default">
+  Events: `settlement`, `status_update`
+
+  Pending and confirmed Polymarket settlements. The default subscription type.
+</ResponseField>
+
+<ResponseField name="trades" type="string">
+  Events: `settlement`, `trade`, `status_update`
+
+  All trade activity including confirmed on-chain trades.
+</ResponseField>
+
+<ResponseField name="prices" type="string">
+  Events: `settlement`, `trade`
+
+  Price-moving events only. Useful for building price feeds.
+</ResponseField>
+
+<ResponseField name="blocks" type="string">
+  Events: `block`
+
+  New Polygon block notifications with Polymarket-specific stats (settlement count, trade volume).
+</ResponseField>
+
+<ResponseField name="wallets" type="string">
+  Events: `settlement`, `trade`, `position_change`, `deposit`, `status_update`
+
+  All activity for specific wallets. Best used with the `wallets` filter.
+</ResponseField>
+
+<ResponseField name="markets" type="string">
+  Events: `settlement`, `trade`, `position_change`, `status_update`
+
+  All activity for specific markets. Best used with `tokens`, `slugs`, or `condition_ids` filters.
+</ResponseField>
+
+<ResponseField name="large_trades" type="string">
+  Events: `settlement`, `trade`
+
+  Whale alerts. Defaults to `min_size: 1000` ($1K+) unless you set your own.
+</ResponseField>
+
+<ResponseField name="global" type="string">
+  Events: all
+
+  Unfiltered stream of every event. High throughput — use with caution.
+</ResponseField>
+
+## Filters
+
+All filters are optional. Omit the `filters` object entirely to receive all events matching the subscription type.
+
+### Market identification
+
+<ParamField body="tokens" type="string[]">
+  Filter by Polymarket conditional token IDs. Match if **any** token in the list appears in the event.
+  ```json
+  "tokens": ["21742633143463906290569404...", "98765432..."]
+  ```
+</ParamField>
+
+<ParamField body="slugs" type="string[]">
+  Filter by market URL slugs. Resolved to token IDs at subscribe time — zero performance cost after that.
+  ```json
+  "slugs": ["bitcoin-100k-2026", "trump-2024"]
+  ```
+  <Warning>If a slug isn't found in metadata, you'll get a warning in the `subscribed` response. The subscription still activates for any resolved slugs.</Warning>
+</ParamField>
+
+<ParamField body="condition_ids" type="string[]">
+  Filter by Polymarket condition IDs. Resolved to token IDs at subscribe time.
+  ```json
+  "condition_ids": ["0x123abc..."]
+  ```
+</ParamField>
+
+### Wallet filtering
+
+<ParamField body="wallets" type="string[]">
+  Filter by wallet addresses (case-insensitive). Matches if the wallet is involved as maker **or** taker.
+  ```json
+  "wallets": ["0xabcdef1234567890..."]
+  ```
+</ParamField>
+
+### Trade filtering
+
+<ParamField body="side" type="string">
+  Filter by trade side. Case-insensitive.
+
+  Values: `"BUY"` or `"SELL"`
+</ParamField>
+
+<ParamField body="min_size" type="number">
+  Minimum trade size in USD. Events below this size are dropped.
+  ```json
+  "min_size": 1000
+  ```
+</ParamField>
+
+<ParamField body="max_size" type="number">
+  Maximum trade size in USD. Events above this size are dropped.
+</ParamField>
+
+<ParamField body="status" type="string" default="all">
+  Filter by settlement status.
+
+  | Value | Description |
+  |-------|-------------|
+  | `"pending"` | Only mempool detections (pre-chain) |
+  | `"confirmed"` | Only confirmed in a block |
+  | `"all"` | Both pending and confirmed (default) |
+</ParamField>
+
+### Event control
+
+<ParamField body="event_types" type="string[]">
+  Override the subscription type's default event list. Valid values:
+  `"settlement"`, `"trade"`, `"status_update"`, `"block"`, `"position_change"`, `"deposit"`
+</ParamField>
+
+<ParamField body="snapshot_count" type="number" default="20">
+  Number of recent matching events to receive immediately after subscribing. Max: 200.
+</ParamField>
+
+## Matching logic
+
+Filters use **AND** logic between different filter types and **OR** logic within each filter:
+
+- An event must match **all** active filter categories (wallets AND tokens AND side AND size range)
+- Within a category, matching **any** value is sufficient (wallet A OR wallet B)
+- Empty/omitted filters match everything in that category
+
+## Subscribe response
+
+After subscribing, you receive two messages:
+
+**1. Snapshot** — recent events matching your filters:
+```json
+{
+  "type": "snapshot",
+  "count": 20,
+  "events": [...]
+}
+```
+
+**2. Confirmation** — your subscriber ID and any warnings:
+```json
+{
+  "type": "subscribed",
+  "subscriber_id": "550e8400-e29b-41d4-a716-446655440000",
+  "subscription_type": "settlements",
+  "warnings": []
+}
+```
+
+## Unsubscribe
+
+```json
+{"action": "unsubscribe"}
+```
+
+Response:
+```json
+{"type": "unsubscribed"}
+```
+
+<Tip>
+You can change your subscription at any time by sending a new `subscribe` message. It replaces the previous subscription — no need to unsubscribe first.
+</Tip>

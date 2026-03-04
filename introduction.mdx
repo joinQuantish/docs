@@ -5,45 +5,53 @@ description: Real-time Polymarket data API — settlements detected 2 seconds be
 
 # PolyNode API
 
-PolyNode is a real-time data API for Polymarket. It detects settlement transactions **~2 seconds before on-chain confirmation** and serves them alongside OHLCV candles and enriched market metadata.
-
-## What makes PolyNode different
+PolyNode decodes Polymarket settlement transactions from the Polygon mempool and delivers them **~2 seconds before on-chain confirmation**. Connect via WebSocket for real-time streaming, or query the REST API for markets, candles, and historical data.
 
 <CardGroup cols={2}>
-  <Card title="Pre-chain data" icon="bolt">
-    Pending settlements ~2 seconds before on-chain confirmation. Nobody else offers this.
+  <Card title="WebSocket streaming" icon="bolt" href="/websocket/overview">
+    Real-time decoded settlements with filtered subscriptions. The core product.
   </Card>
-  <Card title="Enriched responses" icon="layer-group">
-    Market metadata (question, slug, outcomes, images) enriched on every response. One call instead of separate APIs.
+  <Card title="Historical trades" icon="clock-rotate-left" href="/api-reference/historical/query-trades">
+    Every Polymarket trade ever executed, queryable by token, wallet, date range, and more.
   </Card>
-  <Card title="OHLCV candles" icon="chart-line">
-    6 resolutions (1m, 5m, 15m, 1h, 4h, 1d) built from real settlement data.
+  <Card title="Markets & pricing" icon="chart-line" href="/api-reference/markets/top-markets">
+    Enriched market metadata, OHLCV candles, and volume analytics.
   </Card>
-  <Card title="Drop-in RPC" icon="server">
-    Full Polygon JSON-RPC endpoint. Swap your Alchemy URL and everything works.
+  <Card title="Polygon RPC" icon="server" href="/api-reference/rpc/overview">
+    Full JSON-RPC endpoint. Drop-in replacement for Alchemy or Infura.
   </Card>
 </CardGroup>
 
-## How it works
+## Quick start
 
-PolyNode monitors the Polygon network for Polymarket activity and processes it in real time. Settlement transactions are detected before they confirm on-chain, enriched with market metadata, and delivered via REST API and WebSocket.
+```bash
+# 1. Get an API key
+curl -s -X POST https://api.polynode.dev/v1/keys \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-app"}'
 
-## Endpoints at a glance
+# 2. Connect to WebSocket
+wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /v1/markets` | Top markets by 24h volume |
-| `GET /v1/markets/:token_id` | Market detail with metadata |
-| `GET /v1/markets/slug/:slug` | Lookup by URL slug |
-| `GET /v1/markets/condition/:id` | Lookup by condition ID |
-| `GET /v1/markets/list` | Filtered + paginated listing |
-| `GET /v1/search?q=` | Full-text market search |
-| `GET /v1/stats/:token_id` | Market statistics + 24h OHLCV |
-| `GET /v1/candles/:token_id` | OHLCV price candles |
-| `GET /v1/status` | System status |
-| `GET /v1/settlements/recent` | Recent settlements |
-| `GET /v1/settlements/wallet/:addr` | Settlements by wallet |
-| `GET /v1/settlements/token/:id` | Settlements by token |
-| `GET /v1/wallets/:addr` | Wallet activity summary |
-| `POST /v1/keys` | Generate API key |
-| `GET /ws` | WebSocket streaming |
+# 3. Subscribe to pending settlements
+> {"action": "subscribe", "type": "settlements", "filters": {"status": "pending"}}
+```
+
+## What makes PolyNode different
+
+| Feature | PolyNode | Other providers |
+|---------|----------|-----------------|
+| Pending settlements (pre-chain) | ~2 seconds early | Not available |
+| Decoded Polymarket data | Enriched with market titles, outcomes, slugs | Raw logs only |
+| WebSocket filtering | By wallet, token, slug, side, size | Generic log filters |
+| Historical trade database | Every trade since 2022 | Not available |
+| Polygon JSON-RPC | Full node, same connection | Separate service |
+
+## Base URL
+
+```
+REST:      https://api.polynode.dev
+WebSocket: wss://api.polynode.dev/ws?key=YOUR_KEY
+```
+
+All endpoints require an API key via `x-api-key` header (REST) or `?key=` query param (WebSocket).
