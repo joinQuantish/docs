@@ -1,14 +1,14 @@
 ---
 title: "WebSocket Overview"
 sidebarTitle: "Overview"
-description: "Real-time Polymarket settlements, ~2 seconds before on-chain confirmation."
+description: "Real-time Polymarket settlements, up to 5 seconds before on-chain confirmation."
 ---
 
-PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement transactions are decoded from the Polygon mempool and delivered to your connection **before they confirm on-chain**.
+PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement transactions are decoded from the Polygon mempool and delivered to your connection **1–2 blocks before they confirm on-chain** (median 2.9 seconds, up to 5 seconds early).
 
 <CardGroup cols={2}>
-  <Card title="~2 second edge" icon="bolt">
-    Settlements detected in the mempool, decoded and enriched, then pushed to you — typically 2 seconds before block confirmation.
+  <Card title="Up to 5 second edge" icon="bolt">
+    Settlements detected in the mempool, decoded and enriched, then pushed to you — typically 2–5 seconds (1–2 blocks) before on-chain confirmation.
   </Card>
   <Card title="Filtered subscriptions" icon="filter">
     Subscribe by wallet, token, market slug, side, size, or event type. Only receive what you need.

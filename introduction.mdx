@@ -1,11 +1,11 @@
 ---
 title: Introduction
-description: Real-time Polymarket data API — settlements detected 2 seconds before on-chain confirmation.
+description: Real-time Polymarket data API — settlements detected up to 5 seconds before on-chain confirmation.
 ---
 
 # PolyNode API
 
-PolyNode decodes Polymarket settlement transactions from the Polygon mempool and delivers them **~2 seconds before on-chain confirmation**. Connect via WebSocket for real-time streaming, or query the REST API for markets, candles, and historical data.
+PolyNode decodes Polymarket settlement transactions from the Polygon mempool and delivers them **2–5 seconds before on-chain confirmation** (1–2 Polygon blocks). Connect via WebSocket for real-time streaming, or query the REST API for markets, candles, and historical data.
 
 <CardGroup cols={2}>
   <Card title="WebSocket streaming" icon="bolt" href="/websocket/overview">
@@ -41,7 +41,7 @@ wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
 
 | Feature | PolyNode | Other providers |
 |---------|----------|-----------------|
-| Pending settlements (pre-chain) | ~2 seconds early | Not available |
+| Pending settlements (pre-chain) | 2–5 seconds early (1–2 blocks) | Not available |
 | Decoded Polymarket data | Enriched with market titles, outcomes, slugs | Raw logs only |
 | WebSocket filtering | By wallet, token, slug, side, size | Generic log filters |
 | Historical trade database | Every trade since 2022 | Not available |

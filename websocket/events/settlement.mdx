@@ -7,7 +7,7 @@ icon: "bolt"
 
 The core PolyNode event. A decoded `matchOrders` transaction from the Polygon mempool or a confirmed block.
 
-**Pending settlements arrive ~2 seconds before on-chain confirmation.** This is the data that makes PolyNode unique.
+**Pending settlements arrive 2–5 seconds before on-chain confirmation (1–2 Polygon blocks).** This is the data that makes PolyNode unique.
 
 ```json
 {
@@ -157,15 +157,15 @@ The core PolyNode event. A decoded `matchOrders` transaction from the Polygon me
 | `status` | `"pending"` | `"confirmed"` |
 | `block_number` | `null` | block number |
 | `detected_at` | when mempool received TX | same value |
-| Latency | ~0ms from detection | ~2s after detection |
+| Latency | ~0ms from detection | 2–5s after detection (1–2 blocks) |
 
 <Tip>
-Subscribe with `"status": "pending"` to get the ~2 second edge. You'll receive a separate `status_update` event when the same transaction confirms on-chain, including `latency_ms`.
+Subscribe with `"status": "pending"` to get the 2–5 second edge. You'll receive a separate `status_update` event when the same transaction confirms on-chain, including `latency_ms`.
 </Tip>
 
 ## Use cases
 
-- **Copy trading** — detect whale trades 2 seconds before confirmation and execute your own order
+- **Copy trading** — detect whale trades 1–2 blocks before confirmation and execute your own order
 - **Market making** — adjust spreads based on incoming settlements
 - **Analytics** — track real-time volume and price movements
 - **Alerts** — notify on large trades or specific wallet activity
