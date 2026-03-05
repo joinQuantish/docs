@@ -3,10 +3,10 @@
   "theme": "mint",
   "name": "PolyNode",
   "logo": {
-    "light": "/images/logo-light.svg",
-    "dark": "/images/logo-dark.svg"
+    "light": "/images/logo-light.png",
+    "dark": "/images/logo-dark.png"
   },
-  "favicon": "/images/favicon.svg",
+  "favicon": "/images/favicon.png",
   "colors": {
     "primary": "#3b82f6",
     "light": "#60a5fa",
