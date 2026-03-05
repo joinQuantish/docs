@@ -71,17 +71,6 @@
         "openapi": "/openapi.json",
         "groups": [
           {
-            "group": "Historical Trades",
-            "pages": [
-              "api-reference/historical/database-status",
-              "api-reference/historical/query-trades",
-              "api-reference/historical/historical-candles",
-              "api-reference/historical/volume",
-              "api-reference/historical/wallet-statistics",
-              "api-reference/historical/token-statistics"
-            ]
-          },
-          {
             "group": "Markets",
             "pages": [
               "api-reference/markets/top-markets",

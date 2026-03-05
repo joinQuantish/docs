@@ -5,14 +5,11 @@ description: Real-time Polymarket data API — settlements detected up to 5 seco
 
 # PolyNode API
 
-PolyNode decodes Polymarket settlement transactions from the Polygon mempool and delivers them **2–5 seconds before on-chain confirmation** (1–2 Polygon blocks). Connect via WebSocket for real-time streaming, or query the REST API for markets, candles, and historical data.
+PolyNode decodes Polymarket settlement transactions from the Polygon mempool and delivers them **2–5 seconds before on-chain confirmation** (1–2 Polygon blocks). Connect via WebSocket for real-time streaming, or query the REST API for markets, candles, and orderbook data.
 
 <CardGroup cols={2}>
   <Card title="WebSocket streaming" icon="bolt" href="/websocket/overview">
     Real-time decoded settlements with filtered subscriptions. The core product.
-  </Card>
-  <Card title="Historical trades" icon="clock-rotate-left" href="/api-reference/historical/query-trades">
-    Every Polymarket trade ever executed, queryable by token, wallet, date range, and more.
   </Card>
   <Card title="Markets & pricing" icon="chart-line" href="/api-reference/markets/top-markets">
     Enriched market metadata, OHLCV candles, and volume analytics.
@@ -44,7 +41,7 @@ wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
 | Pending settlements (pre-chain) | 2–5 seconds early (1–2 blocks) | Not available |
 | Decoded Polymarket data | Enriched with market titles, outcomes, slugs | Raw logs only |
 | WebSocket filtering | By wallet, token, slug, side, size | Generic log filters |
-| Historical trade database | Every trade since 2022 | Not available |
+| Orderbook, candles, stats | CLOB proxying + enriched analytics | Separate service |
 | Polygon JSON-RPC | Full node, same connection | Separate service |
 
 ## Base URL
