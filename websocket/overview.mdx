@@ -104,6 +104,8 @@ The server sends a heartbeat every 30 seconds:
 
 If no heartbeat arrives within ~35 seconds, the connection is dead — reconnect.
 
+The server monitors client health via Pong responses to its Ping frames. If no Pong is received within 90 seconds (3 missed heartbeats), the server closes the connection. Standard WebSocket clients handle Pong automatically — no code required on your end.
+
 You can also send a client-side ping:
 
 ```json
@@ -124,6 +126,8 @@ Receive ← {"type": "subscribed", "subscriber_id": "..."}
     ↓
 Receive ← {"type": "settlement", ...}     (live events)
 Receive ← {"type": "status_update", ...}
+Receive ← Ping frame                       (every 30s)
+Send   → Pong frame                        (automatic)
 Receive ← {"type": "heartbeat", ...}       (every 30s)
     ↓
 Send → {"action": "unsubscribe"}

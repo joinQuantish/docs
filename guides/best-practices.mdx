@@ -141,6 +141,21 @@ function connect() {
 The snapshot includes both `settlement` and `status_update` events from the recent buffer. Processing both event types from the snapshot (as shown above) ensures you have accurate state immediately after reconnection.
 </Tip>
 
+## Connection health
+
+The server sends a WebSocket Ping frame every 30 seconds and expects the client to respond with a Pong. If no Pong is received within 90 seconds (3 missed heartbeats), the server closes the connection.
+
+**You almost certainly don't need to do anything.** All standard WebSocket libraries respond to Ping with Pong automatically:
+
+- **Browser `WebSocket`** — handled by the browser
+- **Node.js `ws`** — automatic by default
+- **Python `websockets`** — automatic by default
+- **Go `gorilla/websocket`** — automatic with `SetPongHandler` (default)
+
+<Warning>
+If your read loop is blocked (e.g. doing heavy synchronous work before reading the next message), the client cannot send Pong frames and the server will eventually drop the connection. Keep your read loop running — offload heavy processing to a separate thread or task.
+</Warning>
+
 ## Summary
 
 | Pattern | Why |
@@ -149,3 +164,4 @@ The snapshot includes both `settlement` and `status_update` events from the rece
 | Process **both event types from the snapshot** | Snapshot settlements keep their original `pending` status — confirmations are separate entries |
 | Add a **stuck-pending timeout** (15s) | Safety net for missed confirmations during reconnection |
 | Use **`snapshot_count`** on reconnect | Recovers events missed during disconnection |
+| Keep read loop running | Server drops connections with no Pong after 90s |

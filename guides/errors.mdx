@@ -92,3 +92,16 @@ All errors return a JSON object with an `error` field.
   "error": "Too many key generation requests. Max 3 per hour."
 }
 ```
+
+## WebSocket disconnections
+
+The server may close your WebSocket connection for any of these reasons:
+
+| Reason | Trigger | What to do |
+|--------|---------|------------|
+| **Pong timeout** | No Pong response for 90 seconds (3 missed Ping frames) | Ensure your read loop is not blocked — standard WS libraries handle Pong automatically |
+| **Send buffer full** | Client is consuming messages too slowly | Increase processing speed or reduce subscription scope with filters |
+| **Invalid API key** | Key rejected during connection upgrade | Verify your `pn_live_` key is correct and active |
+| **Server restart** | API binary redeployed or service restarted | Reconnect with exponential backoff (see [best practices](/guides/best-practices)) |
+
+In all cases, the server closes the connection without a close frame. Implement reconnection with exponential backoff as described in the [WebSocket overview](/websocket/overview#reconnection).
