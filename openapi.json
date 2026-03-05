@@ -88,8 +88,23 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v1/candles/{token_id}": {
@@ -171,13 +186,193 @@
         ]
       }
     },
+    "/v1/midpoint/{token_id}": {
+      "get": {
+        "tags": [
+          "Orderbook"
+        ],
+        "summary": "Midpoint price",
+        "description": "Returns the midpoint price for a token from the Polymarket CLOB, enriched with market metadata.",
+        "operationId": "get_midpoint",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "description": "Polymarket token ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Midpoint price with market metadata"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "CLOB upstream error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/orderbook/{token_id}": {
+      "get": {
+        "tags": [
+          "Orderbook"
+        ],
+        "summary": "Order book",
+        "description": "Proxies to the Polymarket CLOB order book, enriched with market metadata.",
+        "operationId": "get_orderbook",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "description": "Polymarket token ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order book with market metadata"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "CLOB upstream error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/spread/{token_id}": {
+      "get": {
+        "tags": [
+          "Orderbook"
+        ],
+        "summary": "Bid-ask spread",
+        "description": "Returns the bid-ask spread for a token from the Polymarket CLOB, enriched with market metadata.",
+        "operationId": "get_spread",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "description": "Polymarket token ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bid-ask spread with market metadata"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "CLOB upstream error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v1/keys": {
       "post": {
         "tags": [
           "System"
         ],
         "summary": "Generate API key",
-        "description": "Generates a new API key. Rate limited to 3 per IP per hour. The key is returned only once and cannot be retrieved again.",
+        "description": "Generates a new API key. Rate limited to 1 per IP per day. The key is returned only once and cannot be retrieved again.",
         "operationId": "create_api_key",
         "requestBody": {
           "description": "Optional key name",
@@ -220,7 +415,7 @@
           "Markets"
         ],
         "summary": "Top markets",
-        "description": "Returns top markets sorted by 24-hour volume. Includes metadata enrichment when available.",
+        "description": "Returns top markets sorted by 24-hour volume. Only includes markets with activity in the last 24 hours. Use `/v1/markets/list?active_only=false` for all markets.",
         "operationId": "get_markets",
         "parameters": [
           {
@@ -375,7 +570,7 @@
           {
             "name": "active_only",
             "in": "query",
-            "description": "Only markets with trades in the last hour",
+            "description": "Only markets with trades in the last hour (defaults to true)",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -549,7 +744,7 @@
           "Markets"
         ],
         "summary": "Search markets",
-        "description": "Full-text search across all market questions. Sub-millisecond response times.",
+        "description": "Full-text search across all market questions. Sub-millisecond response times. Closed markets are excluded by default.",
         "operationId": "search_markets",
         "parameters": [
           {
@@ -569,6 +764,15 @@
             "schema": {
               "type": "integer",
               "minimum": 0
+            }
+          },
+          {
+            "name": "include_inactive",
+            "in": "query",
+            "description": "Include closed/inactive markets in results (defaults to false)",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           },
           {
@@ -946,6 +1150,168 @@
           },
           "404": {
             "description": "No activity found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/wallets/{addr}/positions": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Wallet positions",
+        "description": "Returns wallet positions from Polymarket, enriched with market metadata.",
+        "operationId": "get_wallet_positions",
+        "parameters": [
+          {
+            "name": "addr",
+            "in": "path",
+            "description": "Wallet address (0x...)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of positions (default 100, max 500)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset (default 0)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet positions with market metadata"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Data API upstream error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/wallets/{addr}/trades": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Wallet trades",
+        "description": "Returns wallet trade history from Polymarket, enriched with market metadata.",
+        "operationId": "get_wallet_trades",
+        "parameters": [
+          {
+            "name": "addr",
+            "in": "path",
+            "description": "Wallet address (0x...)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of trades (default 100, max 500)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset (default 0)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "API key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet trade history with market metadata"
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Data API upstream error",
             "content": {
               "application/json": {
                 "schema": {

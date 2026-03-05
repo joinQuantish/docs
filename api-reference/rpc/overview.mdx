@@ -26,7 +26,7 @@ All RPC calls go through a single endpoint as POST requests with a JSON-RPC 2.0 
 
 ## Authentication
 
-RPC requests do **not** require an API key — the `/rpc` endpoint is currently open. Rate limiting applies at the IP level.
+RPC requests require an API key, same as all other authenticated endpoints. Pass your key via the `x-api-key` header.
 
 ## Request Format
 

@@ -100,6 +100,14 @@
             ]
           },
           {
+            "group": "Orderbook",
+            "pages": [
+              "api-reference/orderbook/order-book",
+              "api-reference/orderbook/midpoint",
+              "api-reference/orderbook/spread"
+            ]
+          },
+          {
             "group": "Settlements",
             "pages": [
               "api-reference/settlements/recent-settlements",
@@ -110,7 +118,9 @@
           {
             "group": "Wallets",
             "pages": [
-              "api-reference/wallets/wallet-activity"
+              "api-reference/wallets/wallet-activity",
+              "api-reference/wallets/wallet-positions",
+              "api-reference/wallets/wallet-trades"
             ]
           },
           {
