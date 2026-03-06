@@ -16,9 +16,6 @@ PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement
   <Card title="Enriched events" icon="layer-group">
     Every event includes market title, outcome name, slug, and image. No secondary lookups needed.
   </Card>
-  <Card title="Drop-in JSON-RPC" icon="server">
-    Standard `eth_subscribe` works on the same connection. Replace your Alchemy/Infura WebSocket URL.
-  </Card>
   <Card title="Chainlink price feeds" icon="chart-line">
     Real-time BTC/USD prices from Chainlink Data Streams (~1/second). Subscribe with `"type": "chainlink"` on the same connection.
   </Card>
@@ -92,17 +89,16 @@ wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
 
 The API key is passed as a query parameter. Keys starting with `pn_live_` or `qm_live_` are accepted.
 
-## Three streams, one connection
+## Two streams, one connection
 
-PolyNode supports multiple protocols on the same WebSocket:
+PolyNode supports multiple subscription types on the same WebSocket:
 
 | Stream | Purpose | Subscribe |
 |--------|---------|-----------|
 | **Settlements** | Decoded Polymarket events with filtering | `{"action": "subscribe", "type": "settlements"}` |
 | **Chainlink** | Real-time BTC/USD prices from Data Streams | `{"action": "subscribe", "type": "chainlink"}` |
-| **JSON-RPC** | Standard Ethereum subscriptions (`newHeads`, `logs`) | `{"jsonrpc": "2.0", "method": "eth_subscribe", ...}` |
 
-All three can run simultaneously on the same connection.
+Both can run simultaneously on the same connection.
 
 ## Heartbeat
 

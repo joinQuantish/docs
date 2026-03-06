@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "PolyNode API",
-    "description": "Real-time Polymarket data API with decoded mempool settlements, OHLCV candles, and full Polygon JSON-RPC proxy.",
+    "description": "Real-time Polymarket data API with decoded mempool settlements, OHLCV candles, and orderbook data.",
     "contact": {
       "name": "PolyNode",
       "url": "https://polynode.dev"
@@ -57,54 +57,6 @@
             "description": "System not ready"
           }
         }
-      }
-    },
-    "/rpc": {
-      "post": {
-        "tags": [
-          "RPC"
-        ],
-        "summary": "JSON-RPC proxy",
-        "description": "JSON-RPC 2.0 proxy supporting standard eth_*/net_* methods (forwarded to full Polygon node with caching) and custom pn_* methods (served from in-memory state). Supports single and batch requests (max 100 per batch).",
-        "operationId": "rpc_handler",
-        "requestBody": {
-          "description": "JSON-RPC 2.0 request (single object or array for batch)",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/JsonRpcRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "JSON-RPC response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
       }
     },
     "/v1/candles/{token_id}": {
@@ -2163,68 +2115,6 @@
           "ctf_exchange",
           "neg_risk_ctf_exchange"
         ]
-      },
-      "JsonRpcError": {
-        "type": "object",
-        "required": [
-          "code",
-          "message"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
-      "JsonRpcRequest": {
-        "type": "object",
-        "description": "JSON-RPC request.",
-        "required": [
-          "method",
-          "id"
-        ],
-        "properties": {
-          "id": {},
-          "jsonrpc": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "method": {
-            "type": "string"
-          },
-          "params": {}
-        }
-      },
-      "JsonRpcResponse": {
-        "type": "object",
-        "description": "JSON-RPC response.",
-        "required": [
-          "jsonrpc",
-          "id"
-        ],
-        "properties": {
-          "error": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JsonRpcError"
-              }
-            ]
-          },
-          "id": {},
-          "jsonrpc": {
-            "type": "string"
-          },
-          "result": {}
-        }
       },
       "MarketState": {
         "type": "object",

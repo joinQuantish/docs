@@ -13,9 +13,7 @@ wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY
 
 The API key must be passed as a query parameter.
 
-PolyNode WebSocket supports two protocols on the same connection:
-- **Custom PolyNode protocol** — subscribe to Polymarket events with filters
-- **JSON-RPC protocol** — standard `eth_subscribe` / `eth_unsubscribe` for raw Polygon data
+PolyNode WebSocket supports filtered subscriptions for real-time Polymarket events.
 
 ## Subscribing
 
@@ -260,21 +258,6 @@ Invalid messages return structured errors:
   "message": "Expected: {\"action\": \"subscribe\"|\"unsubscribe\"|\"ping\", ...}"
 }
 ```
-
-## JSON-RPC subscriptions
-
-PolyNode also supports standard Ethereum JSON-RPC subscriptions on the same WebSocket connection, making it a drop-in replacement for Alchemy/Infura WebSocket endpoints.
-
-```json
-{"jsonrpc": "2.0", "method": "eth_subscribe", "params": ["newHeads"], "id": 1}
-{"jsonrpc": "2.0", "method": "eth_subscribe", "params": ["newPendingTransactions"], "id": 2}
-{"jsonrpc": "2.0", "method": "eth_subscribe", "params": ["logs", {"address": "0x..."}], "id": 3}
-{"jsonrpc": "2.0", "method": "eth_unsubscribe", "params": ["0xsubscription_id"], "id": 4}
-```
-
-<Note>
-JSON-RPC subscriptions and PolyNode subscriptions coexist on the same WebSocket connection. You can use both simultaneously.
-</Note>
 
 ## Examples
 

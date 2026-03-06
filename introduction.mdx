@@ -14,9 +14,6 @@ PolyNode decodes Polymarket settlement transactions from the Polygon mempool and
   <Card title="Markets & pricing" icon="chart-line" href="/api-reference/markets/top-markets">
     Enriched market metadata, OHLCV candles, and volume analytics.
   </Card>
-  <Card title="Polygon RPC" icon="server" href="/api-reference/rpc/overview">
-    Full JSON-RPC endpoint. Drop-in replacement for Alchemy or Infura.
-  </Card>
 </CardGroup>
 
 ## Quick start
@@ -42,7 +39,6 @@ wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
 | Decoded Polymarket data | Enriched with market titles, outcomes, slugs | Raw logs only |
 | WebSocket filtering | By wallet, token, slug, side, size | Generic log filters |
 | Orderbook, candles, stats | CLOB proxying + enriched analytics | Separate service |
-| Polygon JSON-RPC | Full node, same connection | Separate service |
 
 ## Base URL
 
