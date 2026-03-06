@@ -14,7 +14,7 @@
   },
   "servers": [
     {
-      "url": "https://polynode.dev",
+      "url": "https://api.polynode.dev",
       "description": "Production"
     }
   ],
