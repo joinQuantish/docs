@@ -44,7 +44,7 @@ curl -s -X POST https://api.polynode.dev/v1/keys \
 |-------|------|-------------|
 | `name` | string (optional) | Label for the key. Defaults to "unnamed". |
 
-Key generation is rate limited to **3 per IP per hour**.
+Key generation is rate limited to **1 per IP per day**.
 
 <Warning>
   The raw API key is returned only once. It cannot be retrieved after creation — store it securely.

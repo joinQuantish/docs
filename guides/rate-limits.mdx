@@ -7,10 +7,11 @@ PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your
 
 ## Tier limits
 
-| | Free | Basic ($50/mo) | Pro ($200/mo) | Enterprise ($750/mo) |
-|--|------|----------------|---------------|----------------------|
+| | Free | Starter ($50/mo) | Growth ($200/mo) | Enterprise ($750/mo) |
+|--|------|-------------------|------------------|----------------------|
 | **Rate limit** | 120 req/min (2 QPS) | 6,000 req/min (100 QPS) | 18,000 req/min (300 QPS) | 60,000 req/min (1,000 QPS) |
-| **WebSocket connections** | 1 | 300 | 1,500 | 20,000 |
+| **WebSocket connections** | 1 | 500 | 3,000 | Unlimited |
+| **Firehose connections** | 1 | 100 | 750 | Unlimited |
 | **API keys** | 1 | 3 | 10 | 25 |
 | **JSON-RPC proxy** | No | Yes | Yes | Yes |
 | **Snapshot size** | 20 | 100 | 200 | 500 |
