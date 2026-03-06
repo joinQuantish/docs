@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "PolyNode API",
-    "description": "Real-time Polymarket data API with decoded mempool settlements, OHLCV candles, and orderbook data.",
+    "description": "Real-time Polymarket data API with decoded mempool settlements, OHLCV candles, and full Polygon JSON-RPC proxy.",
     "contact": {
       "name": "PolyNode",
       "url": "https://polynode.dev"
@@ -14,7 +14,7 @@
   },
   "servers": [
     {
-      "url": "https://api.polynode.dev",
+      "url": "https://polynode.dev",
       "description": "Production"
     }
   ],
@@ -59,6 +59,39 @@
         }
       }
     },
+    "/rpc": {
+      "post": {
+        "tags": [
+          "RPC"
+        ],
+        "summary": "JSON-RPC proxy",
+        "description": "JSON-RPC 2.0 proxy supporting standard eth_*/net_* methods (forwarded to full Polygon node with caching) and custom pn_* methods (served from in-memory state). Supports single and batch requests (max 100 per batch).",
+        "operationId": "rpc_handler",
+        "requestBody": {
+          "description": "JSON-RPC 2.0 request (single object or array for batch)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonRpcRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "JSON-RPC response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/candles/{token_id}": {
       "get": {
         "tags": [
@@ -95,44 +128,11 @@
               "type": "integer",
               "minimum": 0
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "OHLCV candles",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "candles": [
-                    {
-                      "close": 0.036,
-                      "high": 0.036,
-                      "low": 0.036,
-                      "open": 0.036,
-                      "timestamp": 1772694000000,
-                      "volume": 1400.0
-                    }
-                  ],
-                  "count": 1,
-                  "question": "Will Bitcoin dip to $45,000 in March?",
-                  "resolution": "1h",
-                  "slug": "will-bitcoin-dip-to-45k-in-march-2026",
-                  "token_id": "13377794642435611385847620240808138064594447585244290622688315269067148861161"
-                }
-              }
-            }
+            "description": "OHLCV candles"
           },
           "400": {
             "description": "Invalid resolution",
@@ -146,267 +146,6 @@
           },
           "401": {
             "description": "Missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
-      }
-    },
-    "/v1/midpoint/{token_id}": {
-      "get": {
-        "tags": [
-          "Orderbook"
-        ],
-        "summary": "Midpoint price",
-        "description": "Returns the midpoint price for a token from the Polymarket CLOB, enriched with market metadata.",
-        "operationId": "get_midpoint",
-        "parameters": [
-          {
-            "name": "token_id",
-            "in": "path",
-            "description": "Polymarket token ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Midpoint price with market metadata",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "mid": "0.0375",
-                  "question": "Will Bitcoin dip to $45,000 in March?",
-                  "slug": "will-bitcoin-dip-to-45k-in-march-2026",
-                  "token_id": "13377794642435611385847620240808138064594447585244290622688315269067148861161"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "CLOB upstream error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
-      }
-    },
-    "/v1/orderbook/{token_id}": {
-      "get": {
-        "tags": [
-          "Orderbook"
-        ],
-        "summary": "Order book",
-        "description": "Proxies to the Polymarket CLOB order book, enriched with market metadata.",
-        "operationId": "get_orderbook",
-        "parameters": [
-          {
-            "name": "token_id",
-            "in": "path",
-            "description": "Polymarket token ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Order book with market metadata",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "asks": [
-                    {
-                      "price": "0.999",
-                      "size": "1154205.07"
-                    },
-                    {
-                      "price": "0.998",
-                      "size": "68007.53"
-                    },
-                    {
-                      "price": "0.997",
-                      "size": "5000"
-                    }
-                  ],
-                  "asset_id": "13377794642435611385847620240808138064594447585244290622688315269067148861161",
-                  "bids": [
-                    {
-                      "price": "0.001",
-                      "size": "324337"
-                    },
-                    {
-                      "price": "0.002",
-                      "size": "20891.4"
-                    },
-                    {
-                      "price": "0.003",
-                      "size": "10609.62"
-                    }
-                  ],
-                  "hash": "9d2ebb671b2ed519930ff322d62bcd151c7a5e83",
-                  "last_trade_price": "0.963",
-                  "market": {
-                    "condition_id": "0x31ca3efabff600267d69924a5280b7c1aa3f46cfc14590b28fa231c807253768",
-                    "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                    "outcomes": [
-                      "Yes",
-                      "No"
-                    ],
-                    "question": "Will Bitcoin dip to $45,000 in March?",
-                    "slug": "will-bitcoin-dip-to-45k-in-march-2026"
-                  },
-                  "min_order_size": "5",
-                  "neg_risk": false,
-                  "tick_size": "0.001",
-                  "timestamp": "1772699224507",
-                  "token_id": "13377794642435611385847620240808138064594447585244290622688315269067148861161"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "CLOB upstream error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
-      }
-    },
-    "/v1/spread/{token_id}": {
-      "get": {
-        "tags": [
-          "Orderbook"
-        ],
-        "summary": "Bid-ask spread",
-        "description": "Returns the bid-ask spread for a token from the Polymarket CLOB, enriched with market metadata.",
-        "operationId": "get_spread",
-        "parameters": [
-          {
-            "name": "token_id",
-            "in": "path",
-            "description": "Polymarket token ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Bid-ask spread with market metadata",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "question": "Will Bitcoin dip to $45,000 in March?",
-                  "slug": "will-bitcoin-dip-to-45k-in-march-2026",
-                  "spread": "0.001",
-                  "token_id": "13377794642435611385847620240808138064594447585244290622688315269067148861161"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "CLOB upstream error",
             "content": {
               "application/json": {
                 "schema": {
@@ -449,12 +188,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiKeyResponse"
-                },
-                "example": {
-                  "key": "pn_live_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6",
-                  "name": "my-trading-bot",
-                  "created_at": "2026-03-05T10:30:00Z",
-                  "note": "Save this key \u2014 it cannot be retrieved again."
                 }
               }
             }
@@ -478,7 +211,7 @@
           "Markets"
         ],
         "summary": "Top markets",
-        "description": "Returns top markets sorted by 24-hour volume. Only includes markets with activity in the last 24 hours. Use `/v1/markets/list?active_only=false` for all markets.",
+        "description": "Returns top markets sorted by 24-hour volume. Includes metadata enrichment when available.",
         "operationId": "get_markets",
         "parameters": [
           {
@@ -490,47 +223,11 @@
               "type": "integer",
               "minimum": 0
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Top markets by volume",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "count": 2,
-                  "markets": [
-                    {
-                      "last_price": 1.960784,
-                      "last_trade_at": 1772699163000,
-                      "token_id": "0",
-                      "trade_count_24h": 1345103,
-                      "volume_24h": 27498413.9737
-                    },
-                    {
-                      "last_price": 0.001,
-                      "last_trade_at": 1772689981000,
-                      "token_id": "44906371323173926037832005247987413218",
-                      "trade_count_24h": 13,
-                      "volume_24h": 2579276.17
-                    }
-                  ],
-                  "total": 17951
-                }
-              }
-            }
+            "description": "Top markets by volume"
           },
           "401": {
             "description": "Missing API key",
@@ -567,71 +264,11 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Market data with all tokens",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "active": true,
-                  "category": null,
-                  "closed": false,
-                  "condition_id": "0x31ca3efabff600267d69924a5280b7c1aa3f46cfc14590b28fa231c807253768",
-                  "created_at": "2026-03-01T05:11:16.653402Z",
-                  "description": "This market will immediately resolve to \"Yes\" if any Binance 1 minute candle for BTC/USDT during the month specified in the title (from 00:00 AM ET on...",
-                  "end_date": "2026-04-01T04:00:00Z",
-                  "event_slug": "what-price-will-bitcoin-hit-in-march-2026",
-                  "event_title": "What price will Bitcoin hit in March?",
-                  "group_item_title": "\u2193 45,000",
-                  "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                  "liquidity": 69179.40617,
-                  "market_type": "binary",
-                  "neg_risk": false,
-                  "outcome_prices": {
-                    "No": 0.963,
-                    "Yes": 0.036
-                  },
-                  "outcomes": [
-                    "Yes",
-                    "No"
-                  ],
-                  "question": "Will Bitcoin dip to $45,000 in March?",
-                  "slug": "will-bitcoin-dip-to-45k-in-march-2026",
-                  "tokens": [
-                    {
-                      "last_price": 0.036,
-                      "last_trade_at": 1772696067557,
-                      "token_id": "13377794642435611385847620240808138064594447585244290622688315269067148861161",
-                      "trade_count_24h": 0,
-                      "volume_24h": 0.0
-                    },
-                    {
-                      "last_price": 0.963,
-                      "last_trade_at": 1772697404776,
-                      "token_id": "22088915752461138493579213546126689516700387819895194848477804393373846384280",
-                      "trade_count_24h": 1,
-                      "volume_24h": 849.29
-                    }
-                  ],
-                  "volume": 424829.226541
-                }
-              }
-            }
+            "description": "Market data with all tokens"
           },
           "401": {
             "description": "Missing API key",
@@ -711,7 +348,7 @@
           {
             "name": "active_only",
             "in": "query",
-            "description": "Only markets with trades in the last hour (defaults to true)",
+            "description": "Only markets with trades in the last hour",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -726,49 +363,11 @@
               "type": "integer",
               "minimum": 0
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Filtered market list with pagination",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "count": 2,
-                  "cursor": 0,
-                  "markets": [
-                    {
-                      "last_price": 1.092896,
-                      "last_trade_at": 1772699173000,
-                      "token_id": "0",
-                      "trade_count_24h": 1346687,
-                      "volume_24h": 27519046.748896
-                    },
-                    {
-                      "last_price": 0.004,
-                      "last_trade_at": 1772699001000,
-                      "token_id": "290297004048456664490486060014071272408",
-                      "trade_count_24h": 84,
-                      "volume_24h": 1074230.16
-                    }
-                  ],
-                  "next_cursor": 2,
-                  "total": 8348
-                }
-              }
-            }
+            "description": "Filtered market list with pagination"
           },
           "401": {
             "description": "Missing API key",
@@ -805,71 +404,11 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Market data with all tokens",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "active": true,
-                  "category": null,
-                  "closed": false,
-                  "condition_id": "0x31ca3efabff600267d69924a5280b7c1aa3f46cfc14590b28fa231c807253768",
-                  "created_at": "2026-03-01T05:11:16.653402Z",
-                  "description": "This market will immediately resolve to \"Yes\" if any Binance 1 minute candle for BTC/USDT during the month specified in the title (from 00:00 AM ET on...",
-                  "end_date": "2026-04-01T04:00:00Z",
-                  "event_slug": "what-price-will-bitcoin-hit-in-march-2026",
-                  "event_title": "What price will Bitcoin hit in March?",
-                  "group_item_title": "\u2193 45,000",
-                  "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                  "liquidity": 69179.40617,
-                  "market_type": "binary",
-                  "neg_risk": false,
-                  "outcome_prices": {
-                    "No": 0.963,
-                    "Yes": 0.036
-                  },
-                  "outcomes": [
-                    "Yes",
-                    "No"
-                  ],
-                  "question": "Will Bitcoin dip to $45,000 in March?",
-                  "slug": "will-bitcoin-dip-to-45k-in-march-2026",
-                  "tokens": [
-                    {
-                      "last_price": 0.036,
-                      "last_trade_at": 1772696067557,
-                      "token_id": "13377794642435611385847620240808138064594447585244290622688315269067148861161",
-                      "trade_count_24h": 0,
-                      "volume_24h": 0.0
-                    },
-                    {
-                      "last_price": 0.963,
-                      "last_trade_at": 1772697404776,
-                      "token_id": "22088915752461138493579213546126689516700387819895194848477804393373846384280",
-                      "trade_count_24h": 1,
-                      "volume_24h": 849.29
-                    }
-                  ],
-                  "volume": 424829.226541
-                }
-              }
-            }
+            "description": "Market data with all tokens"
           },
           "401": {
             "description": "Missing API key",
@@ -916,52 +455,11 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Market detail",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "category": null,
-                  "condition_id": "0x31ca3efabff600267d69924a5280b7c1aa3f46cfc14590b28fa231c807253768",
-                  "created_at": "2026-03-01T05:11:16.653402Z",
-                  "description": "This market will immediately resolve to \"Yes\" if any Binance 1 minute candle for BTC/USDT during the month specified in the title (from 00:00 AM ET on...",
-                  "end_date": "2026-04-01T04:00:00Z",
-                  "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                  "last_price": 0.036,
-                  "last_status": "pending",
-                  "last_trade_at": 1772696067557,
-                  "liquidity": 69179.40617,
-                  "market_type": "binary",
-                  "neg_risk": false,
-                  "outcomes": [
-                    "Yes",
-                    "No"
-                  ],
-                  "question": "Will Bitcoin dip to $45,000 in March?",
-                  "slug": "will-bitcoin-dip-to-45k-in-march-2026",
-                  "token_id": "13377794642435611385847620240808138064594447585244290622688315269067148861161",
-                  "trade_count_24h": 0,
-                  "volume": 424829.226541,
-                  "volume_24h": 0.0
-                }
-              }
-            }
+            "description": "Market detail"
           },
           "401": {
             "description": "Missing API key",
@@ -997,7 +495,7 @@
           "Markets"
         ],
         "summary": "Search markets",
-        "description": "Full-text search across all market questions. Sub-millisecond response times. Closed markets are excluded by default.",
+        "description": "Full-text search across all market questions. Results ranked by volume and liquidity. Closed markets are excluded by default.",
         "operationId": "search_markets",
         "parameters": [
           {
@@ -1027,82 +525,11 @@
             "schema": {
               "type": "boolean"
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Search results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "count": 2,
-                  "query": "bitcoin",
-                  "results": [
-                    {
-                      "active": true,
-                      "category": null,
-                      "closed": false,
-                      "condition_id": "0x31ca3efabff600267d69924a5280b7c1aa3f46cfc14590b28fa231c807253768",
-                      "created_at": "2026-03-01T05:11:16.653402Z",
-                      "end_date": "2026-04-01T04:00:00Z",
-                      "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                      "last_price": 0.036,
-                      "market_type": "binary",
-                      "neg_risk": false,
-                      "outcomes": [
-                        "Yes",
-                        "No"
-                      ],
-                      "question": "Will Bitcoin dip to $45,000 in March?",
-                      "slug": "will-bitcoin-dip-to-45k-in-march-2026",
-                      "token_ids": [
-                        "13377794642435611385847620240808138064594447585244290622688315269067148861161",
-                        "22088915752461138493579213546126689516700387819895194848477804393373846384280"
-                      ],
-                      "volume_24h": 0.0
-                    },
-                    {
-                      "active": true,
-                      "category": null,
-                      "closed": false,
-                      "condition_id": "0xb8d143465b68e8aa5520be8947142654b1d0e236630cea6447db1c1372c84a60",
-                      "created_at": "2026-03-04T14:07:03.817509Z",
-                      "end_date": "2026-03-05T14:15:00Z",
-                      "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                      "last_price": 0.51,
-                      "market_type": "binary",
-                      "neg_risk": false,
-                      "outcomes": [
-                        "Up",
-                        "Down"
-                      ],
-                      "question": "Bitcoin Up or Down - March 5, 9:00AM-9:15AM ET",
-                      "slug": "btc-updown-15m-1772719200",
-                      "token_ids": [
-                        "12055650140478655335944070632767866806452702803647460244041397723070979397168",
-                        "63815832742571358974292552232617721559649233524636637183953732274179444905044"
-                      ],
-                      "volume_24h": 0.0
-                    }
-                  ],
-                  "total": 2
-                }
-              }
-            }
+            "description": "Search results"
           },
           "400": {
             "description": "Missing query parameter",
@@ -1150,51 +577,11 @@
               "type": "integer",
               "minimum": 0
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key (alternative to x-api-key header)",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "List of settlements",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "count": 1,
-                  "settlements": [
-                    {
-                      "block_number": "0",
-                      "detected_at": "1772699146122",
-                      "event_title": "Bitcoin Up or Down - March 5, 3:25AM-3:30AM ET",
-                      "id": "1772699146123-3",
-                      "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                      "market_slug": "btc-updown-5m-1772699100",
-                      "market_title": "Bitcoin Up or Down - March 5, 3:25AM-3:30AM ET",
-                      "outcome": "Down",
-                      "status": "pending",
-                      "taker_price": "0.65",
-                      "taker_side": "BUY",
-                      "taker_size": "30.0",
-                      "taker_token": "98483818132457972115680978277424874797141979920206380372504887336897704499424",
-                      "taker_wallet": "0x6c4490948df4b4d88f5b9a800d5ad3cb629e3ae5",
-                      "timestamp": "1772699146122",
-                      "trades_json": "[{\"maker\": \"0xd9f9ca5f84d7f2fc74c1901e98e91d4b448e1622\", \"signer\": \"0x0c24b37b2a19b49a0ea90b574f7a3eaefcee2933\", \"taker\": \"0x6c4490948df4b4d88f5b9a800...",
-                      "tx_hash": "0xf228b71ad532e8e24d54d5ae2220190ba83de8ea1c768de803ef62260ee9bf08"
-                    }
-                  ]
-                }
-              }
-            }
+            "description": "List of settlements"
           },
           "401": {
             "description": "Missing API key",
@@ -1251,32 +638,11 @@
               "type": "integer",
               "minimum": 0
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Settlements for token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "count": 0,
-                  "settlements": [],
-                  "token_id": "98483818132457972115680978277424874797141979920206380372504887336897704499424"
-                }
-              }
-            }
+            "description": "Settlements for token"
           },
           "401": {
             "description": "Missing API key",
@@ -1323,32 +689,11 @@
               "type": "integer",
               "minimum": 0
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Settlements for wallet",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "count": 0,
-                  "settlements": [],
-                  "wallet": "0x6c4490948df4b4d88f5b9a800d5ad3cb629e3ae5"
-                }
-              }
-            }
+            "description": "Settlements for wallet"
           },
           "401": {
             "description": "Missing API key",
@@ -1385,60 +730,11 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Market statistics",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "category": null,
-                  "condition_id": "0x31ca3efabff600267d69924a5280b7c1aa3f46cfc14590b28fa231c807253768",
-                  "created_at": "2026-03-01T05:11:16.653402Z",
-                  "end_date": "2026-04-01T04:00:00Z",
-                  "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                  "last_trade_at": 1772696067557,
-                  "liquidity": 69179.40617,
-                  "market_type": "binary",
-                  "neg_risk": false,
-                  "ohlcv_24h": {
-                    "candle_count": 1,
-                    "close": 0.036,
-                    "high": 0.036,
-                    "low": 0.036,
-                    "open": 0.036,
-                    "volume": 1400.0
-                  },
-                  "outcomes": [
-                    "Yes",
-                    "No"
-                  ],
-                  "price": {
-                    "last": 0.036
-                  },
-                  "question": "Will Bitcoin dip to $45,000 in March?",
-                  "slug": "will-bitcoin-dip-to-45k-in-march-2026",
-                  "token_id": "13377794642435611385847620240808138064594447585244290622688315269067148861161",
-                  "trade_count_24h": 0,
-                  "volume": 424829.226541,
-                  "volume_24h": 0.0
-                }
-              }
-            }
+            "description": "Market statistics"
           },
           "401": {
             "description": "Missing API key",
@@ -1476,41 +772,13 @@
         "summary": "System status",
         "description": "Returns system status including node connectivity, uptime, stream lengths, and state engine summary.",
         "operationId": "get_status",
-        "parameters": [
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "System status",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "node_connected": true,
-                  "uptime_seconds": 14452,
-                  "stream_length": 500000,
-                  "events_stream_length": 1000000,
-                  "pending_txs": 804,
-                  "ws_subscribers": 1,
-                  "redis_memory": "4.22G",
-                  "state": {
-                    "market_count": 17941,
-                    "wallet_count": 48076,
-                    "metadata_count": 35829,
-                    "events_buffered": 10000,
-                    "events_processed": 9260435,
-                    "latest_block": 83789555
-                  }
+                  "$ref": "#/components/schemas/StatusResponse"
                 }
               }
             }
@@ -1550,38 +818,11 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Wallet activity summary",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "activity": {
-                    "deposit_count": 2453,
-                    "deposit_volume_usd": 69909.14417500002,
-                    "last_active": 1772699205000,
-                    "trade_count": 9763,
-                    "trade_volume_usd": 210970.48651899898,
-                    "transfer_count": 4911
-                  },
-                  "wallet": "0x6c4490948df4b4d88f5b9a800d5ad3cb629e3ae5"
-                }
-              }
-            }
+            "description": "Wallet activity summary"
           },
           "401": {
             "description": "Missing API key",
@@ -1595,257 +836,6 @@
           },
           "404": {
             "description": "No activity found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
-      }
-    },
-    "/v1/wallets/{addr}/positions": {
-      "get": {
-        "tags": [
-          "Wallets"
-        ],
-        "summary": "Wallet positions",
-        "description": "Returns wallet positions from Polymarket, enriched with market metadata.",
-        "operationId": "get_wallet_positions",
-        "parameters": [
-          {
-            "name": "addr",
-            "in": "path",
-            "description": "Wallet address (0x...)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Number of positions (default 100, max 500)",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 500
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "description": "Pagination offset (default 0)",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet positions with market metadata",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "count": 1,
-                  "positions": [
-                    {
-                      "asset": "8950254880134482680463537095655380267348307435283215501419161499297735145186",
-                      "avgPrice": 0.252805,
-                      "cashPnl": -319.0152969052,
-                      "conditionId": "0x80140958b84cf715f8b9fcadb8879d184b25f667c9319e54b313abcd701dc54b",
-                      "curPrice": 0,
-                      "currentValue": 0,
-                      "endDate": "2026-03-05",
-                      "eventId": "245263",
-                      "eventSlug": "btc-updown-5m-1772698800",
-                      "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                      "initialValue": 319.0152969052,
-                      "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                      "market_slug": "btc-updown-5m-1772698800",
-                      "market_title": "Bitcoin Up or Down - March 5, 3:20AM-3:25AM ET",
-                      "mergeable": true,
-                      "negativeRisk": false,
-                      "oppositeAsset": "21647974123834743224851698382632299997426704582514642007303389312543242629631",
-                      "oppositeOutcome": "Up",
-                      "outcome": "Down",
-                      "outcomeIndex": 1,
-                      "outcomes": [
-                        "Up",
-                        "Down"
-                      ],
-                      "percentPnl": -100,
-                      "percentRealizedPnl": -100,
-                      "proxyWallet": "0x6c4490948df4b4d88f5b9a800d5ad3cb629e3ae5",
-                      "realizedPnl": 0,
-                      "redeemable": true,
-                      "size": 1261.90264,
-                      "slug": "btc-updown-5m-1772698800",
-                      "title": "Bitcoin Up or Down - March 5, 3:20AM-3:25AM ET",
-                      "totalBought": 1272.99994
-                    }
-                  ],
-                  "wallet": "0x6c4490948df4b4d88f5b9a800d5ad3cb629e3ae5"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "Data API upstream error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
-      }
-    },
-    "/v1/wallets/{addr}/trades": {
-      "get": {
-        "tags": [
-          "Wallets"
-        ],
-        "summary": "Wallet trades",
-        "description": "Returns wallet trade history from Polymarket, enriched with market metadata.",
-        "operationId": "get_wallet_trades",
-        "parameters": [
-          {
-            "name": "addr",
-            "in": "path",
-            "description": "Wallet address (0x...)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Number of trades (default 100, max 500)",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 500
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "description": "Pagination offset (default 0)",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "key",
-            "in": "query",
-            "description": "API key",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet trade history with market metadata",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                },
-                "example": {
-                  "count": 1,
-                  "trades": [
-                    {
-                      "asset": "51444701753104653724754784921938383346915558299594674312736208059677550686044",
-                      "bio": "",
-                      "conditionId": "0xe58f78e646f7fa00e7f79a1eddc0ec5c1488d3a312b6a1b3876678b27de93471",
-                      "eventSlug": "btc-updown-5m-1772699100",
-                      "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                      "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-                      "market_slug": "btc-updown-5m-1772699100",
-                      "market_title": "Bitcoin Up or Down - March 5, 3:25AM-3:30AM ET",
-                      "name": "",
-                      "outcome": "Up",
-                      "outcomeIndex": 0,
-                      "outcomes": [
-                        "Up",
-                        "Down"
-                      ],
-                      "price": 0.3905085714285714,
-                      "profileImage": "",
-                      "profileImageOptimized": "",
-                      "proxyWallet": "0x6c4490948df4b4d88f5b9a800d5ad3cb629e3ae5",
-                      "pseudonym": "",
-                      "side": "BUY",
-                      "size": 70,
-                      "slug": "btc-updown-5m-1772699100",
-                      "timestamp": 1772699139,
-                      "title": "Bitcoin Up or Down - March 5, 3:25AM-3:30AM ET",
-                      "transactionHash": "0x75eca9dc8af8fc88f7ca09439945757546a632759b7a367e3316756793d83376"
-                    }
-                  ],
-                  "wallet": "0x6c4490948df4b4d88f5b9a800d5ad3cb629e3ae5"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "Data API upstream error",
             "content": {
               "application/json": {
                 "schema": {
@@ -1978,6 +968,18 @@
             "format": "double"
           }
         }
+      },
+      "CandleResolution": {
+        "type": "string",
+        "description": "Supported candle resolutions.",
+        "enum": [
+          "1m",
+          "5m",
+          "15m",
+          "1h",
+          "4h",
+          "1d"
+        ]
       },
       "CreateKeyBody": {
         "type": "object",
@@ -2116,6 +1118,68 @@
           "neg_risk_ctf_exchange"
         ]
       },
+      "JsonRpcError": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "JsonRpcRequest": {
+        "type": "object",
+        "description": "JSON-RPC request.",
+        "required": [
+          "method",
+          "id"
+        ],
+        "properties": {
+          "id": {},
+          "jsonrpc": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "params": {}
+        }
+      },
+      "JsonRpcResponse": {
+        "type": "object",
+        "description": "JSON-RPC response.",
+        "required": [
+          "jsonrpc",
+          "id"
+        ],
+        "properties": {
+          "error": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonRpcError"
+              }
+            ]
+          },
+          "id": {},
+          "jsonrpc": {
+            "type": "string"
+          },
+          "result": {}
+        }
+      },
       "MarketState": {
         "type": "object",
         "description": "Live state for a single market (identified by token ID).",
@@ -2231,17 +1295,19 @@
             "type": "integer",
             "format": "int64"
           },
-          "timestamp": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Normalized timestamp (alias for detected_at). Present on all event types for consistent access."
-          },
           "event_title": {
             "type": [
               "string",
               "null"
             ],
             "description": "Parent event title if this market is part of a group."
+          },
+          "market_image": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Market image URL from Gamma metadata."
           },
           "market_slug": {
             "type": [
@@ -2343,12 +1409,18 @@
           "events_stream_length",
           "pending_txs",
           "ws_subscribers",
+          "firehose_connections",
           "redis_memory",
           "state"
         ],
         "properties": {
           "events_stream_length": {
             "type": "integer",
+            "minimum": 0
+          },
+          "firehose_connections": {
+            "type": "integer",
+            "format": "int32",
             "minimum": 0
           },
           "node_connected": {
@@ -2404,6 +1476,13 @@
             "type": "integer",
             "format": "int64",
             "description": "Time from pending detection to block confirmation (ms)."
+          },
+          "market_image": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Market image URL from Gamma metadata."
           },
           "market_title": {
             "type": [
@@ -2466,6 +1545,13 @@
           },
           "maker_amount": {
             "type": "string"
+          },
+          "market_image": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Market image URL from Gamma metadata."
           },
           "market_slug": {
             "type": [
