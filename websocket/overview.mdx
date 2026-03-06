@@ -24,6 +24,10 @@ PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement
   </Card>
 </CardGroup>
 
+<Tip>
+  **Save ~60% bandwidth with compression.** Add `&compress=zlib` to your connection URL and decompress binary frames with standard `inflateRaw`. Zero latency impact, recommended for production. [See compression docs →](/websocket/compression)
+</Tip>
+
 ## Quick start
 
 <Steps>
@@ -79,6 +83,11 @@ PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement
 
 ```
 wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY
+```
+
+With compression (~60% bandwidth savings):
+```
+wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
 ```
 
 The API key is passed as a query parameter. Keys starting with `pn_live_` or `qm_live_` are accepted.

@@ -1,0 +1,278 @@
+---
+title: "Compression"
+sidebarTitle: "Compression"
+description: "Reduce WebSocket bandwidth by ~60% with built-in zlib compression."
+---
+
+<Note>
+  **Recommended for production.** Compression reduces bandwidth by ~60% with no latency impact.
+  Every event is compressed once on the server and delivered to all subscribers — zero per-connection overhead.
+  Enable it by adding `&compress=zlib` to your connection URL.
+</Note>
+
+## How it works
+
+When you connect with `&compress=zlib`, the server sends settlement events as **deflate-compressed binary frames** instead of JSON text frames. Your client decompresses each binary frame with standard zlib `inflateRaw` — available in every language.
+
+Control messages (subscribe acknowledgments, errors, heartbeats, pong) are still sent as normal JSON text, so you can always read them directly.
+
+```
+wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
+```
+
+## Bandwidth savings
+
+Measured in production on real settlement data:
+
+| Mode | Per-connection | Max connections (1 Gbps) | Max connections (10 Gbps) |
+|------|---------------|--------------------------|---------------------------|
+| **Uncompressed** | ~0.78 Mbps | ~1,000 | ~10,000 |
+| **Compressed** | ~0.32 Mbps | ~2,500 | ~25,000 |
+
+Compression is applied **once per event** on the server, then the same compressed bytes are fanned out to all compressed subscribers. There is no per-connection compression overhead — it scales the same as uncompressed.
+
+## Client examples
+
+<Tabs>
+  <Tab title="JavaScript / Node.js">
+    ```javascript
+    import WebSocket from "ws";
+    import { inflateRawSync } from "zlib";
+
+    const ws = new WebSocket(
+      "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
+    );
+
+    ws.on("open", () => {
+      ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
+    });
+
+    ws.on("message", (data, isBinary) => {
+      let event;
+      if (isBinary) {
+        // Compressed event — decompress with inflateRaw
+        const json = inflateRawSync(data).toString();
+        event = JSON.parse(json);
+      } else {
+        // Control message (subscribe ack, heartbeat, error)
+        event = JSON.parse(data.toString());
+      }
+      console.log(event.type, event.data?.market_title);
+    });
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    import json
+    import zlib
+    import websocket
+
+    def on_message(ws, message, is_binary=False):
+        if isinstance(message, bytes):
+            # Compressed event — decompress with raw deflate
+            json_str = zlib.decompress(message, -zlib.MAX_WBITS).decode()
+            event = json.loads(json_str)
+        else:
+            # Control message (subscribe ack, heartbeat, error)
+            event = json.loads(message)
+        print(event["type"], event.get("data", {}).get("market_title"))
+
+    ws = websocket.WebSocketApp(
+        "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib",
+        on_open=lambda ws: ws.send(json.dumps({
+            "action": "subscribe", "type": "settlements"
+        })),
+        on_message=on_message,
+    )
+    ws.run_forever()
+    ```
+
+    With `websockets` (async):
+    ```python
+    import asyncio
+    import json
+    import zlib
+    import websockets
+
+    async def main():
+        async with websockets.connect(
+            "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
+        ) as ws:
+            await ws.send(json.dumps({
+                "action": "subscribe", "type": "settlements"
+            }))
+            async for message in ws:
+                if isinstance(message, bytes):
+                    event = json.loads(
+                        zlib.decompress(message, -zlib.MAX_WBITS)
+                    )
+                else:
+                    event = json.loads(message)
+                print(event["type"])
+
+    asyncio.run(main())
+    ```
+  </Tab>
+
+  <Tab title="Go">
+    ```go
+    package main
+
+    import (
+        "bytes"
+        "compress/flate"
+        "encoding/json"
+        "fmt"
+        "io"
+        "log"
+
+        "github.com/gorilla/websocket"
+    )
+
+    func main() {
+        c, _, err := websocket.DefaultDialer.Dial(
+            "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib", nil,
+        )
+        if err != nil { log.Fatal(err) }
+        defer c.Close()
+
+        c.WriteJSON(map[string]string{
+            "action": "subscribe", "type": "settlements",
+        })
+
+        for {
+            msgType, data, err := c.ReadMessage()
+            if err != nil { log.Fatal(err) }
+
+            var event map[string]interface{}
+
+            if msgType == websocket.BinaryMessage {
+                // Compressed — decompress with raw deflate
+                r := flate.NewReader(bytes.NewReader(data))
+                decompressed, _ := io.ReadAll(r)
+                r.Close()
+                json.Unmarshal(decompressed, &event)
+            } else {
+                json.Unmarshal(data, &event)
+            }
+
+            fmt.Println(event["type"])
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Rust">
+    ```rust
+    use flate2::read::DeflateDecoder;
+    use std::io::Read;
+    use tungstenite::{connect, Message};
+
+    fn main() {
+        let (mut ws, _) = connect(
+            "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
+        ).unwrap();
+
+        ws.send(Message::Text(
+            r#"{"action":"subscribe","type":"settlements"}"#.into()
+        )).unwrap();
+
+        loop {
+            let msg = ws.read().unwrap();
+            let json_str = match msg {
+                Message::Binary(data) => {
+                    // Compressed — decompress with raw deflate
+                    let mut decoder = DeflateDecoder::new(&data[..]);
+                    let mut s = String::new();
+                    decoder.read_to_string(&mut s).unwrap();
+                    s
+                }
+                Message::Text(s) => s.to_string(),
+                _ => continue,
+            };
+            let event: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+            println!("{}", event["type"]);
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Browser (pako)">
+    ```html
+    <script src="https://cdn.jsdelivr.net/npm/pako@2/dist/pako.min.js"></script>
+    <script>
+    const ws = new WebSocket(
+      "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
+    );
+    ws.binaryType = "arraybuffer";
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
+    };
+
+    ws.onmessage = (msg) => {
+      let event;
+      if (msg.data instanceof ArrayBuffer) {
+        // Compressed binary frame — decompress with pako
+        const decompressed = pako.inflateRaw(new Uint8Array(msg.data), { to: "string" });
+        event = JSON.parse(decompressed);
+      } else {
+        // Text frame — control message
+        event = JSON.parse(msg.data);
+      }
+      console.log(event.type, event.data?.market_title);
+    };
+    </script>
+    ```
+  </Tab>
+</Tabs>
+
+## Key details
+
+<AccordionGroup>
+  <Accordion title="What gets compressed?">
+    Only live event frames (settlements, status updates, trades) are sent as compressed binary.
+
+    These are always sent as normal JSON text:
+    - `{"type": "snapshot", ...}` — initial event snapshot
+    - `{"type": "subscribed", ...}` — subscription acknowledgment
+    - `{"type": "unsubscribed", ...}` — unsubscribe confirmation
+    - `{"type": "heartbeat", ...}` — server heartbeat
+    - `{"type": "pong"}` — ping response
+    - `{"type": "error", ...}` — error messages
+  </Accordion>
+
+  <Accordion title="How do I tell if a frame is compressed?">
+    Check the WebSocket frame type:
+    - **Binary frame** → compressed event, decompress with `inflateRaw`
+    - **Text frame** → normal JSON, parse directly
+
+    Every WebSocket library exposes this distinction (e.g. `isBinary` in Node.js `ws`, `isinstance(msg, bytes)` in Python).
+  </Accordion>
+
+  <Accordion title="What compression algorithm is used?">
+    Raw deflate (RFC 1951) via the `flate2` Rust crate with fast compression level.
+    Decompress with `inflateRaw` / `zlib.decompress(data, -zlib.MAX_WBITS)` — **not** `inflate` or `gunzip`.
+  </Accordion>
+
+  <Accordion title="Does compression add latency?">
+    No measurable impact. Each event is compressed once on the server (~0.05ms for a 1.2 KB message),
+    then the same compressed bytes are sent to all compressed subscribers via zero-copy fan-out.
+    Decompression on the client is equally fast.
+  </Accordion>
+
+  <Accordion title="Can I mix compressed and uncompressed?">
+    Compression is set per connection at connect time. You cannot toggle it mid-session.
+    Different connections from the same API key can use different modes.
+  </Accordion>
+</AccordionGroup>
+
+## When to use compression
+
+| Scenario | Recommendation |
+|----------|---------------|
+| **Production bots / trading systems** | Use compression — saves bandwidth, no downside |
+| **Prototyping / debugging** | Skip compression — raw JSON is easier to inspect |
+| **High-frequency firehose** | Use compression — critical at scale |
+| **Browser dashboards** | Use compression with [pako](https://github.com/nichn4nd/pako) — reduces data transfer |
