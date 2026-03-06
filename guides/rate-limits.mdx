@@ -7,6 +7,10 @@ PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your
 
 ## Tier limits
 
+<Info>
+  **Firehose** = a WebSocket subscription with no filters applied. It receives every event (all settlements, trades, blocks, etc.) at full throughput. Filtered subscriptions — where you specify wallets, tokens, slugs, or size thresholds — use far less bandwidth and don't count toward your firehose limit.
+</Info>
+
 | | Free | Starter ($50/mo) | Growth ($200/mo) | Enterprise ($750/mo) |
 |--|------|-------------------|------------------|----------------------|
 | **Rate limit** | 120 req/min (2 QPS) | 6,000 req/min (100 QPS) | 18,000 req/min (300 QPS) | 60,000 req/min (1,000 QPS) |

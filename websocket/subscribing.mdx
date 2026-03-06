@@ -78,8 +78,12 @@ The `type` field selects a preset of event types. If you also set `filters.event
 <ResponseField name="global" type="string">
   Events: all
 
-  Unfiltered stream of every event. High throughput — use with caution.
+  Unfiltered stream of every event (**firehose**). High throughput — use with caution. This counts toward your plan's firehose connection limit.
 </ResponseField>
+
+<Note>
+  **Firehose** refers to any WebSocket subscription with no filters applied — receiving every event at full throughput. Filtered subscriptions (specifying wallets, tokens, slugs, or size thresholds) don't count toward your firehose limit and use far less bandwidth.
+</Note>
 
 <ResponseField name="chainlink" type="string">
   Events: `price_feed`
