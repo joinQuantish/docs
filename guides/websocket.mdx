@@ -46,7 +46,7 @@ If you don't receive a heartbeat within ~35 seconds, the connection is likely de
 
 | Type | Events | Description |
 |------|--------|-------------|
-| `settlements` | settlement | Pending + confirmed settlements (default) |
+| `settlements` | settlement, status_update | Pending + confirmed settlements (default) |
 | `trades` | settlement, trade, status_update | All trade activity |
 | `prices` | settlement, trade | Price-moving events for specific markets |
 | `blocks` | block | New block notifications |
@@ -68,9 +68,11 @@ All filters are optional. Omit filters to receive all events of the subscription
 | `condition_ids` | string[] | Filter by Polymarket condition IDs. Resolved to token IDs at subscribe time. |
 | `side` | string | `"BUY"` or `"SELL"` |
 | `min_size` | number | Minimum trade size in USD |
+| `max_size` | number | Maximum trade size in USD |
 | `status` | string | `"pending"`, `"confirmed"`, or `"all"` (default) |
 | `event_types` | string[] | Override default event types |
 | `snapshot_count` | number | Number of events in the initial snapshot (default 20, max 200) |
+| `feeds` | string[] | Filter by price feed names (e.g. `["BTC/USD"]`). Only for `chainlink` subscriptions. |
 
 <Tip>
 Use `slugs` or `condition_ids` instead of raw `tokens` when you know the market by its URL slug or condition ID. The server resolves them to token IDs once at subscribe time — no performance cost after that.
@@ -80,7 +82,7 @@ Use `slugs` or `condition_ids` instead of raw `tokens` when you know the market 
 
 All events include a top-level **`timestamp`** field (Unix ms) — use this instead of switching on `detected_at` / `timestamp` / `confirmed_at` per event type.
 
-All trade-related events include **enrichment fields** (`market_title`, `outcome`, `market_slug`, `event_title`) resolved from metadata.
+All trade-related events include **enrichment fields** (`market_title`, `outcome`, `market_slug`, `event_title`, `market_image`) resolved from metadata.
 
 ### settlement
 
@@ -91,31 +93,34 @@ A Polymarket settlement — either pending (pre-chain) or confirmed (on-chain).
   "type": "settlement",
   "timestamp": 1772500000000,
   "data": {
+    "event_type": "settlement",
     "tx_hash": "0x1a2b3c4d5e6f...",
     "status": "pending",
     "detected_at": 1772500000000,
+    "block_number": null,
     "taker_wallet": "0xabcdef1234567890...",
     "taker_token": "21742633143463906290569404...",
     "taker_side": "BUY",
     "taker_price": 0.72,
-    "taker_size": 500.00,
-    "market_title": "Will Bitcoin hit $100K in 2026?",
-    "outcome": "Yes",
-    "market_slug": "bitcoin-100k-2026",
-    "event_title": "Bitcoin Price Milestones",
+    "taker_size": 500.0,
     "trades": [
       {
         "maker": "0x999888777666...",
         "signer": "0xabc123...",
-        "taker": "0x123456789...",
+        "taker": "0xabcdef1234567890...",
         "token_id": "21742633...",
         "side": "BUY",
         "price": 0.72,
-        "size": 500.00,
-        "maker_amount": "500000",
-        "taker_amount": "694444"
+        "size": 500.0,
+        "maker_amount": "360000000",
+        "taker_amount": "500000000"
       }
-    ]
+    ],
+    "market_title": "Will Bitcoin hit $100K in 2026?",
+    "outcome": "Yes",
+    "market_slug": "bitcoin-100k-2026",
+    "event_title": "Bitcoin Price Milestones",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/..."
   }
 }
 ```
@@ -129,20 +134,24 @@ A confirmed trade execution on Polymarket.
   "type": "trade",
   "timestamp": 1772500002000,
   "data": {
+    "event_type": "trade",
     "tx_hash": "0x5e6f7a8b9c0d...",
     "block_number": 54321000,
     "log_index": 42,
     "timestamp": 1772500002000,
-    "exchange": "Polymarket",
+    "exchange": "ctf_exchange",
     "maker": "0x999888777666...",
     "taker": "0xabcdef1234567890...",
     "token_id": "21742633143463906290569404...",
     "side": "BUY",
     "price": 0.72,
-    "size": 500.00,
+    "size": 500.0,
+    "maker_amount": "360000000",
+    "taker_amount": "500000000",
     "market_title": "Will Bitcoin hit $100K in 2026?",
     "outcome": "Yes",
-    "market_slug": "bitcoin-100k-2026"
+    "market_slug": "bitcoin-100k-2026",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/..."
   }
 }
 ```
@@ -156,6 +165,7 @@ Notification when a pending settlement is confirmed on-chain.
   "type": "status_update",
   "timestamp": 1772500002000,
   "data": {
+    "event_type": "status_update",
     "tx_hash": "0x1a2b3c4d5e6f...",
     "token_id": "21742633...",
     "block_number": 54321000,
@@ -163,7 +173,8 @@ Notification when a pending settlement is confirmed on-chain.
     "pending_detected_at": 1772500000000,
     "latency_ms": 2000,
     "market_title": "Will Bitcoin hit $100K in 2026?",
-    "outcome": "Yes"
+    "outcome": "Yes",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/..."
   }
 }
 ```
@@ -177,13 +188,15 @@ New block summary with Polymarket-specific stats.
   "type": "block",
   "timestamp": 1772500002000,
   "data": {
+    "event_type": "block",
     "block_number": 54321000,
     "block_hash": "0xblockhash...",
     "timestamp": 1772500002000,
+    "parent_hash": "0xparenthash...",
     "tx_count": 150,
     "polymarket_tx_count": 12,
     "settlement_count": 8,
-    "trade_volume_usd": 34500.00
+    "trade_volume_usd": 34500.0
   }
 }
 ```
@@ -197,13 +210,16 @@ Polymarket position transfer between wallets.
   "type": "position_change",
   "timestamp": 1772500002000,
   "data": {
+    "event_type": "position_change",
     "tx_hash": "0xdef456...",
     "block_number": 54321000,
+    "log_index": 15,
+    "timestamp": 1772500002000,
     "from": "0xaaa111...",
     "to": "0xbbb222...",
     "token_id": "21742633...",
-    "amount": 1000000000,
-    "transfer_type": "Single"
+    "amount": 1000.0,
+    "transfer_type": "single"
   }
 }
 ```
@@ -217,12 +233,15 @@ USDC deposit or withdrawal on Polymarket.
   "type": "deposit",
   "timestamp": 1772500002000,
   "data": {
+    "event_type": "deposit",
     "tx_hash": "0xccc789...",
     "block_number": 54321000,
+    "log_index": 8,
+    "timestamp": 1772500002000,
     "from": "0xuser123...",
     "to": "0xpolymarket_contract...",
-    "amount": 5000000000,
-    "direction": "Deposit"
+    "amount": 5000.0,
+    "direction": "deposit"
   }
 }
 ```
