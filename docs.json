@@ -147,6 +147,7 @@
       "href": "https://polynode.dev"
     }
   },
+  "openapi": "/openapi.json",
   "api": {
     "baseUrl": "https://api.polynode.dev",
     "auth": {
