@@ -40,7 +40,6 @@
           {
             "group": "More",
             "pages": [
-              "websocket/json-rpc",
               "websocket/examples"
             ]
           }
@@ -114,75 +113,12 @@
             ]
           },
           {
-            "group": "RPC",
-            "pages": [
-              "api-reference/rpc/json-rpc-proxy"
-            ]
-          },
-          {
             "group": "System",
             "pages": [
               "api-reference/system/system-status",
               "api-reference/system/generate-api-key",
               "api-reference/system/health-check",
               "api-reference/system/readiness-check"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "RPC Reference (Coming Soon)",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "api-reference/rpc/overview"
-            ]
-          },
-          {
-            "group": "Ethereum Methods",
-            "pages": [
-              "api-reference/rpc/eth_blockNumber",
-              "api-reference/rpc/eth_gasPrice",
-              "api-reference/rpc/eth_feeHistory",
-              "api-reference/rpc/eth_getBalance",
-              "api-reference/rpc/eth_getStorageAt",
-              "api-reference/rpc/eth_getCode",
-              "api-reference/rpc/eth_getBlockByNumber",
-              "api-reference/rpc/eth_getBlockByHash",
-              "api-reference/rpc/eth_getLogs",
-              "api-reference/rpc/eth_sendRawTransaction",
-              "api-reference/rpc/eth_call",
-              "api-reference/rpc/eth_estimateGas",
-              "api-reference/rpc/eth_getTransactionCount",
-              "api-reference/rpc/eth_getTransactionByHash",
-              "api-reference/rpc/eth_getTransactionReceipt",
-              "api-reference/rpc/eth_chainId"
-            ]
-          },
-          {
-            "group": "Network Methods",
-            "pages": [
-              "api-reference/rpc/web3_clientVersion",
-              "api-reference/rpc/net_version",
-              "api-reference/rpc/net_peerCount",
-              "api-reference/rpc/txpool_status"
-            ]
-          },
-          {
-            "group": "PolyNode Methods",
-            "pages": [
-              "api-reference/rpc/pn_getMarketPrice",
-              "api-reference/rpc/pn_getRecentTrades",
-              "api-reference/rpc/pn_getPendingSettlements",
-              "api-reference/rpc/pn_getWalletActivity",
-              "api-reference/rpc/pn_getStatus"
-            ]
-          },
-          {
-            "group": "Subscriptions",
-            "pages": [
-              "api-reference/rpc/eth_subscribe"
             ]
           }
         ]
