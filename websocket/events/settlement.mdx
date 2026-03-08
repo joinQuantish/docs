@@ -46,6 +46,10 @@ The core PolyNode event. A decoded `matchOrders` transaction from the Polygon me
 }
 ```
 
+<Note>
+  Every WebSocket event is wrapped with three top-level fields: `type`, `timestamp`, and `data`. The `data` object also contains an `event_type` field that always matches the top-level `type` — use whichever is convenient for your parsing logic.
+</Note>
+
 ## Fields
 
 <ResponseField name="type" type="string" required>

@@ -81,6 +81,21 @@ WebSocket subscriptions with filters reduce message volume and processing overhe
 }
 ```
 
+## Expected WebSocket throughput
+
+WebSocket subscriptions are not rate-limited by requests/min, but message volume varies significantly by subscription type:
+
+| Subscription | Typical messages/sec | Notes |
+|---|---|---|
+| Firehose (no filters) | 50–150 | ~0.5–1.5 Mbps uncompressed |
+| Filtered (1 market) | 1–20 | Depends on market activity |
+| Filtered (1 wallet) | 0–5 | Most wallets trade infrequently |
+| Blocks only | ~0.5 | One per Polygon block (~2s) |
+
+<Tip>
+  `status_update` events arrive in bursts (30–80 per block). If you don't need confirmation tracking, exclude them from your `event_types` filter to reduce volume.
+</Tip>
+
 ## Higher limits
 
 Upgrade your plan at [polynode.dev/pricing](https://polynode.dev/pricing) for higher rate limits and more WebSocket connections.

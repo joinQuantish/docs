@@ -76,6 +76,10 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
   </Expandable>
 </ResponseField>
 
+<Warning>
+  `status_update` events arrive in bursts. A single Polygon block typically contains 30–80 Polymarket settlements, so expect 30–80 `status_update` messages within ~100ms each time a block confirms (~2s interval). If you only need pending detection, subscribe with `"status": "pending"` or exclude `"status_update"` from your `event_types` filter.
+</Warning>
+
 ## How to use
 
 Match `status_update` events back to their `settlement` by `tx_hash`:
