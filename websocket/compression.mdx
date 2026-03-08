@@ -17,7 +17,7 @@ When you connect with `&compress=zlib`, the server sends settlement events as **
 Control messages (subscribe acknowledgments, errors, heartbeats, pong) are still sent as normal JSON text, so you can always read them directly.
 
 ```
-wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
+wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
 ```
 
 ## Bandwidth savings
@@ -40,7 +40,7 @@ Compression is applied **once per event** on the server, then the same compresse
     import { inflateRawSync } from "zlib";
 
     const ws = new WebSocket(
-      "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
+      "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
     );
 
     ws.on("open", () => {
@@ -79,7 +79,7 @@ Compression is applied **once per event** on the server, then the same compresse
         print(event["type"], event.get("data", {}).get("market_title"))
 
     ws = websocket.WebSocketApp(
-        "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib",
+        "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib",
         on_open=lambda ws: ws.send(json.dumps({
             "action": "subscribe", "type": "settlements"
         })),
@@ -97,7 +97,7 @@ Compression is applied **once per event** on the server, then the same compresse
 
     async def main():
         async with websockets.connect(
-            "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
+            "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
         ) as ws:
             await ws.send(json.dumps({
                 "action": "subscribe", "type": "settlements"
@@ -132,7 +132,7 @@ Compression is applied **once per event** on the server, then the same compresse
 
     func main() {
         c, _, err := websocket.DefaultDialer.Dial(
-            "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib", nil,
+            "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib", nil,
         )
         if err != nil { log.Fatal(err) }
         defer c.Close()
@@ -171,7 +171,7 @@ Compression is applied **once per event** on the server, then the same compresse
 
     fn main() {
         let (mut ws, _) = connect(
-            "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
+            "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
         ).unwrap();
 
         ws.send(Message::Text(
@@ -203,7 +203,7 @@ Compression is applied **once per event** on the server, then the same compresse
     <script src="https://cdn.jsdelivr.net/npm/pako@2/dist/pako.min.js"></script>
     <script>
     const ws = new WebSocket(
-      "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
+      "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib"
     );
     ws.binaryType = "arraybuffer";
 

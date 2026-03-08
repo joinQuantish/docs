@@ -8,7 +8,7 @@ Connect via WebSocket for real-time Polymarket events. Supports filtered subscri
 ## Connecting
 
 ```
-wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY
+wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY
 ```
 
 The API key must be passed as a query parameter.
@@ -283,7 +283,7 @@ Invalid messages return structured errors:
 ### Track whale trades
 
 ```javascript
-const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.onopen = () => {
   ws.send(JSON.stringify({

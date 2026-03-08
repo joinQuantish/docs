@@ -40,7 +40,7 @@ Instead of polling REST endpoints, connect via WebSocket for live updates:
 ```javascript
 // Instead of polling /v1/markets every 5 seconds (12 req/min)...
 // Use WebSocket (1 connection, unlimited events)
-const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 ws.send(JSON.stringify({
   action: "subscribe",
   type: "settlements",

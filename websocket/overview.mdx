@@ -39,7 +39,7 @@ PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement
 
   <Step title="Connect">
     ```bash
-    wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
+    wscat -c "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
     ```
   </Step>
 
@@ -100,12 +100,12 @@ PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement
 ## Connection URL
 
 ```
-wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY
+wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY
 ```
 
 With compression (~60% bandwidth savings):
 ```
-wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
+wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
 ```
 
 The API key is passed as a query parameter. Keys starting with `pn_live_` or `qm_live_` are accepted.
@@ -143,7 +143,7 @@ Response: `{"type": "pong"}`
 ## Connection lifecycle
 
 ```
-Connect → wss://api.polynode.dev/ws?key=pn_live_...
+Connect → wss://ws.polynode.dev/ws?key=pn_live_...
     ↓
 Send → {"action": "subscribe", "type": "settlements", ...}
     ↓
@@ -187,7 +187,7 @@ PolyNode does not send a close frame before disconnecting. Implement reconnectio
 let delay = 1000;
 
 function connect() {
-  const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_...");
+  const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_...");
   ws.onopen = () => {
     delay = 1000; // Reset on success
     ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));

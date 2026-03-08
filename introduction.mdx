@@ -25,7 +25,7 @@ curl -s -X POST https://api.polynode.dev/v1/keys \
   -d '{"name": "my-app"}'
 
 # 2. Connect to WebSocket
-wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
+wscat -c "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
 
 # 3. Subscribe to pending settlements
 > {"action": "subscribe", "type": "settlements", "filters": {"status": "pending"}}
@@ -44,7 +44,7 @@ wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
 
 ```
 REST:      https://api.polynode.dev
-WebSocket: wss://api.polynode.dev/ws?key=YOUR_KEY
+WebSocket: wss://ws.polynode.dev/ws?key=YOUR_KEY
 ```
 
 All endpoints require an API key via `x-api-key` header (REST) or `?key=` query param (WebSocket).

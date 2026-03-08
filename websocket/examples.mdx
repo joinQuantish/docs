@@ -11,7 +11,7 @@ description: "Complete WebSocket examples in JavaScript, Python, and wscat."
 ```javascript
 const WebSocket = require("ws");
 
-const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.on("open", () => {
   ws.send(JSON.stringify({
@@ -50,7 +50,7 @@ ws.on("close", () => setTimeout(() => process.exit(1), 1000));
 ### Whale alerts ($5K+)
 
 ```javascript
-const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.on("open", () => {
   ws.send(JSON.stringify({
@@ -101,7 +101,7 @@ ws.send(JSON.stringify({
 ### Chainlink price feed
 
 ```javascript
-const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.on("open", () => {
   ws.send(JSON.stringify({
@@ -123,7 +123,7 @@ ws.on("message", (data) => {
 ### Settlements + price feeds on same connection
 
 ```javascript
-const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.on("open", () => {
   // Subscribe to both — they're independent streams
@@ -154,7 +154,7 @@ import json
 import websockets
 
 API_KEY = "pn_live_YOUR_KEY"
-URL = f"wss://api.polynode.dev/ws?key={API_KEY}"
+URL = f"wss://ws.polynode.dev/ws?key={API_KEY}"
 
 async def connect():
     while True:
@@ -198,7 +198,7 @@ Quick testing from the command line:
 npm install -g wscat
 
 # Connect
-wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
+wscat -c "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
 
 # Once connected, paste:
 {"action": "subscribe", "type": "settlements", "filters": {"status": "pending"}}
@@ -225,7 +225,7 @@ wscat -c "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
 
 ```bash
 # Using websocat (Rust CLI tool)
-websocat "wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY"
+websocat "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
 
 # Then type:
 {"action":"subscribe","type":"settlements"}
@@ -240,7 +240,7 @@ function createConnection() {
   let delay = 1000;
 
   function connect() {
-    const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+    const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
     ws.onopen = () => {
       delay = 1000; // Reset backoff

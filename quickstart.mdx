@@ -96,7 +96,7 @@ const data = await resp.json();
 Connect via WebSocket to receive real-time settlements:
 
 ```javascript
-const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.onopen = () => {
   ws.send(JSON.stringify({

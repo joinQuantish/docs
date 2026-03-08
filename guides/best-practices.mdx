@@ -113,7 +113,7 @@ When reconnecting, use `snapshot_count` to recover recent state. The snapshot fi
 
 ```javascript
 function connect() {
-  const ws = new WebSocket("wss://api.polynode.dev/ws?key=pn_live_YOUR_KEY");
+  const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
   let delay = 1000;
 
   ws.onopen = () => {
