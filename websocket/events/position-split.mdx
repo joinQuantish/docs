@@ -1,0 +1,99 @@
+---
+title: "Position Split Event"
+sidebarTitle: "position_split"
+description: "Collateral split into outcome tokens on Polymarket."
+icon: "scissors"
+---
+
+Emitted when collateral (USDC) is split into outcome tokens (YES/NO shares) via the Conditional Tokens Framework `splitPosition` function.
+
+99%+ of splits happen as internal sub-calls of `matchOrders` trades. This event provides supplementary data: how much collateral was split and into which market condition.
+
+```json
+{
+  "type": "position_split",
+  "timestamp": 1772500002000,
+  "data": {
+    "event_type": "position_split",
+    "tx_hash": "0xabc123...",
+    "block_number": 54321000,
+    "log_index": 12,
+    "timestamp": 1772500002000,
+    "stakeholder": "0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e",
+    "collateral_token": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+    "condition_id": "0xabc456...",
+    "amount": 500.0,
+    "market_title": "Will Bitcoin reach $100K?",
+    "market_slug": "bitcoin-100k-2026",
+    "market_image": "https://..."
+  }
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"position_split"`.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Block timestamp in Unix milliseconds.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="tx_hash" type="string" required>
+      Transaction hash.
+    </ResponseField>
+
+    <ResponseField name="block_number" type="number" required>
+      Block number.
+    </ResponseField>
+
+    <ResponseField name="log_index" type="number" required>
+      Log index within the transaction.
+    </ResponseField>
+
+    <ResponseField name="timestamp" type="number" required>
+      Block timestamp in Unix milliseconds.
+    </ResponseField>
+
+    <ResponseField name="stakeholder" type="string" required>
+      Address that triggered the split (usually the exchange contract, sometimes a direct user).
+    </ResponseField>
+
+    <ResponseField name="collateral_token" type="string" required>
+      Collateral token address. Always USDC.e (`0x2791bca1f2de4661ed88a30c99a7a9449aa84174`) on Polymarket.
+    </ResponseField>
+
+    <ResponseField name="condition_id" type="string" required>
+      Market condition ID — identifies which market's outcome tokens were minted.
+    </ResponseField>
+
+    <ResponseField name="amount" type="number" required>
+      USDC amount that was split into outcome tokens (6 decimal precision).
+    </ResponseField>
+
+    <ResponseField name="market_title" type="string">
+      Human-readable market question. Populated when metadata is available.
+    </ResponseField>
+
+    <ResponseField name="market_slug" type="string">
+      URL slug for the market.
+    </ResponseField>
+
+    <ResponseField name="market_image" type="string">
+      Market image URL.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Use cases
+
+- **Collateral flow analysis** — track how much USDC is being converted into outcome tokens
+- **Market liquidity creation** — splits indicate new shares being minted for a market
+- **Trade enrichment** — pair with `trade` events to see the full lifecycle of a trade (split → fill)
+
+<Note>
+  Not included in `global` firehose by default due to high volume (splits fire on most trades). Subscribe explicitly with `event_types: ["position_split"]` or use the `wallets`/`markets` subscription types which include it automatically.
+</Note>

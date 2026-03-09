@@ -1,0 +1,99 @@
+---
+title: "Position Merge Event"
+sidebarTitle: "position_merge"
+description: "Outcome tokens merged back into collateral on Polymarket."
+icon: "merge"
+---
+
+Emitted when outcome tokens (YES + NO shares) are merged back into collateral (USDC) via the Conditional Tokens Framework `mergePositions` function. The inverse of a [position split](/websocket/events/position-split).
+
+Merges are much rarer than splits (~20x less frequent). They happen when a trader holds both YES and NO tokens for a condition and redeems them back to USDC.
+
+```json
+{
+  "type": "position_merge",
+  "timestamp": 1772500002000,
+  "data": {
+    "event_type": "position_merge",
+    "tx_hash": "0xdef789...",
+    "block_number": 54321000,
+    "log_index": 18,
+    "timestamp": 1772500002000,
+    "stakeholder": "0xuser123...",
+    "collateral_token": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+    "condition_id": "0xabc456...",
+    "amount": 250.0,
+    "market_title": "Will Bitcoin reach $100K?",
+    "market_slug": "bitcoin-100k-2026",
+    "market_image": "https://..."
+  }
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"position_merge"`.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Block timestamp in Unix milliseconds.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="tx_hash" type="string" required>
+      Transaction hash.
+    </ResponseField>
+
+    <ResponseField name="block_number" type="number" required>
+      Block number.
+    </ResponseField>
+
+    <ResponseField name="log_index" type="number" required>
+      Log index within the transaction.
+    </ResponseField>
+
+    <ResponseField name="timestamp" type="number" required>
+      Block timestamp in Unix milliseconds.
+    </ResponseField>
+
+    <ResponseField name="stakeholder" type="string" required>
+      Address that triggered the merge.
+    </ResponseField>
+
+    <ResponseField name="collateral_token" type="string" required>
+      Collateral token address. Always USDC.e (`0x2791bca1f2de4661ed88a30c99a7a9449aa84174`) on Polymarket.
+    </ResponseField>
+
+    <ResponseField name="condition_id" type="string" required>
+      Market condition ID — identifies which market's outcome tokens were burned.
+    </ResponseField>
+
+    <ResponseField name="amount" type="number" required>
+      USDC amount received from merging outcome tokens (6 decimal precision).
+    </ResponseField>
+
+    <ResponseField name="market_title" type="string">
+      Human-readable market question. Populated when metadata is available.
+    </ResponseField>
+
+    <ResponseField name="market_slug" type="string">
+      URL slug for the market.
+    </ResponseField>
+
+    <ResponseField name="market_image" type="string">
+      Market image URL.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Use cases
+
+- **Position unwinding** — detect when traders are closing positions by merging outcome tokens
+- **Liquidity withdrawal tracking** — merges reduce the total supply of outcome tokens in a market
+- **Arbitrage detection** — merges after buying both outcomes at favorable prices signal arbitrage
+
+<Note>
+  Not included in `global` firehose by default. Subscribe explicitly with `event_types: ["position_merge"]` or use the `wallets`/`markets` subscription types which include it automatically.
+</Note>

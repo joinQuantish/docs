@@ -58,13 +58,13 @@ The `type` field selects a preset of event types. If you also set `filters.event
 </ResponseField>
 
 <ResponseField name="wallets" type="string">
-  Events: `settlement`, `trade`, `position_change`, `deposit`, `status_update`
+  Events: `settlement`, `trade`, `position_change`, `deposit`, `status_update`, `position_split`, `position_merge`
 
   All activity for specific wallets. Best used with the `wallets` filter.
 </ResponseField>
 
 <ResponseField name="markets" type="string">
-  Events: `settlement`, `trade`, `position_change`, `status_update`
+  Events: `settlement`, `trade`, `position_change`, `status_update`, `position_split`, `position_merge`
 
   All activity for specific markets. Best used with `tokens`, `slugs`, or `condition_ids` filters.
 </ResponseField>
@@ -76,9 +76,9 @@ The `type` field selects a preset of event types. If you also set `filters.event
 </ResponseField>
 
 <ResponseField name="global" type="string">
-  Events: all
+  Events: all except `position_split` and `position_merge`
 
-  Unfiltered stream of every event (**firehose**). High throughput — use with caution. This counts toward your plan's firehose connection limit.
+  Unfiltered stream of every event (**firehose**). High throughput — use with caution. This counts toward your plan's firehose connection limit. To include `position_split`/`position_merge`, add them explicitly via the `event_types` filter override.
 </ResponseField>
 
 <Note>
@@ -161,7 +161,7 @@ All filters are optional. Omit the `filters` object entirely to receive all even
 
 <ParamField body="event_types" type="string[]">
   Override the subscription type's default event list. Valid values:
-  `"settlement"`, `"trade"`, `"status_update"`, `"block"`, `"position_change"`, `"deposit"`
+  `"settlement"`, `"trade"`, `"status_update"`, `"block"`, `"position_change"`, `"deposit"`, `"position_split"`, `"position_merge"`
 </ParamField>
 
 <ParamField body="snapshot_count" type="number" default="20">
