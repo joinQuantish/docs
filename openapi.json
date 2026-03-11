@@ -1389,25 +1389,15 @@
             ],
             "description": "Market condition ID (CTF contract identifier)."
           },
-          "token_ids": {
+          "tokens": {
             "type": [
-              "array",
+              "object",
               "null"
             ],
-            "items": {
+            "additionalProperties": {
               "type": "string"
             },
-            "description": "All token IDs for this market (e.g. [YES_token, NO_token])."
-          },
-          "outcomes": {
-            "type": [
-              "array",
-              "null"
-            ],
-            "items": {
-              "type": "string"
-            },
-            "description": "Outcome names matching token_ids order (e.g. [\"Yes\", \"No\"])."
+            "description": "Map of token ID to outcome name (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"})."
           }
         }
       },
