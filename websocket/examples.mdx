@@ -189,6 +189,48 @@ async def connect():
 asyncio.run(connect())
 ```
 
+### Multiple wallet subscriptions
+
+```javascript
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
+const subscriptionIds = [];
+
+ws.on("open", () => {
+  // Subscribe to multiple wallet groups — each creates an independent subscription
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "wallets",
+    filters: { wallets: ["0xWallet1...", "0xWallet2..."] }
+  }));
+
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "wallets",
+    filters: { wallets: ["0xWallet3...", "0xWallet4..."] }
+  }));
+});
+
+ws.on("message", (data) => {
+  const msg = JSON.parse(data);
+
+  if (msg.type === "subscribed") {
+    // Save subscription_id for targeted unsubscribe later
+    subscriptionIds.push(msg.subscription_id);
+    console.log(`Subscribed: ${msg.subscription_id}`);
+  }
+
+  if (msg.type === "settlement") {
+    console.log(`${msg.data.taker_side} ${msg.data.taker_size} @ ${msg.data.taker_price}`);
+  }
+});
+
+// Later: remove just one subscription
+// ws.send(JSON.stringify({ action: "unsubscribe", subscription_id: subscriptionIds[0] }));
+
+// Or remove all
+// ws.send(JSON.stringify({ action: "unsubscribe" }));
+```
+
 ## wscat (CLI)
 
 Quick testing from the command line:
@@ -208,7 +250,7 @@ wscat -c "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
 # Subscribe to Chainlink BTC/USD prices
 {"action": "subscribe", "type": "chainlink"}
 
-# Subscribe to whale trades
+# Subscribe to whale trades (stacks with previous subscriptions)
 {"action": "subscribe", "type": "large_trades", "filters": {"min_size": 10000}}
 
 # Subscribe by market slug
@@ -217,7 +259,10 @@ wscat -c "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
 # Ping
 {"action": "ping"}
 
-# Unsubscribe
+# Unsubscribe a specific subscription (use the subscription_id from the ack)
+{"action": "unsubscribe", "subscription_id": "abc123:1"}
+
+# Unsubscribe all
 {"action": "unsubscribe"}
 ```
 

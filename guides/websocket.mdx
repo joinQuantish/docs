@@ -248,6 +248,14 @@ USDC deposit or withdrawal on Polymarket.
 
 ## Unsubscribing
 
+Remove a specific subscription by its ID (returned in the `subscribed` response):
+
+```json
+{"action": "unsubscribe", "subscription_id": "550e8400-...:1"}
+```
+
+Or remove all subscriptions on the connection:
+
 ```json
 {"action": "unsubscribe"}
 ```

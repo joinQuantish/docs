@@ -148,7 +148,10 @@ Connect → wss://ws.polynode.dev/ws?key=pn_live_...
 Send → {"action": "subscribe", "type": "settlements", ...}
     ↓
 Receive ← {"type": "snapshot", "count": 20, "events": [...]}
-Receive ← {"type": "subscribed", "subscriber_id": "..."}
+Receive ← {"type": "subscribed", "subscriber_id": "...", "subscription_id": "...:1"}
+    ↓
+Send → {"action": "subscribe", ...}        (additional subscriptions stack)
+Receive ← {"type": "subscribed", "subscription_id": "...:2"}
     ↓
 Receive ← {"type": "settlement", ...}     (live events)
 Receive ← {"type": "status_update", ...}
@@ -156,7 +159,8 @@ Receive ← Ping frame                       (every 30s)
 Send   → Pong frame                        (automatic)
 Receive ← {"type": "heartbeat", ...}       (every 30s)
     ↓
-Send → {"action": "unsubscribe"}
+Send → {"action": "unsubscribe", "subscription_id": "...:1"}  (remove one)
+Send → {"action": "unsubscribe"}                               (remove all)
 Receive ← {"type": "unsubscribed"}
 ```
 

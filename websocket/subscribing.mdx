@@ -186,6 +186,26 @@ Filters use **AND** logic between different filter types and **OR** logic within
 - Within a category, matching **any** value is sufficient (wallet A OR wallet B)
 - Empty/omitted filters match everything in that category
 
+## Multiple subscriptions
+
+You can send multiple `subscribe` messages on the same connection — they **stack**. Each subscribe creates an independent subscription with its own filters. Events matching _any_ of your active subscriptions are delivered, deduplicated so you never receive the same event twice.
+
+```javascript
+// Subscribe to two different wallet groups independently
+ws.send(JSON.stringify({
+  action: "subscribe",
+  type: "wallets",
+  filters: { wallets: ["0xaaa..."] }
+}));
+
+ws.send(JSON.stringify({
+  action: "subscribe",
+  type: "wallets",
+  filters: { wallets: ["0xbbb..."] }
+}));
+// Both subscriptions are active — events for either wallet are delivered
+```
+
 ## Subscribe response
 
 After subscribing, you receive two messages:
@@ -199,17 +219,37 @@ After subscribing, you receive two messages:
 }
 ```
 
-**2. Confirmation** — your subscriber ID and any warnings:
+**2. Confirmation** — your subscription ID and any warnings:
 ```json
 {
   "type": "subscribed",
   "subscriber_id": "550e8400-e29b-41d4-a716-446655440000",
+  "subscription_id": "550e8400-e29b-41d4-a716-446655440000:1",
   "subscription_type": "settlements",
   "warnings": []
 }
 ```
 
+Save the `subscription_id` if you need to remove a specific subscription later.
+
 ## Unsubscribe
+
+### Remove a specific subscription
+
+```json
+{"action": "unsubscribe", "subscription_id": "550e8400-...:1"}
+```
+
+Response:
+```json
+{
+  "type": "unsubscribed",
+  "subscriber_id": "550e8400-...",
+  "subscription_id": "550e8400-...:1"
+}
+```
+
+### Remove all subscriptions
 
 ```json
 {"action": "unsubscribe"}
@@ -217,9 +257,9 @@ After subscribing, you receive two messages:
 
 Response:
 ```json
-{"type": "unsubscribed"}
+{"type": "unsubscribed", "subscriber_id": "550e8400-..."}
 ```
 
 <Tip>
-You can change your subscription at any time by sending a new `subscribe` message. It replaces the previous subscription — no need to unsubscribe first.
+To change filters on an existing subscription, unsubscribe by `subscription_id` and send a new subscribe with the updated filters.
 </Tip>
