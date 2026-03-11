@@ -1381,6 +1381,33 @@
             ],
             "format": "double",
             "description": "Taker fee rate (e.g. 0.02 for 2%)."
+          },
+          "condition_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Market condition ID (CTF contract identifier)."
+          },
+          "token_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "All token IDs for this market (e.g. [YES_token, NO_token])."
+          },
+          "outcomes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Outcome names matching token_ids order (e.g. [\"Yes\", \"No\"])."
           }
         }
       },
