@@ -29,6 +29,9 @@ The core PolyNode event. A decoded `matchOrders` transaction from the Polygon me
     "market_slug": "bitcoin-100k-2026",
     "event_title": "Bitcoin Price Milestones",
     "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/...",
+    "neg_risk": true,
+    "tick_size": 0.01,
+    "taker_base_fee": 0.02,
     "trades": [
       {
         "maker": "0x999888777666...",
@@ -117,6 +120,18 @@ The core PolyNode event. A decoded `matchOrders` transaction from the Polygon me
 
     <ResponseField name="market_image" type="string">
       Market image URL. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="neg_risk" type="boolean">
+      Whether this market uses the negRisk contract type. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="tick_size" type="number">
+      Minimum price increment (e.g. `0.01` or `0.001`). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="taker_base_fee" type="number">
+      Taker fee rate (e.g. `0.02` for 2%). Enriched from metadata.
     </ResponseField>
 
     <ResponseField name="trades" type="object[]" required>

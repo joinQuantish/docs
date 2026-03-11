@@ -1358,6 +1358,29 @@
           },
           "tx_hash": {
             "type": "string"
+          },
+          "neg_risk": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether this market uses the negRisk contract type."
+          },
+          "tick_size": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Minimum price increment (e.g. 0.01 or 0.001)."
+          },
+          "taker_base_fee": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Taker fee rate (e.g. 0.02 for 2%)."
           }
         }
       },
