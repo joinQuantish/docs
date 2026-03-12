@@ -11,22 +11,30 @@ Merges are much rarer than splits (~20x less frequent). They happen when a trade
 
 ```json
 {
-  "type": "position_merge",
-  "timestamp": 1772500002000,
   "data": {
+    "amount": 1414.0,
+    "block_number": 84090704,
+    "collateral_token": "0x3a3bd7bb9528e159577f7c2e685cc81a765002e2",
+    "condition_id": "0xd1747284d6048b2a3dcfbee489db405f36de18f9590197dd0e5c9f0c246bf050",
+    "event_title": "Republican Presidential Nominee 2028",
     "event_type": "position_merge",
-    "tx_hash": "0xdef789...",
-    "block_number": 54321000,
-    "log_index": 18,
-    "timestamp": 1772500002000,
-    "stakeholder": "0xuser123...",
-    "collateral_token": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
-    "condition_id": "0xabc456...",
-    "amount": 250.0,
-    "market_title": "Will Bitcoin reach $100K?",
-    "market_slug": "bitcoin-100k-2026",
-    "market_image": "https://..."
-  }
+    "log_index": 1004,
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/Byron_Donalds.png",
+    "market_slug": "will-byron-donalds-win-the-2028-republican-presidential-nomination",
+    "market_title": "Will Byron Donalds win the 2028 Republican presidential nomination?",
+    "neg_risk": true,
+    "stakeholder": "0xd91e80cf2e7be2e162c6513ced06f1dd0da35296",
+    "taker_base_fee": 0.0,
+    "tick_size": 0.001,
+    "timestamp": 1773301441000,
+    "tokens": {
+      "311624663652221737215322113380496984764966764039692273354641152455298576851": "Yes",
+      "43292374563904271719486871569114922516560719431752184778538513591321835161630": "No"
+    },
+    "tx_hash": "0x92fa6de980f6cad9eae9ef28e908d19faa10838a07f01352b0cae63b5f8299fb"
+  },
+  "timestamp": 1773301441000,
+  "type": "position_merge"
 }
 ```
 
@@ -83,7 +91,27 @@ Merges are much rarer than splits (~20x less frequent). They happen when a trade
     </ResponseField>
 
     <ResponseField name="market_image" type="string">
-      Market image URL.
+      Market image URL. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="event_title" type="string">
+      Parent event title. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="neg_risk" type="boolean">
+      Whether this market uses the negRisk contract type. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="tick_size" type="number">
+      Minimum price increment (e.g. `0.01` or `0.001`). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="taker_base_fee" type="number">
+      Taker fee rate (e.g. `0.02` for 2%). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="tokens" type="object">
+      Map of token ID → outcome name for all outcomes in this market. Enriched from metadata.
     </ResponseField>
   </Expandable>
 </ResponseField>

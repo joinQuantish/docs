@@ -9,28 +9,37 @@ A confirmed trade from an on-chain `OrderFilled` event. These come from the CTF 
 
 ```json
 {
-  "type": "trade",
-  "timestamp": 1772500002000,
   "data": {
+    "block_number": 84090704,
+    "condition_id": "0xab3eea0d5b61cd443affca5fcd19d3541e92f7c96f7e92111982fbcbff56bb55",
+    "event_title": "Bitcoin Up or Down - March 12, 3:40AM-3:45AM ET",
     "event_type": "trade",
-    "tx_hash": "0x5e6f7a8b9c0d...",
-    "block_number": 54321000,
-    "log_index": 42,
-    "timestamp": 1772500002000,
     "exchange": "ctf_exchange",
-    "maker": "0x999888777666...",
-    "taker": "0xabcdef1234567890...",
-    "token_id": "21742633143463906290569404...",
+    "log_index": 767,
+    "maker": "0x1e3cb16886d605430a8c5581eddd08e068c08a62",
+    "maker_amount": "3690307",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+    "market_slug": "btc-updown-5m-1773301200",
+    "market_title": "Bitcoin Up or Down - March 12, 3:40AM-3:45AM ET",
+    "neg_risk": false,
+    "outcome": "Up",
+    "price": 0.711,
     "side": "BUY",
-    "price": 0.72,
-    "size": 500.0,
-    "maker_amount": "360000000",
-    "taker_amount": "500000000",
-    "market_title": "Will Bitcoin hit $100K in 2026?",
-    "outcome": "Yes",
-    "market_slug": "bitcoin-100k-2026",
-    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/..."
-  }
+    "size": 5.19,
+    "taker": "0xb9b31d3872d3b14d67d0949642ff13d925b1ab4a",
+    "taker_amount": "5190306",
+    "taker_base_fee": 1000.0,
+    "tick_size": 0.01,
+    "timestamp": 1773301441000,
+    "token_id": "47635040450827094965464370243227927750353541381049355332417378831540287352201",
+    "tokens": {
+      "47635040450827094965464370243227927750353541381049355332417378831540287352201": "Up",
+      "57924371746740845060329991315866785058480643549619724503463886953768356812176": "Down"
+    },
+    "tx_hash": "0x74dbde22f31ce8dcbc5b3c187c33cd131d9bb5791874e139b41c1049ae3589fc"
+  },
+  "timestamp": 1773301441000,
+  "type": "trade"
 }
 ```
 
@@ -112,6 +121,30 @@ A confirmed trade from an on-chain `OrderFilled` event. These come from the CTF 
 
     <ResponseField name="market_image" type="string">
       Market image URL. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="event_title" type="string">
+      Parent event title. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="neg_risk" type="boolean">
+      Whether this market uses the negRisk contract type. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="tick_size" type="number">
+      Minimum price increment (e.g. `0.01` or `0.001`). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="taker_base_fee" type="number">
+      Taker fee rate (e.g. `0.02` for 2%). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="condition_id" type="string">
+      Market condition ID (CTF contract identifier). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="tokens" type="object">
+      Map of token ID → outcome name for all outcomes in this market (e.g. `{"123...": "Yes", "456...": "No"}`). Enriched from metadata.
     </ResponseField>
   </Expandable>
 </ResponseField>

@@ -1104,7 +1104,7 @@
       },
       "EventStatus": {
         "type": "string",
-        "description": "Status of an event \u2014 pending (mempool) or confirmed (in a block).",
+        "description": "Status of an event — pending (mempool) or confirmed (in a block).",
         "enum": [
           "pending",
           "confirmed"
@@ -1242,6 +1242,20 @@
             "format": "int64",
             "minimum": 0
           },
+          "condition_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Condition ID for this market (CTF contract identifier)."
+          },
+          "event_title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Parent event title if this market is part of a group."
+          },
           "from": {
             "type": "string"
           },
@@ -1249,6 +1263,54 @@
             "type": "integer",
             "format": "int32",
             "minimum": 0
+          },
+          "market_image": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Market image URL from Gamma metadata."
+          },
+          "market_slug": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "market_title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "neg_risk": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether this market uses the negRisk contract type."
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "taker_base_fee": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Taker fee rate (e.g. 0.02 for 2%)."
+          },
+          "tick_size": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Minimum price increment (e.g. 0.01 or 0.001)."
           },
           "timestamp": {
             "type": "integer",
@@ -1259,6 +1321,19 @@
           },
           "token_id": {
             "type": "string"
+          },
+          "tokens": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Token ID → outcome name map.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "transfer_type": {
             "$ref": "#/components/schemas/TransferType"
@@ -1290,6 +1365,13 @@
             ],
             "format": "int64",
             "minimum": 0
+          },
+          "condition_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Condition ID for this market (CTF contract identifier)."
           },
           "detected_at": {
             "type": "integer",
@@ -1323,6 +1405,13 @@
             ],
             "description": "Human-readable market question (e.g. \"Will Bitcoin reach $100K?\")."
           },
+          "neg_risk": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether this market uses the negRisk contract type."
+          },
           "outcome": {
             "type": [
               "string",
@@ -1332,6 +1421,14 @@
           },
           "status": {
             "$ref": "#/components/schemas/EventStatus"
+          },
+          "taker_base_fee": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Taker fee rate (e.g. 0.02 for 2%)."
           },
           "taker_price": {
             "type": "number",
@@ -1350,22 +1447,6 @@
           "taker_wallet": {
             "type": "string"
           },
-          "trades": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DecodedTrade"
-            }
-          },
-          "tx_hash": {
-            "type": "string"
-          },
-          "neg_risk": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "Whether this market uses the negRisk contract type."
-          },
           "tick_size": {
             "type": [
               "number",
@@ -1374,30 +1455,27 @@
             "format": "double",
             "description": "Minimum price increment (e.g. 0.01 or 0.001)."
           },
-          "taker_base_fee": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "format": "double",
-            "description": "Taker fee rate (e.g. 0.02 for 2%)."
-          },
-          "condition_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Market condition ID (CTF contract identifier)."
-          },
           "tokens": {
             "type": [
               "object",
               "null"
             ],
+            "description": "Token ID → outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
             "additionalProperties": {
               "type": "string"
             },
-            "description": "Map of token ID to outcome name (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"})."
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "trades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DecodedTrade"
+            }
+          },
+          "tx_hash": {
+            "type": "string"
           }
         }
       },
@@ -1500,7 +1578,8 @@
           "block_number",
           "confirmed_at",
           "pending_detected_at",
-          "latency_ms"
+          "latency_ms",
+          "taker_wallet"
         ],
         "properties": {
           "block_number": {
@@ -1508,14 +1587,34 @@
             "format": "int64",
             "minimum": 0
           },
+          "condition_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Condition ID for this market."
+          },
           "confirmed_at": {
             "type": "integer",
             "format": "int64"
+          },
+          "event_title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Parent event title if this market is part of a group."
           },
           "latency_ms": {
             "type": "integer",
             "format": "int64",
             "description": "Time from pending detection to block confirmation (ms)."
+          },
+          "maker_wallets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "market_image": {
             "type": [
@@ -1524,11 +1623,25 @@
             ],
             "description": "Market image URL from Gamma metadata."
           },
+          "market_slug": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "URL slug for the market."
+          },
           "market_title": {
             "type": [
               "string",
               "null"
             ]
+          },
+          "neg_risk": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether this market uses the negRisk contract type."
           },
           "outcome": {
             "type": [
@@ -1540,8 +1653,40 @@
             "type": "integer",
             "format": "int64"
           },
+          "taker_base_fee": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Taker fee rate."
+          },
+          "taker_wallet": {
+            "type": "string"
+          },
+          "tick_size": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Minimum price increment."
+          },
           "token_id": {
             "type": "string"
+          },
+          "tokens": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Token ID → outcome name map.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "tx_hash": {
             "type": "string"
@@ -1571,6 +1716,20 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          },
+          "condition_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Condition ID for this market (CTF contract identifier)."
+          },
+          "event_title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Parent event title if this market is part of a group."
           },
           "exchange": {
             "$ref": "#/components/schemas/Exchange"
@@ -1605,6 +1764,13 @@
               "null"
             ]
           },
+          "neg_risk": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether this market uses the negRisk contract type."
+          },
           "outcome": {
             "type": [
               "string",
@@ -1628,12 +1794,41 @@
           "taker_amount": {
             "type": "string"
           },
+          "taker_base_fee": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Taker fee rate (e.g. 0.02 for 2%)."
+          },
+          "tick_size": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Minimum price increment (e.g. 0.01 or 0.001)."
+          },
           "timestamp": {
             "type": "integer",
             "format": "int64"
           },
           "token_id": {
             "type": "string"
+          },
+          "tokens": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Token ID → outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "tx_hash": {
             "type": "string"

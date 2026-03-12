@@ -13,43 +13,54 @@ The core PolyNode event. A decoded `matchOrders` transaction from the Polygon me
 {
   "data": {
     "block_number": null,
-    "condition_id": "0xb27aae79542981f7a476fb93b7ec456f...",
-    "detected_at": 1772500000000,
-    "event_title": "Bitcoin Price Milestones",
+    "condition_id": "0x4adecf6f72888a7eb9f30792c5bdccb072590075cbc6a165287982b466b50e8b",
+    "detected_at": 1773301441280,
+    "event_title": "Ethereum Up or Down - March 12, 3:30AM-3:45AM ET",
     "event_type": "settlement",
-    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/...",
-    "market_slug": "bitcoin-100k-2026",
-    "market_title": "Will Bitcoin hit $100K in 2026?",
-    "neg_risk": true,
-    "outcome": "Yes",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/ETH+fullsize.jpg",
+    "market_slug": "eth-updown-15m-1773300600",
+    "market_title": "Ethereum Up or Down - March 12, 3:30AM-3:45AM ET",
+    "neg_risk": false,
+    "outcome": "Up",
     "status": "pending",
-    "taker_base_fee": 0,
-    "taker_price": 0.72,
+    "taker_base_fee": 1000.0,
+    "taker_price": 0.99,
     "taker_side": "BUY",
-    "taker_size": 500.0,
-    "taker_token": "21742633143463906290569404...",
-    "taker_wallet": "0xabcdef1234567890...",
+    "taker_size": 50.5,
+    "taker_token": "92031998398623404776521611329154744036566205914361454065609349273835272366499",
+    "taker_wallet": "0x19db9b949dc686aa6e33f8a019c7b2bb0d4aabbf",
     "tick_size": 0.01,
     "tokens": {
-      "21742633143463906290569404...": "Yes",
-      "48393153309905564935848131...": "No"
+      "69502793735506041495672526031462553164156574585593182105038953736496528173977": "Down",
+      "92031998398623404776521611329154744036566205914361454065609349273835272366499": "Up"
     },
     "trades": [
       {
-        "maker": "0x999888777666...",
-        "maker_amount": "360000000",
-        "price": 0.72,
+        "maker": "0x894d8b81f19fc2af71523b5d9dc26680abf27293",
+        "maker_amount": "1033540000",
+        "price": 0.99,
+        "side": "SELL",
+        "signer": "0x526b434ad115d90cf201eacac117530232b2cf32",
+        "size": 1033.54,
+        "taker": "0x19db9b949dc686aa6e33f8a019c7b2bb0d4aabbf",
+        "taker_amount": "1023204600",
+        "token_id": "92031998398623404776521611329154744036566205914361454065609349273835272366499"
+      },
+      {
+        "maker": "0x19db9b949dc686aa6e33f8a019c7b2bb0d4aabbf",
+        "maker_amount": "49995000",
+        "price": 0.99,
         "side": "BUY",
-        "signer": "0xabc123...",
-        "size": 500.0,
-        "taker": "0xabcdef1234567890...",
-        "taker_amount": "500000000",
-        "token_id": "21742633..."
+        "signer": "0xdcf0527fcf36f5ae900a1feec87dd15e50c70c37",
+        "size": 50.5,
+        "taker": "0x19db9b949dc686aa6e33f8a019c7b2bb0d4aabbf",
+        "taker_amount": "50500000",
+        "token_id": "92031998398623404776521611329154744036566205914361454065609349273835272366499"
       }
     ],
-    "tx_hash": "0x1a2b3c4d5e6f..."
+    "tx_hash": "0xf918f59e6c399bbb42c1b81a85af99991e129e2a0ca528c60d92c691f468ed13"
   },
-  "timestamp": 1772500000000,
+  "timestamp": 1773301441280,
   "type": "settlement"
 }
 ```

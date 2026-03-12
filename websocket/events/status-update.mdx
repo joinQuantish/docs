@@ -9,20 +9,36 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
 
 ```json
 {
-  "type": "status_update",
-  "timestamp": 1772500002000,
   "data": {
+    "block_number": 84090705,
+    "condition_id": "0x4531a91f4def8da0773897ad49236eebfb94f687c8985637a43f7e1ac439132f",
+    "confirmed_at": 1773301443000,
+    "event_title": "Ethereum Up or Down - March 12, 3:40AM-3:45AM ET",
     "event_type": "status_update",
-    "tx_hash": "0x1a2b3c4d5e6f...",
-    "token_id": "21742633...",
-    "block_number": 54321000,
-    "confirmed_at": 1772500002000,
-    "pending_detected_at": 1772500000000,
-    "latency_ms": 2000,
-    "market_title": "Will Bitcoin hit $100K in 2026?",
-    "outcome": "Yes",
-    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/..."
-  }
+    "latency_ms": 3598,
+    "maker_wallets": [
+      "0x8a181a656f089ad649d4500a67c4a94cc25abc9d",
+      "0x11f09d48095b152eb82a6bccc64138735d4c3fa8",
+      "0x7035c3cf9c32e63a13e75177fb1523462ab00398"
+    ],
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/ETH+fullsize.jpg",
+    "market_slug": "eth-updown-5m-1773301200",
+    "market_title": "Ethereum Up or Down - March 12, 3:40AM-3:45AM ET",
+    "neg_risk": false,
+    "outcome": "Down",
+    "pending_detected_at": 1773301439402,
+    "taker_base_fee": 1000.0,
+    "taker_wallet": "0x7035c3cf9c32e63a13e75177fb1523462ab00398",
+    "tick_size": 0.01,
+    "token_id": "41289058265701027630261530916262400751492270988085662232022084312192713218931",
+    "tokens": {
+      "41289058265701027630261530916262400751492270988085662232022084312192713218931": "Down",
+      "43683199363997825972120625605577475527345563787373900511473168397985098762620": "Up"
+    },
+    "tx_hash": "0xc2cdb3e96ddbde7c56ac7803b2389496669c98c428a348013938f9b433c3cc12"
+  },
+  "timestamp": 1773301443000,
+  "type": "status_update"
 }
 ```
 
@@ -62,6 +78,14 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
       Time between mempool detection and block confirmation, in milliseconds. Typical values: 2000–5000ms (median ~2900ms). Corresponds to 1–2 Polygon blocks.
     </ResponseField>
 
+    <ResponseField name="taker_wallet" type="string" required>
+      Taker wallet address from the original settlement.
+    </ResponseField>
+
+    <ResponseField name="maker_wallets" type="string[]">
+      Maker wallet addresses from the original settlement.
+    </ResponseField>
+
     <ResponseField name="market_title" type="string">
       Market question. Enriched from metadata.
     </ResponseField>
@@ -72,6 +96,34 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
 
     <ResponseField name="market_image" type="string">
       Market image URL. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="market_slug" type="string">
+      Market URL slug. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="event_title" type="string">
+      Parent event title. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="neg_risk" type="boolean">
+      Whether this market uses the negRisk contract type. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="tick_size" type="number">
+      Minimum price increment (e.g. `0.01` or `0.001`). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="taker_base_fee" type="number">
+      Taker fee rate (e.g. `0.02` for 2%). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="condition_id" type="string">
+      Market condition ID (CTF contract identifier). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="tokens" type="object">
+      Map of token ID → outcome name for all outcomes in this market (e.g. `{"123...": "Yes", "456...": "No"}`). Enriched from metadata.
     </ResponseField>
   </Expandable>
 </ResponseField>
