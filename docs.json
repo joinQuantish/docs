@@ -15,21 +15,6 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "RPC",
-        "badge": "Beta",
-        "groups": [
-          {
-            "group": "PolyNode RPC",
-            "pages": [
-              "rpc/overview",
-              "rpc/integration",
-              "rpc/gas-oracle",
-              "rpc/tx-tracking"
-            ]
-          }
-        ]
-      },
-      {
         "tab": "WebSocket",
         "groups": [
           {
@@ -136,6 +121,21 @@
               "api-reference/system/generate-api-key",
               "api-reference/system/health-check",
               "api-reference/system/readiness-check"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "RPC",
+        "badge": "Beta",
+        "groups": [
+          {
+            "group": "PolyNode RPC",
+            "pages": [
+              "rpc/overview",
+              "rpc/integration",
+              "rpc/gas-oracle",
+              "rpc/tx-tracking"
             ]
           }
         ]
