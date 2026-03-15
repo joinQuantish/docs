@@ -1,0 +1,94 @@
+---
+title: "Gas Oracle"
+description: "Real-time gas price intelligence for optimal transaction positioning"
+icon: "gas-pump"
+---
+
+<Note>
+  **Beta** — PolyNode RPC is in early access.
+</Note>
+
+## Overview
+
+PolyNode's Gas Oracle scans every block on Polygon to determine the exact gas price needed to achieve top-of-block positioning. Unlike standard `eth_gasPrice` which returns a network average, our oracle tells you what the **competitive floor** is — what the top-of-block bots are actually paying.
+
+## Endpoint
+
+```
+GET https://rpc.polynode.dev/v1/gas
+```
+
+## Response
+
+```json
+{
+  "recommendation": {
+    "recommended_gas_wei": 1986123386877,
+    "recommended_gas_gwei": 1986.1,
+    "avg_top_gas_gwei": 1547.4,
+    "max_top_gas_gwei": 1805.6,
+    "blocks_scanned": 20,
+    "safety_multiplier": 1.1,
+    "base_gas_gwei": 111.4,
+    "effective_multiplier": 17.8
+  },
+  "recent_blocks": [
+    {
+      "block_number": 84210810,
+      "top_gas_gwei": 1804.6,
+      "second_gas_gwei": 1804.6,
+      "median_gas_gwei": 168.5,
+      "tx_count": 252
+    }
+  ]
+}
+```
+
+## Fields
+
+| Field | Description |
+|-------|-------------|
+| `recommended_gas_wei` | Gas price in wei to beat current top-of-block competition |
+| `recommended_gas_gwei` | Same value in gwei for readability |
+| `avg_top_gas_gwei` | Average highest gas price across scanned blocks |
+| `max_top_gas_gwei` | Maximum top-of-block gas price observed |
+| `blocks_scanned` | Number of recent blocks analyzed |
+| `safety_multiplier` | Multiplier applied above max observed (default 1.1x) |
+| `base_gas_gwei` | Current network base gas price |
+| `effective_multiplier` | How many times above base gas the recommendation is |
+
+## Per-Block Data
+
+The `recent_blocks` array provides gas data for each scanned block:
+
+| Field | Description |
+|-------|-------------|
+| `top_gas_gwei` | Highest gas price in the block (TX #1) |
+| `second_gas_gwei` | Second highest gas price |
+| `median_gas_gwei` | Median gas price across all transactions |
+| `tx_count` | Total transactions in the block |
+
+## Usage
+
+Use the gas oracle to set your transaction's gas price for optimal block positioning:
+
+```python
+import requests
+
+# Get current recommendation
+resp = requests.get('https://rpc.polynode.dev/v1/gas')
+data = resp.json()
+
+# Use recommended gas price for TX #1
+gas_price = data['recommendation']['recommended_gas_wei']
+
+# Build your transaction with this gas price
+tx = {
+    'gasPrice': gas_price,
+    # ... rest of your transaction
+}
+```
+
+## Refresh Rate
+
+The gas oracle updates every **30 seconds**, scanning the most recent 20 blocks. Data reflects real-time market conditions on Polygon.

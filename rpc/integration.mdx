@@ -1,0 +1,238 @@
+---
+title: "Integration Guide"
+description: "Connect to PolyNode RPC from any Ethereum library or wallet"
+icon: "code"
+---
+
+<Note>
+  **Beta** — PolyNode RPC is in early access.
+</Note>
+
+## Endpoint
+
+```
+https://rpc.polynode.dev
+```
+
+All requests use standard Ethereum JSON-RPC format over HTTPS POST.
+
+## Authentication
+
+Include your API key as a header:
+
+```
+x-api-key: your_api_key
+```
+
+Or using Bearer token:
+
+```
+Authorization: Bearer your_api_key
+```
+
+## Integration Examples
+
+<Tabs>
+  <Tab title="ethers.js">
+    ```javascript
+    import { ethers } from 'ethers'
+
+    const provider = new ethers.JsonRpcProvider('https://rpc.polynode.dev', 137, {
+      staticNetwork: true
+    })
+
+    // For authenticated requests, use a custom fetch
+    const provider = new ethers.JsonRpcProvider(
+      new ethers.FetchRequest('https://rpc.polynode.dev'),
+      137
+    )
+    provider.send = async (method, params) => {
+      const resp = await fetch('https://rpc.polynode.dev', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': 'your_api_key'
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', method, params, id: 1 })
+      })
+      const { result, error } = await resp.json()
+      if (error) throw new Error(error.message)
+      return result
+    }
+
+    // Send a transaction — goes through P2P directly to the validator
+    const wallet = new ethers.Wallet(privateKey, provider)
+    const tx = await wallet.sendTransaction({
+      to: '0x...',
+      value: ethers.parseEther('1.0')
+    })
+    console.log('TX Hash:', tx.hash)
+    ```
+  </Tab>
+  <Tab title="web3.py">
+    ```python
+    from web3 import Web3
+
+    w3 = Web3(Web3.HTTPProvider(
+        'https://rpc.polynode.dev',
+        request_kwargs={
+            'headers': {'x-api-key': 'your_api_key'}
+        }
+    ))
+
+    print(f'Connected: {w3.is_connected()}')
+    print(f'Chain ID: {w3.eth.chain_id}')  # 137
+    print(f'Block: {w3.eth.block_number}')
+
+    # Build and send a transaction
+    account = w3.eth.account.from_key(private_key)
+    tx = {
+        'nonce': w3.eth.get_transaction_count(account.address),
+        'to': '0x...',
+        'value': w3.to_wei(1, 'ether'),
+        'gas': 21000,
+        'gasPrice': w3.eth.gas_price,
+        'chainId': 137,
+    }
+    signed = account.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    print(f'TX Hash: {tx_hash.hex()}')
+    ```
+  </Tab>
+  <Tab title="viem">
+    ```typescript
+    import { createPublicClient, createWalletClient, http } from 'viem'
+    import { polygon } from 'viem/chains'
+    import { privateKeyToAccount } from 'viem/accounts'
+
+    const transport = http('https://rpc.polynode.dev', {
+      fetchOptions: {
+        headers: { 'x-api-key': 'your_api_key' }
+      }
+    })
+
+    const publicClient = createPublicClient({
+      chain: polygon,
+      transport
+    })
+
+    const account = privateKeyToAccount('0x...')
+    const walletClient = createWalletClient({
+      account,
+      chain: polygon,
+      transport
+    })
+
+    // Send transaction — delivered via P2P to the validator
+    const hash = await walletClient.sendTransaction({
+      to: '0x...',
+      value: parseEther('1.0')
+    })
+    ```
+  </Tab>
+  <Tab title="curl">
+    ```bash
+    # Send a raw transaction
+    curl -X POST https://rpc.polynode.dev \
+      -H 'Content-Type: application/json' \
+      -H 'x-api-key: your_api_key' \
+      -d '{
+        "jsonrpc": "2.0",
+        "method": "eth_sendRawTransaction",
+        "params": ["0x02f87083..."],
+        "id": 1
+      }'
+
+    # Check block number
+    curl -X POST https://rpc.polynode.dev \
+      -H 'Content-Type: application/json' \
+      -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+    ```
+  </Tab>
+  <Tab title="MetaMask">
+    Add PolyNode as a custom network in MetaMask:
+
+    1. Open MetaMask → Settings → Networks → Add Network
+    2. Fill in:
+       - **Network Name**: Polygon (PolyNode)
+       - **RPC URL**: `https://rpc.polynode.dev`
+       - **Chain ID**: 137
+       - **Currency Symbol**: MATIC
+       - **Block Explorer**: `https://polygonscan.com`
+    3. Save and switch to the new network
+
+    All transactions sent through MetaMask will now be delivered via PolyNode's P2P engine.
+  </Tab>
+</Tabs>
+
+## Batch Requests
+
+PolyNode RPC supports JSON-RPC batch requests:
+
+```bash
+curl -X POST https://rpc.polynode.dev \
+  -H 'Content-Type: application/json' \
+  -d '[
+    {"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1},
+    {"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":2},
+    {"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":3}
+  ]'
+```
+
+## Hardhat / Foundry
+
+<Tabs>
+  <Tab title="Hardhat">
+    ```javascript
+    // hardhat.config.js
+    module.exports = {
+      networks: {
+        polygon: {
+          url: 'https://rpc.polynode.dev',
+          accounts: [process.env.PRIVATE_KEY],
+          chainId: 137,
+          httpHeaders: {
+            'x-api-key': process.env.POLYNODE_API_KEY
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Foundry">
+    ```bash
+    # Deploy via PolyNode RPC
+    forge script script/Deploy.s.sol \
+      --rpc-url https://rpc.polynode.dev \
+      --broadcast \
+      --private-key $PRIVATE_KEY
+
+    # Send a transaction
+    cast send 0x... "transfer(address,uint256)" 0x... 1000000 \
+      --rpc-url https://rpc.polynode.dev \
+      --private-key $PRIVATE_KEY
+    ```
+  </Tab>
+</Tabs>
+
+## Response Format
+
+All responses follow the standard Ethereum JSON-RPC specification:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": "0x..."
+}
+```
+
+For `eth_sendRawTransaction`, the result is the transaction hash:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": "0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b"
+}
+```

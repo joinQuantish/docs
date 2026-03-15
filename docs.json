@@ -15,6 +15,21 @@
   "navigation": {
     "tabs": [
       {
+        "tab": "RPC",
+        "badge": "Beta",
+        "groups": [
+          {
+            "group": "PolyNode RPC",
+            "pages": [
+              "rpc/overview",
+              "rpc/integration",
+              "rpc/gas-oracle",
+              "rpc/tx-tracking"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "WebSocket",
         "groups": [
           {

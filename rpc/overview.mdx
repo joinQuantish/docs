@@ -1,0 +1,101 @@
+---
+title: "PolyNode RPC"
+description: "Priority transaction delivery on Polygon — drop-in RPC replacement"
+icon: "bolt"
+---
+
+<Note>
+  **Beta** — PolyNode RPC is in early access. [Contact us](mailto:josh@quantish.live) for API keys and onboarding.
+</Note>
+
+## What is PolyNode RPC?
+
+PolyNode RPC is a high-performance Polygon RPC endpoint that delivers your transactions directly to block validators via peer-to-peer networking. It's a **drop-in replacement** for any standard Ethereum RPC — just change the URL.
+
+```
+https://rpc.polynode.dev
+```
+
+Every `eth_sendRawTransaction` call is routed through PolyNode's P2P network directly to the validator producing the next block. No intermediaries, no relay chains, no public mempool exposure.
+
+## Why Use PolyNode RPC?
+
+<CardGroup cols={2}>
+  <Card title="Priority Execution" icon="ranking-star">
+    90%+ of transactions land as **TX #1** (first transaction in block). Your transaction arrives at the validator before anyone else's.
+  </Card>
+  <Card title="Drop-In Compatible" icon="plug">
+    Standard Ethereum JSON-RPC. Works with MetaMask, ethers.js, web3.py, viem, wagmi, Hardhat, Foundry — no SDK needed.
+  </Card>
+  <Card title="Direct P2P Delivery" icon="network-wired">
+    Bypasses public RPC infrastructure entirely. Your signed transaction goes straight from our node to the block producer.
+  </Card>
+  <Card title="MEV Protection" icon="shield">
+    Transactions aren't broadcast to the public mempool. They're unicast to the target validator, reducing front-running risk.
+  </Card>
+</CardGroup>
+
+## How It Works
+
+When you send a transaction through PolyNode RPC:
+
+1. **Your transaction arrives** at our endpoint via standard `eth_sendRawTransaction`
+2. **We identify the current block producer** from Polygon's validator rotation schedule
+3. **We locate their P2P peer** — PolyNode maintains direct connections to all active Polygon validators
+4. **Your transaction is delivered directly** to the validator's node via Ethereum's devp2p protocol
+5. **Backup copies** are sent to additional peers for redundancy
+
+The result: your transaction reaches the block producer hundreds of milliseconds before transactions submitted through public RPCs.
+
+## Quick Start
+
+<Steps>
+  <Step title="Get an API Key">
+    [Contact us](mailto:josh@quantish.live) for beta access.
+  </Step>
+  <Step title="Configure Your RPC URL">
+    Replace your existing Polygon RPC URL with:
+    ```
+    https://rpc.polynode.dev
+    ```
+  </Step>
+  <Step title="Add Authentication">
+    Include your API key in requests:
+    ```
+    x-api-key: your_api_key
+    ```
+  </Step>
+  <Step title="Send Transactions">
+    Use any Ethereum library — it just works:
+    ```javascript
+    import { createPublicClient, http } from 'viem'
+    import { polygon } from 'viem/chains'
+
+    const client = createPublicClient({
+      chain: polygon,
+      transport: http('https://rpc.polynode.dev', {
+        fetchOptions: {
+          headers: { 'x-api-key': 'your_api_key' }
+        }
+      })
+    })
+    ```
+  </Step>
+</Steps>
+
+## Supported Methods
+
+PolyNode RPC supports the full Ethereum JSON-RPC specification. Transaction submission is handled by our P2P engine; all other methods are served with standard Polygon node responses.
+
+| Method | Handling | Description |
+|--------|----------|-------------|
+| `eth_sendRawTransaction` | **P2P Engine** | Direct validator delivery |
+| `eth_chainId` | Local | Returns `0x89` (137) |
+| `eth_blockNumber` | Local | From P2P block gossip |
+| `eth_gasPrice` | Local | Calibrated from recent blocks |
+| `eth_getBalance` | Standard | Account balance queries |
+| `eth_getTransactionCount` | Standard | Nonce queries |
+| `eth_call` | Standard | Contract read calls |
+| `eth_estimateGas` | Standard | Gas estimation |
+| `eth_getTransactionReceipt` | Standard | Receipt queries |
+| All other methods | Standard | Full JSON-RPC compatibility |

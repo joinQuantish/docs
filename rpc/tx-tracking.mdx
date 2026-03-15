@@ -1,0 +1,126 @@
+---
+title: "Transaction Tracking"
+description: "Track your transaction's block position and confirmation status"
+icon: "magnifying-glass-chart"
+---
+
+<Note>
+  **Beta** — PolyNode RPC is in early access.
+</Note>
+
+## Overview
+
+Every transaction submitted through PolyNode RPC is tracked from submission to block inclusion. You can query the exact block position, confirmation latency, and whether the transaction was delivered to the correct validator.
+
+## Submit a Transaction
+
+<ParamField body="raw_tx" type="string" required>
+  Hex-encoded signed transaction (with or without `0x` prefix)
+</ParamField>
+
+```bash
+POST https://rpc.polynode.dev/v1/tx/submit
+Content-Type: application/json
+
+{
+  "raw_tx": "0x02f87083..."
+}
+```
+
+### Response
+
+```json
+{
+  "tx_hash": "0xabc123...",
+  "targeted_validator": "0x7c7379...",
+  "peer_found": true,
+  "peers_sent": 4,
+  "submitted_at": 1710524000,
+  "status": "pending"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `tx_hash` | Transaction hash |
+| `targeted_validator` | The validator we delivered the transaction to |
+| `peer_found` | Whether we had a direct P2P connection to the target validator |
+| `peers_sent` | Total peers the transaction was sent to (target + backups) |
+| `status` | `pending` — waiting for block inclusion |
+
+## Check Transaction Status
+
+```bash
+GET https://rpc.polynode.dev/v1/tx/{tx_hash}
+```
+
+### Pending
+
+```json
+{
+  "status": "pending",
+  "submitted_at": 1710524000,
+  "targeted_validator": "0x7c7379...",
+  "elapsed_ms": 1500
+}
+```
+
+### Confirmed
+
+```json
+{
+  "status": "confirmed",
+  "submitted_at": 1710524000,
+  "confirmed_at": 1710524002,
+  "block_number": 84210500,
+  "block_hash": "0xdef456...",
+  "tx_index": 0,
+  "total_txs_in_block": 186,
+  "is_first": true,
+  "latency_ms": 2450,
+  "targeted_validator": "0x7c7379...",
+  "targeted_correctly": true
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `block_number` | Block the transaction was included in |
+| `tx_index` | Position within the block (0 = first transaction) |
+| `total_txs_in_block` | Total transactions in the block |
+| `is_first` | Whether this was the first transaction in the block |
+| `latency_ms` | Time from submission to block confirmation |
+| `targeted_correctly` | Whether the targeted validator actually produced this block |
+
+### Expired
+
+If a transaction isn't included within ~128 seconds (64 blocks), it's marked as expired:
+
+```json
+{
+  "status": "expired",
+  "submitted_at": 1710524000,
+  "reason": "not included within 64 blocks"
+}
+```
+
+## Aggregate Stats
+
+```bash
+GET https://rpc.polynode.dev/v1/stats
+```
+
+```json
+{
+  "total_submitted": 1000,
+  "total_confirmed": 998,
+  "total_first_position": 895,
+  "first_position_rate": 0.897,
+  "total_expired": 2,
+  "pending": 0,
+  "avg_latency_ms": 2450,
+  "peers": 150,
+  "network_slots": 4,
+  "mapped_validators": 4
+}
+```
