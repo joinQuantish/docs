@@ -7,7 +7,7 @@ icon: "scale-balanced"
 
 Oracle events stream the full lifecycle of Polymarket's UMA-based market resolution system. Every Polymarket market is resolved through UMA's Optimistic Oracle, which uses a propose-challenge-resolve cycle on the Polygon blockchain.
 
-**The only WebSocket stream of enriched UMA oracle events.** Decoded from Polygon P2P block data, enriched with full market metadata, and pushed to your connection in real-time.
+**The only WebSocket stream of enriched UMA oracle events.** Decoded from Polygon P2P block receipts, enriched with full market metadata (title, outcomes, images, token IDs), and pushed to your connection in real-time.
 
 ## How Polymarket Resolution Works
 
@@ -131,7 +131,7 @@ This is a live market resolution from the neg-risk UMA adapter. L1ga Team won Ga
 </ResponseField>
 
 <ResponseField name="resolved_outcome" type="string">
-  Human-readable winning outcome (e.g. "Yes", "No", "L1ga Team"). Derived from `resolved_price` + market metadata.
+  Human-readable winning outcome (e.g. "Yes", "No", "L1ga Team"). Derived from `resolved_price` + market metadata. Returns `"Split"` for voided markets where payouts are `[1, 1]`.
 </ResponseField>
 
 <ResponseField name="payouts" type="array">
@@ -184,10 +184,10 @@ Oracle events are **not evenly distributed**. They come in bursts when UMA's res
 
 | Period | Typical Volume |
 |--------|---------------|
-| Active sports hours | 200+ resolutions/hour |
+| Active sports hours | 200+ resolutions/hour, proposals flowing continuously |
 | Quiet periods | 10-50 resolutions/hour |
 | Disputes | A few per month (high signal) |
-| Proposals | Rare on-chain (most happen off-chain) |
+| Proposals | Frequent during active periods (markets being initialized on-chain) |
 | Flags / Manual resolutions | Very rare |
 
 ## UMA Adapter Contracts
