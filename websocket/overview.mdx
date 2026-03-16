@@ -19,6 +19,9 @@ PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement
   <Card title="Chainlink price feeds" icon="chart-line">
     Real-time BTC/USD prices from Chainlink Data Streams (~1/second). Subscribe with `"type": "chainlink"` on the same connection.
   </Card>
+  <Card title="Oracle resolution stream" icon="scale-balanced">
+    UMA Optimistic Oracle events: market resolutions, disputes, proposals, and admin actions. Subscribe with `"type": "oracle"` to track the full resolution lifecycle.
+  </Card>
 </CardGroup>
 
 <Tip>
@@ -118,16 +121,17 @@ wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
 
 The API key is passed as a query parameter. Keys starting with `pn_live_` or `qm_live_` are accepted.
 
-## Two streams, one connection
+## Multiple streams, one connection
 
 PolyNode supports multiple subscription types on the same WebSocket:
 
 | Stream | Purpose | Subscribe |
 |--------|---------|-----------|
 | **Settlements** | Decoded Polymarket events with filtering | `{"action": "subscribe", "type": "settlements"}` |
+| **Oracle** | UMA resolution lifecycle (resolutions, disputes, flags) | `{"action": "subscribe", "type": "oracle"}` |
 | **Chainlink** | Real-time BTC/USD prices from Data Streams | `{"action": "subscribe", "type": "chainlink"}` |
 
-Both can run simultaneously on the same connection.
+All can run simultaneously on the same connection.
 
 ## Heartbeat
 

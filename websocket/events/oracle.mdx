@@ -1,0 +1,211 @@
+---
+title: "Oracle Event"
+sidebarTitle: "oracle"
+description: "UMA Optimistic Oracle events — market resolutions, proposals, disputes, and admin actions on Polymarket."
+icon: "scale-balanced"
+---
+
+Oracle events stream the full lifecycle of Polymarket's UMA-based market resolution system. Every Polymarket market is resolved through UMA's Optimistic Oracle, which uses a propose-challenge-resolve cycle on the Polygon blockchain.
+
+**This is the only real-time stream of UMA oracle activity available anywhere.** No one else decodes and broadcasts these events as they happen on-chain.
+
+## How Polymarket Resolution Works
+
+1. A **proposer** submits an answer (YES or NO) and posts a USDC bond
+2. A 2-hour **liveness window** opens where anyone can dispute
+3. If no dispute, the market **resolves** with the proposed answer
+4. If disputed, the question **resets** and goes to UMA's DVM for a token-holder vote
+5. Admins can **flag**, **pause**, or **manually resolve** markets in edge cases
+
+## Subscribe
+
+```json
+{
+  "action": "subscribe",
+  "type": "oracle"
+}
+```
+
+## Oracle Event Types
+
+Every oracle event has an `oracle_type` field indicating what happened:
+
+<ResponseField name="resolution" type="string">
+  Market officially resolved via UMA oracle. The most common event type (~200+ per hour during active sports periods). Includes the final `resolved_price`, `payouts` array, and `resolved_outcome`.
+</ResponseField>
+
+<ResponseField name="proposal" type="string">
+  New resolution proposed. A 2-hour countdown to resolution begins. The proposer has posted a bond that they lose if the outcome is successfully disputed.
+</ResponseField>
+
+<ResponseField name="dispute" type="string">
+  Resolution disputed. Someone challenged the proposed outcome. The market re-enters the proposal phase or escalates to UMA's DVM for a token-holder vote. **High signal, rare event.** Price swings are likely.
+</ResponseField>
+
+<ResponseField name="reset" type="string">
+  Question reset after a dispute. The market goes back to the proposal phase.
+</ResponseField>
+
+<ResponseField name="flag" type="string">
+  Market flagged by admin. Something may be wrong with the resolution.
+</ResponseField>
+
+<ResponseField name="manual_resolution" type="string">
+  Market manually resolved by admin, bypassing the normal oracle flow. Includes `payouts` array.
+</ResponseField>
+
+## Resolution Event (real payload)
+
+This is a live market resolution from the neg-risk UMA adapter. L1ga Team won Game 2 of a Dota 2 match:
+
+```json
+{
+  "type": "oracle",
+  "timestamp": 1773692559000,
+  "data": {
+    "event_type": "oracle",
+    "oracle_type": "resolution",
+    "question_id": "0x309da54cbca4cdfe43937aff39ac84ac2c93a7de2eed82dee287d123832426de",
+    "adapter_address": "0x65070be91477460d8a7aeeb94ef92fe056c2f2a7",
+    "block_number": 84286263,
+    "log_index": 11,
+    "timestamp": 1773692559000,
+    "resolved_price": 0.0,
+    "resolved_outcome": "L1ga Team",
+    "payouts": [0, 1],
+    "condition_id": "0x190b7a505e2a6cc7b67d728be1f00fd45af5534dd28a01c5a403abb7df80be67",
+    "market_title": "Dota 2:  Pipsqueak+4 vs L1ga Team - Game 2 Winner",
+    "market_slug": "dota2-pi-l1ga-2026-03-16-game2",
+    "event_title": "Dota 2:  Pipsqueak+4 vs L1ga Team (BO3) - CCT Playoffs",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/dota2-7ffacddb21.jpg",
+    "outcomes": [" Pipsqueak+4", "L1ga Team"],
+    "token_ids": [
+      "33624531144301033498274036011552837180263934462540985216273438788872733139755",
+      "7912608750055297578984004833513620895905380546916279379524540002987417516489"
+    ],
+    "tokens": {
+      "33624531144301033498274036011552837180263934462540985216273438788872733139755": " Pipsqueak+4",
+      "7912608750055297578984004833513620895905380546916279379524540002987417516489": "L1ga Team"
+    },
+    "neg_risk": false,
+    "tx_hash": ""
+  }
+}
+```
+
+## Field Reference
+
+### Core Fields (all oracle events)
+
+<ResponseField name="oracle_type" type="string" required>
+  Type of oracle event: `resolution`, `proposal`, `dispute`, `reset`, `flag`, `unflag`, `pause`, `unpause`, `manual_resolution`.
+</ResponseField>
+
+<ResponseField name="question_id" type="string" required>
+  UMA's unique identifier for this market question (bytes32). Maps to Polymarket's `condition_id` through our metadata index.
+</ResponseField>
+
+<ResponseField name="adapter_address" type="string" required>
+  Which UMA adapter contract emitted this event. Three active adapters on Polygon:
+  - `0x2f5e3684...` — Standard markets (UmaCtfAdapter v3)
+  - `0x157ce2d6...` — Standard markets (UmaCtfAdapter v3.1)
+  - `0x65070be9...` — Neg-risk multi-outcome markets
+</ResponseField>
+
+<ResponseField name="block_number" type="number" required>
+  Polygon block number where the event was emitted.
+</ResponseField>
+
+<ResponseField name="log_index" type="number" required>
+  Position of this event within the block's logs.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Block timestamp in milliseconds.
+</ResponseField>
+
+### Resolution Fields (resolution and manual_resolution only)
+
+<ResponseField name="resolved_price" type="number">
+  The settled price from UMA. `1.0` = first outcome wins (usually YES), `0.0` = second outcome wins (usually NO), `0.5` = split/tie.
+</ResponseField>
+
+<ResponseField name="resolved_outcome" type="string">
+  Human-readable winning outcome (e.g. "Yes", "No", "L1ga Team"). Derived from `resolved_price` + market metadata.
+</ResponseField>
+
+<ResponseField name="payouts" type="array">
+  Payout array from UMA. `[1, 0]` means the first outcome wins. `[0, 1]` means the second outcome wins. `[1, 1]` means a split (both outcomes pay out).
+</ResponseField>
+
+### Enrichment Fields (from Polymarket metadata)
+
+These fields are populated automatically when the market's metadata is available.
+
+<ResponseField name="condition_id" type="string">
+  Polymarket's condition identifier for this market. Mapped from `question_id` via our metadata index.
+</ResponseField>
+
+<ResponseField name="market_title" type="string">
+  Human-readable market question (e.g. "Will Bitcoin reach $100K?").
+</ResponseField>
+
+<ResponseField name="market_slug" type="string">
+  URL slug for the market on polymarket.com.
+</ResponseField>
+
+<ResponseField name="event_title" type="string">
+  Parent event name if this market is part of a group (e.g. "Dota 2: Pipsqueak+4 vs L1ga Team (BO3)").
+</ResponseField>
+
+<ResponseField name="market_image" type="string">
+  Market image URL from Polymarket.
+</ResponseField>
+
+<ResponseField name="outcomes" type="array">
+  All outcome names for this market (e.g. `["Yes", "No"]` or `["Pipsqueak+4", "L1ga Team"]`).
+</ResponseField>
+
+<ResponseField name="token_ids" type="array">
+  All conditional token IDs for this market.
+</ResponseField>
+
+<ResponseField name="tokens" type="object">
+  Map of token ID to outcome name (e.g. `{"2174263...": "Yes", "4839315...": "No"}`).
+</ResponseField>
+
+<ResponseField name="neg_risk" type="boolean">
+  Whether this market uses the neg-risk framework (multi-outcome markets like elections).
+</ResponseField>
+
+## Frequency
+
+Oracle events are **not evenly distributed**. They come in bursts when UMA's resolver bot processes batches of markets.
+
+| Period | Typical Volume |
+|--------|---------------|
+| Active sports hours | 200+ resolutions/hour |
+| Quiet periods | 10-50 resolutions/hour |
+| Disputes | A few per month (high signal) |
+| Proposals | Rare on-chain (most happen off-chain) |
+| Flags / Manual resolutions | Very rare |
+
+## UMA Adapter Contracts
+
+PolyNode monitors three active UMA adapter contracts on Polygon:
+
+| Contract | Address | Markets |
+|----------|---------|---------|
+| UmaCtfAdapter v3 | `0x2f5e3684cb1f318ec51b00edba38d79ac2c0aa9d` | Standard binary markets |
+| UmaCtfAdapter v3.1 | `0x157ce2d672854c848c9b79c49a8cc6cc89176a49` | Newer standard markets |
+| NegRisk UmaCtfAdapter | `0x65070be91477460d8a7aeeb94ef92fe056c2f2a7` | Multi-outcome markets (elections, sports) |
+
+## Trading Implications
+
+| Event | What It Means | Action |
+|-------|--------------|--------|
+| **resolution** | Market is settled. Winning positions can be redeemed. | Close tracking, update portfolio |
+| **dispute** | Proposed outcome challenged. Uncertainty returns. | Watch for price swings, potential arb |
+| **reset** | Market re-enters proposal phase after dispute. | Resolution delayed, reassess positions |
+| **flag** | Admin flagged an issue. Market may be paused. | Caution, reduce exposure |
+| **manual_resolution** | Admin override. Could be controversial. | Check outcome, compare to expectations |

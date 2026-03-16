@@ -36,7 +36,8 @@
               "websocket/events/position-change",
               "websocket/events/deposit",
               "websocket/events/position-split",
-              "websocket/events/position-merge"
+              "websocket/events/position-merge",
+              "websocket/events/oracle"
             ]
           },
           {
