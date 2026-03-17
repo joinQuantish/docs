@@ -62,7 +62,8 @@
           {
             "group": "SDKs",
             "pages": [
-              "guides/sdk"
+              "guides/sdk",
+              "guides/rust-sdk"
             ]
           },
           {
