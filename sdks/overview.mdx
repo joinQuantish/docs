@@ -1,0 +1,79 @@
+---
+title: "SDKs"
+sidebarTitle: "Overview"
+description: "Official client libraries for the PolyNode API"
+icon: "code"
+---
+
+PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST API and WebSocket streaming interface with typed responses, auto-reconnection, and zlib compression support.
+
+<CardGroup cols={2}>
+  <Card title="TypeScript / Node.js" icon="js" href="/sdks/typescript">
+    `npm install polynode-sdk`
+
+    Zero runtime dependencies. ESM + CJS. Node 18+.
+  </Card>
+  <Card title="Rust" icon="rust" href="/sdks/rust">
+    `polynode = "0.1.0"`
+
+    Async with tokio. Typed events via serde.
+  </Card>
+</CardGroup>
+
+## What the SDKs Cover
+
+| Feature | TypeScript | Rust |
+|---------|-----------|------|
+| REST API (17 endpoints) | Yes | Yes |
+| WebSocket streaming | Yes | Yes |
+| All 10 event types | Typed interfaces | Typed structs + enum |
+| Subscription filters | Builder pattern | Builder pattern |
+| Zlib compression | Transparent | Transparent |
+| Auto-reconnect | Exponential backoff | Exponential backoff |
+| RPC proxy | Yes | Yes |
+
+## Quick Comparison
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { PolyNode } from 'polynode-sdk';
+
+    const pn = new PolyNode({ apiKey: 'pn_live_...' });
+
+    const markets = await pn.markets({ count: 5 });
+
+    const sub = await pn.ws.subscribe('settlements')
+      .minSize(1000)
+      .send();
+
+    sub.on('settlement', (event) => {
+      console.log(event.taker_side, event.taker_size, event.market_title);
+    });
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::PolyNodeClient;
+    use polynode::ws::{Subscription, SubscriptionType, StreamOptions};
+
+    let client = PolyNodeClient::new("pn_live_...")?;
+
+    let markets = client.markets(Some(5)).await?;
+
+    let mut stream = client.stream(StreamOptions::default()).await?;
+    stream.subscribe(
+        Subscription::new(SubscriptionType::Settlements)
+            .min_size(1000.0)
+    ).await?;
+
+    while let Some(msg) = stream.next().await {
+        // handle events
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Don't Need an SDK?
+
+The PolyNode API uses standard HTTP and WebSocket protocols. You can use any HTTP client or WebSocket library directly. See the [Quickstart](/quickstart) for raw examples in cURL, Python, and JavaScript.

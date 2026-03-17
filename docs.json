@@ -60,13 +60,6 @@
             ]
           },
           {
-            "group": "SDKs",
-            "pages": [
-              "guides/sdk",
-              "guides/rust-sdk"
-            ]
-          },
-          {
             "group": "Guides",
             "pages": [
               "guides/best-practices",
@@ -144,6 +137,19 @@
               "rpc/integration",
               "rpc/gas-oracle",
               "rpc/tx-tracking"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDKs",
+        "groups": [
+          {
+            "group": "Client Libraries",
+            "pages": [
+              "sdks/overview",
+              "sdks/typescript",
+              "sdks/rust"
             ]
           }
         ]
