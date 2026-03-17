@@ -5,7 +5,7 @@ description: "Confirmed on-chain trade execution from Polymarket exchange contra
 icon: "arrow-right-arrow-left"
 ---
 
-A confirmed trade from an on-chain `OrderFilled` event. These come from the CTF Exchange or NegRisk CTF Exchange contracts.
+A confirmed on-chain trade from Polymarket's exchange contracts.
 
 ```json
 {
@@ -153,11 +153,11 @@ A confirmed trade from an on-chain `OrderFilled` event. These come from the CTF 
 
 | | Settlement | Trade |
 |---|-----------|-------|
-| Source | Decoded `matchOrders` calldata | `OrderFilled` event log |
+| Source | Pre-chain detection | On-chain confirmation |
 | Timing | Pending (pre-chain) or confirmed | Confirmed only |
 | Contains | Full settlement with all maker fills | Single maker-taker fill |
 | Use case | Early detection, copy trading | Accurate historical record |
 
 <Note>
-A single settlement can contain multiple trades (one per matched maker order). If you subscribe to both `settlement` and `trade`, you'll see the settlement first (from mempool), then individual trades (from the confirmed block).
+A single settlement can contain multiple trades (one per matched maker order). If you subscribe to both `settlement` and `trade`, you'll see the settlement first (pending), then individual trades (confirmed).
 </Note>

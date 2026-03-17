@@ -150,11 +150,11 @@ A proposer submits YES for an XRP price market, with a 2-hour liveness window. P
 </ResponseField>
 
 <ResponseField name="question_id" type="string" required>
-  UMA's unique identifier for this market question. For adapter events (initialization, resolution, reset, flag, manual_resolution), this is the bytes32 question ID from the on-chain event. For OO V2 events (proposal, dispute, settled), this is resolved to the real question ID when possible, or a synthetic key `oo_v2:<adapter>:<timestamp>` when the mapping hasn't been seen yet.
+  UMA's unique identifier for this market question.
 </ResponseField>
 
 <ResponseField name="adapter_address" type="string" required>
-  Which UMA adapter contract this event relates to. For OO V2 events, this is the requester (adapter) extracted from the ProposePrice/DisputePrice/Settle event.
+  Which UMA adapter contract this event relates to.
 </ResponseField>
 
 <ResponseField name="block_number" type="number" required>
@@ -216,7 +216,7 @@ A proposer submits YES for an XRP price market, with a 2-hour liveness window. P
 These fields are populated automatically when the market's metadata is available.
 
 <ResponseField name="condition_id" type="string">
-  Polymarket's condition identifier for this market. Mapped from `question_id` via our metadata index.
+  Polymarket's condition identifier for this market.
 </ResponseField>
 
 <ResponseField name="market_title" type="string">
@@ -263,30 +263,6 @@ Oracle events are **not evenly distributed**. They come in bursts when UMA's res
 | Settlements (Settle) | ~30/hour, fires after 2-hour liveness |
 | Disputes | A few per month (high signal) |
 | Flags / Manual resolutions | Very rare |
-
-## Contracts Monitored
-
-PolyNode monitors all 6 Polymarket UMA adapter contracts and both oracle contracts for complete coverage.
-
-### Oracle Contracts (ProposePrice, DisputePrice, Settle)
-
-| Contract | Address | Notes |
-|----------|---------|-------|
-| Managed Optimistic Oracle V2 (MOOV2) | `0x2c0367a9db231ddebd88a94b4f6461a6e47c58b1` | Current production. Whitelisted proposers. |
-| Optimistic Oracle V2 | `0xee3afe347d5c74317041e2618c49534daf887c24` | Permissionless. Used by older adapters. |
-
-### Adapter Contracts (QuestionInitialized, QuestionResolved, Reset, Flag, etc.)
-
-| Contract | Address | Type |
-|----------|---------|------|
-| UmaCtfAdapter MOOV2 (standard) | `0x65070be91477460d8a7aeeb94ef92fe056c2f2a7` | Highest volume. Binary markets on Managed OO V2. |
-| UmaCtfAdapter MOOV2 (neg-risk) | `0x69c47de9d4d3dad79590d61b9e05918e03775f24` | Multi-outcome markets (elections, sports) on Managed OO V2. |
-| UmaCtfAdapter v3.1 (standard) | `0x157ce2d672854c848c9b79c49a8cc6cc89176a49` | Active for existing markets on permissionless OO V2. |
-| UmaCtfAdapter v3.1 (neg-risk) | `0x2f5e3684cb1f318ec51b00edba38d79ac2c0aa9d` | Active for existing neg-risk markets on permissionless OO V2. |
-| UmaCtfAdapter v3.0 | `0x71392e133063cc0d16f40e1f9b60227404bc03f7` | Legacy. Rarely active. |
-| UmaCtfAdapter v2 | `0x6a9d222616c90fca5754cd1333cfd9b7fb6a4f74` | Legacy. Old markets still resolving. |
-
-OO V2 events are filtered to only include Polymarket-related activity (where the requester is a known Polymarket adapter). Markets are permanently tied to the adapter they were initialized on.
 
 ## Trading Implications
 

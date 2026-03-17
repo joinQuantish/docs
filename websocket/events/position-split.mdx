@@ -7,7 +7,7 @@ icon: "scissors"
 
 Emitted when collateral (USDC) is split into outcome tokens (YES/NO shares) via the Conditional Tokens Framework `splitPosition` function.
 
-99%+ of splits happen as internal sub-calls of `matchOrders` trades. This event provides supplementary data: how much collateral was split and into which market condition.
+99%+ of splits happen as part of trade execution. This event provides supplementary data: how much collateral was split and into which market condition.
 
 ```json
 {

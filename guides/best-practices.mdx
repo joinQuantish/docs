@@ -6,9 +6,9 @@ description: "Patterns for correctly handling the pending-to-confirmed lifecycle
 
 ## The pending-to-confirmed lifecycle
 
-PolyNode detects Polymarket settlements in the mempool **before** they confirm on-chain. This means every settlement goes through two stages, delivered as **two separate WebSocket events**:
+PolyNode detects Polymarket settlements **before** they confirm on-chain. This means every settlement goes through two stages, delivered as **two separate WebSocket events**:
 
-1. **`settlement`** — the trade is detected in the mempool (`status: "pending"`)
+1. **`settlement`** — the trade is detected pre-chain (`status: "pending"`)
 2. **`status_update`** — the trade confirms in a Polygon block (typically 2–4 seconds later)
 
 Link them together by `tx_hash`:

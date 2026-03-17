@@ -1,11 +1,11 @@
 ---
 title: "Settlement Event"
 sidebarTitle: "settlement"
-description: "Decoded Polymarket settlement — pending (pre-chain) or confirmed (on-chain)."
+description: "Polymarket settlement — pending (pre-chain) or confirmed (on-chain)."
 icon: "bolt"
 ---
 
-The core PolyNode event. A decoded `matchOrders` transaction from the Polygon mempool or a confirmed block.
+The core PolyNode event. A Polymarket settlement detected before or after on-chain confirmation.
 
 **Pending settlements arrive 2–5 seconds before on-chain confirmation (1–2 Polygon blocks).** This is the data that makes PolyNode unique.
 
@@ -86,12 +86,12 @@ The core PolyNode event. A decoded `matchOrders` transaction from the Polygon me
     </ResponseField>
 
     <ResponseField name="status" type="string" required>
-      `"pending"` — detected in mempool, not yet confirmed.
+      `"pending"` — detected pre-chain, not yet confirmed.
       `"confirmed"` — included in a block.
     </ResponseField>
 
     <ResponseField name="detected_at" type="number" required>
-      Unix milliseconds when the transaction was first seen in the mempool.
+      Unix milliseconds when the transaction was first detected by PolyNode.
     </ResponseField>
 
     <ResponseField name="block_number" type="number | null" required>
@@ -199,7 +199,7 @@ The core PolyNode event. A decoded `matchOrders` transaction from the Polygon me
 |-------|---------|-----------|
 | `status` | `"pending"` | `"confirmed"` |
 | `block_number` | `null` | block number |
-| `detected_at` | when mempool received TX | same value |
+| `detected_at` | when PolyNode first detected TX | same value |
 | Latency | ~0ms from detection | 2–5s after detection (1–2 blocks) |
 
 <Tip>

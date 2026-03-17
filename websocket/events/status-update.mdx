@@ -71,11 +71,11 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
     </ResponseField>
 
     <ResponseField name="pending_detected_at" type="number" required>
-      Unix milliseconds when the transaction was first detected in the mempool.
+      Unix milliseconds when the transaction was first detected by PolyNode.
     </ResponseField>
 
     <ResponseField name="latency_ms" type="number" required>
-      Time between mempool detection and block confirmation, in milliseconds. Typical values: 2000–5000ms (median ~2900ms). Corresponds to 1–2 Polygon blocks.
+      Time between initial detection and block confirmation, in milliseconds. Typical values: 2000–5000ms (median ~2900ms). Corresponds to 1–2 Polygon blocks.
     </ResponseField>
 
     <ResponseField name="taker_wallet" type="string" required>
