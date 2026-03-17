@@ -60,7 +60,7 @@ Authorization: Bearer your_api_key
       return result
     }
 
-    // Send a transaction — goes through P2P directly to the validator
+    // Send a transaction with priority routing
     const wallet = new ethers.Wallet(privateKey, provider)
     const tx = await wallet.sendTransaction({
       to: '0x...',
@@ -123,7 +123,7 @@ Authorization: Bearer your_api_key
       transport
     })
 
-    // Send transaction — delivered via P2P to the validator
+    // Send transaction with priority routing
     const hash = await walletClient.sendTransaction({
       to: '0x...',
       value: parseEther('1.0')
@@ -161,7 +161,7 @@ Authorization: Bearer your_api_key
        - **Block Explorer**: `https://polygonscan.com`
     3. Save and switch to the new network
 
-    All transactions sent through MetaMask will now be delivered via PolyNode's P2P engine.
+    All transactions sent through MetaMask will now use PolyNode's priority routing.
   </Tab>
 </Tabs>
 

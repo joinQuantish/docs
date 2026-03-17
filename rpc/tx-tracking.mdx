@@ -10,7 +10,7 @@ icon: "magnifying-glass-chart"
 
 ## Overview
 
-Every transaction submitted through PolyNode RPC is tracked from submission to block inclusion. You can query the exact block position, confirmation latency, and whether the transaction was delivered to the correct validator.
+Every transaction submitted through PolyNode RPC is tracked from submission to block inclusion. You can query the exact block position and confirmation latency.
 
 ## Submit a Transaction
 
@@ -32,9 +32,6 @@ Content-Type: application/json
 ```json
 {
   "tx_hash": "0xabc123...",
-  "targeted_validator": "0x7c7379...",
-  "peer_found": true,
-  "peers_sent": 4,
   "submitted_at": 1710524000,
   "status": "pending"
 }
@@ -43,9 +40,6 @@ Content-Type: application/json
 | Field | Description |
 |-------|-------------|
 | `tx_hash` | Transaction hash |
-| `targeted_validator` | The validator we delivered the transaction to |
-| `peer_found` | Whether we had a direct P2P connection to the target validator |
-| `peers_sent` | Total peers the transaction was sent to (target + backups) |
 | `status` | `pending` — waiting for block inclusion |
 
 ## Check Transaction Status
@@ -60,7 +54,6 @@ GET https://rpc.polynode.dev/v1/tx/{tx_hash}
 {
   "status": "pending",
   "submitted_at": 1710524000,
-  "targeted_validator": "0x7c7379...",
   "elapsed_ms": 1500
 }
 ```
@@ -77,9 +70,7 @@ GET https://rpc.polynode.dev/v1/tx/{tx_hash}
   "tx_index": 0,
   "total_txs_in_block": 186,
   "is_first": true,
-  "latency_ms": 2450,
-  "targeted_validator": "0x7c7379...",
-  "targeted_correctly": true
+  "latency_ms": 2450
 }
 ```
 
@@ -90,7 +81,6 @@ GET https://rpc.polynode.dev/v1/tx/{tx_hash}
 | `total_txs_in_block` | Total transactions in the block |
 | `is_first` | Whether this was the first transaction in the block |
 | `latency_ms` | Time from submission to block confirmation |
-| `targeted_correctly` | Whether the targeted validator actually produced this block |
 
 ### Expired
 
@@ -118,9 +108,6 @@ GET https://rpc.polynode.dev/v1/stats
   "first_position_rate": 0.897,
   "total_expired": 2,
   "pending": 0,
-  "avg_latency_ms": 2450,
-  "peers": 150,
-  "network_slots": 4,
-  "mapped_validators": 4
+  "avg_latency_ms": 2450
 }
 ```
