@@ -1,0 +1,237 @@
+---
+title: "TypeScript SDK"
+sidebarTitle: "TypeScript SDK"
+description: "Official TypeScript/Node.js SDK for the PolyNode API"
+icon: "js"
+---
+
+## Install
+
+```bash
+npm install polynode-sdk ws
+```
+
+Requires Node.js 18+. The `ws` package provides WebSocket support for Node.js.
+
+## Quick Start
+
+```typescript
+import { PolyNode } from 'polynode-sdk';
+
+const pn = new PolyNode({ apiKey: 'pn_live_...' });
+
+// Fetch top markets
+const markets = await pn.markets({ count: 10 });
+console.log(`${markets.count} markets, ${markets.total} total`);
+
+// Search
+const results = await pn.search('bitcoin');
+console.log(results.results[0].question);
+```
+
+## REST Methods
+
+Every REST endpoint has a typed method on the `PolyNode` client:
+
+```typescript
+// System
+await pn.healthz();
+await pn.status();
+await pn.createKey('my-bot');
+
+// Markets
+await pn.markets({ count: 10 });
+await pn.market(tokenId);
+await pn.marketBySlug('bitcoin-100k');
+await pn.marketByCondition(conditionId);
+await pn.marketsList({ count: 20, sort: 'volume' });
+await pn.search('ethereum', { limit: 5 });
+
+// Pricing
+await pn.candles(tokenId, { resolution: '1h', limit: 100 });
+await pn.stats(tokenId);
+
+// Settlements
+await pn.recentSettlements({ count: 20 });
+await pn.tokenSettlements(tokenId, { count: 10 });
+await pn.walletSettlements(address, { count: 10 });
+
+// Wallets
+await pn.wallet(address);
+
+// RPC (rpc.polynode.dev)
+await pn.rpc('eth_blockNumber');
+await pn.rpc('eth_getBlockByNumber', ['latest', false]);
+```
+
+## WebSocket Streaming
+
+Subscribe to real-time events with a builder pattern:
+
+```typescript
+const sub = await pn.ws.subscribe('settlements')
+  .minSize(100)
+  .status('pending')
+  .snapshotCount(20)
+  .send();
+```
+
+### Event Callbacks
+
+```typescript
+sub.on('settlement', (event) => {
+  console.log(`${event.taker_side} $${event.taker_size} on ${event.market_title}`);
+});
+
+sub.on('status_update', (event) => {
+  console.log(`Confirmed in ${event.latency_ms}ms`);
+});
+
+// Catch-all
+sub.on('*', (event) => {
+  console.log(event.event_type, event);
+});
+```
+
+### Async Iterator
+
+```typescript
+for await (const event of sub) {
+  if (event.event_type === 'settlement') {
+    console.log(event.taker_wallet, event.taker_size);
+  }
+}
+```
+
+### Subscription Filters
+
+All filters from the [Subscriptions & Filters](/websocket/subscribing) page are supported:
+
+```typescript
+pn.ws.subscribe('settlements')
+  .wallets(['0xabc...'])          // by wallet
+  .tokens(['21742633...'])        // by token ID
+  .slugs(['bitcoin-100k'])        // by market slug
+  .conditionIds(['0xabc...'])     // by condition ID
+  .side('BUY')                    // BUY or SELL
+  .status('pending')              // pending, confirmed, or all
+  .minSize(100)                   // min USD size
+  .maxSize(10000)                 // max USD size
+  .eventTypes(['settlement'])     // override event types
+  .snapshotCount(50)              // initial snapshot (max 200)
+  .feeds(['BTC/USD'])             // chainlink feeds
+  .send();
+```
+
+### Subscription Types
+
+```typescript
+pn.ws.subscribe('settlements')   // pending + confirmed settlements
+pn.ws.subscribe('trades')        // all trade activity
+pn.ws.subscribe('prices')        // price-moving events
+pn.ws.subscribe('blocks')        // new Polygon blocks
+pn.ws.subscribe('wallets')       // all wallet activity
+pn.ws.subscribe('markets')       // all market activity
+pn.ws.subscribe('large_trades')  // $1K+ trades
+pn.ws.subscribe('oracle')        // UMA resolution events
+pn.ws.subscribe('chainlink')     // real-time price feeds
+```
+
+### Multiple Subscriptions
+
+Subscriptions stack on the same connection:
+
+```typescript
+const whales = await pn.ws.subscribe('large_trades')
+  .minSize(5000).send();
+
+const myWallet = await pn.ws.subscribe('wallets')
+  .wallets(['0xabc...']).send();
+
+// Both active simultaneously, events deduplicated
+```
+
+### Compression
+
+Enable zlib compression for ~60% bandwidth savings:
+
+```typescript
+const pn = new PolyNode({ apiKey: 'pn_live_...' });
+const ws = pn.configureWs({ compress: true });
+const sub = await ws.subscribe('settlements').send();
+```
+
+### Auto-Reconnect
+
+Enabled by default. The SDK reconnects with exponential backoff and replays all active subscriptions:
+
+```typescript
+const ws = pn.configureWs({
+  autoReconnect: true,           // default: true
+  maxReconnectAttempts: Infinity, // default: unlimited
+  reconnectBaseDelay: 1000,      // default: 1s
+  reconnectMaxDelay: 30000,      // default: 30s
+});
+
+ws.onConnect(() => console.log('connected'));
+ws.onDisconnect((reason) => console.log('disconnected:', reason));
+ws.onReconnect((attempt) => console.log('reconnected, attempt', attempt));
+ws.onError((err) => console.error(err));
+```
+
+### Cleanup
+
+```typescript
+sub.unsubscribe();     // remove one subscription
+pn.ws.unsubscribeAll(); // remove all
+pn.ws.disconnect();     // close connection
+```
+
+## Configuration
+
+```typescript
+const pn = new PolyNode({
+  apiKey: 'pn_live_...',                    // required
+  baseUrl: 'https://api.polynode.dev',      // default
+  wsUrl: 'wss://ws.polynode.dev/ws',        // default
+  rpcUrl: 'https://rpc.polynode.dev',       // default
+  timeout: 10000,                            // ms, default 10s
+});
+```
+
+## Error Handling
+
+```typescript
+import { PolyNode, ApiError, WsError } from 'polynode-sdk';
+
+try {
+  await pn.market('invalid-id');
+} catch (err) {
+  if (err instanceof ApiError) {
+    console.log(err.status);  // 404
+    console.log(err.message); // "Market not found"
+  }
+}
+```
+
+## TypeScript Types
+
+All event types are exported and fully typed:
+
+```typescript
+import type {
+  SettlementEvent,
+  TradeEvent,
+  StatusUpdateEvent,
+  BlockEvent,
+  PositionChangeEvent,
+  DepositEvent,
+  OracleEvent,
+  PriceFeedEvent,
+  PolyNodeEvent,     // union of all events
+} from 'polynode-sdk';
+```
+
+## Source
+
+[GitHub](https://github.com/joinQuantish/polynode-sdk-ts) | [NPM](https://www.npmjs.com/package/polynode-sdk)

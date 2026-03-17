@@ -60,6 +60,12 @@
             ]
           },
           {
+            "group": "SDKs",
+            "pages": [
+              "guides/sdk"
+            ]
+          },
+          {
             "group": "Guides",
             "pages": [
               "guides/best-practices",
