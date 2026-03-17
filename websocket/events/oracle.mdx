@@ -1,7 +1,7 @@
 ---
 title: "Oracle Event"
 sidebarTitle: "oracle"
-description: "UMA Optimistic Oracle events — market resolutions, proposals, disputes, and admin actions on Polymarket."
+description: "UMA Optimistic Oracle events — market initializations, proposals, disputes, resolutions, settlements, and admin actions on Polymarket."
 icon: "scale-balanced"
 ---
 
@@ -11,11 +11,12 @@ Oracle events stream the full lifecycle of Polymarket's UMA-based market resolut
 
 ## How Polymarket Resolution Works
 
-1. A **proposer** submits an answer (YES or NO) and posts a USDC bond
-2. A 2-hour **liveness window** opens where anyone can dispute
-3. If no dispute, the market **resolves** with the proposed answer
-4. If disputed, the question **resets** and goes to UMA's DVM for a token-holder vote
-5. Admins can **flag**, **pause**, or **manually resolve** markets in edge cases
+1. A market is **initialized** on-chain (QuestionInitialized on the UMA adapter)
+2. A **proposer** submits an answer (YES or NO) via ProposePrice on UMA's Optimistic Oracle V2 and posts a USDC bond
+3. A 2-hour **liveness window** opens where anyone can dispute
+4. If no dispute, the oracle **settles** (Settle event on OO V2) and the market **resolves** (QuestionResolved on the adapter)
+5. If disputed, the question **resets** and goes to UMA's DVM for a token-holder vote
+6. Admins can **flag**, **pause**, or **manually resolve** markets in edge cases
 
 ## Subscribe
 
@@ -30,16 +31,24 @@ Oracle events stream the full lifecycle of Polymarket's UMA-based market resolut
 
 Every oracle event has an `oracle_type` field indicating what happened:
 
-<ResponseField name="resolution" type="string">
-  Market officially resolved via UMA oracle. The most common event type (~200+ per hour during active sports periods). Includes the final `resolved_price`, `payouts` array, and `resolved_outcome`.
+<ResponseField name="initialization" type="string">
+  Market initialized on-chain. The UMA adapter has registered a new question. This is the first on-chain event in a market's lifecycle.
 </ResponseField>
 
 <ResponseField name="proposal" type="string">
-  New resolution proposed. A 2-hour countdown to resolution begins. The proposer has posted a bond that they lose if the outcome is successfully disputed.
+  Resolution proposed on UMA Optimistic Oracle V2 (ProposePrice). A proposer has submitted an answer and posted a bond. The 2-hour liveness countdown begins. Includes `proposer` address, `proposed_price` (1.0 = YES, 0.0 = NO), and `expiration_timestamp`.
 </ResponseField>
 
 <ResponseField name="dispute" type="string">
-  Resolution disputed. Someone challenged the proposed outcome. The market re-enters the proposal phase or escalates to UMA's DVM for a token-holder vote. **High signal, rare event.** Price swings are likely.
+  Resolution disputed on UMA Optimistic Oracle V2 (DisputePrice). Someone challenged the proposed outcome. The market re-enters the proposal phase or escalates to UMA's DVM for a token-holder vote. **High signal, rare event.** Price swings are likely. Includes `proposer`, `disputer`, and `proposed_price`.
+</ResponseField>
+
+<ResponseField name="settled" type="string">
+  Settled on UMA Optimistic Oracle V2 after the liveness period expires. The oracle has accepted the proposed answer. Includes `resolved_price` and `proposer`.
+</ResponseField>
+
+<ResponseField name="resolution" type="string">
+  Market officially resolved via UMA oracle (QuestionResolved on the adapter). The most common event type (~200+ per hour during active sports periods). Includes the final `resolved_price`, `payouts` array, and `resolved_outcome`.
 </ResponseField>
 
 <ResponseField name="reset" type="string">
@@ -56,38 +65,77 @@ Every oracle event has an `oracle_type` field indicating what happened:
 
 ## Resolution Event (real payload)
 
-This is a live market resolution from the neg-risk UMA adapter. L1ga Team won Game 2 of a Dota 2 match:
+A tennis market resolved — Baena won the first set:
 
 ```json
 {
   "type": "oracle",
-  "timestamp": 1773692559000,
+  "timestamp": 1773755193000,
   "data": {
-    "event_type": "oracle",
-    "oracle_type": "resolution",
-    "question_id": "0x309da54cbca4cdfe43937aff39ac84ac2c93a7de2eed82dee287d123832426de",
     "adapter_address": "0x65070be91477460d8a7aeeb94ef92fe056c2f2a7",
-    "block_number": 84286263,
-    "log_index": 11,
-    "timestamp": 1773692559000,
-    "resolved_price": 0.0,
-    "resolved_outcome": "L1ga Team",
+    "block_number": 84317580,
+    "condition_id": "0xb0b51e92993bf204c76f10a49bdaa595d817f1768a9ae79e546e83695f1cb142",
+    "event_title": "Murcia: Nikolas Sanchez Izquierdo vs Roberto Carballes Baena",
+    "event_type": "oracle",
+    "log_index": 197,
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/atp-tour-b4390c4fb8.jpg",
+    "market_slug": "atp-izquier-baena-2026-03-16-first-set-winner-Izquierdo-vs-Baena",
+    "market_title": "Set 1 Winner: Izquierdo vs Baena",
+    "neg_risk": false,
+    "oracle_type": "resolution",
+    "outcomes": ["Izquierdo", "Baena"],
     "payouts": [0, 1],
-    "condition_id": "0x190b7a505e2a6cc7b67d728be1f00fd45af5534dd28a01c5a403abb7df80be67",
-    "market_title": "Dota 2:  Pipsqueak+4 vs L1ga Team - Game 2 Winner",
-    "market_slug": "dota2-pi-l1ga-2026-03-16-game2",
-    "event_title": "Dota 2:  Pipsqueak+4 vs L1ga Team (BO3) - CCT Playoffs",
-    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/dota2-7ffacddb21.jpg",
-    "outcomes": [" Pipsqueak+4", "L1ga Team"],
+    "question_id": "0x34241c96d35a8ffbd4093f9a360e08f97c5691f66e9bfe29dd46e4763dae833e",
+    "resolved_outcome": "Baena",
+    "resolved_price": 0,
+    "timestamp": 1773755193000,
     "token_ids": [
-      "33624531144301033498274036011552837180263934462540985216273438788872733139755",
-      "7912608750055297578984004833513620895905380546916279379524540002987417516489"
+      "100092605222559788173670687007064638617594421724580870112622623059744413023416",
+      "82111831612810431769649657775457339958533284370449876495200499593908955489467"
     ],
     "tokens": {
-      "33624531144301033498274036011552837180263934462540985216273438788872733139755": " Pipsqueak+4",
-      "7912608750055297578984004833513620895905380546916279379524540002987417516489": "L1ga Team"
+      "100092605222559788173670687007064638617594421724580870112622623059744413023416": "Izquierdo",
+      "82111831612810431769649657775457339958533284370449876495200499593908955489467": "Baena"
     },
+    "tx_hash": ""
+  }
+}
+```
+
+## Proposal Event (ProposePrice from OO V2)
+
+A proposer submits YES for an XRP price market, with a 2-hour liveness window. Proposals include full market metadata:
+
+```json
+{
+  "type": "oracle",
+  "timestamp": 1773755537000,
+  "data": {
+    "adapter_address": "0x65070be91477460d8a7aeeb94ef92fe056c2f2a7",
+    "block_number": 84317752,
+    "condition_id": "0xc9d0815d7f12e601ac3ce457de5b5d6f18ba5f48df5ffd246cec4c19a9254200",
+    "event_title": "What price will XRP hit on March 17?",
+    "event_type": "oracle",
+    "expiration_timestamp": 1773762737000,
+    "log_index": 372,
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/XRP-logo.png",
+    "market_slug": "will-xrp-dip-to-1pt5-on-march-17",
+    "market_title": "Will XRP dip to $1.50 on March 17?",
     "neg_risk": false,
+    "oracle_type": "proposal",
+    "outcomes": ["Yes", "No"],
+    "proposed_price": 1,
+    "proposer": "0xedc1e7a3a9275c512f669cb9236f1d03c2fc2e39",
+    "question_id": "oo_v2:0x65070be91477460d8a7aeeb94ef92fe056c2f2a7:1773720049",
+    "timestamp": 1773755537000,
+    "token_ids": [
+      "29532348047030596543075496892560093525999458628692812631919395372535371275514",
+      "43096817250499798050326473461465682146308168398097552897166323529988349492396"
+    ],
+    "tokens": {
+      "29532348047030596543075496892560093525999458628692812631919395372535371275514": "Yes",
+      "43096817250499798050326473461465682146308168398097552897166323529988349492396": "No"
+    },
     "tx_hash": ""
   }
 }
@@ -98,18 +146,15 @@ This is a live market resolution from the neg-risk UMA adapter. L1ga Team won Ga
 ### Core Fields (all oracle events)
 
 <ResponseField name="oracle_type" type="string" required>
-  Type of oracle event: `resolution`, `proposal`, `dispute`, `reset`, `flag`, `unflag`, `pause`, `unpause`, `manual_resolution`.
+  Type of oracle event: `initialization`, `proposal`, `dispute`, `settled`, `resolution`, `reset`, `flag`, `unflag`, `pause`, `unpause`, `manual_resolution`.
 </ResponseField>
 
 <ResponseField name="question_id" type="string" required>
-  UMA's unique identifier for this market question (bytes32). Maps to Polymarket's `condition_id` through our metadata index.
+  UMA's unique identifier for this market question. For adapter events (initialization, resolution, reset, flag, manual_resolution), this is the bytes32 question ID from the on-chain event. For OO V2 events (proposal, dispute, settled), this is resolved to the real question ID when possible, or a synthetic key `oo_v2:<adapter>:<timestamp>` when the mapping hasn't been seen yet.
 </ResponseField>
 
 <ResponseField name="adapter_address" type="string" required>
-  Which UMA adapter contract emitted this event. Three active adapters on Polygon:
-  - `0x2f5e3684...` — Standard markets (UmaCtfAdapter v3)
-  - `0x157ce2d6...` — Standard markets (UmaCtfAdapter v3.1)
-  - `0x65070be9...` — Neg-risk multi-outcome markets
+  Which UMA adapter contract this event relates to. For OO V2 events, this is the requester (adapter) extracted from the ProposePrice/DisputePrice/Settle event.
 </ResponseField>
 
 <ResponseField name="block_number" type="number" required>
@@ -124,7 +169,35 @@ This is a live market resolution from the neg-risk UMA adapter. L1ga Team won Ga
   Block timestamp in milliseconds.
 </ResponseField>
 
-### Resolution Fields (resolution and manual_resolution only)
+### Proposal Fields (proposal only)
+
+<ResponseField name="proposer" type="string">
+  Address of the account that proposed the resolution.
+</ResponseField>
+
+<ResponseField name="proposed_price" type="number">
+  The proposed answer. `1.0` = YES (first outcome), `0.0` = NO (second outcome).
+</ResponseField>
+
+<ResponseField name="expiration_timestamp" type="number">
+  When the 2-hour liveness window expires (unix milliseconds). After this time, the proposal can be settled if not disputed.
+</ResponseField>
+
+### Dispute Fields (dispute only)
+
+<ResponseField name="disputer" type="string">
+  Address of the account that disputed the proposal.
+</ResponseField>
+
+<ResponseField name="proposer" type="string">
+  Address of the original proposer whose answer is being challenged.
+</ResponseField>
+
+<ResponseField name="proposed_price" type="number">
+  The proposed answer that was disputed.
+</ResponseField>
+
+### Resolution Fields (resolution, settled, and manual_resolution)
 
 <ResponseField name="resolved_price" type="number">
   The settled price from UMA. `1.0` = first outcome wins (usually YES), `0.0` = second outcome wins (usually NO), `0.5` = split/tie.
@@ -135,7 +208,7 @@ This is a live market resolution from the neg-risk UMA adapter. L1ga Team won Ga
 </ResponseField>
 
 <ResponseField name="payouts" type="array">
-  Payout array from UMA. `[1, 0]` means the first outcome wins. `[0, 1]` means the second outcome wins. `[1, 1]` means a split (both outcomes pay out).
+  Payout array from UMA. `[1, 0]` means the first outcome wins. `[0, 1]` means the second outcome wins. `[1, 1]` means a split (both outcomes pay out). Only present on `resolution` and `manual_resolution`.
 </ResponseField>
 
 ### Enrichment Fields (from Polymarket metadata)
@@ -186,26 +259,44 @@ Oracle events are **not evenly distributed**. They come in bursts when UMA's res
 |--------|---------------|
 | Active sports hours | 200+ resolutions/hour, proposals flowing continuously |
 | Quiet periods | 10-50 resolutions/hour |
+| Proposals (ProposePrice) | ~30/hour, continuous flow |
+| Settlements (Settle) | ~30/hour, fires after 2-hour liveness |
 | Disputes | A few per month (high signal) |
-| Proposals | Frequent during active periods (markets being initialized on-chain) |
 | Flags / Manual resolutions | Very rare |
 
-## UMA Adapter Contracts
+## Contracts Monitored
 
-PolyNode monitors three active UMA adapter contracts on Polygon:
+PolyNode monitors all 6 Polymarket UMA adapter contracts and both oracle contracts for complete coverage.
 
-| Contract | Address | Markets |
-|----------|---------|---------|
-| UmaCtfAdapter v3 | `0x2f5e3684cb1f318ec51b00edba38d79ac2c0aa9d` | Standard binary markets |
-| UmaCtfAdapter v3.1 | `0x157ce2d672854c848c9b79c49a8cc6cc89176a49` | Newer standard markets |
-| NegRisk UmaCtfAdapter | `0x65070be91477460d8a7aeeb94ef92fe056c2f2a7` | Multi-outcome markets (elections, sports) |
+### Oracle Contracts (ProposePrice, DisputePrice, Settle)
+
+| Contract | Address | Notes |
+|----------|---------|-------|
+| Managed Optimistic Oracle V2 (MOOV2) | `0x2c0367a9db231ddebd88a94b4f6461a6e47c58b1` | Current production. Whitelisted proposers. |
+| Optimistic Oracle V2 | `0xee3afe347d5c74317041e2618c49534daf887c24` | Permissionless. Used by older adapters. |
+
+### Adapter Contracts (QuestionInitialized, QuestionResolved, Reset, Flag, etc.)
+
+| Contract | Address | Type |
+|----------|---------|------|
+| UmaCtfAdapter MOOV2 (standard) | `0x65070be91477460d8a7aeeb94ef92fe056c2f2a7` | Highest volume. Binary markets on Managed OO V2. |
+| UmaCtfAdapter MOOV2 (neg-risk) | `0x69c47de9d4d3dad79590d61b9e05918e03775f24` | Multi-outcome markets (elections, sports) on Managed OO V2. |
+| UmaCtfAdapter v3.1 (standard) | `0x157ce2d672854c848c9b79c49a8cc6cc89176a49` | Active for existing markets on permissionless OO V2. |
+| UmaCtfAdapter v3.1 (neg-risk) | `0x2f5e3684cb1f318ec51b00edba38d79ac2c0aa9d` | Active for existing neg-risk markets on permissionless OO V2. |
+| UmaCtfAdapter v3.0 | `0x71392e133063cc0d16f40e1f9b60227404bc03f7` | Legacy. Rarely active. |
+| UmaCtfAdapter v2 | `0x6a9d222616c90fca5754cd1333cfd9b7fb6a4f74` | Legacy. Old markets still resolving. |
+
+OO V2 events are filtered to only include Polymarket-related activity (where the requester is a known Polymarket adapter). Markets are permanently tied to the adapter they were initialized on.
 
 ## Trading Implications
 
 | Event | What It Means | Action |
 |-------|--------------|--------|
-| **resolution** | Market is settled. Winning positions can be redeemed. | Close tracking, update portfolio |
+| **initialization** | New market registered on-chain. | First signal of a new tradeable market |
+| **proposal** | Answer proposed, 2-hour countdown started. | Monitor for disputes, position accordingly |
 | **dispute** | Proposed outcome challenged. Uncertainty returns. | Watch for price swings, potential arb |
+| **settled** | Oracle accepted the answer after liveness. | Resolution imminent |
+| **resolution** | Market is settled. Winning positions can be redeemed. | Close tracking, update portfolio |
 | **reset** | Market re-enters proposal phase after dispute. | Resolution delayed, reassess positions |
 | **flag** | Admin flagged an issue. Market may be paused. | Caution, reduce exposure |
 | **manual_resolution** | Admin override. Could be controversial. | Check outcome, compare to expectations |
