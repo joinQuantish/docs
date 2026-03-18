@@ -28,6 +28,8 @@ PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST
 | WebSocket streaming | Yes | Yes |
 | All 10 event types | Typed interfaces | Typed structs + enum |
 | Subscription filters | Builder pattern | Builder pattern |
+| Orderbook streaming | Yes | Yes |
+| Local orderbook state | `LocalOrderbook` helper | `LocalOrderbook` helper |
 | Zlib compression | Transparent | Transparent |
 | Auto-reconnect | Exponential backoff | Exponential backoff |
 | RPC proxy | Yes | Yes |
@@ -69,6 +71,61 @@ PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST
 
     while let Some(msg) = stream.next().await {
         // handle events
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Orderbook Streaming
+
+Both SDKs include a dedicated orderbook client that connects to `ob.polynode.dev` for real-time orderbook data across 108k+ Polymarket markets.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { PolyNode, LocalOrderbook } from 'polynode-sdk';
+
+    const pn = new PolyNode({ apiKey: 'pn_live_...' });
+    const book = new LocalOrderbook();
+
+    pn.orderbook.on('snapshot', (snap) => {
+      book.applySnapshot(snap);
+      console.log(`${snap.asset_id}: ${snap.bids.length} bids, ${snap.asks.length} asks`);
+    });
+
+    pn.orderbook.on('update', (update) => {
+      book.applyUpdate(update);
+      const spread = book.getSpread(update.asset_id);
+      console.log(`spread: ${spread}`);
+    });
+
+    await pn.orderbook.subscribe(['token_id_1', 'token_id_2']);
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::{PolyNodeClient, ObStreamOptions, LocalOrderbook, ObMessage, OrderbookUpdate};
+
+    let client = PolyNodeClient::new("pn_live_...")?;
+    let mut stream = client.orderbook_stream(ObStreamOptions::default()).await?;
+    let mut book = LocalOrderbook::new();
+
+    stream.subscribe(vec!["token_id_1".into()]).await?;
+
+    while let Some(msg) = stream.next().await {
+        match msg? {
+            ObMessage::Update(OrderbookUpdate::Snapshot(snap)) => {
+                book.apply_snapshot(&snap);
+                println!("{}: {} bids", snap.asset_id, snap.bids.len());
+            }
+            ObMessage::Update(OrderbookUpdate::Update(delta)) => {
+                book.apply_update(&delta);
+                if let Some(spread) = book.spread(&delta.asset_id) {
+                    println!("spread: {:.4}", spread);
+                }
+            }
+            _ => {}
+        }
     }
     ```
   </Tab>

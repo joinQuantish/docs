@@ -214,6 +214,109 @@ try {
 }
 ```
 
+## Orderbook Streaming
+
+The SDK includes a dedicated orderbook client for real-time book data from `ob.polynode.dev`. This is a separate WebSocket connection from the event stream, with its own URL, protocol, and message format.
+
+### Subscribe
+
+```typescript
+// Lazy-initialized, connects on first subscribe
+await pn.orderbook.subscribe(['token_id_1', 'token_id_2']);
+```
+
+### Event Handlers
+
+```typescript
+pn.orderbook.on('snapshot', (snap) => {
+  // Full book snapshot on subscribe
+  console.log(snap.asset_id, snap.bids.length, 'bids', snap.asks.length, 'asks');
+});
+
+pn.orderbook.on('update', (delta) => {
+  // Incremental delta. A level with size "0" means removal.
+  console.log(delta.asset_id, delta.bids.length, 'bid changes');
+});
+
+pn.orderbook.on('price', (change) => {
+  // Summary price movement across assets in a market
+  for (const asset of change.assets) {
+    console.log(asset.outcome, asset.price);
+  }
+});
+
+pn.orderbook.on('snapshots_done', (msg) => {
+  console.log(`All ${msg.total} snapshots received`);
+});
+
+// Catch-all for snapshot, update, and price events
+pn.orderbook.on('*', (update) => {
+  console.log(update.type, update);
+});
+```
+
+### LocalOrderbook Helper
+
+Maintain a sorted local copy of the book:
+
+```typescript
+import { LocalOrderbook } from 'polynode-sdk';
+
+const book = new LocalOrderbook();
+
+pn.orderbook.on('snapshot', (snap) => book.applySnapshot(snap));
+pn.orderbook.on('update', (delta) => book.applyUpdate(delta));
+
+// Query state
+const fullBook = book.getBook(tokenId);   // { bids, asks }
+const bestBid = book.getBestBid(tokenId);  // { price, size }
+const bestAsk = book.getBestAsk(tokenId);  // { price, size }
+const spread = book.getSpread(tokenId);    // number
+```
+
+### Compression
+
+Enable zlib compression for bandwidth savings:
+
+```typescript
+const ob = pn.configureOrderbook({ compress: true });
+await ob.subscribe(['token_id_1']);
+```
+
+### Configuration
+
+```typescript
+const pn = new PolyNode({
+  apiKey: 'pn_live_...',
+  obUrl: 'wss://ob.polynode.dev/ws',  // default
+});
+
+// Or configure options separately
+pn.configureOrderbook({
+  compress: true,
+  autoReconnect: true,
+  maxReconnectAttempts: Infinity,
+  reconnectBaseDelay: 1000,
+  reconnectMaxDelay: 30000,
+});
+```
+
+### System Events
+
+```typescript
+pn.orderbook.onConnect(() => console.log('connected'));
+pn.orderbook.onDisconnect((reason) => console.log('disconnected:', reason));
+pn.orderbook.onReconnect((attempt) => console.log('reconnected, attempt', attempt));
+pn.orderbook.onError((err) => console.error(err));
+```
+
+### Cleanup
+
+```typescript
+pn.orderbook.unsubscribe();   // unsubscribe from all markets
+pn.orderbook.disconnect();     // close connection
+```
+
 ## TypeScript Types
 
 All event types are exported and fully typed:
@@ -229,6 +332,14 @@ import type {
   OracleEvent,
   PriceFeedEvent,
   PolyNodeEvent,     // union of all events
+
+  // Orderbook types
+  OrderbookLevel,
+  BookSnapshot,
+  BookUpdate,
+  PriceChange,
+  OrderbookUpdate,   // union of snapshot | update | price_change
+  OrderbookOptions,
 } from 'polynode-sdk';
 ```
 
