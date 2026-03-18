@@ -155,12 +155,14 @@ wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
 
 ## Subscription limits
 
-| Tier | Max tokens | Session limit | Estimated bandwidth |
-|------|-----------|--------------|-------------------|
-| **Free** | Unlimited | 1 hour/day | ~1.2 MB/s compressed |
-| **Starter** | 200 (100 markets) | Unlimited | ~40 KB/s |
-| **Growth** | 4,000 (2,000 markets) | Unlimited | ~512 KB/s |
-| **Enterprise** | Unlimited | Unlimited | ~1.2 MB/s compressed |
+All paid tiers can subscribe to **every active market** with no token limit. Access is gated by the number of simultaneous WebSocket connections you can open to the Orderbook Stream.
+
+| Tier | Connections | Market subscriptions | Session limit |
+|------|-----------|---------------------|--------------|
+| **Free** | 1 | Unlimited | 1 hour/day |
+| **Starter** ($50/mo) | 2 | Unlimited | Unlimited |
+| **Growth** ($200/mo) | 10 | Unlimited | Unlimited |
+| **Enterprise** ($750/mo) | Unlimited | Unlimited | Unlimited |
 
 Each Polymarket market has two tokens (one per outcome). Subscribing to both tokens of a market gives you the full two-sided orderbook.
 
@@ -169,7 +171,7 @@ Each Polymarket market has two tokens (one per outcome). Subscribing to both tok
 </Tip>
 
 <Note>
-  Session time is tracked from your first connection each day and resets at midnight UTC. Upgrade at [polynode.dev/pricing](https://polynode.dev/pricing) for unlimited access.
+  **Orderbook connections are separate from main WebSocket connections.** Your plan's WebSocket and firehose limits (shown on the [rate limits](/guides/rate-limits) page) apply to the main feed at `ws.polynode.dev`. The limits above apply only to the Orderbook Stream at `ob.polynode.dev`. Session time resets at midnight UTC.
 </Note>
 
 ## Connection lifecycle
