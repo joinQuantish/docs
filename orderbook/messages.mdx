@@ -230,13 +230,20 @@ Response to a client ping.
 ```json
 {
   "error": "token_limit",
-  "message": "Your free tier allows max 20 tokens. Requested 50. Upgrade at https://polynode.dev/pricing",
-  "max": 20,
-  "requested": 50
+  "message": "Your starter tier allows max 200 tokens. Requested 500. Upgrade at https://polynode.dev/pricing",
+  "max": 200,
+  "requested": 500
+}
+```
+
+```json
+{
+  "error": "session_limit",
+  "message": "Free tier 1-hour daily limit reached."
 }
 ```
 
 | Error | Cause |
 |-------|-------|
-| `token_limit` | Subscription exceeds your tier's token limit |
-| `session_limit` | Free tier 1-hour daily session expired |
+| `token_limit` | Subscription exceeds your tier's token limit (starter/growth only) |
+| `session_limit` | Free tier 1-hour daily session expired (resets at midnight UTC) |

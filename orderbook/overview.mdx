@@ -91,19 +91,21 @@ wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
 
 ## Subscription limits
 
-The number of tokens you can subscribe to depends on your tier:
-
-| Tier | Max tokens | Estimated bandwidth |
-|------|-----------|-------------------|
-| **Free** | 20 (10 markets) | ~4 KB/s |
-| **Starter** | 200 (100 markets) | ~40 KB/s |
-| **Growth** | 4,000 (2,000 markets) | ~512 KB/s |
-| **Enterprise** | Unlimited (all markets) | ~1.2 MB/s compressed |
+| Tier | Max tokens | Session limit | Estimated bandwidth |
+|------|-----------|--------------|-------------------|
+| **Free** | Unlimited | 1 hour/day | ~1.2 MB/s compressed |
+| **Starter** | 200 (100 markets) | Unlimited | ~40 KB/s |
+| **Growth** | 4,000 (2,000 markets) | Unlimited | ~512 KB/s |
+| **Enterprise** | Unlimited | Unlimited | ~1.2 MB/s compressed |
 
 Each Polymarket market has two tokens (one per outcome). Subscribing to both tokens of a market gives you the full two-sided orderbook.
 
+<Tip>
+  **Free tier includes the full firehose.** Subscribe to every market and see the full data flow. The only limit is a 1-hour daily session so you can properly evaluate the product before upgrading.
+</Tip>
+
 <Note>
-  Free tier includes a 1-hour daily session limit. Upgrade at [polynode.dev/pricing](https://polynode.dev/pricing) for unlimited access.
+  Session time is tracked from your first connection each day and resets at midnight UTC. Upgrade at [polynode.dev/pricing](https://polynode.dev/pricing) for unlimited access.
 </Note>
 
 ## Connection lifecycle
