@@ -68,9 +68,59 @@ Acknowledgment after a successful subscribe.
 |-------|------|-------------|
 | `markets` | number | Number of tokens now subscribed |
 
+### `snapshot_batch`
+
+Orderbook snapshots delivered in batches after subscribing. For small subscriptions (under 100 tokens), snapshots arrive in a single batch almost instantly. For large subscriptions (firehose), snapshots are streamed in batches of 50 every 200ms to avoid flooding your connection.
+
+```json
+{
+  "type": "snapshot_batch",
+  "count": 2,
+  "total_sent": 2,
+  "snapshots": [
+    {
+      "type": "book_snapshot",
+      "asset_id": "114694726451307654528948558967898493662917070661203465131156925998487819889437",
+      "market": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+      "event_title": "Netanyahu out by...?",
+      "question": "Netanyahu out by end of 2026?",
+      "outcome": "Yes",
+      "slug": "netanyahu-out-before-2027",
+      "bids": [
+        { "price": "0.01", "size": "1130070" },
+        { "price": "0.02", "size": "71015.52" }
+      ],
+      "asks": [
+        { "price": "0.99", "size": "17615.05" },
+        { "price": "0.98", "size": "5000" }
+      ]
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `count` | number | Number of snapshots in this batch |
+| `total_sent` | number | Running total of snapshots sent so far |
+| `snapshots` | object[] | Array of `book_snapshot` objects (see below) |
+
+Once all snapshots have been delivered, you'll receive a completion marker:
+
+```json
+{
+  "type": "snapshots_done",
+  "total": 12239
+}
+```
+
+<Tip>
+  Only tokens with active orderbook data are included in snapshots. Empty books are skipped. You'll still receive live `price_change` and `book_update` events for all subscribed tokens via batched updates.
+</Tip>
+
 ### `book_snapshot`
 
-Full orderbook state for a token. Sent immediately after subscribing for each requested token.
+Full orderbook state for a token. Sent inside `snapshot_batch` messages after subscribing, and occasionally in `batch` updates when the upstream source sends a full refresh.
 
 ```json
 {

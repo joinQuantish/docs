@@ -114,12 +114,12 @@ Each Polymarket market has two tokens (one per outcome). Subscribing to both tok
 Connect   -> wss://ob.polynode.dev/ws?key=pn_live_...
           <-  (connection established)
 
-Send      -> {"action": "subscribe", "markets": ["token1", "token2"]}
-          <-  {"type": "book_snapshot", "asset_id": "token1", ...}
-          <-  {"type": "book_snapshot", "asset_id": "token2", ...}
-          <-  {"type": "subscribed", "markets": 2}
+Send      -> {"action": "subscribe", "markets": ["token1", "token2", ...]}
+          <-  {"type": "subscribed", "markets": 4}
+          <-  {"type": "snapshot_batch", "count": 2, "snapshots": [...]}
+          <-  {"type": "snapshots_done", "total": 2}
 
-          <-  {"type": "batch", "ts": 1773794605604, "updates": [...]}
+          <-  {"type": "batch", "ts": ..., "updates": [...]}
           <-  {"type": "batch", ...}    (every 100ms when there are changes)
           <-  Ping frame                (every 30s)
           ->  Pong frame                (automatic)
@@ -127,6 +127,8 @@ Send      -> {"action": "subscribe", "markets": ["token1", "token2"]}
 Send      -> {"action": "unsubscribe"}
           <-  {"type": "unsubscribed"}
 ```
+
+For firehose subscriptions (all markets), snapshot delivery is streamed in batches of 50 every 200ms. Live batched updates begin flowing immediately in parallel — you don't have to wait for all snapshots to finish.
 
 ## Separate from the main WebSocket
 
