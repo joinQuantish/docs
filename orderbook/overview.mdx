@@ -11,7 +11,7 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
     Every active Polymarket market is tracked. Subscribe to specific markets or get everything at once.
   </Card>
   <Card title="Enriched data" icon="tags">
-    Every message includes the event title, market question, outcome label, and slug. No secondary lookups needed.
+    Every message includes the event title, market question, outcome label, slug, and condition ID. No secondary lookups needed.
   </Card>
   <Card title="100ms batching" icon="layer-group">
     Updates are batched into 100ms windows for efficient delivery. One message per tick with all changes for your subscribed markets.
@@ -40,17 +40,14 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
   </Step>
 
   <Step title="Subscribe">
-    Send a subscribe message with the Polymarket token IDs you want to track:
+    Send a subscribe message with the markets you want to track. You can use **slugs**, **condition IDs**, or **token IDs**:
     ```json
     {
       "action": "subscribe",
-      "markets": [
-        "73624432805780182150964443951045800666977811185963019133914618974858599458273",
-        "1666184515532238710431784265702709312060757077236443477960106115591255115343"
-      ]
+      "markets": ["what-price-will-bitcoin-hit-in-march-2026"]
     }
     ```
-    Token IDs are Polymarket's `clobTokenIds` from their [Gamma API](https://gamma-api.polymarket.com). Each market has two tokens (one per outcome).
+    The server resolves slugs and condition IDs to token IDs automatically. Both sides of the market (Yes + No) are included.
   </Step>
 
   <Step title="Receive data">
@@ -60,6 +57,7 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
       "type": "book_snapshot",
       "asset_id": "73624432805780182150964443951045800666977811185963019133914618974858599458273",
       "market": "0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2",
+      "condition_id": "0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2",
       "event_title": "What price will Bitcoin hit in March?",
       "question": "Will Bitcoin reach $150,000 in March?",
       "outcome": "Yes",
@@ -77,6 +75,72 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
     ```
   </Step>
 </Steps>
+
+## Ways to subscribe
+
+You can identify markets using any of these three formats:
+
+<Tabs>
+  <Tab title="Slug (recommended)">
+    The simplest way. Use the slug from the Polymarket event URL. The server resolves it to all token IDs for that event (typically 2 per market, one for each outcome).
+    ```json
+    {
+      "action": "subscribe",
+      "markets": ["what-price-will-bitcoin-hit-in-march-2026"]
+    }
+    ```
+  </Tab>
+  <Tab title="Condition ID">
+    Use the hex condition ID for a specific market within an event. Resolves to the Yes + No token IDs for that market.
+    ```json
+    {
+      "action": "subscribe",
+      "markets": ["0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2"]
+    }
+    ```
+  </Tab>
+  <Tab title="Token ID">
+    Use the raw CLOB token ID if you already have it. This is what Polymarket uses internally.
+    ```json
+    {
+      "action": "subscribe",
+      "markets": [
+        "73624432805780182150964443951045800666977811185963019133914618974858599458273",
+        "1666184515532238710431784265702709312060757077236443477960106115591255115343"
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+You can mix formats in a single subscribe:
+```json
+{
+  "action": "subscribe",
+  "markets": [
+    "what-price-will-bitcoin-hit-in-march-2026",
+    "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+    "73624432805780182150964443951045800666977811185963019133914618974858599458273"
+  ]
+}
+```
+
+## Finding markets
+
+Use the PolyNode REST API to search for markets and find their slugs, condition IDs, or token IDs:
+
+```bash
+# Search by keyword
+curl -s "https://api.polynode.dev/v1/search?q=bitcoin" | python3 -m json.tool
+
+# Look up by slug
+curl -s "https://api.polynode.dev/v1/markets/slug/what-price-will-bitcoin-hit-in-march-2026"
+
+# Look up by condition ID
+curl -s "https://api.polynode.dev/v1/markets/condition/0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2"
+```
+
+Or just grab the slug from any Polymarket event URL: `polymarket.com/event/{slug}`.
 
 ## Connection URL
 
@@ -114,8 +178,8 @@ Each Polymarket market has two tokens (one per outcome). Subscribing to both tok
 Connect   -> wss://ob.polynode.dev/ws?key=pn_live_...
           <-  (connection established)
 
-Send      -> {"action": "subscribe", "markets": ["token1", "token2", ...]}
-          <-  {"type": "subscribed", "markets": 4}
+Send      -> {"action": "subscribe", "markets": ["bitcoin-slug"]}
+          <-  {"type": "subscribed", "markets": 4, "resolved_from": {"token_ids": 0, "slugs": 1, "condition_ids": 0}}
           <-  {"type": "snapshot_batch", "count": 2, "snapshots": [...]}
           <-  {"type": "snapshots_done", "total": 2}
 

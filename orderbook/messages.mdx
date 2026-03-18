@@ -8,22 +8,47 @@ description: "Complete reference for all message types sent and received on the 
 
 ### Subscribe
 
-Subscribe to orderbook updates for specific tokens.
+Subscribe to orderbook updates for specific markets. You can identify markets by **slug**, **condition ID**, or **token ID** — the server resolves them all to token IDs transparently.
 
-```json
-{
-  "action": "subscribe",
-  "markets": [
-    "73624432805780182150964443951045800666977811185963019133914618974858599458273",
-    "1666184515532238710431784265702709312060757077236443477960106115591255115343"
-  ]
-}
-```
+<Tabs>
+  <Tab title="By slug">
+    ```json
+    {
+      "action": "subscribe",
+      "markets": ["what-price-will-bitcoin-hit-in-march-2026"]
+    }
+    ```
+  </Tab>
+  <Tab title="By condition ID">
+    ```json
+    {
+      "action": "subscribe",
+      "markets": ["0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2"]
+    }
+    ```
+  </Tab>
+  <Tab title="By token ID">
+    ```json
+    {
+      "action": "subscribe",
+      "markets": [
+        "73624432805780182150964443951045800666977811185963019133914618974858599458273",
+        "1666184515532238710431784265702709312060757077236443477960106115591255115343"
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `action` | string | Must be `"subscribe"` |
-| `markets` | string[] | Array of Polymarket token IDs (`clobTokenIds`) to subscribe to |
+| `markets` | string[] | Array of market identifiers. Each can be a slug (e.g. `"bitcoin-100k"`), condition ID (e.g. `"0x561ff..."`), or CLOB token ID (numeric string). Slugs and condition IDs are resolved to their corresponding token IDs automatically. |
+
+**How identifiers are detected:**
+- Starts with `0x` → condition ID
+- All digits and longer than 10 characters → CLOB token ID
+- Everything else → slug
 
 Subscribing again replaces your current subscription. To add markets, send a new subscribe with the full list.
 
@@ -55,18 +80,31 @@ Response: `{"type": "pong"}`
 
 ### `subscribed`
 
-Acknowledgment after a successful subscribe.
+Acknowledgment after a successful subscribe. Includes a breakdown of how identifiers were resolved, so you can verify your slugs/condition IDs matched.
 
 ```json
 {
   "type": "subscribed",
-  "markets": 2
+  "markets": 4,
+  "resolved_from": {
+    "token_ids": 0,
+    "slugs": 1,
+    "condition_ids": 0
+  }
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `markets` | number | Number of tokens now subscribed |
+| `markets` | number | Total number of token IDs now subscribed (after resolution) |
+| `resolved_from` | object | Breakdown of how many input entries were detected as each type |
+| `resolved_from.token_ids` | number | Entries passed through as raw token IDs |
+| `resolved_from.slugs` | number | Entries resolved from slugs |
+| `resolved_from.condition_ids` | number | Entries resolved from condition IDs |
+
+<Tip>
+  If you subscribe with a slug and `markets` comes back as 0, the slug didn't match any known event. Use the [search API](https://api.polynode.dev/v1/search?q=bitcoin) to find the correct slug.
+</Tip>
 
 ### `snapshot_batch`
 
@@ -82,6 +120,7 @@ Orderbook snapshots delivered in batches after subscribing. For small subscripti
       "type": "book_snapshot",
       "asset_id": "114694726451307654528948558967898493662917070661203465131156925998487819889437",
       "market": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+      "condition_id": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
       "event_title": "Netanyahu out by...?",
       "question": "Netanyahu out by end of 2026?",
       "outcome": "Yes",
@@ -127,6 +166,7 @@ Full orderbook state for a token. Sent inside `snapshot_batch` messages after su
   "type": "book_snapshot",
   "asset_id": "73624432805780182150964443951045800666977811185963019133914618974858599458273",
   "market": "0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2",
+  "condition_id": "0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2",
   "event_title": "What price will Bitcoin hit in March?",
   "question": "Will Bitcoin reach $150,000 in March?",
   "outcome": "Yes",
@@ -145,8 +185,9 @@ Full orderbook state for a token. Sent inside `snapshot_batch` messages after su
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `asset_id` | string | Polymarket token ID |
+| `asset_id` | string | Polymarket CLOB token ID |
 | `market` | string | Condition ID (hex) |
+| `condition_id` | string | Condition ID (hex), same as `market` |
 | `event_title` | string | Parent event title (e.g. "What price will Bitcoin hit in March?") |
 | `question` | string | Specific market question (e.g. "Will Bitcoin reach $150,000 in March?") |
 | `outcome` | string | Which outcome this token represents ("Yes" or "No") |

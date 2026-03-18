@@ -7,10 +7,35 @@ description: "Code examples for connecting to the Orderbook Stream in JavaScript
 ## Command line (wscat)
 
 ```bash
-# Connect and subscribe to a market
+# Subscribe by slug (easiest)
+wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY" \
+  -x '{"action":"subscribe","markets":["what-price-will-bitcoin-hit-in-march-2026"]}'
+
+# Subscribe by condition ID
+wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY" \
+  -x '{"action":"subscribe","markets":["0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2"]}'
+
+# Subscribe by token ID
 wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY" \
   -x '{"action":"subscribe","markets":["73624432805780182150964443951045800666977811185963019133914618974858599458273"]}'
 ```
+
+## Finding markets
+
+Use the PolyNode REST API to search for markets:
+
+```bash
+# Search by keyword
+curl -s "https://api.polynode.dev/v1/search?q=bitcoin" | python3 -m json.tool
+
+# Look up by slug (from any Polymarket URL: polymarket.com/event/{slug})
+curl -s "https://api.polynode.dev/v1/markets/slug/what-price-will-bitcoin-hit-in-march-2026"
+
+# Look up by condition ID
+curl -s "https://api.polynode.dev/v1/markets/condition/0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2"
+```
+
+The easiest approach: copy the slug from a Polymarket event URL and pass it directly in your subscribe message.
 
 ## JavaScript
 
@@ -18,13 +43,12 @@ wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY" \
 const ws = new WebSocket("wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.onopen = () => {
-  // Subscribe to Bitcoin $150K and Netanyahu markets
+  // Subscribe by slug — both sides (Yes + No) are included automatically
   ws.send(JSON.stringify({
     action: "subscribe",
     markets: [
-      "73624432805780182150964443951045800666977811185963019133914618974858599458273",
-      "114694726451307654528948558967898493662917070661203465131156925998487819889437",
-      "66255671088804707681511323064315150986307471908131081808279119719218775249892"
+      "what-price-will-bitcoin-hit-in-march-2026",
+      "netanyahu-out-before-2027"
     ]
   }));
 };
@@ -36,9 +60,16 @@ ws.onmessage = (event) => {
   const msg = JSON.parse(event.data);
 
   switch (msg.type) {
-    case "book_snapshot":
-      books[msg.asset_id] = { bids: msg.bids, asks: msg.asks };
-      console.log(`Snapshot: ${msg.question} [${msg.outcome}] - ${msg.bids.length}b/${msg.asks.length}a`);
+    case "subscribed":
+      console.log(`Subscribed to ${msg.markets} tokens`);
+      console.log(`Resolved from: ${JSON.stringify(msg.resolved_from)}`);
+      break;
+
+    case "snapshot_batch":
+      for (const snap of msg.snapshots) {
+        books[snap.asset_id] = { bids: snap.bids, asks: snap.asks };
+        console.log(`Snapshot: ${snap.question} [${snap.outcome}] - ${snap.bids.length}b/${snap.asks.length}a`);
+      }
       break;
 
     case "batch":
@@ -48,7 +79,6 @@ ws.onmessage = (event) => {
             console.log(`${update.question} [${asset.outcome}]: ${asset.price}`);
           }
         } else if (update.type === "book_update") {
-          // Apply delta to local state
           const book = books[update.asset_id];
           if (book) {
             applyDelta(book.bids, update.bids);
@@ -56,10 +86,6 @@ ws.onmessage = (event) => {
           }
         }
       }
-      break;
-
-    case "subscribed":
-      console.log(`Subscribed to ${msg.markets} tokens`);
       break;
   }
 };
@@ -78,7 +104,6 @@ function applyDelta(existing, deltas) {
   }
 }
 
-// Reconnect on disconnect
 ws.onclose = () => setTimeout(() => location.reload(), 3000);
 ```
 
@@ -93,22 +118,27 @@ async def stream_orderbook():
     url = "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY"
 
     async with websockets.connect(url) as ws:
-        # Subscribe to markets
+        # Subscribe by slug — resolves to all token IDs for those events
         await ws.send(json.dumps({
             "action": "subscribe",
             "markets": [
-                "73624432805780182150964443951045800666977811185963019133914618974858599458273",
-                "114694726451307654528948558967898493662917070661203465131156925998487819889437",
+                "what-price-will-bitcoin-hit-in-march-2026",
+                "netanyahu-out-before-2027",
             ]
         }))
 
         async for message in ws:
             data = json.loads(message)
 
-            if data["type"] == "book_snapshot":
-                print(f"Snapshot: {data['question']} [{data['outcome']}]")
-                print(f"  Bids: {len(data['bids'])} levels")
-                print(f"  Asks: {len(data['asks'])} levels")
+            if data["type"] == "subscribed":
+                print(f"Subscribed to {data['markets']} tokens")
+                print(f"Resolved from: {data['resolved_from']}")
+
+            elif data["type"] == "snapshot_batch":
+                for snap in data["snapshots"]:
+                    print(f"Snapshot: {snap['question']} [{snap['outcome']}]")
+                    print(f"  Bids: {len(snap['bids'])} levels")
+                    print(f"  Asks: {len(snap['asks'])} levels")
 
             elif data["type"] == "batch":
                 for update in data["updates"]:
@@ -120,9 +150,6 @@ async def stream_orderbook():
                         bids = len(update.get("bids", []))
                         asks = len(update.get("asks", []))
                         print(f"  Book delta: {update['question']} [{update['outcome']}] +{bids}b/+{asks}a")
-
-            elif data["type"] == "subscribed":
-                print(f"Subscribed to {data['markets']} tokens")
 
 asyncio.run(stream_orderbook())
 ```
@@ -141,14 +168,11 @@ async def stream_compressed():
     async with websockets.connect(url) as ws:
         await ws.send(json.dumps({
             "action": "subscribe",
-            "markets": [
-                "73624432805780182150964443951045800666977811185963019133914618974858599458273"
-            ]
+            "markets": ["what-price-will-bitcoin-hit-in-march-2026"]
         }))
 
         async for message in ws:
             if isinstance(message, bytes):
-                # Decompress binary frames
                 text = zlib.decompress(message, -zlib.MAX_WBITS).decode("utf-8")
                 data = json.loads(text)
             else:
@@ -159,38 +183,17 @@ async def stream_compressed():
 asyncio.run(stream_compressed())
 ```
 
-## Finding token IDs
+## Mixed identifier subscribe
 
-To subscribe to a specific market, you need its Polymarket token IDs. You can get these from Polymarket's Gamma API:
+You can mix slugs, condition IDs, and token IDs in a single subscribe:
 
-```bash
-# Search for a market by slug
-curl -s "https://gamma-api.polymarket.com/events?slug=fed-decision-in-march-885" | \
-  python3 -c "
-import json, sys
-events = json.load(sys.stdin)
-for e in events:
-    print(f'Event: {e[\"title\"]}')
-    for m in e.get('markets', []):
-        tokens = json.loads(m.get('clobTokenIds', '[]'))
-        outcomes = json.loads(m.get('outcomes', '[]'))
-        print(f'  {m[\"question\"]}')
-        for token, outcome in zip(tokens, outcomes):
-            print(f'    {outcome}: {token}')
-"
-```
-
-Or search by keyword:
-
-```bash
-curl -s "https://gamma-api.polymarket.com/events/pagination?limit=5&active=true&closed=false&order=volume24hr&ascending=false" | \
-  python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-for e in data.get('data', []):
-    print(f'{e[\"title\"]} (vol24h: {e.get(\"volume24hr\", 0):.0f})')
-    for m in e.get('markets', [])[:1]:
-        tokens = json.loads(m.get('clobTokenIds', '[]'))
-        print(f'  Tokens: {tokens}')
-"
+```python
+await ws.send(json.dumps({
+    "action": "subscribe",
+    "markets": [
+        "what-price-will-bitcoin-hit-in-march-2026",                              # slug
+        "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",      # condition ID
+        "73624432805780182150964443951045800666977811185963019133914618974858599458273"  # token ID
+    ]
+}))
 ```
