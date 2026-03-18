@@ -1,0 +1,242 @@
+---
+title: "Message Reference"
+sidebarTitle: "Messages"
+description: "Complete reference for all message types sent and received on the Orderbook Stream."
+---
+
+## Client messages
+
+### Subscribe
+
+Subscribe to orderbook updates for specific tokens.
+
+```json
+{
+  "action": "subscribe",
+  "markets": [
+    "73624432805780182150964443951045800666977811185963019133914618974858599458273",
+    "1666184515532238710431784265702709312060757077236443477960106115591255115343"
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `action` | string | Must be `"subscribe"` |
+| `markets` | string[] | Array of Polymarket token IDs (`clobTokenIds`) to subscribe to |
+
+Subscribing again replaces your current subscription. To add markets, send a new subscribe with the full list.
+
+### Unsubscribe
+
+Remove all subscriptions on this connection.
+
+```json
+{
+  "action": "unsubscribe"
+}
+```
+
+### Ping
+
+Client-initiated keepalive.
+
+```json
+{
+  "action": "ping"
+}
+```
+
+Response: `{"type": "pong"}`
+
+---
+
+## Server messages
+
+### `subscribed`
+
+Acknowledgment after a successful subscribe.
+
+```json
+{
+  "type": "subscribed",
+  "markets": 2
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `markets` | number | Number of tokens now subscribed |
+
+### `book_snapshot`
+
+Full orderbook state for a token. Sent immediately after subscribing for each requested token.
+
+```json
+{
+  "type": "book_snapshot",
+  "asset_id": "73624432805780182150964443951045800666977811185963019133914618974858599458273",
+  "market": "0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2",
+  "event_title": "What price will Bitcoin hit in March?",
+  "question": "Will Bitcoin reach $150,000 in March?",
+  "outcome": "Yes",
+  "slug": "what-price-will-bitcoin-hit-in-march-2026",
+  "bids": [
+    { "price": "0.001", "size": "8604930.58" },
+    { "price": "0.002", "size": "4851192.42" }
+  ],
+  "asks": [
+    { "price": "0.999", "size": "6152045.08" },
+    { "price": "0.998", "size": "55007.54" },
+    { "price": "0.997", "size": "5000" }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `asset_id` | string | Polymarket token ID |
+| `market` | string | Condition ID (hex) |
+| `event_title` | string | Parent event title (e.g. "What price will Bitcoin hit in March?") |
+| `question` | string | Specific market question (e.g. "Will Bitcoin reach $150,000 in March?") |
+| `outcome` | string | Which outcome this token represents ("Yes" or "No") |
+| `slug` | string | URL-friendly slug for the event page on Polymarket |
+| `bids` | PriceLevel[] | Buy orders, sorted by price descending |
+| `asks` | PriceLevel[] | Sell orders, sorted by price ascending |
+
+Each `PriceLevel` is `{"price": "0.55", "size": "1000.00"}` where price is the probability (0 to 1) and size is the number of shares.
+
+<Tip>
+  If `bids` and `asks` are both empty, the market exists but has no active orders. You'll still receive `price_change` updates in batches when the price moves.
+</Tip>
+
+### `batch`
+
+Batched updates delivered every 100ms. Contains all changes for your subscribed tokens since the last batch.
+
+```json
+{
+  "type": "batch",
+  "ts": 1773794605604,
+  "count": 4,
+  "updates": [
+    {
+      "type": "price_change",
+      "market": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+      "event_title": "Netanyahu out by...?",
+      "question": "Netanyahu out by end of 2026?",
+      "slug": "netanyahu-out-before-2027",
+      "assets": [
+        {
+          "asset_id": "66255671088804707681511323064315150986307471908131081808279119719218775249892",
+          "outcome": "No",
+          "price": "0.55"
+        },
+        {
+          "asset_id": "114694726451307654528948558967898493662917070661203465131156925998487819889437",
+          "outcome": "Yes",
+          "price": "0.45"
+        }
+      ]
+    },
+    {
+      "type": "book_update",
+      "asset_id": "73624432805780182150964443951045800666977811185963019133914618974858599458273",
+      "market": "0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2",
+      "event_title": "What price will Bitcoin hit in March?",
+      "question": "Will Bitcoin reach $150,000 in March?",
+      "outcome": "Yes",
+      "slug": "what-price-will-bitcoin-hit-in-march-2026",
+      "bids": [
+        { "price": "0.45", "size": "12000" }
+      ],
+      "asks": []
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `ts` | number | Batch timestamp (Unix milliseconds) |
+| `count` | number | Number of updates in this batch |
+| `updates` | object[] | Array of update objects (see below) |
+
+Each update in the `updates` array is one of:
+
+#### `price_change`
+
+A market's price moved due to an order placement or cancellation.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | `"price_change"` |
+| `market` | string | Condition ID |
+| `event_title` | string | Event title |
+| `question` | string | Market question |
+| `slug` | string | Event slug |
+| `assets` | object[] | Array of `{asset_id, outcome, price}` for each side |
+
+#### `book_update`
+
+Incremental change to the orderbook. Apply these to the last snapshot.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | `"book_update"` |
+| `asset_id` | string | Token ID |
+| `market` | string | Condition ID |
+| `event_title` | string | Event title |
+| `question` | string | Market question |
+| `outcome` | string | Outcome label |
+| `slug` | string | Event slug |
+| `bids` | PriceLevel[] | Changed bid levels (size `"0"` means remove) |
+| `asks` | PriceLevel[] | Changed ask levels (size `"0"` means remove) |
+
+<Warning>
+  `book_update` messages are **incremental deltas**, not full replacements. To maintain an accurate orderbook:
+  - If a level's `size` is `"0"`, remove that price level
+  - Otherwise, upsert the level (add or update)
+</Warning>
+
+#### `book_snapshot`
+
+Occasional full orderbook replacement (sent when the upstream source resets).
+
+Same schema as the initial `book_snapshot` message above.
+
+### `unsubscribed`
+
+Acknowledgment after unsubscribe.
+
+```json
+{
+  "type": "unsubscribed"
+}
+```
+
+### `pong`
+
+Response to a client ping.
+
+```json
+{
+  "type": "pong"
+}
+```
+
+### Error messages
+
+```json
+{
+  "error": "token_limit",
+  "message": "Your free tier allows max 20 tokens. Requested 50. Upgrade at https://polynode.dev/pricing",
+  "max": 20,
+  "requested": 50
+}
+```
+
+| Error | Cause |
+|-------|-------|
+| `token_limit` | Subscription exceeds your tier's token limit |
+| `session_limit` | Free tier 1-hour daily session expired |

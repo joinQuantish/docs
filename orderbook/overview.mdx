@@ -1,0 +1,140 @@
+---
+title: "Orderbook Stream"
+sidebarTitle: "Overview"
+description: "Real-time orderbook data for every Polymarket market, delivered through a single WebSocket connection."
+---
+
+PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, and price changes for every active Polymarket market. Subscribe to the markets you care about and get enriched, human-readable data pushed to your connection in real time.
+
+<CardGroup cols={2}>
+  <Card title="108,000+ markets" icon="globe">
+    Every active Polymarket market is tracked. Subscribe to specific markets or get everything at once.
+  </Card>
+  <Card title="Enriched data" icon="tags">
+    Every message includes the event title, market question, outcome label, and slug. No secondary lookups needed.
+  </Card>
+  <Card title="100ms batching" icon="layer-group">
+    Updates are batched into 100ms windows for efficient delivery. One message per tick with all changes for your subscribed markets.
+  </Card>
+  <Card title="Compression included" icon="compress">
+    Add `&compress=zlib` to your connection URL for ~50% bandwidth savings. Recommended for production.
+  </Card>
+</CardGroup>
+
+## Quick start
+
+<Steps>
+  <Step title="Get an API key">
+    ```bash
+    curl -s -X POST https://api.polynode.dev/v1/keys \
+      -H "Content-Type: application/json" \
+      -d '{"name": "my-app"}'
+    ```
+    Save the `pn_live_...` key from the response.
+  </Step>
+
+  <Step title="Connect">
+    ```bash
+    wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY"
+    ```
+  </Step>
+
+  <Step title="Subscribe">
+    Send a subscribe message with the Polymarket token IDs you want to track:
+    ```json
+    {
+      "action": "subscribe",
+      "markets": [
+        "73624432805780182150964443951045800666977811185963019133914618974858599458273",
+        "1666184515532238710431784265702709312060757077236443477960106115591255115343"
+      ]
+    }
+    ```
+    Token IDs are Polymarket's `clobTokenIds` from their [Gamma API](https://gamma-api.polymarket.com). Each market has two tokens (one per outcome).
+  </Step>
+
+  <Step title="Receive data">
+    You'll immediately receive an orderbook snapshot for each subscribed token, then live batched updates:
+    ```json
+    {
+      "type": "book_snapshot",
+      "asset_id": "73624432805780182150964443951045800666977811185963019133914618974858599458273",
+      "market": "0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2",
+      "event_title": "What price will Bitcoin hit in March?",
+      "question": "Will Bitcoin reach $150,000 in March?",
+      "outcome": "Yes",
+      "slug": "what-price-will-bitcoin-hit-in-march-2026",
+      "bids": [
+        { "price": "0.001", "size": "8604930.58" },
+        { "price": "0.002", "size": "4851192.42" }
+      ],
+      "asks": [
+        { "price": "0.999", "size": "6152045.08" },
+        { "price": "0.998", "size": "55007.54" },
+        { "price": "0.997", "size": "5000" }
+      ]
+    }
+    ```
+  </Step>
+</Steps>
+
+## Connection URL
+
+```
+wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY
+```
+
+With compression (~50% bandwidth savings):
+```
+wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
+```
+
+## Subscription limits
+
+The number of tokens you can subscribe to depends on your tier:
+
+| Tier | Max tokens | Estimated bandwidth |
+|------|-----------|-------------------|
+| **Free** | 20 (10 markets) | ~4 KB/s |
+| **Starter** | 200 (100 markets) | ~40 KB/s |
+| **Growth** | 4,000 (2,000 markets) | ~512 KB/s |
+| **Enterprise** | Unlimited (all markets) | ~1.2 MB/s compressed |
+
+Each Polymarket market has two tokens (one per outcome). Subscribing to both tokens of a market gives you the full two-sided orderbook.
+
+<Note>
+  Free tier includes a 1-hour daily session limit. Upgrade at [polynode.dev/pricing](https://polynode.dev/pricing) for unlimited access.
+</Note>
+
+## Connection lifecycle
+
+```
+Connect   -> wss://ob.polynode.dev/ws?key=pn_live_...
+          <-  (connection established)
+
+Send      -> {"action": "subscribe", "markets": ["token1", "token2"]}
+          <-  {"type": "book_snapshot", "asset_id": "token1", ...}
+          <-  {"type": "book_snapshot", "asset_id": "token2", ...}
+          <-  {"type": "subscribed", "markets": 2}
+
+          <-  {"type": "batch", "ts": 1773794605604, "updates": [...]}
+          <-  {"type": "batch", ...}    (every 100ms when there are changes)
+          <-  Ping frame                (every 30s)
+          ->  Pong frame                (automatic)
+
+Send      -> {"action": "unsubscribe"}
+          <-  {"type": "unsubscribed"}
+```
+
+## Separate from the main WebSocket
+
+The Orderbook Stream runs on a **separate endpoint** (`ob.polynode.dev`) from the main PolyNode WebSocket (`ws.polynode.dev`). They are independent services:
+
+| | Main WebSocket | Orderbook Stream |
+|---|---|---|
+| **Endpoint** | `wss://ws.polynode.dev/ws` | `wss://ob.polynode.dev/ws` |
+| **Data** | On-chain events (settlements, trades, blocks) | Off-chain orderbook (bids, asks, prices) |
+| **Timing** | Pre-confirmation (pending + confirmed) | Real-time (live order placement/cancellation) |
+| **Use case** | Trade detection, copy trading, alerts | Market making, pricing, depth analysis |
+
+You can connect to both simultaneously with the same API key.

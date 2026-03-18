@@ -127,6 +127,20 @@
         ]
       },
       {
+        "tab": "Orderbook",
+        "badge": "New",
+        "groups": [
+          {
+            "group": "Orderbook Stream",
+            "pages": [
+              "orderbook/overview",
+              "orderbook/messages",
+              "orderbook/examples"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "RPC",
         "badge": "Beta",
         "groups": [
