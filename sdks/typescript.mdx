@@ -153,12 +153,12 @@ const myWallet = await pn.ws.subscribe('wallets')
 
 ### Compression
 
-Enable zlib compression for ~60% bandwidth savings:
+Zlib compression is enabled by default for all WebSocket connections (~50% bandwidth savings). No configuration needed.
+
+To disable compression (not recommended):
 
 ```typescript
-const pn = new PolyNode({ apiKey: 'pn_live_...' });
-const ws = pn.configureWs({ compress: true });
-const sub = await ws.subscribe('settlements').send();
+const ws = pn.configureWs({ compress: false });
 ```
 
 ### Auto-Reconnect
@@ -276,11 +276,11 @@ const spread = book.getSpread(tokenId);    // number
 
 ### Compression
 
-Enable zlib compression for bandwidth savings:
+Zlib compression is enabled by default (~50% bandwidth savings). No configuration needed.
 
 ```typescript
-const ob = pn.configureOrderbook({ compress: true });
-await ob.subscribe(['token_id_1']);
+// To disable (not recommended):
+const ob = pn.configureOrderbook({ compress: false });
 ```
 
 ### Configuration

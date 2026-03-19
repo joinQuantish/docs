@@ -11,7 +11,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-polynode = "0.1.0"
+polynode = "0.3"
 tokio = { version = "1", features = ["rt", "macros"] }
 ```
 
@@ -186,16 +186,15 @@ stream.subscribe(
 
 ### Compression
 
-Enable zlib compression for ~60% bandwidth savings:
+Zlib compression is enabled by default for all WebSocket connections (~50% bandwidth savings). Binary frames are transparently decompressed with `flate2`.
 
 ```rust
+// To disable (not recommended):
 let mut stream = client.stream(StreamOptions {
-    compress: true,
+    compress: false,
     ..Default::default()
 }).await?;
 ```
-
-Binary frames are transparently decompressed with `flate2`. Text frames (heartbeats, acks) pass through as-is.
 
 ### Auto-Reconnect
 
