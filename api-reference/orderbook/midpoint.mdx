@@ -2,3 +2,20 @@
 title: "Midpoint Price"
 openapi: "GET /v1/midpoint/{token_id}"
 ---
+
+Returns the midpoint price for a token, calculated as the average of the best bid and best ask.
+
+The base `mid` field matches Polymarket's CLOB `/midpoint` response. PolyNode adds `token_id`, `question`, and `slug` for context.
+
+## Calculation
+
+```
+midpoint = (best_bid + best_ask) / 2
+```
+
+If the book is one-sided (only bids or only asks), the missing side is treated as 0. This matches Polymarket's behavior.
+
+## Notes
+
+- Returns a 404 if no book exists for the token.
+- The `mid` value is a decimal string (e.g. `"0.465"`).

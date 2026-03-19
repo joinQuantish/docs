@@ -851,6 +851,264 @@
           }
         ]
       }
+    },
+    "/v1/orderbook/{token_id}": {
+      "get": {
+        "tags": [
+          "Orderbook"
+        ],
+        "summary": "Order book",
+        "description": "Returns the full order book for a token, including all bid and ask price levels, market properties, and PolyNode metadata enrichment.\n\nThe response format is compatible with Polymarket's CLOB API. Data is served from PolyNode's live orderbook engine, which maintains real-time state via WebSocket deltas from Polymarket.",
+        "operationId": "get_orderbook",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "description": "Polymarket CLOB token ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order book snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderBookResponse"
+                },
+                "example": {
+                  "market": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+                  "asset_id": "114694726451307654528948558967898493662917070661203465131156925998487819889437",
+                  "timestamp": "1773901991806",
+                  "hash": "b811dc1233a0f250a60018bc94f377955c9a513e",
+                  "bids": [
+                    {"price": "0.01", "size": "1130220"},
+                    {"price": "0.02", "size": "76910"},
+                    {"price": "0.03", "size": "94333.34"},
+                    {"price": "0.04", "size": "119706"},
+                    {"price": "0.05", "size": "16328"},
+                    {"price": "0.46", "size": "18"}
+                  ],
+                  "asks": [
+                    {"price": "0.99", "size": "24292"},
+                    {"price": "0.98", "size": "2048"},
+                    {"price": "0.97", "size": "13333.33"},
+                    {"price": "0.96", "size": "1024"},
+                    {"price": "0.95", "size": "14100"},
+                    {"price": "0.47", "size": "687"}
+                  ],
+                  "min_order_size": "5",
+                  "tick_size": "0.01",
+                  "neg_risk": false,
+                  "last_trade_price": "0.540",
+                  "metadata": {
+                    "question": "Netanyahu out by end of 2026?",
+                    "slug": "netanyahu-out-before-2027-684-719-226",
+                    "outcomes": ["Yes", "No"],
+                    "condition_id": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+                    "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/netanyahu-out-in-2025-Vc7bE4GtiJzM.jpg"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token not found in orderbook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "No orderbook exists for the requested token id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/midpoint/{token_id}": {
+      "get": {
+        "tags": [
+          "Orderbook"
+        ],
+        "summary": "Midpoint price",
+        "description": "Returns the midpoint price for a token, calculated as the average of the best bid and best ask.\n\nIf the book is one-sided (only bids or only asks), the missing side is treated as 0. Response is enriched with PolyNode market metadata.",
+        "operationId": "get_midpoint",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "description": "Polymarket CLOB token ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Midpoint price",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MidpointResponse"
+                },
+                "example": {
+                  "mid": "0.465",
+                  "token_id": "114694726451307654528948558967898493662917070661203465131156925998487819889437",
+                  "question": "Netanyahu out by end of 2026?",
+                  "slug": "netanyahu-out-before-2027-684-719-226"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token not found in orderbook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "No orderbook exists for the requested token id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/spread/{token_id}": {
+      "get": {
+        "tags": [
+          "Orderbook"
+        ],
+        "summary": "Bid-ask spread",
+        "description": "Returns the bid-ask spread for a token, calculated as the difference between the best ask and best bid price.\n\nFor one-sided books, the spread equals the best price on the existing side. Response is enriched with PolyNode market metadata.",
+        "operationId": "get_spread",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "description": "Polymarket CLOB token ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bid-ask spread",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpreadResponse"
+                },
+                "example": {
+                  "spread": "0.01",
+                  "token_id": "114694726451307654528948558967898493662917070661203465131156925998487819889437",
+                  "question": "Netanyahu out by end of 2026?",
+                  "slug": "netanyahu-out-before-2027-684-719-226"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token not found in orderbook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "No orderbook exists for the requested token id"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -1099,6 +1357,146 @@
         "properties": {
           "error": {
             "type": "string"
+          }
+        }
+      },
+      "PriceLevel": {
+        "type": "object",
+        "description": "A single price level in the order book.",
+        "required": ["price", "size"],
+        "properties": {
+          "price": {
+            "type": "string",
+            "description": "Price as a decimal string (e.g. \"0.55\")"
+          },
+          "size": {
+            "type": "string",
+            "description": "Total size available at this price level (e.g. \"1500.25\")"
+          }
+        }
+      },
+      "OrderBookMetadata": {
+        "type": "object",
+        "description": "PolyNode market metadata enrichment (not present in Polymarket's CLOB API).",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "Market question text"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Event slug for URL construction"
+          },
+          "outcomes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Outcome labels (e.g. [\"Yes\", \"No\"])"
+          },
+          "condition_id": {
+            "type": "string",
+            "description": "Market condition ID (hex)"
+          },
+          "image": {
+            "type": "string",
+            "description": "Market image URL"
+          }
+        }
+      },
+      "OrderBookResponse": {
+        "type": "object",
+        "description": "Full order book snapshot. Base fields match Polymarket's CLOB `/book` response exactly. The `metadata` field is a PolyNode addition.",
+        "required": ["market", "asset_id", "timestamp", "hash", "bids", "asks", "min_order_size", "tick_size", "neg_risk", "last_trade_price"],
+        "properties": {
+          "market": {
+            "type": "string",
+            "description": "Market condition ID (hex)"
+          },
+          "asset_id": {
+            "type": "string",
+            "description": "Token ID"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "Unix timestamp in milliseconds (as string)"
+          },
+          "hash": {
+            "type": "string",
+            "description": "40-character hex hash of the book state"
+          },
+          "bids": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PriceLevel" },
+            "description": "Bid price levels, sorted ascending by price"
+          },
+          "asks": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PriceLevel" },
+            "description": "Ask price levels, sorted descending by price"
+          },
+          "min_order_size": {
+            "type": "string",
+            "description": "Minimum order size for this market (e.g. \"5\")"
+          },
+          "tick_size": {
+            "type": "string",
+            "description": "Minimum price increment for this market (e.g. \"0.01\" or \"0.001\")"
+          },
+          "neg_risk": {
+            "type": "boolean",
+            "description": "Whether this is a neg-risk market"
+          },
+          "last_trade_price": {
+            "type": "string",
+            "description": "Last trade price (e.g. \"0.540\")"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/OrderBookMetadata"
+          }
+        }
+      },
+      "MidpointResponse": {
+        "type": "object",
+        "description": "Midpoint price. The `mid` field matches Polymarket's CLOB `/midpoint` response. Additional fields are PolyNode enrichment.",
+        "required": ["mid"],
+        "properties": {
+          "mid": {
+            "type": "string",
+            "description": "Midpoint price as decimal string, calculated as (best_bid + best_ask) / 2"
+          },
+          "token_id": {
+            "type": "string",
+            "description": "Token ID (PolyNode enrichment)"
+          },
+          "question": {
+            "type": "string",
+            "description": "Market question (PolyNode enrichment)"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Event slug (PolyNode enrichment)"
+          }
+        }
+      },
+      "SpreadResponse": {
+        "type": "object",
+        "description": "Bid-ask spread. The `spread` field matches Polymarket's CLOB `/spread` response. Additional fields are PolyNode enrichment.",
+        "required": ["spread"],
+        "properties": {
+          "spread": {
+            "type": "string",
+            "description": "Bid-ask spread as decimal string, calculated as best_ask - best_bid"
+          },
+          "token_id": {
+            "type": "string",
+            "description": "Token ID (PolyNode enrichment)"
+          },
+          "question": {
+            "type": "string",
+            "description": "Market question (PolyNode enrichment)"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Event slug (PolyNode enrichment)"
           }
         }
       },

@@ -2,3 +2,31 @@
 title: "Order Book"
 openapi: "GET /v1/orderbook/{token_id}"
 ---
+
+Returns the full order book for a Polymarket token, including all bid and ask price levels.
+
+The response format is compatible with Polymarket's CLOB API, so existing integrations work without changes. PolyNode adds a `metadata` field with market context (question, slug, outcomes, image).
+
+Data is served from PolyNode's live orderbook engine. Books are maintained in real-time via WebSocket deltas, not proxied on each request, so responses are fast and reliable.
+
+## Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `market` | string | Market condition ID (hex) |
+| `asset_id` | string | Token ID |
+| `timestamp` | string | Unix timestamp in milliseconds |
+| `hash` | string | 40-character hex hash of the book state |
+| `bids` | array | Bid price levels, sorted ascending by price |
+| `asks` | array | Ask price levels, sorted descending by price |
+| `min_order_size` | string | Minimum order size for this market |
+| `tick_size` | string | Minimum price increment (e.g. `"0.01"` or `"0.001"`) |
+| `neg_risk` | boolean | Whether this is a neg-risk market |
+| `last_trade_price` | string | Last traded price |
+| `metadata` | object | PolyNode enrichment: question, slug, outcomes, condition_id, image |
+
+## Notes
+
+- `tick_size` and `min_order_size` vary per market. They are sourced from the Gamma API, not hardcoded.
+- Bids are sorted ascending by price (best bid is the last element). Asks are sorted descending (best ask is the last element). This matches Polymarket's sort order.
+- If no book exists for the requested token, returns a 404 with `{"error": "No orderbook exists for the requested token id"}`.

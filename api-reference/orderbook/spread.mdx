@@ -2,3 +2,20 @@
 title: "Bid-Ask Spread"
 openapi: "GET /v1/spread/{token_id}"
 ---
+
+Returns the bid-ask spread for a token, calculated as the difference between the best ask and best bid.
+
+The base `spread` field matches Polymarket's CLOB `/spread` response. PolyNode adds `token_id`, `question`, and `slug` for context.
+
+## Calculation
+
+```
+spread = best_ask - best_bid
+```
+
+For one-sided books (only bids or only asks), the spread equals the best price on the existing side.
+
+## Notes
+
+- Returns a 404 if no book exists for the token.
+- The `spread` value is a decimal string (e.g. `"0.01"`).
