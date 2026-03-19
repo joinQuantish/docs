@@ -317,6 +317,116 @@ pn.orderbook.unsubscribe();   // unsubscribe from all markets
 pn.orderbook.disconnect();     // close connection
 ```
 
+## OrderbookEngine
+
+The `OrderbookEngine` is a higher-level wrapper around the orderbook WebSocket. It manages one connection, maintains local state for all subscribed tokens, and lets you create **filtered views** that only deliver updates for specific token subsets.
+
+This is useful when your app has multiple components that each need different slices of the orderbook — a trade page showing one market, a sidebar showing another, a portfolio view watching 20 positions. One connection, one shared state, multiple filtered outputs.
+
+### Create and Subscribe
+
+```typescript
+import { OrderbookEngine } from 'polynode-sdk';
+
+const engine = new OrderbookEngine({
+  apiKey: 'pn_live_...',
+  compress: true,
+});
+
+// Subscribe with token IDs, slugs, or condition IDs
+await engine.subscribe([
+  '114694726451307654528948558967898493662917070661203465131156925998487819889437',
+  '66255671088804707681511323064315150986307471908131081808279119719218775249892',
+]);
+
+// Wait for all initial snapshots to load
+engine.on('ready', () => {
+  console.log(`${engine.size} books loaded`);
+});
+```
+
+### Query State
+
+The engine exposes computed helpers that read from the shared local orderbook:
+
+```typescript
+engine.midpoint(tokenId);   // number | undefined — (bestBid + bestAsk) / 2
+engine.spread(tokenId);     // number | undefined — bestAsk - bestBid
+engine.bestBid(tokenId);    // { price, size } | undefined
+engine.bestAsk(tokenId);    // { price, size } | undefined
+engine.book(tokenId);       // { bids: [...], asks: [...] } | undefined
+```
+
+### Filtered Views
+
+Create lightweight views that only receive updates for specific tokens. No extra connections are opened — views are just filters over the shared state.
+
+```typescript
+const tradeView = engine.view([tokenA, tokenB]);
+const portfolioView = engine.view(myPositionTokenIds);
+
+// Callbacks only fire for this view's tokens
+tradeView.on('update', (update) => {
+  console.log(update.asset_id, 'book changed');
+});
+
+tradeView.on('price', (change) => {
+  console.log('price moved:', change.assets);
+});
+
+// Views have the same query helpers as the engine
+tradeView.midpoint(tokenA);
+tradeView.spread(tokenA);
+tradeView.book(tokenA);
+```
+
+### Swap or Destroy Views
+
+When a user navigates to a different page or the tracked tokens change:
+
+```typescript
+// Swap to different tokens (keeps the view, changes the filter)
+tradeView.setTokens([newTokenX, newTokenY]);
+
+// Or destroy the view entirely (removes handlers, detaches from engine)
+tradeView.destroy();
+```
+
+### Engine-Level Events
+
+Listen to all updates across all tokens (unfiltered):
+
+```typescript
+engine.on('update', (update) => {
+  // Fires for every book snapshot and delta, all tokens
+});
+
+engine.on('price', (change) => {
+  // All price change events
+});
+
+engine.on('ready', () => {
+  // All initial snapshots loaded
+});
+```
+
+### Connection Events
+
+Access the underlying WebSocket for connection lifecycle events:
+
+```typescript
+engine.connection.onConnect(() => console.log('connected'));
+engine.connection.onDisconnect((reason) => console.log('disconnected:', reason));
+engine.connection.onReconnect((attempt) => console.log('reconnected'));
+engine.connection.onError((err) => console.error(err));
+```
+
+### Cleanup
+
+```typescript
+engine.close(); // disconnects WS, destroys all views, clears state
+```
+
 ## TypeScript Types
 
 All event types are exported and fully typed:

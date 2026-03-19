@@ -354,6 +354,86 @@ stream.unsubscribe().await?;  // unsubscribe from all markets
 stream.close().await?;        // close connection
 ```
 
+## OrderbookEngine
+
+The `OrderbookEngine` is a higher-level wrapper around the orderbook stream. It manages one WebSocket connection, maintains local state for all subscribed tokens, and lets you create **filtered views** that only deliver updates for specific token subsets.
+
+### Create and Subscribe
+
+```rust
+use polynode::orderbook::engine::{OrderbookEngine, EngineOptions};
+
+let engine = OrderbookEngine::connect("pn_live_...", EngineOptions {
+    compress: true,
+    ..Default::default()
+}).await?;
+
+// Subscribe with token IDs, slugs, or condition IDs
+engine.subscribe(vec![
+    "114694726451307654528948558967898493662917070661203465131156925998487819889437".into(),
+    "66255671088804707681511323064315150986307471908131081808279119719218775249892".into(),
+]).await?;
+
+// Wait for snapshots to load
+tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+println!("{} books loaded", engine.len().await);
+```
+
+### Query State
+
+The engine exposes computed helpers that read from the shared local orderbook. All queries are async because they acquire a read lock on the shared state:
+
+```rust
+engine.midpoint(token_id).await;   // Option<f64> — (best_bid + best_ask) / 2
+engine.spread(token_id).await;     // Option<f64> — best_ask - best_bid
+engine.best_bid(token_id).await;   // Option<OrderbookLevel>
+engine.best_ask(token_id).await;   // Option<OrderbookLevel>
+engine.book(token_id).await;       // Option<(Vec<OrderbookLevel>, Vec<OrderbookLevel>)>
+```
+
+### Filtered Views
+
+Create views that only receive updates for specific tokens. No extra connections — views filter the shared stream.
+
+```rust
+let mut trade_view = engine.view(vec![token_a.into(), token_b.into()]);
+
+// Receive filtered updates via async channel
+while let Some(update) = trade_view.next().await {
+    match update {
+        OrderbookUpdate::Snapshot(snap) => {
+            println!("{}: {} bids", snap.asset_id, snap.bids.len());
+        }
+        OrderbookUpdate::Update(delta) => {
+            println!("{}: {} changes", delta.asset_id, delta.bids.len());
+        }
+        _ => {}
+    }
+}
+```
+
+Views have the same query helpers as the engine:
+
+```rust
+trade_view.midpoint(token_a).await;
+trade_view.spread(token_a).await;
+trade_view.book(token_a).await;
+```
+
+### Swap Tokens
+
+Change which tokens a view tracks at runtime:
+
+```rust
+trade_view.set_tokens(vec![new_token_x.into(), new_token_y.into()]).await;
+```
+
+### Cleanup
+
+```rust
+engine.close().await?;
+```
+
 ## Event Types
 
 All event types are fully typed with serde:
