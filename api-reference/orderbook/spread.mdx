@@ -3,9 +3,52 @@ title: "Bid-Ask Spread"
 openapi: "GET /v1/spread/{token_id}"
 ---
 
-Returns the bid-ask spread for a token, calculated as the difference between the best ask and best bid.
+Returns the bid-ask spread for a token or market, calculated as the difference between the best ask and best bid.
 
-The base `spread` field matches Polymarket's CLOB `/spread` response. PolyNode adds `token_id`, `question`, and `slug` for context.
+## Identifier types
+
+The `{token_id}` parameter accepts three types:
+
+| Identifier | Format | Returns |
+|-----------|--------|---------|
+| **Token ID** | All digits, 70+ chars | Single spread (Polymarket-compatible) |
+| **Condition ID** | Starts with `0x` | Spreads for both outcomes |
+| **Slug** | Human-readable string | Spreads for all outcomes in the event |
+
+### By token ID
+
+```bash
+curl "https://api.polynode.dev/v1/spread/114694726451307654528948558967898493662917070661203465131156925998487819889437" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "spread": "0.01",
+  "token_id": "114694726451307654528948558967898493662917070661203465131156925998487819889437",
+  "question": "Netanyahu out by end of 2026?",
+  "slug": "netanyahu-out-before-2027-684-719-226"
+}
+```
+
+### By condition ID
+
+```bash
+curl "https://api.polynode.dev/v1/spread/0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "condition_id": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+  "question": "Netanyahu out by end of 2026?",
+  "event_title": "Netanyahu out by...?",
+  "outcomes": [
+    {"outcome": "Yes", "token_id": "11469472645...", "spread": "0.01"},
+    {"outcome": "No", "token_id": "66255671088...", "spread": "0.01"}
+  ]
+}
+```
 
 ## Calculation
 
@@ -17,5 +60,5 @@ For one-sided books (only bids or only asks), the spread equals the best price o
 
 ## Notes
 
-- Returns a 404 if no book exists for the token.
 - The `spread` value is a decimal string (e.g. `"0.01"`).
+- Returns a 404 if no book exists for the identifier.

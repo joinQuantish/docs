@@ -864,7 +864,7 @@
           {
             "name": "token_id",
             "in": "path",
-            "description": "Polymarket CLOB token ID",
+            "description": "Token ID (all digits), condition ID (starts with 0x), or event slug. Token ID returns a single book; condition ID and slug return all outcomes.",
             "required": true,
             "schema": {
               "type": "string"
@@ -968,7 +968,7 @@
           {
             "name": "token_id",
             "in": "path",
-            "description": "Polymarket CLOB token ID",
+            "description": "Token ID (all digits), condition ID (starts with 0x), or event slug. Token ID returns a single book; condition ID and slug return all outcomes.",
             "required": true,
             "schema": {
               "type": "string"
@@ -1045,7 +1045,7 @@
           {
             "name": "token_id",
             "in": "path",
-            "description": "Polymarket CLOB token ID",
+            "description": "Token ID (all digits), condition ID (starts with 0x), or event slug. Token ID returns a single book; condition ID and slug return all outcomes.",
             "required": true,
             "schema": {
               "type": "string"
@@ -1497,6 +1497,91 @@
           "slug": {
             "type": "string",
             "description": "Event slug (PolyNode enrichment)"
+          }
+        }
+      },
+      "MultiOutcomeBookResponse": {
+        "type": "object",
+        "description": "Order books for all outcomes in a market or event. Returned when querying by condition ID or slug.",
+        "required": ["outcomes", "question"],
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "Market question text"
+          },
+          "event_title": {
+            "type": "string",
+            "description": "Event title"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Event slug (present when queried by slug)"
+          },
+          "condition_id": {
+            "type": "string",
+            "description": "Condition ID (present when queried by condition ID)"
+          },
+          "outcomes": {
+            "type": "array",
+            "description": "Order books for each outcome",
+            "items": {
+              "type": "object",
+              "properties": {
+                "outcome": { "type": "string", "description": "Outcome label (e.g. Yes, No)" },
+                "token_id": { "type": "string" },
+                "market": { "type": "string" },
+                "bids": { "type": "array", "items": { "$ref": "#/components/schemas/PriceLevel" } },
+                "asks": { "type": "array", "items": { "$ref": "#/components/schemas/PriceLevel" } },
+                "min_order_size": { "type": "string" },
+                "tick_size": { "type": "string" },
+                "neg_risk": { "type": "boolean" },
+                "last_trade_price": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "MultiOutcomeMidpointResponse": {
+        "type": "object",
+        "description": "Midpoints for all outcomes. Returned when querying by condition ID or slug.",
+        "required": ["outcomes", "question"],
+        "properties": {
+          "question": { "type": "string" },
+          "event_title": { "type": "string" },
+          "slug": { "type": "string", "description": "Present when queried by slug" },
+          "condition_id": { "type": "string", "description": "Present when queried by condition ID" },
+          "outcomes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "outcome": { "type": "string" },
+                "token_id": { "type": "string" },
+                "mid": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "MultiOutcomeSpreadResponse": {
+        "type": "object",
+        "description": "Spreads for all outcomes. Returned when querying by condition ID or slug.",
+        "required": ["outcomes", "question"],
+        "properties": {
+          "question": { "type": "string" },
+          "event_title": { "type": "string" },
+          "slug": { "type": "string", "description": "Present when queried by slug" },
+          "condition_id": { "type": "string", "description": "Present when queried by condition ID" },
+          "outcomes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "outcome": { "type": "string" },
+                "token_id": { "type": "string" },
+                "spread": { "type": "string" }
+              }
+            }
           }
         }
       },

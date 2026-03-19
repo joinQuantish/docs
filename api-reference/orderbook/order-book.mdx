@@ -3,13 +3,114 @@ title: "Order Book"
 openapi: "GET /v1/orderbook/{token_id}"
 ---
 
-Returns the full order book for a Polymarket token, including all bid and ask price levels.
+Returns the full order book for a Polymarket token or market.
 
-The response format is compatible with Polymarket's CLOB API, so existing integrations work without changes. PolyNode adds a `metadata` field with market context (question, slug, outcomes, image).
+## Identifier types
 
-Data is served from PolyNode's live orderbook engine. Books are maintained in real-time via WebSocket deltas, not proxied on each request, so responses are fast and reliable.
+The `{token_id}` parameter accepts three identifier types. The response format depends on which type you use:
 
-## Fields
+| Identifier | Format | Returns |
+|-----------|--------|---------|
+| **Token ID** | All digits, 70+ chars | Single book for one outcome (Polymarket-compatible) |
+| **Condition ID** | Starts with `0x` | Both outcomes for one market (Yes + No) |
+| **Slug** | Human-readable string | All outcomes across all markets in the event |
+
+### By token ID (single outcome)
+
+Best when you already have a specific token ID and want the exact Polymarket-compatible format.
+
+```bash
+curl "https://api.polynode.dev/v1/orderbook/114694726451307654528948558967898493662917070661203465131156925998487819889437" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Response matches Polymarket's CLOB `/book` format exactly, plus a `metadata` field:
+
+```json
+{
+  "market": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+  "asset_id": "114694726451307654528948558967898493662917070661203465131156925998487819889437",
+  "timestamp": "1773901991806",
+  "hash": "b811dc1233a0f250a60018bc94f377955c9a513e",
+  "bids": [
+    {"price": "0.01", "size": "1130220"},
+    {"price": "0.02", "size": "76910"},
+    {"price": "0.46", "size": "18"}
+  ],
+  "asks": [
+    {"price": "0.99", "size": "24292"},
+    {"price": "0.98", "size": "2048"},
+    {"price": "0.47", "size": "687"}
+  ],
+  "min_order_size": "5",
+  "tick_size": "0.01",
+  "neg_risk": false,
+  "last_trade_price": "0.540",
+  "metadata": {
+    "question": "Netanyahu out by end of 2026?",
+    "slug": "netanyahu-out-before-2027-684-719-226",
+    "outcomes": ["Yes", "No"],
+    "condition_id": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+    "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/netanyahu-out-in-2025-Vc7bE4GtiJzM.jpg"
+  }
+}
+```
+
+### By condition ID (both outcomes)
+
+Best when you want both sides of a market at once. Condition IDs start with `0x`.
+
+```bash
+curl "https://api.polynode.dev/v1/orderbook/0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Response wraps both outcomes:
+
+```json
+{
+  "condition_id": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+  "question": "Netanyahu out by end of 2026?",
+  "event_title": "Netanyahu out by...?",
+  "outcomes": [
+    {
+      "outcome": "Yes",
+      "token_id": "114694726451307654528948558967898493662917070661203465131156925998487819889437",
+      "market": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+      "bids": [{"price": "0.01", "size": "1130220"}, "..."],
+      "asks": [{"price": "0.99", "size": "24292"}, "..."],
+      "min_order_size": "5",
+      "tick_size": "0.01",
+      "neg_risk": false,
+      "last_trade_price": "0.540"
+    },
+    {
+      "outcome": "No",
+      "token_id": "66255671088804707681511323064315150986307471908131081808279119719218775249892",
+      "market": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+      "bids": [{"price": "0.01", "size": "821530"}, "..."],
+      "asks": [{"price": "0.99", "size": "13720.65"}, "..."],
+      "min_order_size": "5",
+      "tick_size": "0.01",
+      "neg_risk": false,
+      "last_trade_price": "0.540"
+    }
+  ]
+}
+```
+
+### By slug (all outcomes across markets)
+
+Best for getting a complete view of an event. Slugs are the human-readable event identifiers from Polymarket (e.g. `netanyahu-out-before-2027`). An event may have multiple markets, each with their own outcomes.
+
+```bash
+curl "https://api.polynode.dev/v1/orderbook/netanyahu-out-before-2027" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Response includes all outcomes across all markets in the event. Same format as the condition ID response, but with `slug` instead of `condition_id` at the top level.
+
+## Fields (single-token response)
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -29,4 +130,4 @@ Data is served from PolyNode's live orderbook engine. Books are maintained in re
 
 - `tick_size` and `min_order_size` vary per market. They are sourced from the Gamma API, not hardcoded.
 - Bids are sorted ascending by price (best bid is the last element). Asks are sorted descending (best ask is the last element). This matches Polymarket's sort order.
-- If no book exists for the requested token, returns a 404 with `{"error": "No orderbook exists for the requested token id"}`.
+- If no book exists for the requested identifier, returns a 404 with `{"error": "No orderbook exists for the requested token id"}`.

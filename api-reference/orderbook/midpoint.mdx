@@ -3,9 +3,52 @@ title: "Midpoint Price"
 openapi: "GET /v1/midpoint/{token_id}"
 ---
 
-Returns the midpoint price for a token, calculated as the average of the best bid and best ask.
+Returns the midpoint price for a token or market, calculated as the average of the best bid and best ask.
 
-The base `mid` field matches Polymarket's CLOB `/midpoint` response. PolyNode adds `token_id`, `question`, and `slug` for context.
+## Identifier types
+
+The `{token_id}` parameter accepts three types:
+
+| Identifier | Format | Returns |
+|-----------|--------|---------|
+| **Token ID** | All digits, 70+ chars | Single midpoint (Polymarket-compatible) |
+| **Condition ID** | Starts with `0x` | Midpoints for both outcomes |
+| **Slug** | Human-readable string | Midpoints for all outcomes in the event |
+
+### By token ID
+
+```bash
+curl "https://api.polynode.dev/v1/midpoint/114694726451307654528948558967898493662917070661203465131156925998487819889437" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "mid": "0.465",
+  "token_id": "114694726451307654528948558967898493662917070661203465131156925998487819889437",
+  "question": "Netanyahu out by end of 2026?",
+  "slug": "netanyahu-out-before-2027-684-719-226"
+}
+```
+
+### By condition ID
+
+```bash
+curl "https://api.polynode.dev/v1/midpoint/0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "condition_id": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+  "question": "Netanyahu out by end of 2026?",
+  "event_title": "Netanyahu out by...?",
+  "outcomes": [
+    {"outcome": "Yes", "token_id": "11469472645...", "mid": "0.465"},
+    {"outcome": "No", "token_id": "66255671088...", "mid": "0.535"}
+  ]
+}
+```
 
 ## Calculation
 
@@ -17,5 +60,5 @@ If the book is one-sided (only bids or only asks), the missing side is treated a
 
 ## Notes
 
-- Returns a 404 if no book exists for the token.
 - The `mid` value is a decimal string (e.g. `"0.465"`).
+- Returns a 404 if no book exists for the identifier.
