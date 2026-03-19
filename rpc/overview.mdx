@@ -80,7 +80,7 @@ The result: your transaction reaches block inclusion faster than transactions su
 
 ## Supported Methods
 
-PolyNode RPC supports the full Ethereum JSON-RPC specification. Transaction submission uses our priority routing engine; all other methods are served with standard Polygon node responses.
+PolyNode RPC supports the standard Ethereum JSON-RPC specification. Transaction submission uses our priority routing engine. Core chain data is served directly from our infrastructure. Read methods are served with standard Polygon node responses.
 
 | Method | Handling | Description |
 |--------|----------|-------------|
@@ -88,9 +88,18 @@ PolyNode RPC supports the full Ethereum JSON-RPC specification. Transaction subm
 | `eth_chainId` | Local | Returns `0x89` (137) |
 | `eth_blockNumber` | Local | Latest block number |
 | `eth_gasPrice` | Local | Calibrated from recent blocks |
+| `net_version` | Local | Returns `137` |
+| `net_peerCount` | Local | Connected peer count |
+| `web3_clientVersion` | Local | Returns `PolyNode/1.0.0` |
 | `eth_getBalance` | Standard | Account balance queries |
 | `eth_getTransactionCount` | Standard | Nonce queries |
 | `eth_call` | Standard | Contract read calls |
 | `eth_estimateGas` | Standard | Gas estimation |
+| `eth_getBlockByNumber` | Standard | Block data queries |
 | `eth_getTransactionReceipt` | Standard | Receipt queries |
+| `eth_getLogs` | Standard | Log/event queries (requires address filter) |
 | All other methods | Standard | Full JSON-RPC compatibility |
+
+<Warning>
+  **Current-state only.** State queries like `eth_getBalance`, `eth_getStorageAt`, and `eth_call` only support the `latest` block tag. Historical state at specific block numbers is not available. Block and transaction data (`eth_getBlockByNumber`, `eth_getTransactionReceipt`) works for all blocks.
+</Warning>
