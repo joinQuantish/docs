@@ -8,9 +8,18 @@ description: "Complete reference for all message types sent and received on the 
 
 ### Subscribe
 
-Subscribe to orderbook updates for specific markets. You can identify markets by **slug**, **condition ID**, or **token ID** — the server resolves them all to token IDs transparently.
+Subscribe to orderbook updates. You can subscribe to specific markets by **slug**, **condition ID**, or **token ID**, or subscribe to the full firehose with `"*"`.
 
 <Tabs>
+  <Tab title="Firehose (all markets)">
+    ```json
+    {
+      "action": "subscribe",
+      "markets": ["*"]
+    }
+    ```
+    Subscribes to every active Polymarket market (100,000+ tokens). Live updates start flowing immediately while snapshots stream in the background.
+  </Tab>
   <Tab title="By slug">
     ```json
     {
@@ -43,9 +52,10 @@ Subscribe to orderbook updates for specific markets. You can identify markets by
 | Field | Type | Description |
 |-------|------|-------------|
 | `action` | string | Must be `"subscribe"` |
-| `markets` | string[] | Array of market identifiers. Each can be a slug (e.g. `"bitcoin-100k"`), condition ID (e.g. `"0x561ff..."`), or CLOB token ID (numeric string). Slugs and condition IDs are resolved to their corresponding token IDs automatically. |
+| `markets` | string[] | Array of market identifiers. Use `["*"]` for the full firehose, or pass specific identifiers: slugs (e.g. `"bitcoin-100k"`), condition IDs (e.g. `"0x561ff..."`), or CLOB token IDs (numeric string). Slugs and condition IDs are resolved to their corresponding token IDs automatically. |
 
 **How identifiers are detected:**
+- `"*"` → firehose (all active markets)
 - Starts with `0x` → condition ID
 - All digits and longer than 10 characters → CLOB token ID
 - Everything else → slug
@@ -80,27 +90,45 @@ Response: `{"type": "pong"}`
 
 ### `subscribed`
 
-Acknowledgment after a successful subscribe. Includes a breakdown of how identifiers were resolved, so you can verify your slugs/condition IDs matched.
+Acknowledgment after a successful subscribe. The response format differs slightly depending on whether you subscribed to specific markets or the firehose.
 
-```json
-{
-  "type": "subscribed",
-  "markets": 4,
-  "resolved_from": {
-    "token_ids": 0,
-    "slugs": 1,
-    "condition_ids": 0
-  }
-}
-```
+<Tabs>
+  <Tab title="Firehose">
+    ```json
+    {
+      "type": "subscribed",
+      "firehose": true,
+      "markets": 104972
+    }
+    ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `markets` | number | Total number of token IDs now subscribed (after resolution) |
-| `resolved_from` | object | Breakdown of how many input entries were detected as each type |
-| `resolved_from.token_ids` | number | Entries passed through as raw token IDs |
-| `resolved_from.slugs` | number | Entries resolved from slugs |
-| `resolved_from.condition_ids` | number | Entries resolved from condition IDs |
+    | Field | Type | Description |
+    |-------|------|-------------|
+    | `firehose` | boolean | `true` when subscribed to the full firehose |
+    | `markets` | number | Total number of active tokens you're now receiving updates for |
+  </Tab>
+  <Tab title="Specific markets">
+    ```json
+    {
+      "type": "subscribed",
+      "markets": 4,
+      "resolved_from": {
+        "token_ids": 0,
+        "slugs": 1,
+        "condition_ids": 0
+      }
+    }
+    ```
+
+    | Field | Type | Description |
+    |-------|------|-------------|
+    | `markets` | number | Total number of token IDs now subscribed (after resolution) |
+    | `resolved_from` | object | Breakdown of how many input entries were detected as each type |
+    | `resolved_from.token_ids` | number | Entries passed through as raw token IDs |
+    | `resolved_from.slugs` | number | Entries resolved from slugs |
+    | `resolved_from.condition_ids` | number | Entries resolved from condition IDs |
+  </Tab>
+</Tabs>
 
 <Tip>
   If you subscribe with a slug and `markets` comes back as 0, the slug didn't match any known event. Use the [search API](https://api.polynode.dev/v1/search?q=bitcoin) to find the correct slug.

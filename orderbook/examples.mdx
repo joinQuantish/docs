@@ -7,7 +7,11 @@ description: "Code examples for connecting to the Orderbook Stream in JavaScript
 ## Command line (wscat)
 
 ```bash
-# Subscribe by slug (easiest)
+# Subscribe to the full firehose (all active markets)
+wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY" \
+  -x '{"action":"subscribe","markets":["*"]}'
+
+# Subscribe by slug (easiest for specific markets)
 wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY" \
   -x '{"action":"subscribe","markets":["what-price-will-bitcoin-hit-in-march-2026"]}'
 
@@ -37,7 +41,34 @@ curl -s "https://api.polynode.dev/v1/markets/condition/0x561ffbf7de21ef3781c441f
 
 The easiest approach: copy the slug from a Polymarket event URL and pass it directly in your subscribe message.
 
-## JavaScript
+## JavaScript (firehose)
+
+```javascript
+const ws = new WebSocket("wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.onopen = () => {
+  ws.send(JSON.stringify({ action: "subscribe", markets: ["*"] }));
+};
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.type === "subscribed") {
+    console.log(`Firehose active: ${msg.markets} tokens`);
+  } else if (msg.type === "batch") {
+    console.log(`${msg.count} updates at ${msg.ts}`);
+    for (const update of msg.updates) {
+      if (update.type === "price_change") {
+        for (const asset of update.assets) {
+          console.log(`  ${update.question} [${asset.outcome}]: ${asset.price}`);
+        }
+      }
+    }
+  }
+};
+```
+
+## JavaScript (specific markets)
 
 ```javascript
 const ws = new WebSocket("wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY");
@@ -107,7 +138,42 @@ function applyDelta(existing, deltas) {
 ws.onclose = () => setTimeout(() => location.reload(), 3000);
 ```
 
-## Python
+## Python (firehose)
+
+```python
+import asyncio
+import json
+import websockets
+
+async def stream_firehose():
+    url = "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY"
+
+    async with websockets.connect(url, max_size=10_000_000) as ws:
+        await ws.send(json.dumps({
+            "action": "subscribe",
+            "markets": ["*"]
+        }))
+
+        async for message in ws:
+            data = json.loads(message)
+
+            if data["type"] == "subscribed":
+                print(f"Firehose active: {data['markets']} tokens")
+
+            elif data["type"] == "batch":
+                for update in data["updates"]:
+                    if update["type"] == "price_change":
+                        for asset in update["assets"]:
+                            print(f"  {update['question']} [{asset['outcome']}]: {asset['price']}")
+
+asyncio.run(stream_firehose())
+```
+
+<Tip>
+  Set `max_size` to at least 10 MB when connecting to the firehose. Batch messages can be large when many markets update in the same 100ms window.
+</Tip>
+
+## Python (specific markets)
 
 ```python
 import asyncio

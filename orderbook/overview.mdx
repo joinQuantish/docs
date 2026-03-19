@@ -78,11 +78,21 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
 
 ## Ways to subscribe
 
-You can identify markets using any of these three formats:
+You can identify markets using any of these formats:
 
 <Tabs>
+  <Tab title="Firehose (all markets)">
+    Subscribe to every active market with a single message. Pass `"*"` as the market identifier to get the full firehose of all 100,000+ tokens.
+    ```json
+    {
+      "action": "subscribe",
+      "markets": ["*"]
+    }
+    ```
+    The server responds with `"firehose": true` and the total number of active tokens. Live updates start flowing immediately while snapshots stream in the background.
+  </Tab>
   <Tab title="Slug (recommended)">
-    The simplest way. Use the slug from the Polymarket event URL. The server resolves it to all token IDs for that event (typically 2 per market, one for each outcome).
+    The simplest way to subscribe to specific markets. Use the slug from the Polymarket event URL. The server resolves it to all token IDs for that event (typically 2 per market, one for each outcome).
     ```json
     {
       "action": "subscribe",
@@ -176,25 +186,44 @@ Each Polymarket market has two tokens (one per outcome). Subscribing to both tok
 
 ## Connection lifecycle
 
-```
-Connect   -> wss://ob.polynode.dev/ws?key=pn_live_...
-          <-  (connection established)
+<Tabs>
+  <Tab title="Firehose">
+    ```
+    Connect   -> wss://ob.polynode.dev/ws?key=pn_live_...
+              <-  (connection established)
 
-Send      -> {"action": "subscribe", "markets": ["bitcoin-slug"]}
-          <-  {"type": "subscribed", "markets": 4, "resolved_from": {"token_ids": 0, "slugs": 1, "condition_ids": 0}}
-          <-  {"type": "snapshot_batch", "count": 2, "snapshots": [...]}
-          <-  {"type": "snapshots_done", "total": 2}
+    Send      -> {"action": "subscribe", "markets": ["*"]}
+              <-  {"type": "subscribed", "firehose": true, "markets": 104972}
+              <-  {"type": "batch", "ts": ..., "updates": [...]}         (live data starts immediately)
+              <-  {"type": "snapshot_batch", "count": 50, "snapshots": [...]}  (snapshots stream in parallel)
+              <-  {"type": "batch", ...}                                  (every 100ms)
+              <-  {"type": "snapshot_batch", ...}                         (every 200ms)
+              <-  {"type": "snapshots_done", "total": 67}
+              <-  Ping frame                                              (every 30s)
+              ->  Pong frame                                              (automatic)
+    ```
+    Live updates start flowing immediately. You don't have to wait for snapshots to finish. Snapshots are delivered in batches of 50 every 200ms for tokens that have active book data.
+  </Tab>
+  <Tab title="Specific markets">
+    ```
+    Connect   -> wss://ob.polynode.dev/ws?key=pn_live_...
+              <-  (connection established)
 
-          <-  {"type": "batch", "ts": ..., "updates": [...]}
-          <-  {"type": "batch", ...}    (every 100ms when there are changes)
-          <-  Ping frame                (every 30s)
-          ->  Pong frame                (automatic)
+    Send      -> {"action": "subscribe", "markets": ["bitcoin-slug"]}
+              <-  {"type": "subscribed", "markets": 4, "resolved_from": {"token_ids": 0, "slugs": 1, "condition_ids": 0}}
+              <-  {"type": "snapshot_batch", "count": 2, "snapshots": [...]}
+              <-  {"type": "snapshots_done", "total": 2}
 
-Send      -> {"action": "unsubscribe"}
-          <-  {"type": "unsubscribed"}
-```
+              <-  {"type": "batch", "ts": ..., "updates": [...]}
+              <-  {"type": "batch", ...}    (every 100ms when there are changes)
+              <-  Ping frame                (every 30s)
+              ->  Pong frame                (automatic)
 
-For firehose subscriptions (all markets), snapshot delivery is streamed in batches of 50 every 200ms. Live batched updates begin flowing immediately in parallel — you don't have to wait for all snapshots to finish.
+    Send      -> {"action": "unsubscribe"}
+              <-  {"type": "unsubscribed"}
+    ```
+  </Tab>
+</Tabs>
 
 ## Separate from the main WebSocket
 
