@@ -60,7 +60,7 @@ ws.onmessage = (event) => {
     for (const update of msg.updates) {
       if (update.type === "price_change") {
         for (const asset of update.assets) {
-          console.log(`  ${update.question} [${asset.outcome}]: ${asset.price}`);
+          console.log(`  ${update.slug} [${asset.outcome}]: ${asset.price}`);
         }
       }
     }
@@ -99,7 +99,7 @@ ws.onmessage = (event) => {
     case "snapshot_batch":
       for (const snap of msg.snapshots) {
         books[snap.asset_id] = { bids: snap.bids, asks: snap.asks };
-        console.log(`Snapshot: ${snap.question} [${snap.outcome}] - ${snap.bids.length}b/${snap.asks.length}a`);
+        console.log(`Snapshot: ${snap.event_title} [${snap.outcome}] - ${snap.bids.length}b/${snap.asks.length}a`);
       }
       break;
 
@@ -107,7 +107,7 @@ ws.onmessage = (event) => {
       for (const update of msg.updates) {
         if (update.type === "price_change") {
           for (const asset of update.assets) {
-            console.log(`${update.question} [${asset.outcome}]: ${asset.price}`);
+            console.log(`${update.slug} [${asset.outcome}]: ${asset.price}`);
           }
         } else if (update.type === "book_update") {
           const book = books[update.asset_id];
@@ -164,7 +164,7 @@ async def stream_firehose():
                 for update in data["updates"]:
                     if update["type"] == "price_change":
                         for asset in update["assets"]:
-                            print(f"  {update['question']} [{asset['outcome']}]: {asset['price']}")
+                            print(f"  {update['slug']} [{asset['outcome']}]: {asset['price']}")
 
 asyncio.run(stream_firehose())
 ```
@@ -202,7 +202,7 @@ async def stream_orderbook():
 
             elif data["type"] == "snapshot_batch":
                 for snap in data["snapshots"]:
-                    print(f"Snapshot: {snap['question']} [{snap['outcome']}]")
+                    print(f"Snapshot: {snap['event_title']} [{snap['outcome']}]")
                     print(f"  Bids: {len(snap['bids'])} levels")
                     print(f"  Asks: {len(snap['asks'])} levels")
 
@@ -210,12 +210,12 @@ async def stream_orderbook():
                 for update in data["updates"]:
                     if update["type"] == "price_change":
                         for asset in update["assets"]:
-                            print(f"  {update['question']} [{asset['outcome']}]: {asset['price']}")
+                            print(f"  {update['slug']} [{asset['outcome']}]: {asset['price']}")
 
                     elif update["type"] == "book_update":
                         bids = len(update.get("bids", []))
                         asks = len(update.get("asks", []))
-                        print(f"  Book delta: {update['question']} [{update['outcome']}] +{bids}b/+{asks}a")
+                        print(f"  Book delta: {update['slug']} [{update['outcome']}] +{bids}b/+{asks}a")
 
 asyncio.run(stream_orderbook())
 ```

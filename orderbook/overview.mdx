@@ -11,7 +11,7 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
     Every active Polymarket market is tracked. Subscribe to specific markets or get everything at once.
   </Card>
   <Card title="Enriched data" icon="tags">
-    Every message includes the event title, market question, outcome label, slug, and condition ID. No secondary lookups needed.
+    Snapshots include the event title, market question, outcome label, slug, and condition ID. Streaming updates include the slug and outcome for lightweight routing.
   </Card>
   <Card title="100ms batching" icon="layer-group">
     Updates are batched into 100ms windows for efficient delivery. One message per tick with all changes for your subscribed markets.

@@ -242,8 +242,6 @@ Batched updates delivered every 100ms. Contains all changes for your subscribed 
     {
       "type": "price_change",
       "market": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
-      "event_title": "Netanyahu out by...?",
-      "question": "Netanyahu out by end of 2026?",
       "slug": "netanyahu-out-before-2027",
       "assets": [
         {
@@ -262,8 +260,6 @@ Batched updates delivered every 100ms. Contains all changes for your subscribed 
       "type": "book_update",
       "asset_id": "73624432805780182150964443951045800666977811185963019133914618974858599458273",
       "market": "0x561ffbf7de21ef3781c441f30536b026d2b301d7a4a0145a8f526f98db049ba2",
-      "event_title": "What price will Bitcoin hit in March?",
-      "question": "Will Bitcoin reach $150,000 in March?",
       "outcome": "Yes",
       "slug": "what-price-will-bitcoin-hit-in-march-2026",
       "bids": [
@@ -291,8 +287,6 @@ A market's price moved due to an order placement or cancellation.
 |-------|------|-------------|
 | `type` | string | `"price_change"` |
 | `market` | string | Condition ID |
-| `event_title` | string | Event title |
-| `question` | string | Market question |
 | `slug` | string | Event slug |
 | `assets` | object[] | Array of `{asset_id, outcome, price}` for each side |
 
@@ -305,8 +299,6 @@ Incremental change to the orderbook. Apply these to the last snapshot.
 | `type` | string | `"book_update"` |
 | `asset_id` | string | Token ID |
 | `market` | string | Condition ID |
-| `event_title` | string | Event title |
-| `question` | string | Market question |
 | `outcome` | string | Outcome label |
 | `slug` | string | Event slug |
 | `bids` | PriceLevel[] | Changed bid levels (size `"0"` means remove) |
