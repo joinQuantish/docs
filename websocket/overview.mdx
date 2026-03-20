@@ -40,23 +40,45 @@ PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement
     Save the `pn_live_...` key from the response.
   </Step>
 
-  <Step title="Connect">
-    ```bash
-    wscat -c "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
-    ```
-  </Step>
+  <Step title="Connect and subscribe">
+    <CodeGroup>
+    ```javascript Node.js
+    const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
-  <Step title="Subscribe">
-    ```json
-    {
-      "action": "subscribe",
-      "type": "settlements",
-      "filters": {
-        "status": "pending",
-        "min_size": 100
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "settlement") {
+        const d = msg.data;
+        console.log(`${d.taker_side} ${d.taker_size} @ ${d.taker_price} | ${d.market_title}`);
       }
-    }
+    };
     ```
+
+    ```python Python
+    import asyncio, json, websockets
+
+    async def stream():
+        async with websockets.connect("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY") as ws:
+            await ws.send(json.dumps({"action": "subscribe", "type": "settlements"}))
+            async for message in ws:
+                msg = json.loads(message)
+                if msg["type"] == "settlement":
+                    d = msg["data"]
+                    print(f"{d['taker_side']} {d['taker_size']} @ {d['taker_price']} | {d.get('market_title')}")
+
+    asyncio.run(stream())
+    ```
+
+    ```bash CLI
+    npx wscat -c "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
+    # once connected, send:
+    {"action":"subscribe","type":"settlements"}
+    ```
+    </CodeGroup>
   </Step>
 
   <Step title="Receive events">

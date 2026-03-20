@@ -33,21 +33,72 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
     Save the `pn_live_...` key from the response.
   </Step>
 
-  <Step title="Connect">
-    ```bash
-    wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY"
-    ```
-  </Step>
+  <Step title="Connect and subscribe">
+    Subscribe using a **condition ID** or **token ID** from the REST API. Both sides of the market (Yes + No) are included automatically.
 
-  <Step title="Subscribe">
-    Send a subscribe message with the markets you want to track. You can use **slugs**, **condition IDs**, or **token IDs**:
-    ```json
-    {
-      "action": "subscribe",
-      "markets": ["what-price-will-bitcoin-hit-in-march-2026"]
-    }
+    <CodeGroup>
+    ```javascript Node.js
+    const ws = new WebSocket("wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+    ws.onopen = () => {
+      // Subscribe by condition ID — resolves to both Yes + No tokens
+      ws.send(JSON.stringify({
+        action: "subscribe",
+        markets: ["0x7cb525e831729325d651017f81cbcb6f1adde5011c7b2283babea00b4ae93ae7"]
+      }));
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "snapshot_batch") {
+        for (const snap of msg.snapshots) {
+          console.log(`${snap.question} [${snap.outcome}]: ${snap.bids.length} bids, ${snap.asks.length} asks`);
+        }
+      } else if (msg.type === "batch") {
+        for (const update of msg.updates) {
+          if (update.type === "price_change") {
+            for (const asset of update.assets) {
+              console.log(`${update.slug} [${asset.outcome}]: ${asset.price}`);
+            }
+          }
+        }
+      }
+    };
     ```
-    The server resolves slugs and condition IDs to token IDs automatically. Both sides of the market (Yes + No) are included.
+
+    ```python Python
+    import asyncio, json, websockets
+
+    async def stream_orderbook():
+        async with websockets.connect("wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY") as ws:
+            await ws.send(json.dumps({
+                "action": "subscribe",
+                "markets": ["0x7cb525e831729325d651017f81cbcb6f1adde5011c7b2283babea00b4ae93ae7"]
+            }))
+            async for message in ws:
+                data = json.loads(message)
+                if data["type"] == "snapshot_batch":
+                    for snap in data["snapshots"]:
+                        print(f"{snap['question']} [{snap['outcome']}]: {len(snap['bids'])} bids, {len(snap['asks'])} asks")
+                elif data["type"] == "batch":
+                    for update in data["updates"]:
+                        if update["type"] == "price_change":
+                            for asset in update["assets"]:
+                                print(f"{update['slug']} [{asset['outcome']}]: {asset['price']}")
+
+    asyncio.run(stream_orderbook())
+    ```
+
+    ```bash CLI
+    npx wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY"
+    # once connected, send:
+    {"action":"subscribe","markets":["0x7cb525e831729325d651017f81cbcb6f1adde5011c7b2283babea00b4ae93ae7"]}
+    ```
+    </CodeGroup>
+
+    <Tip>
+      Use the REST API to find condition IDs: `curl -s -H "x-api-key: pn_live_YOUR_KEY" "https://api.polynode.dev/v1/search?q=bitcoin"` — each result includes the `condition_id` you can pass directly to the orderbook subscribe.
+    </Tip>
   </Step>
 
   <Step title="Receive data">

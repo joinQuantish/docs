@@ -18,18 +18,145 @@ PolyNode delivers Polymarket settlement data **2–5 seconds before on-chain con
 
 ## Quick start
 
+### 1. Get an API key
+
 ```bash
-# 1. Get an API key
 curl -s -X POST https://api.polynode.dev/v1/keys \
   -H "Content-Type: application/json" \
   -d '{"name": "my-app"}'
-
-# 2. Connect to WebSocket
-wscat -c "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
-
-# 3. Subscribe to pending settlements
-> {"action": "subscribe", "type": "settlements", "filters": {"status": "pending"}}
 ```
+
+### 2. Query the REST API
+
+<CodeGroup>
+```bash cURL
+curl -s -H "x-api-key: pn_live_YOUR_KEY" \
+  "https://api.polynode.dev/v1/markets?count=5"
+```
+
+```typescript TypeScript
+const resp = await fetch("https://api.polynode.dev/v1/markets?count=5", {
+  headers: { "x-api-key": "pn_live_YOUR_KEY" },
+});
+const data = await resp.json();
+console.log(data.markets[0].question, data.markets[0].last_price);
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://api.polynode.dev/v1/markets",
+    params={"count": 5},
+    headers={"x-api-key": "pn_live_YOUR_KEY"},
+)
+for m in resp.json()["markets"]:
+    print(f"{m['question']} — {m['last_price']}")
+```
+</CodeGroup>
+
+### 3. Stream live settlements via WebSocket
+
+<CodeGroup>
+```javascript Node.js
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.onopen = () => {
+  ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
+};
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type === "settlement") {
+    const d = msg.data;
+    console.log(`${d.taker_side} ${d.taker_size} @ ${d.taker_price} | ${d.market_title}`);
+  }
+};
+```
+
+```python Python
+import asyncio, json, websockets
+
+async def stream():
+    async with websockets.connect("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY") as ws:
+        await ws.send(json.dumps({"action": "subscribe", "type": "settlements"}))
+        async for message in ws:
+            msg = json.loads(message)
+            if msg["type"] == "settlement":
+                d = msg["data"]
+                print(f"{d['taker_side']} {d['taker_size']} @ {d['taker_price']} | {d.get('market_title')}")
+
+asyncio.run(stream())
+```
+
+```bash CLI
+npx wscat -c "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
+# then send:
+{"action":"subscribe","type":"settlements"}
+```
+</CodeGroup>
+
+### 4. Stream a live orderbook
+
+<CodeGroup>
+```javascript Node.js
+const ws = new WebSocket("wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.onopen = () => {
+  // Subscribe by condition ID (from the REST API) or token ID
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    markets: ["0x7cb525e831729325d651017f81cbcb6f1adde5011c7b2283babea00b4ae93ae7"]
+  }));
+};
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type === "snapshot_batch") {
+    for (const snap of msg.snapshots) {
+      console.log(`${snap.question} [${snap.outcome}]: ${snap.bids.length} bids, ${snap.asks.length} asks`);
+    }
+  } else if (msg.type === "batch") {
+    for (const update of msg.updates) {
+      if (update.type === "price_change") {
+        for (const asset of update.assets) {
+          console.log(`${update.slug} [${asset.outcome}]: ${asset.price}`);
+        }
+      }
+    }
+  }
+};
+```
+
+```python Python
+import asyncio, json, websockets
+
+async def stream_orderbook():
+    async with websockets.connect("wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY") as ws:
+        await ws.send(json.dumps({
+            "action": "subscribe",
+            "markets": ["0x7cb525e831729325d651017f81cbcb6f1adde5011c7b2283babea00b4ae93ae7"]
+        }))
+        async for message in ws:
+            data = json.loads(message)
+            if data["type"] == "snapshot_batch":
+                for snap in data["snapshots"]:
+                    print(f"{snap['question']} [{snap['outcome']}]: {len(snap['bids'])} bids, {len(snap['asks'])} asks")
+            elif data["type"] == "batch":
+                for update in data["updates"]:
+                    if update["type"] == "price_change":
+                        for asset in update["assets"]:
+                            print(f"{update['slug']} [{asset['outcome']}]: {asset['price']}")
+
+asyncio.run(stream_orderbook())
+```
+
+```bash CLI
+npx wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY"
+# then send:
+{"action":"subscribe","markets":["0x7cb525e831729325d651017f81cbcb6f1adde5011c7b2283babea00b4ae93ae7"]}
+```
+</CodeGroup>
 
 ## What makes PolyNode different
 
