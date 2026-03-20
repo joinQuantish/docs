@@ -231,7 +231,7 @@ Each `PriceLevel` is `{"price": "0.55", "size": "1000.00"}` where price is the p
 
 ### `batch`
 
-Batched updates delivered every 100ms. Contains all changes for your subscribed tokens since the last batch.
+Batched updates delivered every 250ms. Contains all changes for your subscribed tokens since the last batch. Multiple updates to the same price level within a batch window are coalesced into a single net change, reducing bandwidth without losing accuracy.
 
 ```json
 {
@@ -315,6 +315,10 @@ Incremental change to the orderbook. Apply these to the last snapshot.
 Occasional full orderbook replacement (sent when the upstream source resets).
 
 Same schema as the initial `book_snapshot` message above.
+
+<Info>
+  **Need sub-millisecond granularity?** Enterprise plans can be configured with a dedicated stream that delivers every individual orderbook event without batching, including per-event timestamps. [Contact us](mailto:josh@quantish.live) if your strategy requires tick-by-tick data.
+</Info>
 
 ### `unsubscribed`
 

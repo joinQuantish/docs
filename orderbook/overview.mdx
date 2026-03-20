@@ -13,8 +13,8 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
   <Card title="Enriched data" icon="tags">
     Snapshots include the event title, market question, outcome label, slug, and condition ID. Streaming updates include the slug and outcome for lightweight routing.
   </Card>
-  <Card title="100ms batching" icon="layer-group">
-    Updates are batched into 100ms windows for efficient delivery. One message per tick with all changes for your subscribed markets.
+  <Card title="250ms batching" icon="layer-group">
+    Updates are batched into 250ms windows for efficient delivery. One message per tick with all changes for your subscribed markets.
   </Card>
   <Card title="Compression included" icon="compress">
     Add `&compress=zlib` to your connection URL for ~50% bandwidth savings. Recommended for production.
@@ -215,7 +215,7 @@ Each Polymarket market has two tokens (one per outcome). Subscribing to both tok
               <-  {"type": "snapshots_done", "total": 2}
 
               <-  {"type": "batch", "ts": ..., "updates": [...]}
-              <-  {"type": "batch", ...}    (every 100ms when there are changes)
+              <-  {"type": "batch", ...}    (every 250ms when there are changes)
               <-  Ping frame                (every 30s)
               ->  Pong frame                (automatic)
 
