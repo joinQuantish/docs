@@ -316,6 +316,42 @@ Occasional full orderbook replacement (sent when the upstream source resets).
 
 Same schema as the initial `book_snapshot` message above.
 
+#### `last_trade_price`
+
+A trade executed on Polymarket. Delivered for every fill, not coalesced — each trade in a batch window is its own event.
+
+```json
+{
+  "type": "last_trade_price",
+  "asset_id": "196889930626949471000189353840...",
+  "market": "0x8f3a...",
+  "price": "0.76",
+  "size": "5",
+  "side": "BUY",
+  "fee_rate_bps": "0",
+  "timestamp": "1773991152458",
+  "outcome": "Up",
+  "slug": "btc-updown-15m-1773990900"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | `"last_trade_price"` |
+| `asset_id` | string | Token ID that was traded |
+| `market` | string | Condition ID |
+| `price` | string | Execution price (0-1 probability) |
+| `size` | string | Number of shares traded |
+| `side` | string | `"BUY"` or `"SELL"` |
+| `fee_rate_bps` | string | Fee rate in basis points |
+| `timestamp` | string | Unix milliseconds of the trade |
+| `outcome` | string | Outcome label (e.g. "Yes", "Up") |
+| `slug` | string | Event slug |
+
+<Tip>
+  Use `last_trade_price` events to build trade tapes, calculate VWAP, detect large fills, or trigger alerts on execution activity. Unlike `price_change` events which fire on order placement/cancellation, these fire only when an order is actually filled.
+</Tip>
+
 <Info>
   **Need sub-millisecond granularity?** Enterprise plans can be configured with a dedicated stream that delivers every individual orderbook event without batching, including per-event timestamps. [Contact us](mailto:josh@quantish.live) if your strategy requires tick-by-tick data.
 </Info>
