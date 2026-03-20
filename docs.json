@@ -100,22 +100,6 @@
             ]
           },
           {
-            "group": "Settlements",
-            "pages": [
-              "api-reference/settlements/recent-settlements",
-              "api-reference/settlements/settlements-by-wallet",
-              "api-reference/settlements/settlements-by-token"
-            ]
-          },
-          {
-            "group": "Wallets",
-            "pages": [
-              "api-reference/wallets/wallet-activity",
-              "api-reference/wallets/wallet-positions",
-              "api-reference/wallets/wallet-trades"
-            ]
-          },
-          {
             "group": "System",
             "pages": [
               "api-reference/system/system-status",

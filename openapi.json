@@ -559,160 +559,6 @@
         ]
       }
     },
-    "/v1/settlements/recent": {
-      "get": {
-        "tags": [
-          "Settlements"
-        ],
-        "summary": "Recent settlements",
-        "description": "Returns the most recent decoded settlements (pending + confirmed) from the mempool and confirmed blocks.",
-        "operationId": "get_recent_settlements",
-        "parameters": [
-          {
-            "name": "count",
-            "in": "query",
-            "description": "Number of settlements to return (default 100, max 1000)",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of settlements"
-          },
-          "401": {
-            "description": "Missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limited",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
-      }
-    },
-    "/v1/settlements/token/{id}": {
-      "get": {
-        "tags": [
-          "Settlements"
-        ],
-        "summary": "Settlements by token",
-        "description": "Returns settlements for a specific Polymarket token ID.",
-        "operationId": "get_token_settlements",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Polymarket token ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "count",
-            "in": "query",
-            "description": "Number of settlements (default 100, max 1000)",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Settlements for token"
-          },
-          "401": {
-            "description": "Missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
-      }
-    },
-    "/v1/settlements/wallet/{addr}": {
-      "get": {
-        "tags": [
-          "Settlements"
-        ],
-        "summary": "Settlements by wallet",
-        "description": "Returns settlements involving a specific wallet address.",
-        "operationId": "get_wallet_settlements",
-        "parameters": [
-          {
-            "name": "addr",
-            "in": "path",
-            "description": "Wallet address (0x...)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "count",
-            "in": "query",
-            "description": "Number of settlements (default 100, max 1000)",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Settlements for wallet"
-          },
-          "401": {
-            "description": "Missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
-      }
-    },
     "/v1/stats/{token_id}": {
       "get": {
         "tags": [
@@ -801,57 +647,6 @@
         ]
       }
     },
-    "/v1/wallets/{addr}": {
-      "get": {
-        "tags": [
-          "Wallets"
-        ],
-        "summary": "Wallet activity",
-        "description": "Returns activity summary for a wallet address including trade count, volume, transfers, and deposits.",
-        "operationId": "get_wallet_activity",
-        "parameters": [
-          {
-            "name": "addr",
-            "in": "path",
-            "description": "Wallet address (0x...)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wallet activity summary"
-          },
-          "401": {
-            "description": "Missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No activity found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "api_key": []
-          }
-        ]
-      }
-    },
     "/v1/orderbook/{token_id}": {
       "get": {
         "tags": [
@@ -885,20 +680,56 @@
                   "timestamp": "1773901991806",
                   "hash": "b811dc1233a0f250a60018bc94f377955c9a513e",
                   "bids": [
-                    {"price": "0.01", "size": "1130220"},
-                    {"price": "0.02", "size": "76910"},
-                    {"price": "0.03", "size": "94333.34"},
-                    {"price": "0.04", "size": "119706"},
-                    {"price": "0.05", "size": "16328"},
-                    {"price": "0.46", "size": "18"}
+                    {
+                      "price": "0.01",
+                      "size": "1130220"
+                    },
+                    {
+                      "price": "0.02",
+                      "size": "76910"
+                    },
+                    {
+                      "price": "0.03",
+                      "size": "94333.34"
+                    },
+                    {
+                      "price": "0.04",
+                      "size": "119706"
+                    },
+                    {
+                      "price": "0.05",
+                      "size": "16328"
+                    },
+                    {
+                      "price": "0.46",
+                      "size": "18"
+                    }
                   ],
                   "asks": [
-                    {"price": "0.99", "size": "24292"},
-                    {"price": "0.98", "size": "2048"},
-                    {"price": "0.97", "size": "13333.33"},
-                    {"price": "0.96", "size": "1024"},
-                    {"price": "0.95", "size": "14100"},
-                    {"price": "0.47", "size": "687"}
+                    {
+                      "price": "0.99",
+                      "size": "24292"
+                    },
+                    {
+                      "price": "0.98",
+                      "size": "2048"
+                    },
+                    {
+                      "price": "0.97",
+                      "size": "13333.33"
+                    },
+                    {
+                      "price": "0.96",
+                      "size": "1024"
+                    },
+                    {
+                      "price": "0.95",
+                      "size": "14100"
+                    },
+                    {
+                      "price": "0.47",
+                      "size": "687"
+                    }
                   ],
                   "min_order_size": "5",
                   "tick_size": "0.01",
@@ -907,7 +738,10 @@
                   "metadata": {
                     "question": "Netanyahu out by end of 2026?",
                     "slug": "netanyahu-out-before-2027-684-719-226",
-                    "outcomes": ["Yes", "No"],
+                    "outcomes": [
+                      "Yes",
+                      "No"
+                    ],
                     "condition_id": "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
                     "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/netanyahu-out-in-2025-Vc7bE4GtiJzM.jpg"
                   }
@@ -1363,7 +1197,10 @@
       "PriceLevel": {
         "type": "object",
         "description": "A single price level in the order book.",
-        "required": ["price", "size"],
+        "required": [
+          "price",
+          "size"
+        ],
         "properties": {
           "price": {
             "type": "string",
@@ -1389,7 +1226,9 @@
           },
           "outcomes": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "description": "Outcome labels (e.g. [\"Yes\", \"No\"])"
           },
           "condition_id": {
@@ -1405,7 +1244,18 @@
       "OrderBookResponse": {
         "type": "object",
         "description": "Full order book snapshot. Base fields match Polymarket's CLOB `/book` response exactly. The `metadata` field is a PolyNode addition.",
-        "required": ["market", "asset_id", "timestamp", "hash", "bids", "asks", "min_order_size", "tick_size", "neg_risk", "last_trade_price"],
+        "required": [
+          "market",
+          "asset_id",
+          "timestamp",
+          "hash",
+          "bids",
+          "asks",
+          "min_order_size",
+          "tick_size",
+          "neg_risk",
+          "last_trade_price"
+        ],
         "properties": {
           "market": {
             "type": "string",
@@ -1425,12 +1275,16 @@
           },
           "bids": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/PriceLevel" },
+            "items": {
+              "$ref": "#/components/schemas/PriceLevel"
+            },
             "description": "Bid price levels, sorted ascending by price"
           },
           "asks": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/PriceLevel" },
+            "items": {
+              "$ref": "#/components/schemas/PriceLevel"
+            },
             "description": "Ask price levels, sorted descending by price"
           },
           "min_order_size": {
@@ -1457,7 +1311,9 @@
       "MidpointResponse": {
         "type": "object",
         "description": "Midpoint price. The `mid` field matches Polymarket's CLOB `/midpoint` response. Additional fields are PolyNode enrichment.",
-        "required": ["mid"],
+        "required": [
+          "mid"
+        ],
         "properties": {
           "mid": {
             "type": "string",
@@ -1480,7 +1336,9 @@
       "SpreadResponse": {
         "type": "object",
         "description": "Bid-ask spread. The `spread` field matches Polymarket's CLOB `/spread` response. Additional fields are PolyNode enrichment.",
-        "required": ["spread"],
+        "required": [
+          "spread"
+        ],
         "properties": {
           "spread": {
             "type": "string",
@@ -1503,7 +1361,10 @@
       "MultiOutcomeBookResponse": {
         "type": "object",
         "description": "Order books for all outcomes in a market or event. Returned when querying by condition ID or slug.",
-        "required": ["outcomes", "question"],
+        "required": [
+          "outcomes",
+          "question"
+        ],
         "properties": {
           "question": {
             "type": "string",
@@ -1527,15 +1388,40 @@
             "items": {
               "type": "object",
               "properties": {
-                "outcome": { "type": "string", "description": "Outcome label (e.g. Yes, No)" },
-                "token_id": { "type": "string" },
-                "market": { "type": "string" },
-                "bids": { "type": "array", "items": { "$ref": "#/components/schemas/PriceLevel" } },
-                "asks": { "type": "array", "items": { "$ref": "#/components/schemas/PriceLevel" } },
-                "min_order_size": { "type": "string" },
-                "tick_size": { "type": "string" },
-                "neg_risk": { "type": "boolean" },
-                "last_trade_price": { "type": "string" }
+                "outcome": {
+                  "type": "string",
+                  "description": "Outcome label (e.g. Yes, No)"
+                },
+                "token_id": {
+                  "type": "string"
+                },
+                "market": {
+                  "type": "string"
+                },
+                "bids": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PriceLevel"
+                  }
+                },
+                "asks": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PriceLevel"
+                  }
+                },
+                "min_order_size": {
+                  "type": "string"
+                },
+                "tick_size": {
+                  "type": "string"
+                },
+                "neg_risk": {
+                  "type": "boolean"
+                },
+                "last_trade_price": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -1544,20 +1430,39 @@
       "MultiOutcomeMidpointResponse": {
         "type": "object",
         "description": "Midpoints for all outcomes. Returned when querying by condition ID or slug.",
-        "required": ["outcomes", "question"],
+        "required": [
+          "outcomes",
+          "question"
+        ],
         "properties": {
-          "question": { "type": "string" },
-          "event_title": { "type": "string" },
-          "slug": { "type": "string", "description": "Present when queried by slug" },
-          "condition_id": { "type": "string", "description": "Present when queried by condition ID" },
+          "question": {
+            "type": "string"
+          },
+          "event_title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Present when queried by slug"
+          },
+          "condition_id": {
+            "type": "string",
+            "description": "Present when queried by condition ID"
+          },
           "outcomes": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "outcome": { "type": "string" },
-                "token_id": { "type": "string" },
-                "mid": { "type": "string" }
+                "outcome": {
+                  "type": "string"
+                },
+                "token_id": {
+                  "type": "string"
+                },
+                "mid": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -1566,20 +1471,39 @@
       "MultiOutcomeSpreadResponse": {
         "type": "object",
         "description": "Spreads for all outcomes. Returned when querying by condition ID or slug.",
-        "required": ["outcomes", "question"],
+        "required": [
+          "outcomes",
+          "question"
+        ],
         "properties": {
-          "question": { "type": "string" },
-          "event_title": { "type": "string" },
-          "slug": { "type": "string", "description": "Present when queried by slug" },
-          "condition_id": { "type": "string", "description": "Present when queried by condition ID" },
+          "question": {
+            "type": "string"
+          },
+          "event_title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Present when queried by slug"
+          },
+          "condition_id": {
+            "type": "string",
+            "description": "Present when queried by condition ID"
+          },
           "outcomes": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "outcome": { "type": "string" },
-                "token_id": { "type": "string" },
-                "spread": { "type": "string" }
+                "outcome": {
+                  "type": "string"
+                },
+                "token_id": {
+                  "type": "string"
+                },
+                "spread": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -1587,7 +1511,7 @@
       },
       "EventStatus": {
         "type": "string",
-        "description": "Status of an event — pending (mempool) or confirmed (in a block).",
+        "description": "Status of an event \u2014 pending (mempool) or confirmed (in a block).",
         "enum": [
           "pending",
           "confirmed"
@@ -1810,7 +1734,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map.",
+            "description": "Token ID \u2192 outcome name map.",
             "additionalProperties": {
               "type": "string"
             },
@@ -1943,7 +1867,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
+            "description": "Token ID \u2192 outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
             "additionalProperties": {
               "type": "string"
             },
@@ -2163,7 +2087,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map.",
+            "description": "Token ID \u2192 outcome name map.",
             "additionalProperties": {
               "type": "string"
             },
@@ -2305,7 +2229,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
+            "description": "Token ID \u2192 outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
             "additionalProperties": {
               "type": "string"
             },
