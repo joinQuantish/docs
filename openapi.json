@@ -1302,6 +1302,15 @@
               "enum": ["OPEN", "CLOSED", "ALL"],
               "default": "ALL"
             }
+          },
+          {
+            "name": "includeTrades",
+            "in": "query",
+            "description": "Enrich each position with `firstTradeAt` and `lastTradeAt` timestamps. Adds one upstream call per holder, so responses will be slower. Default false.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "responses": {
@@ -1345,7 +1354,9 @@
                           "currentValue": 4102.75,
                           "cashPnl": -5911.93,
                           "realizedPnl": 0,
-                          "totalPnl": -5911.93
+                          "totalPnl": -5911.93,
+                          "firstTradeAt": 1753016057,
+                          "lastTradeAt": 1765034355
                         }
                       ]
                     }
@@ -3203,6 +3214,14 @@
           "totalBought": {
             "type": "number",
             "description": "Total tokens bought."
+          },
+          "firstTradeAt": {
+            "type": "integer",
+            "description": "Unix timestamp of the holder's first trade on this market. Only present when `includeTrades=true`."
+          },
+          "lastTradeAt": {
+            "type": "integer",
+            "description": "Unix timestamp of the holder's most recent trade on this market. Only present when `includeTrades=true`."
           }
         }
       },

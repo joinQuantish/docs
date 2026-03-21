@@ -71,7 +71,6 @@
       },
       {
         "tab": "API Reference",
-        "openapi": "/openapi.json",
         "groups": [
           {
             "group": "Markets",
