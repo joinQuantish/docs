@@ -66,6 +66,12 @@
               "guides/errors",
               "guides/rate-limits"
             ]
+          },
+          {
+            "group": "Updates",
+            "pages": [
+              "changelog"
+            ]
           }
         ]
       },
@@ -202,9 +208,6 @@
           }
         ]
       }
-    ],
-    "bottombar": [
-      "changelog"
     ],
     "global": {
       "anchors": [
