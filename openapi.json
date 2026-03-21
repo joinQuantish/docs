@@ -1351,7 +1351,7 @@
           "Wallets"
         ],
         "summary": "Market positions & P&L",
-        "description": "Returns all holder positions for a market with per-holder P&L breakdown. Results are grouped by outcome token, with each holder's cash P&L, realized P&L, total P&L, average entry price, and current value.\n\nAccepts a condition ID (0x-prefixed) or market slug. Supports sorting by P&L and filtering by position status (open/closed/all).\n\nWhen `includeTrades=true`, this endpoint is rate limited to **20 requests per minute** per key (separate from your standard rate limit).",
+        "description": "Returns all holder positions for a market with per-holder P&L breakdown. Results are grouped by outcome token, with each holder's cash P&L, realized P&L, total P&L, average entry price, and current value.\n\nAccepts a condition ID (0x-prefixed) or market slug. Supports sorting by P&L and filtering by position status (open/closed/all).\n\nWhen `includeTrades=true`, this endpoint is rate limited to **60 requests per minute** per key (separate from your standard rate limit).",
         "operationId": "get_market_positions",
         "parameters": [
           {
@@ -1417,7 +1417,7 @@
           {
             "name": "includeTrades",
             "in": "query",
-            "description": "Enrich each position with `firstTradeAt` and `lastTradeAt` timestamps. Adds one upstream call per holder, so responses will be slower. Default false. **Rate limited to 20 requests per minute per key** (separate from your standard rate limit).",
+            "description": "Enrich each position with `firstTradeAt` and `lastTradeAt` timestamps. Adds one upstream call per holder, so responses will be slower. Default false. **Rate limited to 60 requests per minute per key** (separate from your standard rate limit).",
             "schema": {
               "type": "boolean",
               "default": false

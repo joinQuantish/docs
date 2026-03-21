@@ -120,12 +120,12 @@ Some data endpoints fan out many upstream requests per call and have a stricter 
 
 | Endpoint | Limit | Why |
 |---|---|---|
-| `/v1/markets/{id}/positions?includeTrades=true` | **20 req/min** per key | Each call fetches trade history for every position holder in the market (can be 50-100+ upstream calls) |
+| `/v1/markets/{id}/positions?includeTrades=true` | **60 req/min** per key | Each call fetches trade history for every position holder in the market (can be 50-100+ upstream calls) |
 
 When this limit is exceeded, you'll receive a `429` response with:
 ```json
 {
-  "error": "includeTrades rate limit exceeded (20/min). Retry after 1774108000."
+  "error": "includeTrades rate limit exceeded (60/min). Retry after 1774108000."
 }
 ```
 
