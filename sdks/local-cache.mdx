@@ -390,6 +390,127 @@ cache.removeFromWatchlist([
 ]);
 ```
 
+## View Methods
+
+Pre-built queries that return data shaped for dashboards. No SQL, no aggregation — just call the method.
+
+### Watchlist Summary
+
+All watched wallets with summary stats in one call:
+
+```typescript
+const summary = cache.watchlistSummary();
+```
+
+```json Example output
+[
+  { "wallet": "0xad53...", "label": "whale-1", "position_count": 42, "total_pnl": 1250.50, "total_value": 8400.00, "last_active": 1774200000 },
+  { "wallet": "0x2afd...", "label": "degen", "position_count": 15, "total_pnl": -320.00, "total_value": 1200.00, "last_active": 1774180000 }
+]
+```
+
+### Wallet Dashboard
+
+Single wallet view with positions grouped, P&L totals, win/loss counts, and recent trades:
+
+```typescript
+const dash = cache.walletDashboard('0xad53...');
+// dash.total_pnl, dash.win_count, dash.loss_count, dash.positions, dash.recent_trades
+```
+
+### Leaderboard
+
+Rank watched wallets by any metric:
+
+```typescript
+const leaders = cache.leaderboard('total_pnl');
+// Also: 'total_value', 'trade_count', 'win_rate'
+```
+
+```json Example output
+[
+  { "wallet": "0xad53...", "label": "whale-1", "value": 1250.50, "rank": 1 },
+  { "wallet": "0x2afd...", "label": "degen", "value": -320.00, "rank": 2 }
+]
+```
+
+### Market Overview
+
+All cached positions for a market across watched wallets:
+
+```typescript
+const overview = cache.marketOverview('0xcondition...');
+// overview.positions, overview.total_volume, overview.unique_wallets
+```
+
+## Reactive Subscriptions
+
+Fire callbacks when new data lands in the cache from the live WebSocket stream.
+
+```typescript
+// Subscribe to all changes
+const unsub = cache.onChange((event) => {
+  // event.type: 'trade' | 'settlement'
+  // event.wallet: string
+  // event.data: TradeRow | SettlementRow
+  console.log(`New ${event.type} for ${event.wallet}`);
+});
+
+// Wallet-specific — only fires for this wallet
+const unsub2 = cache.onWalletChange('0xad53...', (event) => {
+  updateUI(event.data);
+});
+
+// Cleanup
+unsub();
+unsub2();
+```
+
+## Export Helpers
+
+Dump filtered data for charting libraries, spreadsheets, or custom analysis.
+
+```typescript
+import * as fs from 'fs';
+
+// CSV export
+const csv = cache.exportCSV('trades', { wallet: '0xabc...', limit: 1000 });
+fs.writeFileSync('trades.csv', csv);
+
+// JSON array export
+const json = cache.exportJSON('positions', { wallet: '0xabc...' });
+
+// Raw rows for data libraries
+const rows = cache.exportRows('trades', { wallet: '0xabc...', since: 1774000000 });
+```
+
+Filter options: `wallet`, `conditionId`, `tokenId`, `side`, `since`, `until`, `limit`, `orderBy`.
+
+## Query Builder
+
+Chainable fluent API for complex queries without writing SQL.
+
+```typescript
+// Filter trades by wallet, side, time, and market
+const results = cache.query('trades')
+  .wallet('0xabc...')
+  .side('BUY')
+  .since(1774000000)
+  .market('0xcondition...')
+  .limit(50)
+  .orderBy('timestamp_desc')
+  .run();
+
+// Filter positions by size and profitability
+const winners = cache.query('positions')
+  .wallet('0xabc...')
+  .minSize(100)
+  .minPnl(0)  // only profitable
+  .run();
+```
+
+Available filters: `.wallet()`, `.market()`, `.token()`, `.side()`, `.since()`, `.until()`, `.limit()`, `.skip()`, `.orderBy()`, `.minSize()`, `.minPnl()` (positions only).
+
 ## How It Works
 
 ```

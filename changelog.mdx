@@ -9,6 +9,25 @@ icon: "clock-rotate-left"
 
 ## 2026-03-21
 
+### TypeScript SDK v0.4.3 — Cache UI Primitives
+
+Four new features for building dashboards on top of the local cache.
+
+- **View methods** — `watchlistSummary()`, `walletDashboard()`, `leaderboard()`, `marketOverview()`. Pre-shaped data for common dashboard patterns. No SQL, no aggregation.
+- **Reactive subscriptions** — `onChange()` and `onWalletChange()` fire callbacks when new trades or settlements land from the live WebSocket stream. Returns an `unsub()` function for cleanup.
+- **Export helpers** — `exportCSV()`, `exportJSON()`, `exportRows()` dump filtered data for charting libraries, spreadsheets, or custom analysis.
+- **Query builder** — Chainable fluent API: `.wallet()`, `.side()`, `.since()`, `.market()`, `.minPnl()`, `.limit()`, `.run()`. Complex filters without writing SQL.
+
+```bash
+npm install polynode-sdk@0.4.3
+```
+
+Full documentation: [Local Cache](/sdks/local-cache)
+
+---
+
+## 2026-03-21
+
 ### API — Enriched Data Endpoints
 
 Eight new REST endpoints for trader analytics, market discovery, and platform trends.
