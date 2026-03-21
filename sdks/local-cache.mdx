@@ -153,23 +153,56 @@ const cache = new PolyNodeCache(pn, {
 
 ## Query Methods
 
-All queries run against the local SQLite database. No API calls.
+All queries run against the local SQLite database. No API calls. Every example below shows real output from a live backfill.
 
 ### Wallet Trades
 
 ```typescript
-const trades = cache.walletTrades('0xabc...', {
-  limit: 100,         // default: 100
-  offset: 0,          // for pagination
-  side: 'BUY',        // filter by side
-  since: 1710000000,  // Unix seconds
-  until: 1712000000,
-  orderBy: 'timestamp_desc', // or 'timestamp_asc'
-});
+const trades = cache.walletTrades('0xad53...', { limit: 3 });
+```
 
-// Each trade includes:
-// tx_hash, timestamp, maker, taker, token_id, condition_id,
-// market_title, market_slug, outcome, side, price, size
+```json Example output
+[
+  {
+    "side": "BUY",
+    "price": 0.821,
+    "size": 5.92,
+    "market_title": "Will Iran conduct a military action against Israel on March 20, 2026?",
+    "outcome": "Yes",
+    "timestamp": "2026-03-21T18:00:28.223Z"
+  },
+  {
+    "side": "SELL",
+    "price": 0.18,
+    "size": 40.51,
+    "market_title": "Will Iran conduct a military action against Israel on March 20, 2026?",
+    "outcome": "No"
+  },
+  {
+    "side": "BUY",
+    "price": 0.181,
+    "size": 19.1,
+    "market_title": "Will Iran conduct a military action against Israel on March 20, 2026?",
+    "outcome": "No"
+  }
+]
+```
+
+**Filters:** `side`, `since`, `until`, `orderBy`, `limit`, `offset`:
+
+```typescript
+// Only BUY trades
+const buys = cache.walletTrades('0xad53...', { limit: 3, side: 'BUY' });
+
+// Pagination
+const page1 = cache.walletTrades('0xad53...', { limit: 5, offset: 0 });
+const page2 = cache.walletTrades('0xad53...', { limit: 5, offset: 5 });
+
+// Time range
+const recent = cache.walletTrades('0xad53...', { since: 1774000000 });
+
+// Ascending order
+const oldest = cache.walletTrades('0xad53...', { orderBy: 'timestamp_asc', limit: 3 });
 ```
 
 ### Wallet Positions
@@ -177,17 +210,31 @@ const trades = cache.walletTrades('0xabc...', {
 Positions are computed on-the-fly from cached trades. No separate storage needed.
 
 ```typescript
-const positions = cache.walletPositions('0xabc...');
+const positions = cache.walletPositions('0xad53...');
+// 200 positions from 500 cached trades
+```
 
-// Each position:
-// {
-//   token_id, condition_id, market_title, market_slug, outcome,
-//   net_qty,        // net shares held (BUY - SELL)
-//   avg_price,      // volume-weighted average entry price
-//   trade_count,    // number of trades
-//   first_trade_at, // Unix seconds
-//   last_trade_at,  // Unix seconds
-// }
+```json Example output (first 2 of 200)
+[
+  {
+    "market_title": "Will Trump post \"Texas\" on Truth Social this week?",
+    "outcome": "Yes",
+    "net_qty": 14.00,
+    "avg_price": 0.0900,
+    "trade_count": 1,
+    "first_trade_at": "2026-03-21T17:26:47.000Z",
+    "last_trade_at": "2026-03-21T17:26:47.000Z"
+  },
+  {
+    "market_title": "Will Resni.ca (Res) be part of the next Government of Slovenia?",
+    "outcome": "Yes",
+    "net_qty": 7.50,
+    "avg_price": 0.4100,
+    "trade_count": 1,
+    "first_trade_at": "2026-03-20T15:42:03.000Z",
+    "last_trade_at": "2026-03-20T15:42:03.000Z"
+  }
+]
 ```
 
 ### Multi-Wallet Positions
@@ -195,19 +242,29 @@ const positions = cache.walletPositions('0xabc...');
 Query positions for multiple wallets in one call:
 
 ```typescript
-const allPositions = cache.multiWalletPositions([
-  '0xabc...', '0xdef...', '0x123...'
-]);
-// Returns: { '0xabc...': [...], '0xdef...': [...], '0x123...': [...] }
+const all = cache.multiWalletPositions(['0xad53...', '0x2afd...', '0xe4ca...']);
+```
+
+```json Example output
+{
+  "0xad53...": 200,  // positions
+  "0x2afd...": 207,
+  "0xe4ca...": 199
+}
 ```
 
 ### Market Trades
 
 ```typescript
-const trades = cache.marketTrades('0xcondition...', {
-  limit: 100,
-  side: 'SELL',
-});
+const trades = cache.marketTrades('0xe1cc...', { limit: 3 });
+```
+
+```json Example output
+[
+  { "taker": "0xad53...", "side": "BUY", "price": 0.821, "size": 5.92 },
+  { "taker": "0xad53...", "side": "SELL", "price": 0.18, "size": 40.51 },
+  { "taker": "0xad53...", "side": "BUY", "price": 0.181, "size": 19.1 }
+]
 ```
 
 ### Market Positions
@@ -215,43 +272,64 @@ const trades = cache.marketTrades('0xcondition...', {
 All positions across all cached wallets for a market:
 
 ```typescript
-const positions = cache.marketPositions('0xcondition...');
+const positions = cache.marketPositions('0xe1cc...');
+// 9 positions across multiple wallets
+```
+
+```json Example output
+[
+  { "outcome": "Yes", "net_qty": -172.12, "avg_price": 0.8399 },
+  { "outcome": "No", "net_qty": -81.39, "avg_price": 0.1808 },
+  { "outcome": "No", "net_qty": 28.66, "avg_price": 0.18 }
+]
 ```
 
 ### Token Trades
 
 ```typescript
-const trades = cache.tokenTrades('12345...', { limit: 50 });
+const trades = cache.tokenTrades('11382339...', { limit: 3 });
+// All returned trades match the requested token_id
 ```
 
 ### Trade by Transaction Hash
 
+Look up all trades within a single transaction:
+
 ```typescript
-const trades = cache.tradeByTxHash('0xabc123...');
+const trades = cache.tradeByTxHash('0x6815497d...');
+```
+
+```json Example output
+[
+  { "side": "BUY", "price": 0.821, "size": 5.92 },
+  { "side": "SELL", "price": 0.18, "size": 40.51 },
+  { "side": "BUY", "price": 0.181, "size": 19.1 }
+]
 ```
 
 ### Wallet Settlements
 
 ```typescript
-const settlements = cache.walletSettlements('0xabc...', { limit: 20 });
+const settlements = cache.walletSettlements('0xad53...', { limit: 20 });
 ```
 
 ### Cache Stats
 
 ```typescript
 const stats = cache.stats();
-// {
-//   trade_count: 4592,
-//   settlement_count: 16,
-//   db_size_bytes: 13500000,
-//   oldest_trade_at: 1729216000,
-//   newest_trade_at: 1774113600,
-//   backfill_entities: 10,
-//   backfill_complete: 10,
-//   backfill_pending: 0,
-//   backfill_in_progress: 0,
-//   backfill_failed: 0,
-// }
+```
+
+```json Example output
+{
+  "trade_count": 1509,
+  "settlement_count": 3,
+  "db_size_kb": 10567.3,
+  "oldest_trade": "2026-03-14T19:19:25.000Z",
+  "newest_trade": "2026-03-21T18:00:28.223Z",
+  "backfill_complete": 3,
+  "backfill_total": 3,
+  "backfill_failed": 0
+}
 ```
 
 ## Watchlist
@@ -286,17 +364,22 @@ Edit the watchlist file while the cache is running. Changes are detected automat
 
 ### Runtime API
 
-Add or remove wallets programmatically:
+Add or remove wallets programmatically. Backfill starts immediately for new entries.
 
 ```typescript
-// Add a wallet — backfill starts immediately
+// Add a wallet — backfill starts within 1 second
 cache.addToWatchlist([
-  { type: 'wallet', id: '0xnew...', label: 'new-trader' }
+  { type: 'wallet', id: '0x99ba...', label: 'UnholyScissors' }
 ]);
+
+// After ~2 seconds:
+cache.stats();
+// { trade_count: 1857, backfill_complete: 4 }
+// (was 1509 trades / 3 complete before adding)
 
 // Remove a wallet
 cache.removeFromWatchlist([
-  { type: 'wallet', id: '0xold...' }
+  { type: 'wallet', id: '0x99ba...' }
 ]);
 ```
 
