@@ -9,6 +9,27 @@ icon: "clock-rotate-left"
 
 ## 2026-03-21
 
+### TypeScript SDK v0.4.4 — Enriched Data Methods
+
+Eight new typed methods on the `PolyNode` client for all enriched data endpoints:
+
+- `leaderboard()` — top 20 traders by profit or volume, with period filtering
+- `trending()` — carousel, breaking markets, hot topics, featured events, and biggest movers
+- `activity()` — platform-wide trade feed (50 most recent)
+- `movers()` — markets with largest 24h price swings
+- `traderProfile(wallet)` — full trader stats: PnL, volume, trades, largest win
+- `traderPnl(wallet, { period })` — cumulative PnL time series
+- `event(slug)` — full event detail with all sub-markets
+- `marketsByCategory(category)` — browse markets by category
+
+All methods are fully typed with dedicated response interfaces. Install:
+
+```bash
+npm install polynode-sdk@0.4.4
+```
+
+---
+
 ### TypeScript SDK v0.4.3 — Cache UI Primitives
 
 Four new features for building dashboards on top of the local cache.
