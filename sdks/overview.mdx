@@ -23,6 +23,9 @@ PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST
 ## Features
 
 <CardGroup cols={2}>
+  <Card title="Local Cache" icon="database" href="/sdks/local-cache">
+    SQLite-backed local storage. Backfill wallet history in seconds, query trades and positions instantly with zero API calls.
+  </Card>
   <Card title="Short-Form Markets" icon="clock" href="/sdks/short-form">
     Auto-rotating streams for 5m, 15m, and 1h crypto prediction markets. Includes price-to-beat, odds, and liquidity.
   </Card>
@@ -44,6 +47,7 @@ PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST
 
 | Feature | TypeScript | Rust |
 |---------|-----------|------|
+| Local cache (SQLite) | Yes | Planned |
 | REST API (17 endpoints) | Yes | Yes |
 | WebSocket streaming | Yes | Yes |
 | Short-form markets (auto-rotation) | Yes | Yes |

@@ -172,6 +172,7 @@
           {
             "group": "Features",
             "pages": [
+              "sdks/local-cache",
               "sdks/short-form",
               "sdks/websocket-streaming",
               "sdks/orderbook",

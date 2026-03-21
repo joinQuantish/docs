@@ -1,0 +1,356 @@
+---
+title: "Local Cache"
+sidebarTitle: "Local Cache"
+description: "SQLite-backed local cache for instant offline queries. Backfill wallet history in seconds, stream live updates, query positions and trades locally."
+icon: "database"
+---
+
+Track wallets, markets, and tokens locally. The SDK streams live events into a SQLite database and backfills recent history on startup. All queries run instantly against the local DB with zero API calls.
+
+## Why Use the Cache
+
+Without the cache, every page view that shows trader positions requires upstream API calls. For apps tracking dozens or hundreds of wallets, this hits rate limits fast.
+
+With the cache:
+- **One API call per wallet** to backfill recent history (500 trades)
+- **Live WebSocket stream** keeps everything up to date after that
+- **All queries are local** — positions, trades, stats are instant
+- **Persists across restarts** — SQLite file stays on disk
+
+## Quick Start
+
+<Steps>
+  <Step title="Install">
+    ```bash
+    npm install polynode-sdk better-sqlite3
+    ```
+    `better-sqlite3` is an optional peer dependency. Only needed if you use the cache.
+  </Step>
+  <Step title="Create a watchlist">
+    Create `polynode.watch.json` in your project root:
+    ```json
+    {
+      "version": 1,
+      "wallets": [
+        { "address": "0xabc...", "label": "trader-1", "backfill": true },
+        { "address": "0xdef...", "label": "trader-2", "backfill": true }
+      ],
+      "settings": {
+        "ttl_days": 30
+      }
+    }
+    ```
+  </Step>
+  <Step title="Start the cache">
+    ```typescript
+    import { PolyNode, PolyNodeCache } from 'polynode-sdk';
+
+    const pn = new PolyNode({ apiKey: 'pn_live_...' });
+    const cache = new PolyNodeCache(pn, {
+      dbPath: './my-cache.db',
+      watchlistPath: './polynode.watch.json',
+    });
+
+    await cache.start();
+    // Backfill runs automatically, live stream starts immediately
+    ```
+  </Step>
+  <Step title="Query locally">
+    ```typescript
+    // All queries hit the local SQLite DB — zero API calls
+    const trades = cache.walletTrades('0xabc...', { limit: 50 });
+    const positions = cache.walletPositions('0xabc...');
+    const stats = cache.stats();
+    ```
+  </Step>
+</Steps>
+
+## Backfill Timing
+
+Backfill fetches the most recent trades for each wallet from the API. Each wallet takes one request.
+
+| Wallets | Requests | Time at 1 req/s |
+|---------|----------|-----------------|
+| 1 | 1 | ~1 second |
+| 10 | 10 | ~10 seconds |
+| 50 | 50 | ~50 seconds |
+| 100 | 100 | ~2 minutes |
+
+For deeper history, set `backfillPages` higher. Each additional page adds one request per wallet:
+
+| Pages | Trades per wallet | Time for 10 wallets |
+|-------|------------------|---------------------|
+| 1 (default) | up to 500 | ~10 seconds |
+| 2 | up to 1,000 | ~20 seconds |
+| 6 | up to 3,000 (max) | ~60 seconds |
+
+<Note>
+  Upstream data caps at 3,000 historical trades per wallet. The live stream captures everything going forward with no limit.
+</Note>
+
+## Configuration
+
+```typescript
+const cache = new PolyNodeCache(pn, {
+  // File paths
+  dbPath: './polynode-cache.db',       // SQLite database location
+  watchlistPath: './polynode.watch.json', // Watchlist file
+
+  // Backfill
+  backfillRatePerSecond: 1,            // Requests per second (default: 1)
+  backfillPages: 1,                    // Pages per wallet (default: 1, max: 6)
+  backfillPageSize: 500,               // Trades per page (default: 500, max: 1000)
+
+  // Storage
+  ttlSeconds: 30 * 86400,             // Auto-prune after 30 days
+  purgeOnRemove: false,               // Delete data when wallet removed from watchlist
+
+  // Progress callback
+  onBackfillProgress: (p) => {
+    console.log(`${p.label}: ${p.status} (${p.fetched} trades)`);
+  },
+});
+```
+
+## Query Methods
+
+All queries run against the local SQLite database. No API calls.
+
+### Wallet Trades
+
+```typescript
+const trades = cache.walletTrades('0xabc...', {
+  limit: 100,         // default: 100
+  offset: 0,          // for pagination
+  side: 'BUY',        // filter by side
+  since: 1710000000,  // Unix seconds
+  until: 1712000000,
+  orderBy: 'timestamp_desc', // or 'timestamp_asc'
+});
+
+// Each trade includes:
+// tx_hash, timestamp, maker, taker, token_id, condition_id,
+// market_title, market_slug, outcome, side, price, size
+```
+
+### Wallet Positions
+
+Positions are computed on-the-fly from cached trades. No separate storage needed.
+
+```typescript
+const positions = cache.walletPositions('0xabc...');
+
+// Each position:
+// {
+//   token_id, condition_id, market_title, market_slug, outcome,
+//   net_qty,        // net shares held (BUY - SELL)
+//   avg_price,      // volume-weighted average entry price
+//   trade_count,    // number of trades
+//   first_trade_at, // Unix seconds
+//   last_trade_at,  // Unix seconds
+// }
+```
+
+### Multi-Wallet Positions
+
+Query positions for multiple wallets in one call:
+
+```typescript
+const allPositions = cache.multiWalletPositions([
+  '0xabc...', '0xdef...', '0x123...'
+]);
+// Returns: { '0xabc...': [...], '0xdef...': [...], '0x123...': [...] }
+```
+
+### Market Trades
+
+```typescript
+const trades = cache.marketTrades('0xcondition...', {
+  limit: 100,
+  side: 'SELL',
+});
+```
+
+### Market Positions
+
+All positions across all cached wallets for a market:
+
+```typescript
+const positions = cache.marketPositions('0xcondition...');
+```
+
+### Token Trades
+
+```typescript
+const trades = cache.tokenTrades('12345...', { limit: 50 });
+```
+
+### Trade by Transaction Hash
+
+```typescript
+const trades = cache.tradeByTxHash('0xabc123...');
+```
+
+### Wallet Settlements
+
+```typescript
+const settlements = cache.walletSettlements('0xabc...', { limit: 20 });
+```
+
+### Cache Stats
+
+```typescript
+const stats = cache.stats();
+// {
+//   trade_count: 4592,
+//   settlement_count: 16,
+//   db_size_bytes: 13500000,
+//   oldest_trade_at: 1729216000,
+//   newest_trade_at: 1774113600,
+//   backfill_entities: 10,
+//   backfill_complete: 10,
+//   backfill_pending: 0,
+//   backfill_in_progress: 0,
+//   backfill_failed: 0,
+// }
+```
+
+## Watchlist
+
+### File Format
+
+```json
+{
+  "version": 1,
+  "wallets": [
+    { "address": "0xabc...", "label": "whale", "backfill": true }
+  ],
+  "markets": [
+    { "condition_id": "0x789...", "label": "BTC 100k", "backfill": true }
+  ],
+  "tokens": [
+    { "token_id": "12345...", "label": "BTC Yes", "backfill": true }
+  ],
+  "settings": {
+    "ttl_days": 30,
+    "backfill_rate": 1,
+    "purge_on_remove": false
+  }
+}
+```
+
+### Hot Reload
+
+Edit the watchlist file while the cache is running. Changes are detected automatically within 500ms:
+- **New entries** trigger backfill and update the WebSocket subscription
+- **Removed entries** optionally purge data (if `purgeOnRemove` is enabled)
+
+### Runtime API
+
+Add or remove wallets programmatically:
+
+```typescript
+// Add a wallet — backfill starts immediately
+cache.addToWatchlist([
+  { type: 'wallet', id: '0xnew...', label: 'new-trader' }
+]);
+
+// Remove a wallet
+cache.removeFromWatchlist([
+  { type: 'wallet', id: '0xold...' }
+]);
+```
+
+## How It Works
+
+```
+                     ┌──────────────────┐
+                     │  PolyNodeCache   │
+                     │                  │
+      ┌──────────────┤  backfill (1x)   │
+      │              │  live stream     │
+      │              │  prune timer     │
+      ▼              │  file watcher    │
+┌───────────┐        └────────┬─────────┘
+│  REST API │ (backfill)      │ (live events)
+│  1 req/s  │        ┌───────▼──────────┐
+└───────────┘        │ WebSocket stream │
+      │              │ trades + settle. │
+      │              └───────┬──────────┘
+      │                      │
+      ▼                      ▼
+┌──────────────────────────────────────┐
+│  SQLite (WAL mode)                   │
+│  trades — full inverted index        │
+│  settlements — pending + confirmed   │
+│  backfill_state — crash recovery     │
+└──────────────────────────────────────┘
+```
+
+1. **On start**: opens SQLite, loads watchlist, connects WebSocket, begins backfill
+2. **Backfill**: fetches recent trades via REST (1 request per wallet), stores in SQLite
+3. **Live stream**: WebSocket delivers new trades and settlements in real-time
+4. **Dedup**: `INSERT OR IGNORE` with unique constraint prevents duplicates between backfill and live data
+5. **Prune**: hourly timer removes data older than the configured TTL
+
+## Persistence
+
+The SQLite database persists across restarts. When you call `cache.start()` again:
+- Existing data is preserved
+- Completed backfills are not repeated
+- WebSocket stream reconnects and picks up live events
+- Any trades that happened while offline are captured on the next backfill
+
+## Stop and Cleanup
+
+```typescript
+await cache.stop();  // closes WebSocket, stops backfill, closes DB
+
+// Manual prune
+const deleted = cache.prune();  // removes data older than TTL
+```
+
+## Full Example
+
+```typescript
+import { PolyNode, PolyNodeCache } from 'polynode-sdk';
+
+const pn = new PolyNode({ apiKey: 'pn_live_...' });
+
+const cache = new PolyNodeCache(pn, {
+  dbPath: './cache.db',
+  watchlistPath: './polynode.watch.json',
+  backfillPages: 1,
+  onBackfillProgress: (p) => {
+    const icon = p.status === 'complete' ? '✓' : '⟳';
+    console.log(`${icon} ${p.label}: ${p.fetched} trades`);
+  },
+});
+
+await cache.start();
+// Output:
+// [PolyNodeCache] Backfilling 10 entities (1 page of 500 each) — ETA: ~10s
+// ⟳ trader-1: 500 trades
+// ✓ trader-1: 500 trades
+// ⟳ trader-2: 346 trades
+// ✓ trader-2: 346 trades
+// ...
+
+// Query locally — instant
+const positions = cache.walletPositions('0xabc...');
+for (const p of positions) {
+  console.log(`${p.outcome}: ${p.net_qty} shares @ ${p.avg_price.toFixed(4)}`);
+}
+
+// Add a wallet at runtime
+cache.addToWatchlist([
+  { type: 'wallet', id: '0xnew...', label: 'new-whale' }
+]);
+
+// Stats
+const stats = cache.stats();
+console.log(`${stats.trade_count} trades, ${(stats.db_size_bytes / 1024 / 1024).toFixed(1)} MB`);
+
+// Cleanup
+await cache.stop();
+```
