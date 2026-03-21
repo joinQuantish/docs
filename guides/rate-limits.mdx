@@ -98,6 +98,22 @@ WebSocket subscriptions are not rate-limited by requests/min, but message volume
   `status_update` events arrive in bursts (30–80 per block). If you don't need confirmation tracking, exclude them from your `event_types` filter to reduce volume.
 </Tip>
 
+## Data endpoint limits
+
+The wallet and market data endpoints (positions, trades, P&L) have a separate shared throughput limit of **10 requests per second** across all users. This applies to:
+
+- `/v1/wallets/{addr}/positions`
+- `/v1/wallets/{addr}/trades`
+- `/v1/wallets/positions` (multi-wallet)
+- `/v1/markets/{id}/positions`
+- `/v1/markets/{id}/trades`
+
+Batch requests (multiple wallets) count each wallet as one request toward this limit. For example, a 5-wallet batch counts as 5 requests. If the limit is exceeded, you'll receive a `429` response. Wait briefly and retry.
+
+<Tip>
+  This limit is independent of your per-key rate limit. Even with a high-tier plan, these endpoints share the same throughput cap. For real-time data, use the [WebSocket stream](/websocket/overview) instead.
+</Tip>
+
 ## Higher limits
 
 Upgrade your plan at [polynode.dev/pricing](https://polynode.dev/pricing) for higher rate limits and more WebSocket connections.

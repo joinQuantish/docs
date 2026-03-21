@@ -1111,6 +1111,117 @@
         ]
       }
     },
+    "/v1/wallets/positions": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Multi-wallet positions & P&L",
+        "description": "Returns positions with P&L for multiple wallets in a single request. Up to 20 wallets per request. All lookups run in parallel.\n\nSubject to the shared data endpoint rate limit (10 req/s). Each wallet counts as one request toward the limit.",
+        "operationId": "get_multi_wallet_positions",
+        "parameters": [
+          {
+            "name": "wallets",
+            "in": "query",
+            "description": "Comma-separated wallet addresses (max 20)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum positions per wallet (default 100, max 500)",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset per wallet (default 0)",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Positions grouped by wallet",
+            "content": {
+              "application/json": {
+                "example": {
+                  "wallet_count": 2,
+                  "wallets": [
+                    {
+                      "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+                      "count": 3,
+                      "positions": [
+                        {
+                          "asset": "1090212833...",
+                          "title": "Trail Blazers vs. Timberwolves",
+                          "outcome": "Trail Blazers",
+                          "size": 1390067.28,
+                          "avgPrice": 0.502,
+                          "cashPnl": 691594.61,
+                          "currentValue": 1390067.28
+                        }
+                      ]
+                    },
+                    {
+                      "wallet": "0xa5ef39c3d3e10d0b270233af41cac69796b12966",
+                      "count": 2,
+                      "positions": []
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing wallets parameter or exceeds 20 wallet limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Data endpoint rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v1/wallets/{addr}/trades": {
       "get": {
         "tags": [
@@ -1419,7 +1530,7 @@
           "Wallets"
         ],
         "summary": "Market trade history",
-        "description": "Returns trade history for a market, optionally filtered by trader wallet and/or side (BUY/SELL). Enriched with PolyNode market metadata.\n\nAccepts a condition ID (0x-prefixed) or market slug.",
+        "description": "Returns trade history for a market, optionally filtered by trader wallet(s) and/or side (BUY/SELL). Enriched with PolyNode market metadata.\n\nAccepts a condition ID (0x-prefixed) or market slug. The `user` parameter accepts comma-separated wallet addresses (max 20) to fetch trades for multiple traders in one request.",
         "operationId": "get_market_trades",
         "parameters": [
           {
@@ -1434,7 +1545,7 @@
           {
             "name": "user",
             "in": "query",
-            "description": "Filter trades to a specific wallet address",
+            "description": "Filter by wallet address(es). Comma-separated for multiple (max 20).",
             "schema": {
               "type": "string"
             }
