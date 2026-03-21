@@ -1,0 +1,36 @@
+---
+title: "Activity Feed"
+api: "GET /v2/activity"
+description: "Live platform-wide trade feed."
+---
+
+Returns the 50 most recent trades across all Polymarket markets. Includes full trade metadata, wallet addresses, and transaction hashes.
+
+<ResponseExample>
+```json
+{
+  "trades": [
+    {
+      "wallet": "0x312ac123ff9551126f79e9ec53dab4df87637f59",
+      "side": "BUY",
+      "tokenId": "34377190941598917...",
+      "conditionId": "0x7f76a575cfb2d0b8...",
+      "size": 78.43,
+      "price": 0.607,
+      "timestamp": 1774115115,
+      "title": "Bitcoin Up or Down - March 21, 1:45PM-1:50PM ET",
+      "slug": "btc-updown-5m-1774115100",
+      "eventSlug": "btc-updown-5m-1774115100",
+      "outcome": "Up",
+      "name": "Elastic-Alpenhorn",
+      "txHash": "0xa0fe7f342aef603d..."
+    }
+  ],
+  "count": 50
+}
+```
+</ResponseExample>
+
+<Note>
+  Activity data refreshes every 60 seconds.
+</Note>

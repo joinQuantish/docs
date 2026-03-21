@@ -1,0 +1,46 @@
+---
+title: "Markets by Category"
+api: "GET /v2/markets/{category}"
+description: "Browse markets by category with event counts."
+---
+
+Returns markets for a specific category, along with category-specific counts and metadata.
+
+<ParamField path="category" type="string" required>
+  Category slug. Available: `crypto`, `politics`, `sports`, `finance`, `economy`, `tech`, `pop-culture`, `geopolitics`, `weather`, `iran`, `elections`, `mentions`.
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "category": "crypto",
+  "counts": {
+    "all": 253,
+    "fiveM": 7,
+    "fifteenM": 7,
+    "pre-market": 103,
+    "etf": 2,
+    "hourly": 9,
+    "daily": 11,
+    "weekly": 69,
+    "bitcoin": 34,
+    "ethereum": 20,
+    "solana": 12
+  },
+  "events": [
+    {
+      "id": "273112",
+      "slug": "bitcoin-above-on-march-22",
+      "title": "Bitcoin above ___ on March 22?",
+      "image": "https://...",
+      "volume24hr": 5678901
+    }
+  ],
+  "totalResults": 253
+}
+```
+</ResponseExample>
+
+<Note>
+  The `counts` object varies by category. Crypto includes subcounts by asset and timeframe. Other categories may return a simple total.
+</Note>

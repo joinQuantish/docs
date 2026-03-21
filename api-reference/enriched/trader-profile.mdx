@@ -1,0 +1,33 @@
+---
+title: "Trader Profile"
+api: "GET /v2/trader/{wallet}"
+description: "Full profile for any Polymarket trader."
+---
+
+Returns comprehensive stats for a trader: PnL, volume, trade count, largest win, current portfolio value, and account metadata.
+
+<ParamField path="wallet" type="string" required>
+  Ethereum wallet address (e.g., `0xc2e7800b5af46e6093872b177b7a5e7f0563be51`).
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+  "name": "beachboy4",
+  "pseudonym": "Threadbare-Skunk",
+  "profileSlug": "@beachboy4",
+  "joinDate": "2025-11-30T17:26:07.997000Z",
+  "trades": 145,
+  "marketsTraded": 145,
+  "largestWin": 3487512.61,
+  "views": 100243,
+  "totalVolume": 197853079.24,
+  "totalPnl": 4700239.86,
+  "realizedPnl": 0,
+  "unrealizedPnl": 0,
+  "positionValue": 4170.11,
+  "profileImage": null
+}
+```
+</ResponseExample>

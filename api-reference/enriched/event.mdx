@@ -1,0 +1,50 @@
+---
+title: "Event Detail"
+api: "GET /v2/event/{slug}"
+description: "Full event data with all markets, prices, and metadata."
+---
+
+Returns comprehensive data for a single Polymarket event, including all sub-markets with current outcome prices, volumes, and liquidity.
+
+<ParamField path="slug" type="string" required>
+  Event slug (e.g., `fed-decision-in-april`). Found in event URLs on Polymarket.
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "id": 75478,
+  "slug": "fed-decision-in-april",
+  "title": "Fed decision in April?",
+  "description": "The FED interest rates are defined...",
+  "image": "https://...",
+  "active": true,
+  "closed": false,
+  "volume": 17298422,
+  "volume24hr": 234567,
+  "liquidity": 3131732,
+  "startDate": "2025-11-13T00:40:50Z",
+  "endDate": "2026-04-29T00:00:00Z",
+  "markets": [
+    {
+      "question": "Will the Fed decrease interest rates by 50+ bps?",
+      "conditionId": "0xd72622d154dfe65b...",
+      "outcomes": ["Yes", "No"],
+      "outcomePrices": ["0.0055", "0.9945"],
+      "volume": 4749960.35,
+      "liquidity": 1071241.71,
+      "active": true,
+      "closed": false,
+      "groupItemTitle": "50+ bps decrease"
+    }
+  ],
+  "series": {
+    "slug": "fomc",
+    "title": "FOMC",
+    "recurrence": "monthly"
+  },
+  "similarMarkets": 14,
+  "annotations": 7
+}
+```
+</ResponseExample>

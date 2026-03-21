@@ -1,0 +1,30 @@
+---
+title: "Trader PnL Series"
+api: "GET /v2/trader/{wallet}/pnl"
+description: "PnL time series for a trader at multiple resolutions."
+---
+
+Returns a time series of cumulative PnL values for a trader.
+
+<ParamField path="wallet" type="string" required>
+  Ethereum wallet address.
+</ParamField>
+
+<ParamField query="period" type="string" default="1M">
+  Resolution. One of: `1D` (hourly points), `1W` (~57 points), `1M` (~41 points), `ALL` (~223 points).
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+  "period": "1W",
+  "series": [
+    { "timestamp": 1773511200, "pnl": 1391835.20 },
+    { "timestamp": 1773522000, "pnl": 3438215.00 },
+    { "timestamp": 1773532800, "pnl": 3441273.50 }
+  ],
+  "count": 57
+}
+```
+</ResponseExample>

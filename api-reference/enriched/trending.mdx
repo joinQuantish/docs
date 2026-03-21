@@ -1,0 +1,38 @@
+---
+title: "Trending"
+api: "GET /v2/trending"
+description: "Trending markets, hot topics, featured events, and biggest movers."
+---
+
+Returns a curated snapshot of what's trending on Polymarket right now. Combines carousel highlights, breaking news markets, hot search topics, featured events, and biggest 24h price movers.
+
+<ResponseExample>
+```json
+{
+  "carousel": [
+    {
+      "id": "69987",
+      "slug": "2026-ncaa-tournament-winner",
+      "title": "2026 NCAA Tournament Winner",
+      "image": "https://...",
+      "volume24hr": 1234567
+    }
+  ],
+  "breaking": [
+    {
+      "id": "1193228",
+      "slug": "will-robert-golob-be-the-next-prime-minister-of-slovenia",
+      "question": "Will Robert Golob be the next Prime Minister of Slovenia?",
+      "outcomePrices": ["0.595", "0.405"],
+      "oneDayPriceChange": -0.015
+    }
+  ],
+  "hotTopics": [
+    { "title": "Gen", "volume": 24471729.10, "url": "/search?_q=gen" },
+    { "title": "Bayern", "volume": 4733154.92, "url": "/predictions/bayern" }
+  ],
+  "featured": [],
+  "movers": []
+}
+```
+</ResponseExample>

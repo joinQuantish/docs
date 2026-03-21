@@ -1,0 +1,39 @@
+---
+title: "Leaderboard"
+api: "GET /v2/leaderboard"
+description: "Top traders ranked by profit or volume."
+---
+
+Returns the top 20 Polymarket traders for the specified time period and ranking metric.
+
+<ParamField query="period" type="string" default="monthly">
+  Time period. One of: `daily`, `weekly`, `monthly`, `all`.
+</ParamField>
+
+<ParamField query="sort" type="string" default="profit">
+  Ranking metric. One of: `profit`, `volume`.
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "traders": [
+    {
+      "rank": 1,
+      "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+      "name": "beachboy4",
+      "pnl": 4320443.26,
+      "volume": 12846475.79,
+      "profileImage": "https://..."
+    }
+  ],
+  "period": "monthly",
+  "sort": "profit",
+  "count": 20
+}
+```
+</ResponseExample>
+
+<Note>
+  Data refreshes every 2-3 minutes. Rate limit: 1 request per second.
+</Note>

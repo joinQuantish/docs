@@ -109,6 +109,19 @@
             ]
           },
           {
+            "group": "Enriched Data",
+            "pages": [
+              "api-reference/enriched/leaderboard",
+              "api-reference/enriched/trader-profile",
+              "api-reference/enriched/trader-pnl",
+              "api-reference/enriched/trending",
+              "api-reference/enriched/activity",
+              "api-reference/enriched/event",
+              "api-reference/enriched/movers",
+              "api-reference/enriched/markets"
+            ]
+          },
+          {
             "group": "System",
             "pages": [
               "api-reference/system/system-status",
@@ -189,6 +202,9 @@
           }
         ]
       }
+    ],
+    "bottombar": [
+      "changelog"
     ],
     "global": {
       "anchors": [

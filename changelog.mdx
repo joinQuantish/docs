@@ -1,0 +1,100 @@
+---
+title: "Changelog"
+sidebarTitle: "Changelog"
+description: "All notable changes to the PolyNode API and SDKs."
+icon: "clock-rotate-left"
+---
+
+---
+
+## 2026-03-21
+
+### API — Enriched Data Endpoints (v2)
+
+Eight new REST endpoints for trader analytics, market discovery, and platform trends.
+
+- `GET /v2/leaderboard` — Top 20 traders ranked by profit or volume (daily, weekly, monthly, all-time)
+- `GET /v2/trader/{wallet}` — Full trader profile: PnL, volume, trade count, largest win, portfolio value
+- `GET /v2/trader/{wallet}/pnl` — PnL time series at 4 resolutions (1D, 1W, 1M, ALL)
+- `GET /v2/trending` — Carousel highlights, breaking markets, hot topics, featured events, biggest movers
+- `GET /v2/activity` — Platform-wide live trade feed (last 50 trades with tx hashes)
+- `GET /v2/event/{slug}` — Full event data with all sub-markets, outcome prices, condition IDs
+- `GET /v2/movers` — Markets with the largest 24h price changes
+- `GET /v2/markets/{category}` — Category market listings with counts (crypto, politics, sports, etc.)
+
+Rate limit: 1 request per second per API key. Responses cached 1-3 minutes.
+
+### TypeScript SDK v0.4.1
+
+- **Fix:** ESM imports now work correctly. v0.4.0 crashed on `cache.start()` when using `import` syntax.
+- **Fix:** Eliminated `MODULE_TYPELESS_PACKAGE_JSON` Node.js warning.
+- **New:** `getActiveTestWallet()` / `getActiveTestWallets()` — returns known-active wallet addresses for testing and examples.
+
+```bash
+npm install polynode-sdk@0.4.1
+```
+
+### API — Wallet positions fix
+
+- Fixed `firstTradeAt` / `lastTradeAt` returning `null` for certain wallets on `GET /v1/markets/{id}/positions?includeTrades=true`.
+- Added fallback query path for wallets where the primary trade lookup returns empty.
+
+### API — Per-endpoint rate limiting
+
+- `includeTrades=true` on market positions now has its own 20 req/min rate limit per key.
+- Separate bucket from standard rate limit — doesn't consume your normal quota.
+
+---
+
+## 2026-03-21
+
+### TypeScript SDK v0.4.0
+
+- **New:** Local Cache — SQLite-backed local storage for instant offline queries.
+- Backfill wallet history in seconds (1 request per wallet, up to 500 trades).
+- Live WebSocket stream keeps the cache up to date automatically.
+- Query trades, positions, and settlements locally with zero API calls.
+- Watchlist file with hot-reload and runtime add/remove API.
+- Full documentation at [Local Cache](/sdks/local-cache).
+
+### Rust SDK v0.4.0
+
+- **New:** Local Cache ported from TypeScript. Same architecture, same SQL schema, same query methods.
+- Builder pattern: `PolyNodeCache::builder(client).db_path(...).build()?`
+- `rusqlite` (bundled) + `notify` as optional dependencies behind `cache` feature flag.
+
+---
+
+## 2026-03-20
+
+### Web Frontend
+
+- Speed comparison test redesigned with 3-second warm-up period, win % scoreboard, and visual win ratio bar.
+- Updated "Run this test yourself" code snippet to match new logic.
+
+---
+
+## 2026-03-19
+
+### TypeScript SDK v0.3.0
+
+- **New:** `OrderbookEngine` — higher-level orderbook client with shared state and filtered views per component.
+- **New:** `LocalOrderbook` — local orderbook state management.
+- **New:** `ShortFormStream` — condensed event stream for bandwidth-constrained environments.
+
+### API
+
+- Orderbook REST endpoints: `/v1/orderbook/{token}`, `/v1/midpoint/{token}`, `/v1/spread/{token}`.
+- Wallet trades `limit` parameter now allows up to 1,000 (was 500).
+
+---
+
+## 2026-03-15
+
+### API v1 — Initial Public Release
+
+- **WebSocket streaming:** settlements, trades, prices, blocks, wallets, markets, large trades, oracle, chainlink
+- **REST API:** markets, search, candles, stats, settlements, wallets
+- **Orderbook streaming** via `ob.polynode.dev`
+- **RPC endpoint** via `rpc.polynode.dev` — JSON-RPC with TX #1 delivery
+- **CLI** (`pn`) — stream events, query markets, manage API keys from the terminal

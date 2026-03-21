@@ -1,0 +1,29 @@
+---
+title: "Biggest Movers"
+api: "GET /v2/movers"
+description: "Markets with the largest 24-hour price changes."
+---
+
+Returns markets that have experienced the biggest price swings in the last 24 hours. Useful for volatility alerts and "markets that moved" dashboards.
+
+<ResponseExample>
+```json
+{
+  "markets": [
+    {
+      "id": "1437746",
+      "slug": "will-elon-musks-net-worth-be-between-670b-and-680b-on-march-31",
+      "question": "Will Elon Musk's net worth be between $670b and $680b on March 31?",
+      "image": "https://...",
+      "outcomePrices": ["0.026", "0.974"],
+      "oneDayPriceChange": -0.945
+    }
+  ],
+  "count": 20
+}
+```
+</ResponseExample>
+
+<Note>
+  `oneDayPriceChange` is the absolute change in the Yes price over 24 hours. Negative means the Yes price dropped.
+</Note>
