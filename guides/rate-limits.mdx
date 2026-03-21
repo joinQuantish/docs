@@ -100,7 +100,11 @@ WebSocket subscriptions are not rate-limited by requests/min, but message volume
 
 ## Data endpoint limits
 
-The wallet and market data endpoints (positions, trades, P&L) have a separate shared throughput limit of **20 requests per second** across all users. This applies to:
+The wallet and market data endpoints proxy to upstream sources and have their own rate limits, separate from your per-key limit.
+
+### Standard data endpoints
+
+These endpoints share your plan's normal rate limit:
 
 - `/v1/wallets/{addr}/positions`
 - `/v1/wallets/{addr}/trades`
@@ -108,10 +112,29 @@ The wallet and market data endpoints (positions, trades, P&L) have a separate sh
 - `/v1/markets/{id}/positions`
 - `/v1/markets/{id}/trades`
 
-Batch requests (multiple wallets) count each wallet as one request toward this limit. For example, a 5-wallet batch counts as 5 requests. If the limit is exceeded, you'll receive a `429` response. Wait briefly and retry.
+Batch requests (multiple wallets) count each wallet as one request toward your limit. For example, a 5-wallet batch counts as 5 requests.
+
+### Heavy endpoints <span style={{color: '#f97316', fontWeight: 700, fontSize: '0.85em', background: 'rgba(249, 115, 22, 0.1)', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px'}}>RATE LIMITED</span>
+
+Some data endpoints fan out many upstream requests per call and have a stricter per-key limit:
+
+| Endpoint | Limit | Why |
+|---|---|---|
+| `/v1/markets/{id}/positions?includeTrades=true` | **20 req/min** per key | Each call fetches trade history for every position holder in the market (can be 50-100+ upstream calls) |
+
+When this limit is exceeded, you'll receive a `429` response with:
+```json
+{
+  "error": "includeTrades rate limit exceeded (20/min). Retry after 1774108000."
+}
+```
 
 <Tip>
-  This limit is independent of your per-key rate limit. Even with a high-tier plan, these endpoints share the same throughput cap. For real-time data, use the [WebSocket stream](/websocket/overview) instead.
+  If you only need position sizes and P&L, omit `includeTrades` to use the standard rate limit. Only add `includeTrades=true` when you specifically need `firstTradeAt` and `lastTradeAt` timestamps.
+</Tip>
+
+<Tip>
+  For real-time data, use the [WebSocket stream](/websocket/overview) instead of polling these endpoints.
 </Tip>
 
 ## Higher limits
