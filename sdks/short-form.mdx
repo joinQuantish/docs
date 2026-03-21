@@ -128,22 +128,44 @@ Each market in the rotation includes enrichment data at zero cost:
 }
 ```
 
-Settlement events flow in real-time as trades happen:
+Settlement events flow in real-time as trades happen. Here's a real settlement captured from the live stream:
 
 ```json Settlement Event
 {
   "event_type": "settlement",
   "status": "pending",
-  "market_slug": "btc-updown-15m-1774072800",
-  "market_title": "Bitcoin Up or Down - March 21, 2:00AM-2:15AM ET",
+  "event_slug": "btc-updown-15m-1774073700",
+  "event_title": "Bitcoin Up or Down - March 21, 2:15AM-2:30AM ET",
+  "market_slug": "btc-updown-15m-1774073700",
+  "market_title": "Bitcoin Up or Down - March 21, 2:15AM-2:30AM ET",
   "outcome": "Down",
-  "taker_side": "BUY",
-  "taker_size": 12.5,
-  "taker_price": 0.155
+  "taker_side": "SELL",
+  "taker_size": 7.58,
+  "taker_price": 0.33,
+  "taker_wallet": "0xe49b2c1ca08c4aef70c061ef9cfcabbcea638973",
+  "taker_base_fee": 1000,
+  "tick_size": 0.01,
+  "neg_risk": false,
+  "condition_id": "0x037ad8cf0b1d7dc7febd2a46c400398838163dc3...",
+  "detected_at": 1774074055797,
+  "tx_hash": "0x726b5ba5d7c48d277f7923a9482a3f7f1fcfac36...",
+  "outcomes": ["Up", "Down"],
+  "trades": [
+    {
+      "maker": "0xd44e29936409019f93993de8bd603ef6cb1bb15e",
+      "taker": "0xe49b2c1ca08c4aef70c061ef9cfcabbcea638973",
+      "outcome": "Down",
+      "side": "BUY",
+      "price": 0.37,
+      "size": 5,
+      "maker_amount": "1850000",
+      "taker_amount": "5000000"
+    }
+  ]
 }
 ```
 
-<Tip>In a 30-second window, the test stream received **227 settlement events** across 3 coins. These markets are very active.</Tip>
+<Tip>In a 25-second test, the 15-minute stream received **157 settlement events** across 3 coins. The 5-minute stream received **323 events** across 2 coins in 20 seconds. These markets are very active.</Tip>
 
 ## Intervals
 
@@ -151,7 +173,7 @@ Settlement events flow in real-time as trades happen:
 |----------|------|--------|--------------|
 | 5 minutes | `'5m'` / `FiveMin` | 300s | `btc-updown-5m-{timestamp}` |
 | 15 minutes | `'15m'` / `FifteenMin` | 900s | `btc-updown-15m-{timestamp}` |
-| 1 hour | `'1h'` / `Hourly` | 3600s | Discovered via series query |
+| 1 hour | `'1h'` / `Hourly` | 3600s | `bitcoin-up-or-down-march-21-2026-2am-et` |
 
 ## Supported Coins
 
@@ -424,15 +446,42 @@ A complete example that tracks all 7 coins on 5-minute windows and logs the pric
   </Tab>
 </Tabs>
 
-### Live Output (5m, BTC + ETH)
+### Live Output (all 7 coins, 5m)
 
 ```
-=== ROTATION ===
-interval: 5m
-time_remaining: 261s
-markets: 2
-  btc | btc-updown-5m-1774073700 | beat $70697.94 | 52% up | $24733 liq | $1476 vol
-  eth | eth-updown-5m-1774073700 | beat $2153.39 | 52% up | $12446 liq | $288 vol
+--- New 5m window | 193s remaining ---
+  BTC   $70697.94 → DOWN 53% | $23248 liq
+  ETH   $2153.39 → DOWN 51% | $30702 liq
+  BNB   $642.23 → DOWN 55% | $9798 liq
+  HYPE  $39.34 → DOWN 50% | $419 liq
+  XRP   $1.45 → DOWN 51% | $10924 liq
+  DOGE  $0.09 → DOWN 59% | $9800 liq
+  SOL   $89.97 → UP 51% | $10977 liq
+  Trade: Down $30.00 on btc-updown-5m-1774074300
+  Trade: Down $30.00 on btc-updown-5m-1774074300
+  Trade: Down $15.00 on btc-updown-5m-1774074300
 
-Events received in 20s: 936
+--- 397 trades in 15s | 179s remaining ---
+```
+
+### Live Output (Rust, all 3 intervals)
+
+```
+=== Testing 5m ===
+ROTATION: 5m | 249s remaining | 2 markets
+  btc | btc-updown-5m-1774074300 | beat $70697.94 | 48% up | $23248 liq
+  eth | eth-updown-5m-1774074300 | beat $2153.39 | 50% up | $30702 liq
+  Events in 10s: 388
+
+=== Testing 15m ===
+ROTATION: 15m | 239s remaining | 2 markets
+  btc | btc-updown-15m-1774073700 | beat $70714.31 | 68% up | $9883 liq
+  eth | eth-updown-15m-1774073700 | beat $2152.36 | 88% up | $3028 liq
+  Events in 10s: 73
+
+=== Testing 1h ===
+ROTATION: 1h | 2029s remaining | 2 markets
+  btc | bitcoin-up-or-down-march-21-2026-2am-et | beat $70697.94 | 70% up | $10652 liq
+  eth | ethereum-up-or-down-march-21-2026-2am-et | beat $2153.39 | 52% up | $7162 liq
+  Events in 10s: 20
 ```
