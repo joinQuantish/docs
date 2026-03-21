@@ -1426,7 +1426,7 @@
           {
             "name": "user",
             "in": "query",
-            "description": "Filter to a specific wallet address. Returns only that wallet's positions in this market.",
+            "description": "Filter to specific wallet address(es). Accepts a single address or multiple comma-separated addresses (max 20). Returns only those wallets' positions in this market.",
             "schema": {
               "type": "string"
             }
