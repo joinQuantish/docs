@@ -59,6 +59,16 @@ await pn.walletSettlements(address, { count: 10 });
 // Wallets
 await pn.wallet(address);
 
+// Enriched Data (1 req/sec rate limit)
+await pn.leaderboard({ period: 'monthly', sort: 'profit' });
+await pn.trending();
+await pn.activity();
+await pn.movers();
+await pn.traderProfile('0xc2e7...');
+await pn.traderPnl('0xc2e7...', { period: '1W' });
+await pn.event('fed-decision-in-april');
+await pn.marketsByCategory('crypto');
+
 // RPC (rpc.polynode.dev)
 await pn.rpc('eth_blockNumber');
 await pn.rpc('eth_getBlockByNumber', ['latest', false]);
@@ -450,6 +460,19 @@ import type {
   PriceChange,
   OrderbookUpdate,   // union of snapshot | update | price_change
   OrderbookOptions,
+
+  // Enriched data types
+  LeaderboardResponse,
+  LeaderboardTrader,
+  TrendingResponse,
+  ActivityResponse,
+  ActivityTrade,
+  MoversResponse,
+  MoverMarket,
+  TraderProfile,
+  TraderPnlResponse,
+  EventDetailResponse,
+  MarketsByCategoryResponse,
 } from 'polynode-sdk';
 ```
 

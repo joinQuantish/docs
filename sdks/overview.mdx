@@ -36,7 +36,7 @@ PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST
     Real-time orderbook data with local state management, filtered views, and 108k+ markets.
   </Card>
   <Card title="REST API" icon="globe" href="/sdks/rest-api">
-    Typed methods for all 17 REST endpoints. Markets, pricing, settlements, wallets.
+    Typed methods for all 25 REST endpoints. Markets, pricing, settlements, wallets, enriched data.
   </Card>
   <Card title="RPC Proxy" icon="plug" href="/sdks/rpc">
     JSON-RPC through PolyNode's optimized Polygon endpoint with validator-targeted TX submission.
@@ -48,7 +48,7 @@ PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST
 | Feature | TypeScript | Rust |
 |---------|-----------|------|
 | Local cache (SQLite) | Yes | Yes |
-| REST API (17 endpoints) | Yes | Yes |
+| REST API (25 endpoints) | Yes | Yes |
 | WebSocket streaming | Yes | Yes |
 | Short-form markets (auto-rotation) | Yes | Yes |
 | All 10 event types | Typed interfaces | Typed structs + enum |
@@ -58,6 +58,7 @@ PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST
 | OrderbookEngine (views) | Yes | Yes |
 | Zlib compression | Transparent | Transparent |
 | Auto-reconnect | Exponential backoff | Exponential backoff |
+| Enriched data (leaderboard, trending, profiles) | Yes | Yes |
 | RPC proxy | Yes | Yes |
 
 ## Quick Comparison

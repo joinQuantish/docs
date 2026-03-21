@@ -1,7 +1,7 @@
 ---
 title: "REST API"
 sidebarTitle: "REST API"
-description: "Typed methods for all 17 REST endpoints"
+description: "Typed methods for all 25 REST endpoints"
 icon: "globe"
 ---
 
@@ -88,6 +88,54 @@ Every REST endpoint has a typed method with full request/response types.
     ```
   </Tab>
 </Tabs>
+
+## Enriched Data
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Leaderboard — top 20 traders by profit or volume
+    const lb = await pn.leaderboard({ period: 'monthly', sort: 'profit' });
+
+    // Trending — carousel, breaking, hot topics, movers
+    const trending = await pn.trending();
+
+    // Activity feed — 50 most recent trades platform-wide
+    const feed = await pn.activity();
+
+    // Biggest movers — largest 24h price changes
+    const movers = await pn.movers();
+
+    // Trader profile — full stats for any wallet
+    const profile = await pn.traderProfile('0xc2e7...');
+
+    // Trader PnL series — cumulative PnL over time
+    const pnl = await pn.traderPnl('0xc2e7...', { period: '1W' });
+
+    // Event detail — all sub-markets for an event
+    const event = await pn.event('fed-decision-in-april');
+
+    // Markets by category
+    const crypto = await pn.marketsByCategory('crypto');
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    let lb = client.leaderboard(Some("monthly"), Some("profit")).await?;
+    let trending = client.trending().await?;
+    let feed = client.activity().await?;
+    let movers = client.movers().await?;
+    let profile = client.trader_profile("0xc2e7...").await?;
+    let pnl = client.trader_pnl("0xc2e7...", Some("1W")).await?;
+    let event = client.event("fed-decision-in-april").await?;
+    let crypto = client.markets_by_category("crypto").await?;
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  Enriched endpoints are rate limited to 1 request per second per API key with 1-3 minute caching.
+</Note>
 
 ## Error Handling
 
