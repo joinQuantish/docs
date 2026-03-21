@@ -1,0 +1,119 @@
+---
+title: "REST API"
+sidebarTitle: "REST API"
+description: "Typed methods for all 17 REST endpoints"
+icon: "globe"
+---
+
+Every REST endpoint has a typed method with full request/response types.
+
+## Markets
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const markets = await pn.markets({ count: 10 });
+    const detail = await pn.market(tokenId);
+    const bySlug = await pn.marketBySlug('bitcoin-100k');
+    const byCondition = await pn.marketByCondition(conditionId);
+    const list = await pn.marketsList({ count: 20, sort: 'volume' });
+    const results = await pn.search('ethereum', { limit: 5 });
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    let markets = client.markets(Some(10)).await?;
+    let detail = client.market("token_id").await?;
+    let by_slug = client.market_by_slug("bitcoin-100k").await?;
+    let by_cond = client.market_by_condition("0xabc...").await?;
+    let list = client.list_markets(&ListMarketsParams {
+        count: Some(20), sort: Some("volume".into()), ..Default::default()
+    }).await?;
+    let results = client.search("ethereum", Some(5), None).await?;
+    ```
+  </Tab>
+</Tabs>
+
+## Pricing
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const candles = await pn.candles(tokenId, { resolution: '1h', limit: 100 });
+    const stats = await pn.stats(tokenId);
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    let candles = client.candles("token_id", Some(CandleResolution::OneHour), Some(100)).await?;
+    let stats = client.stats("token_id").await?;
+    ```
+  </Tab>
+</Tabs>
+
+## Settlements
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const recent = await pn.recentSettlements({ count: 20 });
+    const token = await pn.tokenSettlements(tokenId, { count: 10 });
+    const wallet = await pn.walletSettlements(address, { count: 10 });
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    let recent = client.recent_settlements(Some(20)).await?;
+    let token = client.token_settlements("token_id", Some(10)).await?;
+    let wallet = client.wallet_settlements("0xabc...", Some(10)).await?;
+    ```
+  </Tab>
+</Tabs>
+
+## Wallets & System
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const wallet = await pn.wallet(address);
+    const status = await pn.status();
+    const key = await pn.createKey('my-bot');
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    let wallet = client.wallet("0xabc...").await?;
+    let status = client.status().await?;
+    let key = client.create_key(Some("my-bot")).await?;
+    ```
+  </Tab>
+</Tabs>
+
+## Error Handling
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { ApiError } from 'polynode-sdk';
+
+    try {
+      await pn.market('invalid-id');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        console.log(err.status, err.message);  // 404, "Market not found"
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    match client.market("invalid-id").await {
+        Err(Error::NotFound(msg)) => println!("Not found: {}", msg),
+        Err(Error::Auth(msg)) => println!("Auth failed: {}", msg),
+        Err(Error::RateLimited(msg)) => println!("Rate limited: {}", msg),
+        Err(e) => println!("Other: {}", e),
+        Ok(detail) => println!("{:?}", detail),
+    }
+    ```
+  </Tab>
+</Tabs>

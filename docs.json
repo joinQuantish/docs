@@ -143,9 +143,24 @@
         "tab": "SDKs",
         "groups": [
           {
-            "group": "Client Libraries",
+            "group": "Getting Started",
             "pages": [
-              "sdks/overview",
+              "sdks/overview"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "sdks/short-form",
+              "sdks/websocket-streaming",
+              "sdks/orderbook",
+              "sdks/rest-api",
+              "sdks/rpc"
+            ]
+          },
+          {
+            "group": "Language Reference",
+            "pages": [
               "sdks/typescript",
               "sdks/rust"
             ]

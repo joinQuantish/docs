@@ -1,0 +1,36 @@
+---
+title: "RPC Proxy"
+sidebarTitle: "RPC"
+description: "JSON-RPC calls through PolyNode's optimized Polygon RPC endpoint"
+icon: "plug"
+---
+
+Both SDKs include a method to send JSON-RPC requests through `rpc.polynode.dev`. Transaction submission goes directly to the current block-producing validator for optimal inclusion. Read calls are served locally or proxied to a public RPC.
+
+## Usage
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Block number (served locally, no external call)
+    const blockNum = await pn.rpc('eth_blockNumber');
+
+    // Gas price (from PolyNode's gas oracle)
+    const gasPrice = await pn.rpc('eth_gasPrice');
+
+    // Read calls (proxied to public RPC)
+    const balance = await pn.rpc('eth_getBalance', ['0xabc...', 'latest']);
+    const block = await pn.rpc('eth_getBlockByNumber', ['latest', false]);
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    let block_num = client.rpc_call("eth_blockNumber", serde_json::json!([])).await?;
+    let gas_price = client.rpc_call("eth_gasPrice", serde_json::json!([])).await?;
+    let balance = client.rpc_call("eth_getBalance",
+        serde_json::json!(["0xabc...", "latest"])).await?;
+    ```
+  </Tab>
+</Tabs>
+
+See the [RPC documentation](/rpc/overview) for the full list of supported methods and limitations.

@@ -1,0 +1,228 @@
+---
+title: "WebSocket Streaming"
+sidebarTitle: "WebSocket Streaming"
+description: "Real-time event subscriptions with builder pattern, auto-reconnect, and compression"
+icon: "bolt"
+---
+
+The SDK wraps the PolyNode WebSocket API with typed subscriptions, automatic reconnection, and transparent zlib compression. One connection handles multiple subscriptions simultaneously.
+
+## Subscribe
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { PolyNodeWS } from 'polynode-sdk';
+
+    const ws = new PolyNodeWS('pn_live_...', 'wss://ws.polynode.dev/ws');
+
+    const sub = await ws.subscribe('settlements')
+      .minSize(100)
+      .status('pending')
+      .snapshotCount(20)
+      .send();
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::ws::{Subscription, SubscriptionType, StreamOptions};
+
+    let mut stream = client.stream(StreamOptions::default()).await?;
+
+    stream.subscribe(
+        Subscription::new(SubscriptionType::Settlements)
+            .min_size(100.0)
+            .status("pending")
+            .snapshot_count(20)
+    ).await?;
+    ```
+  </Tab>
+</Tabs>
+
+## Subscription Types
+
+| Type | What you get |
+|------|-------------|
+| `settlements` | Pending detection + confirmed settlements |
+| `trades` | All trade activity (settlements + confirmed trades) |
+| `prices` | Price-moving events for specific markets |
+| `blocks` | New Polygon blocks |
+| `wallets` | All activity for specified wallets |
+| `markets` | All activity for specified markets |
+| `large_trades` | Trades >= $1,000 |
+| `oracle` | UMA resolution events (proposals, disputes) |
+| `chainlink` | Real-time Chainlink price feeds (~1/sec) |
+
+## Filters
+
+All filters can be chained on any subscription:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    ws.subscribe('settlements')
+      .wallets(['0xabc...'])          // by wallet address
+      .tokens(['21742633...'])        // by token ID
+      .slugs(['bitcoin-100k'])        // by market slug
+      .conditionIds(['0xabc...'])     // by condition ID
+      .side('BUY')                    // BUY or SELL
+      .status('pending')             // pending, confirmed, or all
+      .minSize(100)                   // min USD size
+      .maxSize(10000)                 // max USD size
+      .eventTypes(['settlement'])     // specific event types
+      .snapshotCount(50)              // initial history (tier-limited)
+      .feeds(['BTC/USD'])             // Chainlink feed names
+      .send();
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    Subscription::new(SubscriptionType::Settlements)
+        .wallets(vec!["0xabc...".into()])
+        .tokens(vec!["21742633...".into()])
+        .slugs(vec!["bitcoin-100k".into()])
+        .condition_ids(vec!["0xabc...".into()])
+        .side("BUY")
+        .status("pending")
+        .min_size(100.0)
+        .max_size(10000.0)
+        .event_types(vec!["settlement".into()])
+        .snapshot_count(50)
+        .feeds(vec!["BTC/USD".into()])
+    ```
+  </Tab>
+</Tabs>
+
+## Consuming Events
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Typed event callbacks
+    sub.on('settlement', (event) => {
+      console.log(`${event.taker_side} $${event.taker_size} on ${event.market_title}`);
+    });
+
+    sub.on('status_update', (event) => {
+      console.log(`Confirmed in ${event.latency_ms}ms`);
+    });
+
+    // Catch-all
+    sub.on('*', (event) => {
+      console.log(event.event_type, event);
+    });
+
+    // Or use async iterator
+    for await (const event of sub) {
+      console.log(event.event_type);
+    }
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    while let Some(msg) = stream.next().await {
+        match msg? {
+            WsMessage::Event(event) => {
+                match event {
+                    PolyNodeEvent::Settlement(s) => {
+                        println!("{} ${:.2} on {}",
+                            s.taker_side, s.taker_size,
+                            s.market_title.as_deref().unwrap_or("?"));
+                    }
+                    PolyNodeEvent::StatusUpdate(u) => {
+                        println!("Confirmed in {}ms", u.latency_ms);
+                    }
+                    _ => {}
+                }
+            }
+            WsMessage::Snapshot(events) => {
+                println!("Snapshot: {} events", events.len());
+            }
+            WsMessage::Heartbeat { .. } => {}
+            WsMessage::Error { message, .. } => eprintln!("{}", message),
+            _ => {}
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Multiple Subscriptions
+
+Subscriptions stack on the same connection. Events are deduplicated.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const whales = await ws.subscribe('large_trades')
+      .minSize(5000).send();
+
+    const myWallet = await ws.subscribe('wallets')
+      .wallets(['0xabc...']).send();
+
+    // Both active simultaneously
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    stream.subscribe(
+        Subscription::new(SubscriptionType::LargeTrades)
+            .min_size(5000.0)
+    ).await?;
+
+    stream.subscribe(
+        Subscription::new(SubscriptionType::Wallets)
+            .wallets(vec!["0xabc...".into()])
+    ).await?;
+    ```
+  </Tab>
+</Tabs>
+
+## Auto-Reconnect
+
+Enabled by default. On disconnect, the SDK reconnects with exponential backoff and replays all active subscriptions.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    ws.onConnect(() => console.log('connected'));
+    ws.onDisconnect((reason) => console.log('disconnected:', reason));
+    ws.onReconnect((attempt) => console.log('reconnected, attempt', attempt));
+    ws.onError((err) => console.error(err));
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    let mut stream = client.stream(StreamOptions {
+        auto_reconnect: true,
+        max_reconnect_attempts: None,      // unlimited
+        initial_backoff: Duration::from_secs(1),
+        max_backoff: Duration::from_secs(30),
+        ..Default::default()
+    }).await?;
+    ```
+  </Tab>
+</Tabs>
+
+## Compression
+
+Zlib compression is enabled by default for all connections, saving ~50% bandwidth. Binary frames are transparently decompressed. No configuration needed.
+
+## Cleanup
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    sub.unsubscribe();       // remove one subscription
+    ws.unsubscribeAll();     // remove all
+    ws.disconnect();         // close connection
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    stream.unsubscribe(Some("sub_id".into())).await?;
+    stream.unsubscribe(None).await?;   // all
+    stream.close().await?;
+    ```
+  </Tab>
+</Tabs>

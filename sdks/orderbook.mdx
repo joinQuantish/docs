@@ -1,0 +1,157 @@
+---
+title: "Orderbook Streaming"
+sidebarTitle: "Orderbook"
+description: "Real-time orderbook data with local state management and filtered views"
+icon: "layer-group"
+---
+
+The SDK includes a dedicated orderbook client for real-time book data from `ob.polynode.dev`. This is a separate WebSocket connection from the event stream, with its own protocol optimized for orderbook updates across 108k+ Polymarket markets.
+
+## Subscribe
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { PolyNode, LocalOrderbook } from 'polynode-sdk';
+
+    const pn = new PolyNode({ apiKey: 'pn_live_...' });
+    await pn.orderbook.subscribe(['token_id_1', 'token_id_2']);
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::{PolyNodeClient, ObStreamOptions};
+
+    let client = PolyNodeClient::new("pn_live_...")?;
+    let mut stream = client.orderbook_stream(ObStreamOptions::default()).await?;
+    stream.subscribe(vec!["token_id_1".into()]).await?;
+    ```
+  </Tab>
+</Tabs>
+
+## Events
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    pn.orderbook.on('snapshot', (snap) => {
+      console.log(snap.asset_id, snap.bids.length, 'bids');
+    });
+
+    pn.orderbook.on('update', (delta) => {
+      // Incremental delta. size "0" = removal.
+      console.log(delta.asset_id, delta.bids.length, 'changes');
+    });
+
+    pn.orderbook.on('price', (change) => {
+      for (const asset of change.assets) {
+        console.log(asset.outcome, asset.price);
+      }
+    });
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    while let Some(msg) = stream.next().await {
+        match msg? {
+            ObMessage::Update(OrderbookUpdate::Snapshot(snap)) => {
+                println!("{}: {} bids", snap.asset_id, snap.bids.len());
+            }
+            ObMessage::Update(OrderbookUpdate::Update(delta)) => {
+                println!("{}: {} changes", delta.asset_id, delta.bids.len());
+            }
+            ObMessage::Update(OrderbookUpdate::PriceChange(change)) => {
+                for asset in &change.assets {
+                    println!("{}: {}", asset.outcome, asset.price);
+                }
+            }
+            _ => {}
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## LocalOrderbook
+
+Maintain a sorted local copy of the book:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { LocalOrderbook } from 'polynode-sdk';
+
+    const book = new LocalOrderbook();
+
+    pn.orderbook.on('snapshot', (snap) => book.applySnapshot(snap));
+    pn.orderbook.on('update', (delta) => book.applyUpdate(delta));
+
+    const fullBook = book.getBook(tokenId);   // { bids, asks }
+    const bestBid = book.getBestBid(tokenId);  // { price, size }
+    const spread = book.getSpread(tokenId);    // number
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::LocalOrderbook;
+
+    let mut book = LocalOrderbook::new();
+    book.apply_snapshot(&snap);
+    book.apply_update(&delta);
+
+    let best_bid = book.best_bid("token_id");
+    let spread = book.spread("token_id");
+    ```
+  </Tab>
+</Tabs>
+
+## OrderbookEngine
+
+Higher-level wrapper that manages one connection, maintains local state, and supports filtered views for different UI components.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { OrderbookEngine } from 'polynode-sdk';
+
+    const engine = new OrderbookEngine({ apiKey: 'pn_live_...', compress: true });
+    await engine.subscribe([tokenId1, tokenId2]);
+
+    engine.on('ready', () => {
+      console.log(`${engine.size} books loaded`);
+    });
+
+    // Query state
+    engine.midpoint(tokenId);  // (bestBid + bestAsk) / 2
+    engine.spread(tokenId);    // bestAsk - bestBid
+    engine.bestBid(tokenId);   // { price, size }
+
+    // Filtered views — no extra connections
+    const view = engine.view([tokenA, tokenB]);
+    view.on('update', (u) => console.log(u.asset_id));
+    view.midpoint(tokenA);
+
+    // Swap tokens or destroy
+    view.setTokens([newTokenX]);
+    view.destroy();
+
+    engine.close();
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::orderbook::engine::{OrderbookEngine, EngineOptions};
+
+    let engine = OrderbookEngine::connect("pn_live_...", EngineOptions::default()).await?;
+    engine.subscribe(vec![token_id.into()]).await?;
+
+    engine.midpoint(token_id).await;  // Option<f64>
+    engine.spread(token_id).await;    // Option<f64>
+
+    let mut view = engine.view(vec![token_a.into()]);
+    while let Some(update) = view.next().await { ... }
+
+    engine.close().await?;
+    ```
+  </Tab>
+</Tabs>
