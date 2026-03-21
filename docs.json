@@ -147,6 +147,18 @@
         ]
       },
       {
+        "tab": "CLI",
+        "badge": "New",
+        "groups": [
+          {
+            "group": "PolyNode CLI",
+            "pages": [
+              "cli/overview"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "SDKs",
         "groups": [
           {
