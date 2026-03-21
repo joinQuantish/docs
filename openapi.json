@@ -1422,6 +1422,14 @@
               "type": "boolean",
               "default": false
             }
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "description": "Filter to a specific wallet address. Returns only that wallet's positions in this market.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
