@@ -9,18 +9,18 @@ icon: "clock-rotate-left"
 
 ## 2026-03-21
 
-### API — Enriched Data Endpoints (v2)
+### API — Enriched Data Endpoints
 
 Eight new REST endpoints for trader analytics, market discovery, and platform trends.
 
-- `GET /v2/leaderboard` — Top 20 traders ranked by profit or volume (daily, weekly, monthly, all-time)
-- `GET /v2/trader/{wallet}` — Full trader profile: PnL, volume, trade count, largest win, portfolio value
-- `GET /v2/trader/{wallet}/pnl` — PnL time series at 4 resolutions (1D, 1W, 1M, ALL)
-- `GET /v2/trending` — Carousel highlights, breaking markets, hot topics, featured events, biggest movers
-- `GET /v2/activity` — Platform-wide live trade feed (last 50 trades with tx hashes)
-- `GET /v2/event/{slug}` — Full event data with all sub-markets, outcome prices, condition IDs
-- `GET /v2/movers` — Markets with the largest 24h price changes
-- `GET /v2/markets/{category}` — Category market listings with counts (crypto, politics, sports, etc.)
+- `GET /v1/leaderboard` — Top 20 traders ranked by profit or volume (daily, weekly, monthly, all-time)
+- `GET /v1/trader/{wallet}` — Full trader profile: PnL, volume, trade count, largest win, portfolio value
+- `GET /v1/trader/{wallet}/pnl` — PnL time series at 4 resolutions (1D, 1W, 1M, ALL)
+- `GET /v1/trending` — Carousel highlights, breaking markets, hot topics, featured events, biggest movers
+- `GET /v1/activity` — Platform-wide live trade feed (last 50 trades with tx hashes)
+- `GET /v1/event/{slug}` — Full event data with all sub-markets, outcome prices, condition IDs
+- `GET /v1/movers` — Markets with the largest 24h price changes
+- `GET /v1/markets/{category}` — Category market listings with counts (crypto, politics, sports, etc.)
 
 Rate limit: 1 request per second per API key. Responses cached 1-3 minutes.
 
