@@ -21,10 +21,22 @@ With the cache:
 
 <Steps>
   <Step title="Install">
-    ```bash
-    npm install polynode-sdk better-sqlite3
-    ```
-    `better-sqlite3` is an optional peer dependency. Only needed if you use the cache.
+    <Tabs>
+      <Tab title="TypeScript">
+        ```bash
+        npm install polynode-sdk better-sqlite3
+        ```
+        `better-sqlite3` is an optional peer dependency. Only needed if you use the cache.
+      </Tab>
+      <Tab title="Rust">
+        ```toml
+        # Cargo.toml
+        polynode = { version = "0.4", features = ["cache"] }
+        tokio = { version = "1", features = ["full"] }
+        ```
+        The `cache` feature includes `rusqlite` with bundled SQLite. No system dependency needed.
+      </Tab>
+    </Tabs>
   </Step>
   <Step title="Create a watchlist">
     Create `polynode.watch.json` in your project root:
@@ -42,26 +54,53 @@ With the cache:
     ```
   </Step>
   <Step title="Start the cache">
-    ```typescript
-    import { PolyNode, PolyNodeCache } from 'polynode-sdk';
+    <Tabs>
+      <Tab title="TypeScript">
+        ```typescript
+        import { PolyNode, PolyNodeCache } from 'polynode-sdk';
 
-    const pn = new PolyNode({ apiKey: 'pn_live_...' });
-    const cache = new PolyNodeCache(pn, {
-      dbPath: './my-cache.db',
-      watchlistPath: './polynode.watch.json',
-    });
+        const pn = new PolyNode({ apiKey: 'pn_live_...' });
+        const cache = new PolyNodeCache(pn, {
+          dbPath: './my-cache.db',
+          watchlistPath: './polynode.watch.json',
+        });
 
-    await cache.start();
-    // Backfill runs automatically, live stream starts immediately
-    ```
+        await cache.start();
+        ```
+      </Tab>
+      <Tab title="Rust">
+        ```rust
+        use polynode::{PolyNodeClient, cache::PolyNodeCache};
+        use std::sync::Arc;
+
+        let client = Arc::new(PolyNodeClient::new("pn_live_...")?);
+        let mut cache = PolyNodeCache::builder(client)
+            .db_path("./my-cache.db")
+            .watchlist_path("./polynode.watch.json")
+            .build()?;
+
+        cache.start().await?;
+        ```
+      </Tab>
+    </Tabs>
   </Step>
   <Step title="Query locally">
-    ```typescript
-    // All queries hit the local SQLite DB — zero API calls
-    const trades = cache.walletTrades('0xabc...', { limit: 50 });
-    const positions = cache.walletPositions('0xabc...');
-    const stats = cache.stats();
-    ```
+    <Tabs>
+      <Tab title="TypeScript">
+        ```typescript
+        const trades = cache.walletTrades('0xabc...', { limit: 50 });
+        const positions = cache.walletPositions('0xabc...');
+        const stats = cache.stats();
+        ```
+      </Tab>
+      <Tab title="Rust">
+        ```rust
+        let trades = cache.wallet_trades("0xabc...", &QueryOptions { limit: Some(50), ..Default::default() })?;
+        let positions = cache.wallet_positions("0xabc...")?;
+        let stats = cache.stats()?;
+        ```
+      </Tab>
+    </Tabs>
   </Step>
 </Steps>
 
