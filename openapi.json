@@ -943,6 +943,296 @@
           }
         ]
       }
+    },
+    "/v1/wallets/{addr}/positions": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Wallet positions & P&L",
+        "description": "Returns all current positions for a wallet with full P&L breakdown. Each position includes unrealized cash P&L, realized P&L, percent P&L, average entry price, current value, and initial value.\n\nData is sourced from Polymarket and enriched with PolyNode market metadata (title, slug, image, outcome names).\n\nUse `sortBy` to rank positions by P&L. Supports pagination with `limit` and `offset`.",
+        "operationId": "get_wallet_positions",
+        "parameters": [
+          {
+            "name": "addr",
+            "in": "path",
+            "description": "Wallet address (0x-prefixed, case-insensitive)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum positions to return (default 100, max 500)",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset (default 0)",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Sort positions by field",
+            "schema": {
+              "type": "string",
+              "enum": ["TOKENS", "CASHPNL", "PERCENTPNL", "CURRENT", "INITIAL", "TITLE", "RESOLVING", "PRICE", "AVGPRICE"],
+              "default": "TOKENS"
+            }
+          },
+          {
+            "name": "sortDirection",
+            "in": "query",
+            "description": "Sort direction",
+            "schema": {
+              "type": "string",
+              "enum": ["ASC", "DESC"],
+              "default": "DESC"
+            }
+          },
+          {
+            "name": "sizeThreshold",
+            "in": "query",
+            "description": "Minimum position size to include (default 0 = all positions)",
+            "schema": {
+              "type": "number",
+              "default": 0,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet positions with P&L",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletPositionsResponse"
+                },
+                "example": {
+                  "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+                  "count": 2,
+                  "positions": [
+                    {
+                      "asset": "109021283308187724445216748902158026838799197184254281870091204386586933195142",
+                      "conditionId": "0xca0136d7acc14db3835e40b5d13bc2723ffc7a34a950bef39a2f5a18b07399c3",
+                      "title": "Trail Blazers vs. Timberwolves",
+                      "slug": "nba-por-min-2026-03-20",
+                      "outcome": "Trail Blazers",
+                      "outcomeIndex": 0,
+                      "size": 1390067.28,
+                      "avgPrice": 0.502474,
+                      "curPrice": 1.0,
+                      "initialValue": 698472.66,
+                      "currentValue": 1390067.28,
+                      "cashPnl": 691594.61,
+                      "realizedPnl": 0,
+                      "percentPnl": 99.02,
+                      "percentRealizedPnl": 99.02,
+                      "totalBought": 1390067.28,
+                      "redeemable": true,
+                      "negativeRisk": false,
+                      "endDate": "2026-03-21"
+                    },
+                    {
+                      "asset": "3039641309958397001906153616677074061284510636203465131156925998487819889437",
+                      "conditionId": "0x895e01dbf3e6a33cd9a44ca0f8cdb5df1bd2b0b6ebed5300d28f8da7145145e4",
+                      "title": "Will Donald Trump win the 2028 Republican presidential nomination?",
+                      "slug": "will-donald-trump-win-the-2028-republican-presidential-nomination",
+                      "outcome": "Yes",
+                      "outcomeIndex": 0,
+                      "size": 248651.26,
+                      "avgPrice": 0.040276,
+                      "curPrice": 0.0165,
+                      "initialValue": 10014.68,
+                      "currentValue": 4102.75,
+                      "cashPnl": -5911.93,
+                      "realizedPnl": 0,
+                      "percentPnl": -59.03,
+                      "percentRealizedPnl": -59.03,
+                      "totalBought": 248651.26,
+                      "redeemable": false,
+                      "negativeRisk": true,
+                      "endDate": "2028-11-07"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream data source unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/wallets/{addr}/trades": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Wallet trade history",
+        "description": "Returns recent trades for a wallet, enriched with PolyNode market metadata. Each trade includes side (BUY/SELL), price, size, outcome, and transaction hash.\n\nSupports pagination with `limit` and `offset`.",
+        "operationId": "get_wallet_trades",
+        "parameters": [
+          {
+            "name": "addr",
+            "in": "path",
+            "description": "Wallet address (0x-prefixed, case-insensitive)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum trades to return (default 100, max 500)",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset (default 0)",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet trade history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletTradesResponse"
+                },
+                "example": {
+                  "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+                  "count": 2,
+                  "trades": [
+                    {
+                      "asset": "13415003150793384080443080790288579981533217646600261055571395734776572036737",
+                      "conditionId": "0x758ed7ee3495a4c23172fa8093dc86b8e62576e050f5a401a6108ebd4aedf681",
+                      "title": "Raptors vs. Nuggets",
+                      "slug": "nba-tor-den-2026-03-20",
+                      "outcome": "Raptors",
+                      "outcomeIndex": 0,
+                      "side": "BUY",
+                      "price": 0.3,
+                      "size": 102914.64,
+                      "timestamp": 1774052897,
+                      "transactionHash": "0x327ebe167162830cedb687e33c7f6e6400911b36040cf94c44f31728bfc4c86c",
+                      "name": "beachboy4"
+                    },
+                    {
+                      "asset": "81704442833845672927495583718496337218247767238607647008236901764430036532097",
+                      "conditionId": "0xd29e0bc31db95202735063064c5d9c9411ddd5da96564a591dcaa67e899d6948",
+                      "title": "Spread: Nuggets (-7.5)",
+                      "slug": "nba-tor-den-2026-03-20-spread-home-7pt5",
+                      "outcome": "Raptors",
+                      "outcomeIndex": 1,
+                      "side": "BUY",
+                      "price": 0.55,
+                      "size": 227288.33,
+                      "timestamp": 1774052841,
+                      "transactionHash": "0x3844127c4af7dc94f90c156697e3dafc3bc4342acc25b4dd88245e6c2e1cc0d0",
+                      "name": "beachboy4"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream data source unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -2255,6 +2545,185 @@
           "single",
           "batch"
         ]
+      },
+      "WalletPositionsResponse": {
+        "type": "object",
+        "description": "Wallet positions with P&L breakdown.",
+        "required": ["wallet", "count", "positions"],
+        "properties": {
+          "wallet": {
+            "type": "string",
+            "description": "Wallet address."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of positions returned."
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WalletPosition"
+            }
+          }
+        }
+      },
+      "WalletPosition": {
+        "type": "object",
+        "description": "A single position with P&L data.",
+        "properties": {
+          "asset": {
+            "type": "string",
+            "description": "Token ID of the outcome token."
+          },
+          "conditionId": {
+            "type": "string",
+            "description": "Condition ID (market identifier)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Market title."
+          },
+          "slug": {
+            "type": "string",
+            "description": "Market slug."
+          },
+          "outcome": {
+            "type": "string",
+            "description": "Outcome name (e.g. \"Yes\", \"Trail Blazers\")."
+          },
+          "outcomeIndex": {
+            "type": "integer",
+            "description": "Index of this outcome (0 or 1)."
+          },
+          "size": {
+            "type": "number",
+            "description": "Position size in outcome tokens."
+          },
+          "avgPrice": {
+            "type": "number",
+            "description": "Average entry price."
+          },
+          "curPrice": {
+            "type": "number",
+            "description": "Current market price."
+          },
+          "initialValue": {
+            "type": "number",
+            "description": "Total cost basis (USDC spent to acquire position)."
+          },
+          "currentValue": {
+            "type": "number",
+            "description": "Current market value of the position."
+          },
+          "cashPnl": {
+            "type": "number",
+            "description": "Unrealized cash P&L (currentValue - initialValue)."
+          },
+          "realizedPnl": {
+            "type": "number",
+            "description": "Realized P&L from closed/redeemed portions."
+          },
+          "percentPnl": {
+            "type": "number",
+            "description": "Total P&L as a percentage of initial value."
+          },
+          "percentRealizedPnl": {
+            "type": "number",
+            "description": "Realized P&L as a percentage."
+          },
+          "totalBought": {
+            "type": "number",
+            "description": "Total tokens bought."
+          },
+          "redeemable": {
+            "type": "boolean",
+            "description": "Whether the position can be redeemed (market resolved in this outcome's favor)."
+          },
+          "negativeRisk": {
+            "type": "boolean",
+            "description": "Whether this is a negative-risk market."
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Market end date (YYYY-MM-DD)."
+          }
+        }
+      },
+      "WalletTradesResponse": {
+        "type": "object",
+        "description": "Wallet trade history.",
+        "required": ["wallet", "count", "trades"],
+        "properties": {
+          "wallet": {
+            "type": "string",
+            "description": "Wallet address."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of trades returned."
+          },
+          "trades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WalletTrade"
+            }
+          }
+        }
+      },
+      "WalletTrade": {
+        "type": "object",
+        "description": "A single trade.",
+        "properties": {
+          "asset": {
+            "type": "string",
+            "description": "Token ID."
+          },
+          "conditionId": {
+            "type": "string",
+            "description": "Condition ID (market identifier)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Market title."
+          },
+          "slug": {
+            "type": "string",
+            "description": "Market slug."
+          },
+          "outcome": {
+            "type": "string",
+            "description": "Outcome name."
+          },
+          "outcomeIndex": {
+            "type": "integer",
+            "description": "Index of this outcome."
+          },
+          "side": {
+            "type": "string",
+            "enum": ["BUY", "SELL"],
+            "description": "Trade direction."
+          },
+          "price": {
+            "type": "number",
+            "description": "Execution price."
+          },
+          "size": {
+            "type": "number",
+            "description": "Trade size in outcome tokens."
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "Unix timestamp of the trade."
+          },
+          "transactionHash": {
+            "type": "string",
+            "description": "On-chain transaction hash."
+          },
+          "name": {
+            "type": "string",
+            "description": "Polymarket username (if available)."
+          }
+        }
       },
       "WalletActivity": {
         "type": "object",
