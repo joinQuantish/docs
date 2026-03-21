@@ -1401,6 +1401,154 @@
           }
         ]
       }
+    },
+    "/v1/markets/{id}/trades": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Market trade history",
+        "description": "Returns trade history for a market, optionally filtered by trader wallet and/or side (BUY/SELL). Enriched with PolyNode market metadata.\n\nAccepts a condition ID (0x-prefixed) or market slug.",
+        "operationId": "get_market_trades",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Condition ID (0x-prefixed) or market slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "description": "Filter trades to a specific wallet address",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "side",
+            "in": "query",
+            "description": "Filter by trade direction",
+            "schema": {
+              "type": "string",
+              "enum": ["BUY", "SELL"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum trades to return (default 100, max 500)",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset (default 0)",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market trade history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketTradesResponse"
+                },
+                "example": {
+                  "condition_id": "0xca0136d7acc14db3835e40b5d13bc2723ffc7a34a950bef39a2f5a18b07399c3",
+                  "count": 2,
+                  "trades": [
+                    {
+                      "proxyWallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+                      "name": "beachboy4",
+                      "side": "BUY",
+                      "outcome": "Trail Blazers",
+                      "outcomeIndex": 0,
+                      "size": 313726.28,
+                      "price": 0.51,
+                      "timestamp": 1774050427,
+                      "title": "Trail Blazers vs. Timberwolves",
+                      "slug": "nba-por-min-2026-03-20",
+                      "transactionHash": "0x55135cf4e359b6b53bb99a3bae54d102572268ae4cb816fcf6a648d0116d7f56"
+                    },
+                    {
+                      "proxyWallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+                      "name": "beachboy4",
+                      "side": "BUY",
+                      "outcome": "Trail Blazers",
+                      "outcomeIndex": 0,
+                      "size": 16827.77,
+                      "price": 0.5,
+                      "timestamp": 1774049705,
+                      "title": "Trail Blazers vs. Timberwolves",
+                      "slug": "nba-por-min-2026-03-20",
+                      "transactionHash": "0xfddccf969b857353f047b2540a25175a77fc7d87c4f426cdf3172788cad97a85"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Market not found for the given slug",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream data source unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -2890,6 +3038,74 @@
           "name": {
             "type": "string",
             "description": "Polymarket username (if available)."
+          }
+        }
+      },
+      "MarketTradesResponse": {
+        "type": "object",
+        "description": "Trade history for a market.",
+        "required": ["condition_id", "count", "trades"],
+        "properties": {
+          "condition_id": {
+            "type": "string",
+            "description": "Market condition ID."
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of trades returned."
+          },
+          "trades": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "proxyWallet": {
+                  "type": "string",
+                  "description": "Trader's wallet address."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Polymarket username."
+                },
+                "side": {
+                  "type": "string",
+                  "enum": ["BUY", "SELL"],
+                  "description": "Trade direction."
+                },
+                "outcome": {
+                  "type": "string",
+                  "description": "Outcome name."
+                },
+                "outcomeIndex": {
+                  "type": "integer",
+                  "description": "Outcome index."
+                },
+                "size": {
+                  "type": "number",
+                  "description": "Trade size in outcome tokens."
+                },
+                "price": {
+                  "type": "number",
+                  "description": "Execution price."
+                },
+                "timestamp": {
+                  "type": "integer",
+                  "description": "Unix timestamp."
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Market title."
+                },
+                "slug": {
+                  "type": "string",
+                  "description": "Market slug."
+                },
+                "transactionHash": {
+                  "type": "string",
+                  "description": "On-chain transaction hash."
+                }
+              }
+            }
           }
         }
       },

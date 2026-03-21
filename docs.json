@@ -104,7 +104,8 @@
             "pages": [
               "api-reference/wallets/positions",
               "api-reference/wallets/trades",
-              "api-reference/wallets/market-positions"
+              "api-reference/wallets/market-positions",
+              "api-reference/wallets/market-trades"
             ]
           },
           {
