@@ -67,12 +67,6 @@
               "guides/rate-limits"
             ]
           },
-          {
-            "group": "Updates",
-            "pages": [
-              "changelog"
-            ]
-          }
         ]
       },
       {
@@ -204,6 +198,17 @@
             "pages": [
               "sdks/typescript",
               "sdks/rust"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Changelog",
+        "groups": [
+          {
+            "group": "Changelog",
+            "pages": [
+              "changelog"
             ]
           }
         ]
