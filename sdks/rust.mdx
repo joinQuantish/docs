@@ -11,8 +11,11 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-polynode = "0.3"
+polynode = "0.4"
 tokio = { version = "1", features = ["rt", "macros"] }
+
+# For local cache (optional):
+# polynode = { version = "0.4", features = ["cache"] }
 ```
 
 ## Quick Start
@@ -219,6 +222,41 @@ stream.unsubscribe(Some("sub_id".into())).await?;  // remove one
 stream.unsubscribe(None).await?;                     // remove all
 stream.close().await?;                                // close connection
 ```
+
+## Local Cache
+
+Store trades and positions in a local SQLite database. Enable the `cache` feature:
+
+```toml
+polynode = { version = "0.4", features = ["cache"] }
+```
+
+```rust
+use polynode::{PolyNodeClient, cache::{PolyNodeCache, QueryOptions, EntityType}};
+use std::sync::Arc;
+
+let client = Arc::new(PolyNodeClient::new("pn_live_...")?);
+let mut cache = PolyNodeCache::builder(client)
+    .db_path("./cache.db")
+    .watchlist_path("./polynode.watch.json")
+    .on_backfill_progress(|p| println!("{}: {} trades ({})", p.label, p.fetched, p.status))
+    .build()?;
+
+cache.start().await?;
+
+// Query locally — instant, no API calls
+let trades = cache.wallet_trades("0xabc...", &QueryOptions { limit: Some(50), ..Default::default() })?;
+let positions = cache.wallet_positions("0xabc...")?;
+let stats = cache.stats()?;
+println!("{} trades, {} positions", stats.trade_count, positions.len());
+
+// Add wallets at runtime
+cache.add_to_watchlist(&[(EntityType::Wallet, "0xnew...".into(), "whale".into(), true)])?;
+
+cache.stop().await?;
+```
+
+See [Local Cache](/sdks/local-cache) for full documentation, watchlist configuration, backfill timing, and all query methods.
 
 ## Configuration
 
