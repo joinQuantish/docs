@@ -310,6 +310,50 @@ await cache.stop();  // closes WebSocket, stops backfill, closes DB
 const deleted = cache.prune();  // removes data older than TTL
 ```
 
+## Testing Utilities
+
+The SDK includes helpers that return known-active Polymarket wallets. Useful for examples, integration tests, and getting started without needing to find wallet addresses yourself.
+
+```typescript
+import { getActiveTestWallet, getActiveTestWallets } from 'polynode-sdk';
+
+// Get a single active wallet (instant, uses cached fallback)
+const wallet = await getActiveTestWallet();
+
+// Get multiple active wallets
+const wallets = await getActiveTestWallets(5);
+
+// Fetch a fresh wallet from live leaderboard data
+const fresh = await getActiveTestWallet({ fresh: true });
+```
+
+Combine with the cache for a zero-config quickstart:
+
+```typescript
+import { PolyNode, PolyNodeCache, getActiveTestWallet } from 'polynode-sdk';
+
+const pn = new PolyNode({ apiKey: 'pn_live_...' });
+const wallet = await getActiveTestWallet();
+
+const cache = new PolyNodeCache(pn, {
+  dbPath: './cache.db',
+  watchlistPath: './polynode.watch.json',
+});
+
+await cache.start();
+cache.addToWatchlist([{ type: 'wallet', id: wallet, label: 'test-trader' }]);
+
+// Wait for backfill, then query
+setTimeout(() => {
+  const trades = cache.walletTrades(wallet, { limit: 10 });
+  console.log(`${trades.length} trades for ${wallet}`);
+}, 3000);
+```
+
+<Note>
+  `getActiveTestWallet()` returns instantly by default using a cached list of known-active wallets. Pass `{ fresh: true }` to fetch the current top trader from live data (adds ~1-2s network latency).
+</Note>
+
 ## Full Example
 
 ```typescript
