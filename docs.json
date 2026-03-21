@@ -103,7 +103,8 @@
             "group": "Wallets",
             "pages": [
               "api-reference/wallets/positions",
-              "api-reference/wallets/trades"
+              "api-reference/wallets/trades",
+              "api-reference/wallets/market-positions"
             ]
           },
           {

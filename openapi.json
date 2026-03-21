@@ -1233,6 +1233,174 @@
           }
         ]
       }
+    },
+    "/v1/markets/{id}/positions": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Market positions & P&L",
+        "description": "Returns all holder positions for a market with per-holder P&L breakdown. Results are grouped by outcome token, with each holder's cash P&L, realized P&L, total P&L, average entry price, and current value.\n\nAccepts a condition ID (0x-prefixed) or market slug. Supports sorting by P&L and filtering by position status (open/closed/all).",
+        "operationId": "get_market_positions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Condition ID (0x-prefixed) or market slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum holders per outcome token (default 50, max 500)",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset (default 0)",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Sort holders by field",
+            "schema": {
+              "type": "string",
+              "enum": ["TOKENS", "CASH_PNL", "REALIZED_PNL", "TOTAL_PNL"],
+              "default": "TOTAL_PNL"
+            }
+          },
+          {
+            "name": "sortDirection",
+            "in": "query",
+            "description": "Sort direction",
+            "schema": {
+              "type": "string",
+              "enum": ["ASC", "DESC"],
+              "default": "DESC"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by position status",
+            "schema": {
+              "type": "string",
+              "enum": ["OPEN", "CLOSED", "ALL"],
+              "default": "ALL"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Market positions grouped by outcome token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketPositionsResponse"
+                },
+                "example": {
+                  "condition_id": "0x895e01dbf3e6a33cd9a44ca0f8cdb5df1bd2b0b6ebed5300d28f8da7145145e4",
+                  "market_title": "Will Donald Trump win the 2028 Republican presidential nomination?",
+                  "slug": "will-donald-trump-win-the-2028-republican-presidential-nomination",
+                  "outcome_names": ["Yes", "No"],
+                  "outcomes": [
+                    {
+                      "token": "3039641309958397001906153616677074061284510636203465131156925998487819889437",
+                      "positions": [
+                        {
+                          "proxyWallet": "0xa5ef39c3d3e10d0b270233af41cac69796b12966",
+                          "name": "",
+                          "outcome": "No",
+                          "outcomeIndex": 1,
+                          "size": 1735573.72,
+                          "avgPrice": 0.0,
+                          "currPrice": 0.9835,
+                          "currentValue": 1706936.75,
+                          "cashPnl": 1706936.75,
+                          "realizedPnl": 0,
+                          "totalPnl": 1706936.75
+                        },
+                        {
+                          "proxyWallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+                          "name": "beachboy4",
+                          "outcome": "Yes",
+                          "outcomeIndex": 0,
+                          "size": 248651.26,
+                          "avgPrice": 0.040276,
+                          "currPrice": 0.0165,
+                          "currentValue": 4102.75,
+                          "cashPnl": -5911.93,
+                          "realizedPnl": 0,
+                          "totalPnl": -5911.93
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Market not found for the given slug",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream data source unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -2722,6 +2890,103 @@
           "name": {
             "type": "string",
             "description": "Polymarket username (if available)."
+          }
+        }
+      },
+      "MarketPositionsResponse": {
+        "type": "object",
+        "description": "Holder positions for a market, grouped by outcome token.",
+        "required": ["condition_id", "outcomes"],
+        "properties": {
+          "condition_id": {
+            "type": "string",
+            "description": "Market condition ID."
+          },
+          "market_title": {
+            "type": "string",
+            "description": "Market title (enriched by PolyNode)."
+          },
+          "slug": {
+            "type": "string",
+            "description": "Market slug (enriched by PolyNode)."
+          },
+          "outcome_names": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Outcome names (e.g. [\"Yes\", \"No\"])."
+          },
+          "outcomes": {
+            "type": "array",
+            "description": "Array of outcome tokens, each containing a list of holder positions.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "token": {
+                  "type": "string",
+                  "description": "Token ID for this outcome."
+                },
+                "positions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MarketHolderPosition"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "MarketHolderPosition": {
+        "type": "object",
+        "description": "A single holder's position in a market outcome.",
+        "properties": {
+          "proxyWallet": {
+            "type": "string",
+            "description": "Holder's wallet address."
+          },
+          "name": {
+            "type": "string",
+            "description": "Polymarket username (if set)."
+          },
+          "outcome": {
+            "type": "string",
+            "description": "Outcome name."
+          },
+          "outcomeIndex": {
+            "type": "integer",
+            "description": "Outcome index (0 or 1)."
+          },
+          "size": {
+            "type": "number",
+            "description": "Position size in outcome tokens."
+          },
+          "avgPrice": {
+            "type": "number",
+            "description": "Average entry price."
+          },
+          "currPrice": {
+            "type": "number",
+            "description": "Current market price."
+          },
+          "currentValue": {
+            "type": "number",
+            "description": "Current market value."
+          },
+          "cashPnl": {
+            "type": "number",
+            "description": "Unrealized cash P&L."
+          },
+          "realizedPnl": {
+            "type": "number",
+            "description": "Realized P&L from closed portions."
+          },
+          "totalPnl": {
+            "type": "number",
+            "description": "Total P&L (cash + realized)."
+          },
+          "totalBought": {
+            "type": "number",
+            "description": "Total tokens bought."
           }
         }
       },
