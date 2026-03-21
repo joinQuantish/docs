@@ -252,11 +252,18 @@ Query positions for multiple wallets in one call:
 const all = cache.multiWalletPositions(['0xad53...', '0x2afd...', '0xe4ca...']);
 ```
 
+Returns an object keyed by wallet address, where each value is an array of positions:
+
 ```json Example output
 {
-  "0xad53...": 200,  // positions
-  "0x2afd...": 207,
-  "0xe4ca...": 199
+  "0xad53...": [
+    { "wallet": "0xad53...", "market_title": "...", "outcome": "Yes", "size": 10000, "avg_price": 0.04, "cash_pnl": -50.0, "trade_count": 3 },
+    { "wallet": "0xad53...", "market_title": "...", "outcome": "No", "size": 500, "avg_price": 0.41, "cash_pnl": 12.5, "trade_count": 1 }
+  ],
+  "0x2afd...": [
+    { "wallet": "0x2afd...", "market_title": "...", "outcome": "Yes", "size": 250, "avg_price": 0.55, "cash_pnl": 30.0, "trade_count": 2 }
+  ],
+  "0xe4ca...": [...]
 }
 ```
 
@@ -285,9 +292,9 @@ const positions = cache.marketPositions('0xe1cc...');
 
 ```json Example output
 [
-  { "outcome": "Yes", "net_qty": -172.12, "avg_price": 0.8399 },
-  { "outcome": "No", "net_qty": -81.39, "avg_price": 0.1808 },
-  { "outcome": "No", "net_qty": 28.66, "avg_price": 0.18 }
+  { "outcome": "Yes", "size": -172.12, "avg_price": 0.8399 },
+  { "outcome": "No", "size": -81.39, "avg_price": 0.1808 },
+  { "outcome": "No", "size": 28.66, "avg_price": 0.18 }
 ]
 ```
 
@@ -633,7 +640,7 @@ await cache.start();
 // Query locally — instant
 const positions = cache.walletPositions('0xabc...');
 for (const p of positions) {
-  console.log(`${p.outcome}: ${p.net_qty} shares @ ${p.avg_price.toFixed(4)}`);
+  console.log(`${p.outcome}: ${p.size} shares @ ${p.avg_price.toFixed(4)}`);
 }
 
 // Add a wallet at runtime
