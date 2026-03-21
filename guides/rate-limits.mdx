@@ -100,7 +100,7 @@ WebSocket subscriptions are not rate-limited by requests/min, but message volume
 
 ## Data endpoint limits
 
-The wallet and market data endpoints (positions, trades, P&L) have a separate shared throughput limit of **10 requests per second** across all users. This applies to:
+The wallet and market data endpoints (positions, trades, P&L) have a separate shared throughput limit of **20 requests per second** across all users. This applies to:
 
 - `/v1/wallets/{addr}/positions`
 - `/v1/wallets/{addr}/trades`
