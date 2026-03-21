@@ -106,14 +106,14 @@ With the cache:
 
 ## Backfill Timing
 
-Backfill fetches the most recent trades for each wallet from the API. Each wallet takes one request.
+Backfill fetches positions and recent trades for each wallet. Two requests per wallet (positions + trades).
 
 | Wallets | Requests | Time at 1 req/s |
 |---------|----------|-----------------|
-| 1 | 1 | ~1 second |
-| 10 | 10 | ~10 seconds |
-| 50 | 50 | ~50 seconds |
-| 100 | 100 | ~2 minutes |
+| 1 | 2 | ~2 seconds |
+| 10 | 20 | ~20 seconds |
+| 50 | 100 | ~2 minutes |
+| 100 | 200 | ~3.5 minutes |
 
 For deeper history, set `backfillPages` higher. Each additional page adds one request per wallet:
 
@@ -207,32 +207,39 @@ const oldest = cache.walletTrades('0xad53...', { orderBy: 'timestamp_asc', limit
 
 ### Wallet Positions
 
-Positions are computed on-the-fly from cached trades. No separate storage needed.
+Positions are backfilled directly from the API with full P&L, current price, and value data. Trade timestamps are enriched from the local trades table.
 
 ```typescript
 const positions = cache.walletPositions('0xad53...');
 // 200 positions from 500 cached trades
 ```
 
-```json Example output (first 2 of 200)
+```json Example output (first 2 of 500)
 [
   {
-    "market_title": "Will Trump post \"Texas\" on Truth Social this week?",
+    "wallet": "0xad53...",
+    "token_id": "75929940...",
+    "market_title": "Will \"How to Make a Killing\" score at least 59 on the Rotten Tomatoes Tomatometer?",
     "outcome": "Yes",
-    "net_qty": 14.00,
-    "avg_price": 0.0900,
-    "trade_count": 1,
-    "first_trade_at": "2026-03-21T17:26:47.000Z",
-    "last_trade_at": "2026-03-21T17:26:47.000Z"
+    "size": 10000,
+    "avg_price": 0.001,
+    "cur_price": 0.0005,
+    "current_value": 5.0,
+    "cash_pnl": -5.0,
+    "percent_pnl": -50.0,
+    "redeemable": false,
+    "trade_count": 3,
+    "first_trade_at": 1710000000,
+    "last_trade_at": 1774100000
   },
   {
+    "wallet": "0xad53...",
     "market_title": "Will Resni.ca (Res) be part of the next Government of Slovenia?",
     "outcome": "Yes",
-    "net_qty": 7.50,
-    "avg_price": 0.4100,
-    "trade_count": 1,
-    "first_trade_at": "2026-03-20T15:42:03.000Z",
-    "last_trade_at": "2026-03-20T15:42:03.000Z"
+    "size": 7.50,
+    "avg_price": 0.41,
+    "cash_pnl": 2.5,
+    "trade_count": 1
   }
 ]
 ```
