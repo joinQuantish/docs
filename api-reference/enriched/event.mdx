@@ -1,50 +1,73 @@
 ---
 title: "Event Detail"
 api: "GET /v1/event/{slug}"
-description: "Full event data with all markets, prices, and metadata."
+description: "Full event data with all markets, prices, token IDs, and metadata."
 ---
 
-Returns comprehensive data for a single Polymarket event, including all sub-markets with current outcome prices, volumes, and liquidity.
+Returns comprehensive data for a single Polymarket event, including all sub-markets with current outcome prices, volumes, liquidity, and token IDs for price history lookups.
 
 <ParamField path="slug" type="string" required>
-  Event slug (e.g., `fed-decision-in-april`). Found in event URLs on Polymarket.
+  Event slug (e.g., `how-many-fed-rate-cuts-in-2026`). Found in event URLs on Polymarket.
 </ParamField>
 
 <ResponseExample>
 ```json
 {
-  "id": 75478,
-  "slug": "fed-decision-in-april",
-  "title": "Fed decision in April?",
-  "description": "The FED interest rates are defined...",
-  "image": "https://...",
+  "id": "51456",
+  "slug": "how-many-fed-rate-cuts-in-2026",
+  "title": "How many Fed rate cuts in 2026?",
+  "description": "This market will resolve according to the exact amount of cuts...",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/how-many-fed-rate-cuts-in-2025-9qstZkSL1dn0.jpg",
+  "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/how-many-fed-rate-cuts-in-2025-9qstZkSL1dn0.jpg",
   "active": true,
   "closed": false,
-  "volume": 17298422,
-  "volume24hr": 234567,
-  "liquidity": 3131732,
-  "startDate": "2025-11-13T00:40:50Z",
-  "endDate": "2026-04-29T00:00:00Z",
+  "volume": 12679447.65,
+  "volume24hr": 531530.07,
+  "liquidity": 1120355.33,
+  "openInterest": 711723.41,
+  "startDate": "2025-09-29T22:29:04.30848Z",
+  "endDate": "2026-12-31T00:00:00Z",
   "markets": [
     {
-      "question": "Will the Fed decrease interest rates by 50+ bps?",
-      "conditionId": "0xd72622d154dfe65b...",
+      "question": "Will no Fed rate cuts happen in 2026?",
+      "conditionId": "0xd4e77ba6f29fc093509d24f508631abd445ecf506bbdc9c4c80e60256a318527",
       "outcomes": ["Yes", "No"],
-      "outcomePrices": ["0.0055", "0.9945"],
-      "volume": 4749960.35,
-      "liquidity": 1071241.71,
+      "outcomePrices": ["0.3455", "0.6545"],
+      "volume": 2368774.98,
+      "liquidity": 54958.02,
       "active": true,
       "closed": false,
-      "groupItemTitle": "50+ bps decrease"
+      "groupItemTitle": "0 (0 bps)",
+      "tokenId": "12403602920039269077597917340921667997547115084613238528792639013246536343316"
+    },
+    {
+      "question": "Will 1 Fed rate cut happen in 2026?",
+      "conditionId": "0x5e082f0b57f47a29044aa35b4c5658393122e659d5feae521c06b57cdd7f905c",
+      "outcomes": ["Yes", "No"],
+      "outcomePrices": ["0.195", "0.805"],
+      "volume": 780389.52,
+      "liquidity": 65401.81,
+      "active": true,
+      "closed": false,
+      "groupItemTitle": "1 (25 bps)",
+      "tokenId": "113379839734351069617987084078322474966003108854908079701423911002443710490196"
+    },
+    {
+      "question": "Will 2 Fed rate cuts happen in 2026?",
+      "conditionId": "0xe0d9f508a249e0070db06eb7d1e1fb17eb23c963f6fb722c4c3f81e23240c1cd",
+      "outcomes": ["Yes", "No"],
+      "outcomePrices": ["0.165", "0.835"],
+      "volume": 754043.87,
+      "liquidity": 75307.43,
+      "active": true,
+      "closed": false,
+      "groupItemTitle": "2 (50 bps)",
+      "tokenId": "72535544017897924722695722172278828562733090748474862987195303914909938482758"
     }
   ],
-  "series": {
-    "slug": "fomc",
-    "title": "FOMC",
-    "recurrence": "monthly"
-  },
-  "similarMarkets": 14,
-  "annotations": 7
+  "series": null,
+  "similarMarkets": 0,
+  "annotations": 0
 }
 ```
 </ResponseExample>

@@ -66,7 +66,8 @@ await pn.activity();
 await pn.movers();
 await pn.traderProfile('0xc2e7...');
 await pn.traderPnl('0xc2e7...', { period: '1W' });
-await pn.event('fed-decision-in-april');
+await pn.event('how-many-fed-rate-cuts-in-2026');
+await pn.searchEvents('recession', { limit: 5 });
 await pn.marketsByCategory('crypto');
 
 // RPC (rpc.polynode.dev)
@@ -472,6 +473,9 @@ import type {
   TraderProfile,
   TraderPnlResponse,
   EventDetailResponse,
+  EventSearchResponse,
+  EventSearchResult,
+  EventSearchMarket,
   MarketsByCategoryResponse,
 } from 'polynode-sdk';
 ```

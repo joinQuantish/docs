@@ -1,0 +1,122 @@
+---
+title: "Event Search"
+api: "GET /v1/events/search"
+description: "Search Polymarket events by text query. Returns events with all sub-markets, token IDs, and current prices."
+---
+
+Search for events by keyword. Each result includes the full list of sub-markets with `tokenId` (YES token for CLOB price history) and current `price`.
+
+This is an event-level search — results are grouped by event, not individual markets. A multi-outcome event like "How many Fed rate cuts in 2026?" returns as one result with all 13 outcomes.
+
+<ParamField query="q" type="string" required>
+  Search query (e.g., `recession`, `Fed rate`, `Trump tariff`).
+</ParamField>
+
+<ParamField query="limit" type="number" default="10">
+  Maximum number of events to return. Max 20.
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "query": "Fed rate",
+  "events": [
+    {
+      "id": "51456",
+      "slug": "how-many-fed-rate-cuts-in-2026",
+      "title": "How many Fed rate cuts in 2026?",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/how-many-fed-rate-cuts-in-2025-9qstZkSL1dn0.jpg",
+      "active": true,
+      "markets": [
+        {
+          "question": "Will no Fed rate cuts happen in 2026?",
+          "groupItemTitle": "0 (0 bps)",
+          "conditionId": "0xd4e77ba6f29fc093509d24f508631abd445ecf506bbdc9c4c80e60256a318527",
+          "tokenId": "12403602920039269077597917340921667997547115084613238528792639013246536343316",
+          "price": 0.348,
+          "active": true
+        },
+        {
+          "question": "Will 1 Fed rate cut happen in 2026?",
+          "groupItemTitle": "1 (25 bps)",
+          "conditionId": "0x5e082f0b57f47a29044aa35b4c5658393122e659d5feae521c06b57cdd7f905c",
+          "tokenId": "113379839734351069617987084078322474966003108854908079701423911002443710490196",
+          "price": 0.19,
+          "active": true
+        },
+        {
+          "question": "Will 2 Fed rate cuts happen in 2026?",
+          "groupItemTitle": "2 (50 bps)",
+          "conditionId": "0xe0d9f508a249e0070db06eb7d1e1fb17eb23c963f6fb722c4c3f81e23240c1cd",
+          "tokenId": "72535544017897924722695722172278828562733090748474862987195303914909938482758",
+          "price": 0.165,
+          "active": true
+        }
+      ]
+    },
+    {
+      "id": "101936",
+      "slug": "fed-rate-hike-in-2026",
+      "title": "Fed rate hike in 2026?",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-the-fed-raise-interest-rates-in-2025-PQTEYZMvmAGr.jpg",
+      "active": true,
+      "markets": [
+        {
+          "question": "Fed rate hike in 2026?",
+          "groupItemTitle": "",
+          "conditionId": "0x80b3af88cb991980e8da1ce86b9794a0957f96ec98c29319dd7ba65e9744d82b",
+          "tokenId": "75028752776148090296091099469912621384650554615761384992997579209329182670110",
+          "price": 0.33,
+          "active": true
+        }
+      ]
+    }
+  ],
+  "count": 2
+}
+```
+</ResponseExample>
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `query` | string | The search query |
+| `events` | array | Matching events |
+| `events[].id` | string | Event ID |
+| `events[].slug` | string | URL slug |
+| `events[].title` | string | Event title |
+| `events[].image` | string\|null | Event image URL |
+| `events[].active` | boolean | Whether event is active |
+| `events[].markets` | array | All sub-markets in this event |
+| `events[].markets[].question` | string | Full market question |
+| `events[].markets[].groupItemTitle` | string | Short outcome label (e.g., "0 (0 bps)") |
+| `events[].markets[].conditionId` | string | Condition ID for CLOB queries |
+| `events[].markets[].tokenId` | string\|null | YES token ID for price history via `/v1/candles/{tokenId}` |
+| `events[].markets[].price` | number\|null | Current YES price (0-1) |
+| `events[].markets[].active` | boolean | Whether market is active |
+| `count` | number | Number of events returned |
+
+### SDK Usage
+
+```typescript
+import { PolyNode } from 'polynode-sdk';
+
+const pn = new PolyNode({ apiKey: 'pn_live_...' });
+
+const results = await pn.searchEvents('Fed rate', { limit: 5 });
+
+for (const event of results.events) {
+  console.log(event.title, `(${event.markets.length} outcomes)`);
+  for (const m of event.markets) {
+    console.log(`  ${m.groupItemTitle || m.question}: ${m.price} — tokenId: ${m.tokenId}`);
+  }
+}
+```
+
+### Notes
+
+- The `tokenId` is the YES token for each market. Use it with `/v1/candles/{tokenId}` to fetch OHLCV price history.
+- `groupItemTitle` is the short outcome label (e.g., "2 (50 bps)", "June Meeting"). Empty string for single-outcome events.
+- Rate limited to 1 request per second per API key (shared with other enriched data endpoints).
+- Results are cached for 3 minutes.

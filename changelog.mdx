@@ -7,6 +7,45 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-23
+
+### API — Event Search & Token IDs
+
+Two changes to event endpoints:
+
+- **New:** `GET /v1/events/search?q=...&limit=N` — search events by text query. Returns events with all sub-markets, each including `tokenId` (YES token for CLOB price history via `/v1/candles`) and current `price`. Multi-outcome events like "How many Fed rate cuts in 2026?" return as a single result with all outcomes.
+- **Updated:** `GET /v1/event/{slug}` — now includes `tokenId` on every market in the response. Previously, token IDs were not available on this endpoint.
+
+```bash
+curl "https://api.polynode.dev/v1/events/search?q=recession&limit=5" \
+  -H "x-api-key: pn_live_..."
+```
+
+Rate limit: 1 request per second per API key (shared with other enriched data endpoints).
+
+### TypeScript SDK v0.4.6
+
+- **New:** `searchEvents(query, { limit })` — typed method for event search, returns `EventSearchResponse`
+- **New types:** `EventSearchResponse`, `EventSearchResult`, `EventSearchMarket`
+- **Updated:** `EventMarket` now includes optional `tokenId` field
+
+```bash
+npm install polynode-sdk@0.4.6
+```
+
+```typescript
+const results = await pn.searchEvents('Fed rate', { limit: 5 });
+for (const event of results.events) {
+  console.log(event.title, `(${event.markets.length} outcomes)`);
+  for (const m of event.markets) {
+    // Use tokenId to fetch price history
+    const candles = await pn.candles(m.tokenId, { resolution: '1h' });
+  }
+}
+```
+
+---
+
 ## 2026-03-21
 
 ### TypeScript SDK v0.4.4 — Enriched Data Methods

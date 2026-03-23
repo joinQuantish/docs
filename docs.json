@@ -117,6 +117,7 @@
               "api-reference/enriched/trending",
               "api-reference/enriched/activity",
               "api-reference/enriched/event",
+              "api-reference/enriched/event-search",
               "api-reference/enriched/movers",
               "api-reference/enriched/markets"
             ]
