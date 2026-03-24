@@ -1044,6 +1044,9 @@
                       "percentRealizedPnl": 99.02,
                       "totalBought": 1390067.28,
                       "redeemable": true,
+                      "redeemed": false,
+                      "unredeemed_balance": 1390067.28,
+                      "unredeemed_usd": 1390067.28,
                       "negativeRisk": false,
                       "endDate": "2026-03-21"
                     },
@@ -3084,6 +3087,18 @@
           "redeemable": {
             "type": "boolean",
             "description": "Whether the position can be redeemed (market resolved in this outcome's favor)."
+          },
+          "redeemed": {
+            "type": "boolean",
+            "description": "Whether the position has been redeemed onchain (tokens burned for USDC). Only present when `redeemable` is true. Determined by checking the CTF contract balance — zero balance means fully redeemed."
+          },
+          "unredeemed_balance": {
+            "type": "number",
+            "description": "Number of tokens still held onchain (not yet redeemed). Only present when `redeemable` is true. Matches `size` if nothing has been redeemed."
+          },
+          "unredeemed_usd": {
+            "type": "number",
+            "description": "USD value of unredeemed tokens. On resolved winning positions, each token is worth $1. Only present when `redeemable` is true."
           },
           "negativeRisk": {
             "type": "boolean",

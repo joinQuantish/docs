@@ -2,3 +2,49 @@
 title: "Wallet Positions & P&L"
 openapi: "GET /v1/wallets/{addr}/positions"
 ---
+
+## Onchain Redemption Enrichment
+
+When a position is on a resolved market (`redeemable: true`), polynode checks the [Conditional Token Framework contract](https://polygonscan.com/address/0x4D97DCd97eC945f40cF65F87097ACe5EA0476045) onchain to determine whether the tokens have actually been burned (redeemed for USDC).
+
+Three fields are added to redeemable positions:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `redeemed` | boolean | `true` if the wallet's token balance is zero (fully redeemed). `false` if tokens are still held. |
+| `unredeemed_balance` | number | Number of tokens still held onchain. Matches `size` if nothing has been redeemed. |
+| `unredeemed_usd` | number | USD value of unclaimed tokens. On winning positions, each token = $1. |
+
+These fields are **only present** on positions where `redeemable` is `true`. Active (unresolved) positions do not include them.
+
+### Example: Unredeemed position
+
+```json
+{
+  "title": "Lana Del Rey divorce in 2025?",
+  "redeemable": true,
+  "redeemed": false,
+  "unredeemed_balance": 418.73,
+  "unredeemed_usd": 418.73,
+  "size": 418.73,
+  "curPrice": 1.0
+}
+```
+
+### Example: Fully redeemed position
+
+```json
+{
+  "title": "Will X happen?",
+  "redeemable": true,
+  "redeemed": true,
+  "unredeemed_balance": 0,
+  "unredeemed_usd": 0,
+  "size": 0,
+  "curPrice": 1.0
+}
+```
+
+<Note>
+Redemption data is fetched in a single batched RPC call per request. This adds ~130ms of latency to the response, only when redeemable positions are present.
+</Note>

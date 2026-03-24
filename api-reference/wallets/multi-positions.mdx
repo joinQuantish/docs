@@ -2,3 +2,7 @@
 title: "Multi-Wallet Positions & P&L"
 openapi: "GET /v1/wallets/positions"
 ---
+
+## Onchain Redemption Enrichment
+
+Same as the [single wallet positions endpoint](/api-reference/wallets/positions) — redeemable positions include `redeemed`, `unredeemed_balance`, and `unredeemed_usd` fields. Each wallet's redeemable positions are checked in parallel, so latency scales per-wallet, not per-position.

@@ -7,6 +7,36 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-24
+
+### API — Onchain Redemption State on Wallet Positions
+
+The `/v1/wallets/{addr}/positions` and `/v1/wallets/positions` endpoints now include onchain redemption data for resolved markets. Three new fields are returned on positions where `redeemable` is `true`:
+
+- **`redeemed`** — `true` if the wallet has burned their tokens onchain (claimed USDC payout), `false` if tokens are still held.
+- **`unredeemed_balance`** — Number of tokens still held onchain. Tells you exactly how much hasn't been claimed.
+- **`unredeemed_usd`** — USD value of unclaimed tokens ($1 per token on winning positions).
+
+This data is not available from Polymarket's API. polynode checks the Conditional Token Framework contract onchain in a single batched call, adding ~130ms only when redeemable positions are present. Active (unresolved) positions are unaffected.
+
+```bash
+curl "https://api.polynode.dev/v1/wallets/0x62d2.../positions" \
+  -H "x-api-key: pn_live_..."
+```
+
+```json
+{
+  "title": "Lana Del Rey divorce in 2025?",
+  "redeemable": true,
+  "redeemed": false,
+  "unredeemed_balance": 418.73,
+  "unredeemed_usd": 418.73,
+  "size": 418.73
+}
+```
+
+---
+
 ## 2026-03-23
 
 ### API — Event Search & Token IDs
