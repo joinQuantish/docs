@@ -104,7 +104,7 @@ The wallet and market data endpoints proxy to upstream sources and have their ow
 
 ### Standard data endpoints
 
-These endpoints share your plan's normal rate limit:
+These endpoints share your plan's normal rate limit and a global throughput cap of **20 upstream calls per second** across all data endpoints. This ensures stable upstream performance for all users.
 
 - `/v1/wallets/{addr}/positions`
 - `/v1/wallets/{addr}/trades`
@@ -113,6 +113,10 @@ These endpoints share your plan's normal rate limit:
 - `/v1/markets/{id}/trades`
 
 Batch requests (multiple wallets) count each wallet as one request toward your limit. For example, a 5-wallet batch counts as 5 requests.
+
+<Note>
+  **Onchain enrichment:** The wallet positions endpoints check onchain redemption state for resolved positions. This adds a single batched RPC call (~130ms) per request when redeemable positions are present. No extra rate limit cost — it's included in the same request.
+</Note>
 
 ### Heavy endpoints <span style={{color: '#f97316', fontWeight: 700, fontSize: '0.85em', background: 'rgba(249, 115, 22, 0.1)', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px'}}>RATE LIMITED</span>
 
