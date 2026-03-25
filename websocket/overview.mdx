@@ -219,17 +219,31 @@ Invalid messages return structured errors:
 
 ## Reconnection
 
-PolyNode does not send a close frame before disconnecting. Implement reconnection with exponential backoff:
+PolyNode does not send a close frame before disconnecting. Implement reconnection with exponential backoff and use the `since` filter to fill any gaps:
 
 ```javascript
 let delay = 1000;
+let lastEventTs = null;
 
 function connect() {
   const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_...");
   ws.onopen = () => {
-    delay = 1000; // Reset on success
-    ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
+    delay = 1000;
+    const filters = lastEventTs ? { since: lastEventTs } : {};
+    ws.send(JSON.stringify({ action: "subscribe", type: "settlements", filters }));
+  };
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.timestamp) lastEventTs = msg.timestamp;
+    if (msg.type === "snapshot") {
+      // Process snapshot events (gap-fill from last disconnect)
+      for (const e of msg.events) {
+        if (e.timestamp) lastEventTs = Math.max(lastEventTs || 0, e.timestamp);
+      }
+    }
   };
   ws.onclose = () => setTimeout(connect, Math.min(delay *= 2, 30000));
 }
 ```
+
+The `since` filter tells the server to include all events after that timestamp in the initial snapshot (up to your tier's snapshot limit). The server keeps a rolling window covering the last 1-3 minutes at typical throughput. For longer outages, use the REST API to backfill.

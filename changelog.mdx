@@ -7,6 +7,35 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-25
+
+### WebSocket — Reconnect Gap-Fill with `since`
+
+Subscribe messages now accept an optional `since` filter (UNIX milliseconds). When set, the initial snapshot returns all events after that timestamp instead of just the most recent N, letting you fill gaps after a disconnect or cold start without missing data.
+
+```json
+{
+  "action": "subscribe",
+  "type": "settlements",
+  "filters": { "since": 1774412600000 }
+}
+```
+
+The response is the same `snapshot` message you already handle. Existing clients are unaffected — `since` is fully optional.
+
+**Lookback windows by tier:**
+
+| Tier | Max lookback |
+|------|-------------|
+| Free | 30 seconds |
+| Starter | 2 minutes |
+| Growth | 5 minutes |
+| Enterprise | 5 minutes |
+
+If `since` is older than your tier's window, it's automatically clamped. Within the window, there is no event count limit — you get everything that matches your filters.
+
+---
+
 ## 2026-03-24
 
 ### API — Onchain Redemption State on Wallet Positions

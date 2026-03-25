@@ -22,7 +22,8 @@ Send a JSON message after connecting to start receiving events:
     "min_size": 100,
     "max_size": 10000,
     "event_types": ["settlement", "status_update"],
-    "snapshot_count": 50
+    "snapshot_count": 50,
+    "since": 1774412600000
   }
 }
 ```
@@ -171,7 +172,15 @@ All filters are optional. Omit the `filters` object entirely to receive all even
 </ParamField>
 
 <ParamField body="snapshot_count" type="number" default="20">
-  Number of recent matching events to receive immediately after subscribing. Max: 200.
+  Number of recent matching events to receive immediately after subscribing. Max varies by tier (free: 20, starter: 100, growth: 200, enterprise: 500).
+</ParamField>
+
+<ParamField body="since" type="number">
+  UNIX timestamp in milliseconds. When set, the initial snapshot returns all events **after** this timestamp (up to your tier's snapshot limit) instead of just the most recent N events. Useful for gap-filling after a reconnect or cold start.
+  ```json
+  "since": 1774412600000
+  ```
+  The server keeps a rolling window of recent events in memory. At typical throughput, this covers the last 1-3 minutes. Events older than the window are not available via `since`.
 </ParamField>
 
 ### Price feed filtering
