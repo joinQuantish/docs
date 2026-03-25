@@ -118,6 +118,20 @@ Batch requests (multiple wallets) count each wallet as one request toward your l
   **Onchain enrichment:** The wallet positions endpoints check onchain redemption state for resolved positions. This adds a single batched RPC call (~130ms) per request when redeemable positions are present. No extra rate limit cost — it's included in the same request.
 </Note>
 
+### Enriched endpoints
+
+The enriched analytics endpoints have a per-key limit of **30 requests per second**:
+
+- `/v1/trader/{wallet}` — trader profile with EOA resolution
+- `/v1/trader/{wallet}/pnl` — PnL time series
+- `/v1/leaderboard` — top traders
+- `/v1/trending` — trending markets
+- `/v1/activity` — platform trade feed
+- `/v1/event/{slug}` — event details
+- `/v1/movers` — biggest price movers
+
+Responses are cached for a short window to ensure fast lookups. The trader profile endpoint resolves the underlying EOA wallet address onchain when available.
+
 ### Heavy endpoints <span style={{color: '#f97316', fontWeight: 700, fontSize: '0.85em', background: 'rgba(249, 115, 22, 0.1)', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px'}}>RATE LIMITED</span>
 
 Some data endpoints fan out many upstream requests per call and have a stricter per-key limit:

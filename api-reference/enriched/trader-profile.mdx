@@ -6,27 +6,30 @@ description: "Full profile for any Polymarket trader."
 
 Returns comprehensive stats for a trader: PnL, volume, trade count, largest win, current portfolio value, and account metadata.
 
+The response includes an `eoaWallet` field that resolves the underlying EOA (externally owned account) for Polymarket Safe proxy wallets. This is derived onchain via the Gnosis Safe `getOwners()` call. For older lightweight proxy wallets that don't support this method, `eoaWallet` returns `null`.
+
 <ParamField path="wallet" type="string" required>
-  Ethereum wallet address (e.g., `0xc2e7800b5af46e6093872b177b7a5e7f0563be51`).
+  Polymarket wallet address (e.g., `0xc2e7800b5af46e6093872b177b7a5e7f0563be51`).
 </ParamField>
 
 <ResponseExample>
 ```json
 {
   "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+  "eoaWallet": "0xb49e5499562a4bc3345c1a1f2db13a5360dfddac",
   "name": "beachboy4",
   "pseudonym": "Threadbare-Skunk",
   "profileSlug": "@beachboy4",
   "joinDate": "2025-11-30T17:26:07.997000Z",
-  "trades": 145,
-  "marketsTraded": 145,
-  "largestWin": 3487512.61,
-  "views": 100243,
-  "totalVolume": 197853079.24,
-  "totalPnl": 4700239.86,
+  "trades": 149,
+  "marketsTraded": 149,
+  "largestWin": 3487512.609533,
+  "views": 111735,
+  "totalVolume": 199137316.6,
+  "totalPnl": 4142102.07,
   "realizedPnl": 0,
   "unrealizedPnl": 0,
-  "positionValue": 4170.11,
+  "positionValue": 4418.03,
   "profileImage": null
 }
 ```
