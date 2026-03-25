@@ -9,6 +9,29 @@ icon: "clock-rotate-left"
 
 ## 2026-03-25
 
+### Oracle Stream — `condition_resolution` Event
+
+The oracle WebSocket stream now includes `condition_resolution` events. This is the on-chain signal that positions are redeemable on the Conditional Tokens contract.
+
+Previously, the stream included `resolution` events (outcome decided on the UMA adapter) but not the separate on-chain step where `reportPayouts()` is called on the CTF contract. For neg-risk markets (the majority on Polymarket), there is a ~2-3 minute gap between these two events. `condition_resolution` closes that gap.
+
+**Subscribe and filter:**
+```json
+{
+  "action": "subscribe",
+  "type": "oracle",
+  "event_types": ["condition_resolution"]
+}
+```
+
+**Payload includes:** `resolved_price`, `payouts`, `condition_id`, `question_id`, and full market metadata (title, outcomes, token IDs, image).
+
+**Use case:** Trigger redemption workflows the instant positions become redeemable, instead of polling or waiting for the Polymarket UI to update.
+
+**SDK support:** Available in Rust SDK `polynode 0.4` via `OracleEventType::ConditionResolution`. TypeScript SDK update coming soon.
+
+---
+
 ### TypeScript SDK v0.4.8 — Composable Leaderboard Builder
 
 The local cache now supports composable leaderboards with multi-metric ranking, market filtering, slug pattern matching, wallet scoping, and time windows.

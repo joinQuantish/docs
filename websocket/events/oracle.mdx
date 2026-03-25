@@ -15,8 +15,9 @@ Oracle events stream the full lifecycle of Polymarket's UMA-based market resolut
 2. A **proposer** submits an answer (YES or NO) via ProposePrice on UMA's Optimistic Oracle V2 and posts a USDC bond
 3. A 2-hour **liveness window** opens where anyone can dispute
 4. If no dispute, the oracle **settles** (Settle event on OO V2) and the market **resolves** (QuestionResolved on the adapter)
-5. If disputed, the question **resets** and goes to UMA's DVM for a token-holder vote
-6. Admins can **flag**, **pause**, or **manually resolve** markets in edge cases
+5. For neg-risk markets (the majority), a second transaction calls `resolveQuestion()` on the NegRiskOperator, which triggers **condition_resolution** on the Conditional Tokens contract. **Positions become redeemable at this point.**
+6. If disputed, the question **resets** and goes to UMA's DVM for a token-holder vote
+7. Admins can **flag**, **pause**, or **manually resolve** markets in edge cases
 
 ## Subscribe
 
@@ -61,6 +62,10 @@ Every oracle event has an `oracle_type` field indicating what happened:
 
 <ResponseField name="manual_resolution" type="string">
   Market manually resolved by admin, bypassing the normal oracle flow. Includes `payouts` array.
+</ResponseField>
+
+<ResponseField name="condition_resolution" type="string">
+  Condition resolved on the Conditional Tokens contract (ConditionResolution event). **This is the moment positions become redeemable.** For neg-risk markets (the majority on Polymarket), this fires in a separate transaction ~2-3 minutes after `resolution`. For standard markets, it fires atomically with `resolution`. Includes `resolved_price`, `payouts`, `condition_id`, and full market metadata. Use this event to trigger redemption workflows.
 </ResponseField>
 
 ## Resolution Event (real payload)
@@ -146,7 +151,7 @@ A proposer submits YES for an XRP price market, with a 2-hour liveness window. P
 ### Core Fields (all oracle events)
 
 <ResponseField name="oracle_type" type="string" required>
-  Type of oracle event: `initialization`, `proposal`, `dispute`, `settled`, `resolution`, `reset`, `flag`, `unflag`, `pause`, `unpause`, `manual_resolution`.
+  Type of oracle event: `initialization`, `proposal`, `dispute`, `settled`, `resolution`, `condition_resolution`, `reset`, `flag`, `unflag`, `pause`, `unpause`, `manual_resolution`.
 </ResponseField>
 
 <ResponseField name="question_id" type="string" required>
@@ -197,7 +202,7 @@ A proposer submits YES for an XRP price market, with a 2-hour liveness window. P
   The proposed answer that was disputed.
 </ResponseField>
 
-### Resolution Fields (resolution, settled, and manual_resolution)
+### Resolution Fields (resolution, condition_resolution, settled, and manual_resolution)
 
 <ResponseField name="resolved_price" type="number">
   The settled price from UMA. `1.0` = first outcome wins (usually YES), `0.0` = second outcome wins (usually NO), `0.5` = split/tie.
@@ -208,7 +213,7 @@ A proposer submits YES for an XRP price market, with a 2-hour liveness window. P
 </ResponseField>
 
 <ResponseField name="payouts" type="array">
-  Payout array from UMA. `[1, 0]` means the first outcome wins. `[0, 1]` means the second outcome wins. `[1, 1]` means a split (both outcomes pay out). Only present on `resolution` and `manual_resolution`.
+  Payout array from UMA. `[1, 0]` means the first outcome wins. `[0, 1]` means the second outcome wins. `[1, 1]` means a split (both outcomes pay out). Present on `resolution`, `condition_resolution`, and `manual_resolution`.
 </ResponseField>
 
 ### Enrichment Fields (from Polymarket metadata)
@@ -272,7 +277,8 @@ Oracle events are **not evenly distributed**. They come in bursts when UMA's res
 | **proposal** | Answer proposed, 2-hour countdown started. | Monitor for disputes, position accordingly |
 | **dispute** | Proposed outcome challenged. Uncertainty returns. | Watch for price swings, potential arb |
 | **settled** | Oracle accepted the answer after liveness. | Resolution imminent |
-| **resolution** | Market is settled. Winning positions can be redeemed. | Close tracking, update portfolio |
+| **resolution** | Market outcome decided on UMA adapter. For neg-risk markets, positions are not yet redeemable. | Outcome known, prepare for redemption |
+| **condition_resolution** | Condition resolved on CTF contract. **Positions are now redeemable.** | Trigger redemption, notify users |
 | **reset** | Market re-enters proposal phase after dispute. | Resolution delayed, reassess positions |
 | **flag** | Admin flagged an issue. Market may be paused. | Caution, reduce exposure |
 | **manual_resolution** | Admin override. Could be controversial. | Check outcome, compare to expectations |
