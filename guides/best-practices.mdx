@@ -143,14 +143,27 @@ The snapshot includes both `settlement` and `status_update` events from the rece
 
 ## Connection health
 
-The server sends a WebSocket Ping frame every 30 seconds and expects the client to respond with a Pong. If no Pong is received within 90 seconds (3 missed heartbeats), the server closes the connection.
+The server sends a WebSocket Ping frame and a text heartbeat (`{"type": "heartbeat"}`) every 30 seconds. If the server receives no activity from the client within 5 minutes, the connection is closed.
 
-**You almost certainly don't need to do anything.** All standard WebSocket libraries respond to Ping with Pong automatically:
+Activity that resets the server's liveness timer:
+
+- **Pong frames** (automatic response to server Ping, handled by most WS libraries)
+- **Any text message** you send: subscribe, unsubscribe, or `{"action": "ping"}`
+
+For most clients, this works automatically. All standard WebSocket libraries respond to Ping with Pong:
 
 - **Browser `WebSocket`** — handled by the browser
 - **Node.js `ws`** — automatic by default
 - **Python `websockets`** — automatic by default
 - **Go `gorilla/websocket`** — automatic with `SetPongHandler` (default)
+
+<Warning>
+**Cloud-hosted clients (Railway, Render, Heroku, fly.io, AWS ALB):** Many cloud platforms run a reverse proxy in front of your container that intercepts WebSocket Ping/Pong frames at the proxy layer. Your application never sees the server's Ping, so it never sends a Pong, and the server eventually drops the connection for inactivity.
+
+**Symptoms:** Connection works on subscribe, receives a snapshot, then drops after 1-5 minutes with an empty error or no close frame. Reconnects immediately but the cycle repeats.
+
+**Fix:** Send `{"action": "ping"}` every 30 seconds from your application code. This is a regular JSON text frame that passes through any proxy. See the [WebSocket Overview](/websocket/overview#application-level-keepalive) for full code examples.
+</Warning>
 
 <Warning>
 If your read loop is blocked (e.g. doing heavy synchronous work before reading the next message), the client cannot send Pong frames and the server will eventually drop the connection. Keep your read loop running — offload heavy processing to a separate thread or task.
@@ -164,4 +177,5 @@ If your read loop is blocked (e.g. doing heavy synchronous work before reading t
 | Process **both event types from the snapshot** | Snapshot settlements keep their original `pending` status — confirmations are separate entries |
 | Add a **stuck-pending timeout** (15s) | Safety net for missed confirmations during reconnection |
 | Use **`snapshot_count`** on reconnect | Recovers events missed during disconnection |
-| Keep read loop running | Server drops connections with no Pong after 90s |
+| Keep read loop running | Server drops connections with no activity after 5 minutes |
+| Send `{"action": "ping"}` every 30s **if cloud-hosted** | Keeps connection alive through reverse proxies that strip Ping/Pong frames |

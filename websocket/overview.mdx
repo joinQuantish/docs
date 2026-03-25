@@ -164,15 +164,65 @@ The server sends a heartbeat every 30 seconds:
 
 If no heartbeat arrives within ~35 seconds, the connection is dead — reconnect.
 
-The server monitors client health via Pong responses to its Ping frames. If no Pong is received within 90 seconds (3 missed heartbeats), the server closes the connection. Standard WebSocket clients handle Pong automatically — no code required on your end.
+The server monitors client liveness via incoming messages and Pong frames. If no activity is received from the client within 5 minutes, the server closes the connection with a close frame explaining the reason. Standard WebSocket clients handle Pong automatically, which counts as activity.
 
-You can also send a client-side ping:
+### Application-level keepalive
+
+Send a ping message to confirm the connection is alive:
 
 ```json
 {"action": "ping"}
 ```
 
-Response: `{"type": "pong"}`
+Response:
+```json
+{"type": "pong", "ts": 1774429169820}
+```
+
+Any message you send (subscribe, unsubscribe, ping) resets the server's liveness timer.
+
+<Warning>
+**Running behind a reverse proxy (Railway, Render, Heroku, AWS ALB, etc.)?** Some cloud platform proxies intercept WebSocket Ping/Pong control frames at the proxy layer and don't forward them to your application. This means the server never receives your client's automatic Pong responses, and the connection gets dropped for inactivity.
+
+**The fix:** Send `{"action": "ping"}` every 30-60 seconds from your application code. These are regular text frames that pass through any proxy. This is the recommended keepalive method for any containerized or cloud-hosted deployment.
+
+```python
+# Python example — keepalive for cloud-hosted clients
+import asyncio, json, websockets
+
+async def stream():
+    url = "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
+    async with websockets.connect(url, ping_interval=None, ping_timeout=None) as ws:
+        await ws.send(json.dumps({"action": "subscribe", "type": "settlements"}))
+
+        async def keepalive():
+            while True:
+                await asyncio.sleep(30)
+                await ws.send(json.dumps({"action": "ping"}))
+
+        ping_task = asyncio.create_task(keepalive())
+        try:
+            async for message in ws:
+                msg = json.loads(message)
+                if msg["type"] in ("pong", "heartbeat"):
+                    continue
+                # handle events...
+        finally:
+            ping_task.cancel()
+
+asyncio.run(stream())
+```
+
+```javascript
+// Node.js example — keepalive for cloud-hosted clients
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.onopen = () => {
+  ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
+  setInterval(() => ws.send(JSON.stringify({ action: "ping" })), 30000);
+};
+```
+</Warning>
 
 ## Connection lifecycle
 
@@ -192,6 +242,8 @@ Receive ← {"type": "status_update", ...}
 Receive ← Ping frame                       (every 30s)
 Send   → Pong frame                        (automatic)
 Receive ← {"type": "heartbeat", ...}       (every 30s)
+Send   → {"action": "ping"}               (optional, recommended if cloud-hosted)
+Receive ← {"type": "pong", "ts": ...}     (keepalive response)
     ↓
 Send → {"action": "unsubscribe", "subscription_id": "...:1"}  (remove one)
 Send → {"action": "unsubscribe"}                               (remove all)
