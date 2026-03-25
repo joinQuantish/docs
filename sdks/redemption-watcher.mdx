@@ -44,7 +44,7 @@ await watcher.start([
 1. **`start(wallets)`** fetches positions for each wallet via REST (parallel), builds an internal index keyed by `condition_id`, then subscribes to the oracle WebSocket stream
 2. When a `condition_resolution` event arrives, the watcher cross-references `event.condition_id` against the position index
 3. For each matched position, a `RedeemableAlert` is emitted with wallet address, win/loss status, payout estimate, and full market metadata
-4. If `trackPositionChanges` is enabled (default), position sizes are updated in real-time via the wallets WebSocket stream
+4. If `trackPositionChanges` is enabled (default), position sizes stay accurate in real-time via the wallets WebSocket stream. If a wallet enters a new market after `start()`, the watcher automatically picks it up from the enriched transfer event and adds it to the index.
 
 <Note>
   `condition_resolution` is the moment positions become redeemable on the Conditional Tokens contract. For neg-risk markets (the majority on Polymarket), this fires in a separate transaction after the UMA `resolution` event. See [Oracle Events](/websocket/events/oracle) for the full resolution lifecycle.
@@ -57,8 +57,7 @@ await watcher.start([
 ```typescript
 const watcher = new RedemptionWatcher({
   apiKey: 'pn_live_...',
-  trackPositionChanges: true,  // live position delta tracking (default)
-  refreshInterval: 60_000,     // periodic REST refresh every 60s (optional)
+  trackPositionChanges: true,  // live position + new market tracking (default)
 });
 ```
 
@@ -282,13 +281,16 @@ interface RedemptionWatcherConfig {
 
 ### `trackPositionChanges`
 
-When enabled (default), the watcher subscribes to the wallets WebSocket stream and updates position sizes in real-time as ERC-1155 transfers occur. This means if a user buys or sells tokens after `start()`, the `size` field stays accurate for payout calculations.
+When enabled (default), the watcher subscribes to the wallets WebSocket stream. This does two things:
+
+1. **Size tracking** — updates position sizes in real-time as ERC-1155 transfers occur. If a user buys or sells tokens after `start()`, the `size` field stays accurate for payout calculations.
+2. **New market discovery** — when a wallet enters a market the watcher hasn't seen before, the enriched transfer event carries full market metadata (`condition_id`, `market_title`, `outcomes`, `token_ids`). The watcher creates a new tracked position automatically. No gaps.
 
 ### `refreshInterval`
 
-Periodic REST re-fetch of all wallet positions. Set this to catch positions acquired in new markets after `start()`. Position change tracking updates sizes on existing positions but can't discover entirely new condition IDs (since transfer events don't carry market metadata).
+Optional periodic REST re-fetch of all wallet positions. Not required for correctness since `trackPositionChanges` handles both size updates and new market discovery. Useful as a safety net in case a transfer event is missed due to a brief WebSocket disconnection.
 
-Recommended: `60_000` (60 seconds) for production. `0` (disabled) if your wallets don't frequently enter new markets.
+Default: `0` (disabled). Set to `60_000` if you want extra resilience.
 
 ## Full Example: Notification Service
 
@@ -297,8 +299,6 @@ import { RedemptionWatcher } from 'polynode-sdk';
 
 const watcher = new RedemptionWatcher({
   apiKey: process.env.POLYNODE_API_KEY!,
-  trackPositionChanges: true,
-  refreshInterval: 60_000,
 });
 
 watcher.on('error', (err) => console.error('[watcher]', err.message));
