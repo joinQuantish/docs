@@ -1,0 +1,367 @@
+---
+title: "Redemption Watcher"
+sidebarTitle: "Redemption Watcher"
+description: "Push notifications when Polymarket positions become redeemable"
+icon: "bell"
+---
+
+The `RedemptionWatcher` monitors wallets for redeemable positions. It combines wallet position data from REST with real-time `condition_resolution` events from the oracle stream. When a market resolves, any tracked wallet holding that condition gets an instant alert with full payout details.
+
+One class, one WebSocket connection, zero polling.
+
+## Install
+
+```bash
+npm install polynode-sdk
+```
+
+## Quick Start
+
+```typescript
+import { RedemptionWatcher } from 'polynode-sdk';
+
+const watcher = new RedemptionWatcher({ apiKey: 'pn_live_...' });
+
+watcher.on('alert', (alert) => {
+  if (alert.isWinner) {
+    console.log(`${alert.wallet} can redeem ${alert.outcome} on "${alert.marketTitle}"`);
+    console.log(`Payout: $${alert.estimatedPayoutUsd}`);
+  }
+});
+
+watcher.on('ready', () => {
+  console.log(`Tracking ${watcher.size} positions across ${watcher.wallets.length} wallets`);
+});
+
+await watcher.start([
+  '0xabc...', // user wallet 1
+  '0xdef...', // user wallet 2
+]);
+```
+
+## How It Works
+
+1. **`start(wallets)`** fetches positions for each wallet via REST (parallel), builds an internal index keyed by `condition_id`, then subscribes to the oracle WebSocket stream
+2. When a `condition_resolution` event arrives, the watcher cross-references `event.condition_id` against the position index
+3. For each matched position, a `RedeemableAlert` is emitted with wallet address, win/loss status, payout estimate, and full market metadata
+4. If `trackPositionChanges` is enabled (default), position sizes are updated in real-time via the wallets WebSocket stream
+
+<Note>
+  `condition_resolution` is the moment positions become redeemable on the Conditional Tokens contract. For neg-risk markets (the majority on Polymarket), this fires in a separate transaction after the UMA `resolution` event. See [Oracle Events](/websocket/events/oracle) for the full resolution lifecycle.
+</Note>
+
+## Lifecycle
+
+### 1. Construct
+
+```typescript
+const watcher = new RedemptionWatcher({
+  apiKey: 'pn_live_...',
+  trackPositionChanges: true,  // live position delta tracking (default)
+  refreshInterval: 60_000,     // periodic REST refresh every 60s (optional)
+});
+```
+
+### 2. Register Handlers
+
+Register handlers **before** calling `start()` so you don't miss the `ready` event.
+
+```typescript
+watcher.on('alert', (alert) => {
+  pushNotification(alert.wallet, {
+    title: alert.isWinner ? 'Position Redeemable!' : 'Market Resolved',
+    body: `${alert.marketTitle} — ${alert.winningOutcome} wins`,
+    payout: alert.estimatedPayoutUsd,
+  });
+});
+
+watcher.on('ready', () => {
+  console.log(`Tracking ${watcher.size} positions`);
+});
+
+watcher.on('error', (err) => {
+  console.error('Watcher error:', err.message);
+});
+```
+
+### 3. Start
+
+```typescript
+await watcher.start(['0x02227b...', '0xc2e780...']);
+```
+
+`start()` fetches positions for all wallets in parallel, indexes them by `condition_id`, subscribes to the oracle stream, and emits `ready`. Typical startup takes 100-300ms depending on wallet count.
+
+Real output from `start()` with one wallet:
+
+```
+Tracking 16 positions across 1 wallet(s)
+Conditions: 16
+```
+
+### 4. Add/Remove Wallets at Runtime
+
+```typescript
+// New user signs up — fetch their positions and start tracking
+await watcher.addWallets(['0xefbc5f...']);
+// wallets: 2, size: 55
+
+// User leaves — purge state and update subscriptions
+watcher.removeWallets(['0xefbc5f...']);
+// wallets: 1, size: 16
+```
+
+### 5. Query State
+
+```typescript
+watcher.wallets;                    // all tracked addresses
+watcher.conditions;                 // all tracked condition IDs
+watcher.size;                       // total position count
+watcher.positionsFor('0x02227b...'); // positions for one wallet
+```
+
+### 6. Close
+
+```typescript
+watcher.close();
+```
+
+Unsubscribes from oracle and wallet streams, stops the refresh timer, disconnects the WebSocket, and resolves any pending async iterators.
+
+## Async Iterator
+
+Consume alerts sequentially with `for await`:
+
+```typescript
+for await (const alert of watcher) {
+  await processRedemption(alert);
+  // backpressure: next alert waits until this one is processed
+}
+```
+
+The iterator terminates when `watcher.close()` is called.
+
+## Alert Object
+
+When a `condition_resolution` event matches a tracked position, the watcher emits a `RedeemableAlert`:
+
+```typescript
+interface RedeemableAlert {
+  wallet: string;           // which tracked wallet holds this position
+  conditionId: string;      // Polymarket condition ID (hex)
+  tokenId: string;          // conditional token ID held by the wallet
+  outcome: string;          // which outcome the wallet holds ("Over", "Yes", etc.)
+  winningOutcome: string;   // which outcome won ("Under", "No", etc.)
+  isWinner: boolean;        // whether this position pays out
+  size: number;             // position size in tokens
+  estimatedPayoutUsd: number; // $1 per token if winner, $0 if loser
+  marketTitle: string;      // human-readable market question
+  marketSlug: string;       // URL slug on polymarket.com
+  marketImage?: string;     // market image URL
+  resolvedPrice: number;    // UMA resolved price (1 = first outcome, 0 = second)
+  payouts: number[];        // payout array from the contract ([1, 0] or [0, 1])
+  blockNumber: number;      // Polygon block number
+  timestamp: number;        // block timestamp in ms
+}
+```
+
+**Example alert** (if a wallet held 500 "Over" tokens on the Dota 2 kills market below):
+
+```json
+{
+  "wallet": "0x02227b8f5a9636e895607edd3185ed6ee5598ff7",
+  "conditionId": "0xf5fbfb50f2ad1f61569fa475b8883d2f1ee10fdceab24f069528b717a40cc101",
+  "tokenId": "57488988409414421964789033691537502121286921656702379301876764465477206797606",
+  "outcome": "Over",
+  "winningOutcome": "Over",
+  "isWinner": true,
+  "size": 500,
+  "estimatedPayoutUsd": 500,
+  "marketTitle": "Total Kills Over/Under 45.5 in Game 1?",
+  "marketSlug": "dota2-ty-mouz-2026-03-25-game1-kill-over-45pt5",
+  "marketImage": "https://polymarket-upload.s3.us-east-2.amazonaws.com/dota2-7ffacddb21.jpg",
+  "resolvedPrice": 1,
+  "payouts": [1, 0],
+  "blockNumber": 84667307,
+  "timestamp": 1774454649000
+}
+```
+
+## Tracked Positions
+
+Each position loaded from the REST API is stored as a `TrackedPosition`:
+
+```typescript
+interface TrackedPosition {
+  wallet: string;
+  tokenId: string;
+  conditionId: string;
+  outcome: string;       // "Yes", "No", "Over", "Under", team names, etc.
+  size: number;          // position size in tokens
+  marketTitle: string;
+  marketSlug: string;
+  marketImage?: string;
+  outcomes: string[];    // all outcomes for this market
+  tokenIds: string[];    // all token IDs for this market
+  negRisk?: boolean;     // neg-risk framework (multi-outcome markets)
+}
+```
+
+Real output from `positionsFor()`:
+
+```json
+[
+  {
+    "wallet": "0x02227b8f...",
+    "tokenId": "80628887006942228330415332521239838709...",
+    "conditionId": "0xf88a2140ac54353c2f51b2ee20de43c72b0d...",
+    "outcome": "No",
+    "size": 3440212.886182,
+    "marketTitle": "Will Manchester City FC win on 2026-02-21?",
+    "marketSlug": "epl-mac-new-2026-02-21-mac",
+    "negRisk": true
+  },
+  {
+    "wallet": "0x02227b8f...",
+    "tokenId": "11424825366156360215190655536940393847...",
+    "conditionId": "0x18f34febea506bed46b77c3126369eb9cc00...",
+    "outcome": "Yes",
+    "size": 1625004.089452,
+    "marketTitle": "Will Toulouse FC win on 2026-02-15?",
+    "marketSlug": "fl1-hac-tou-2026-02-15-tou",
+    "negRisk": true
+  }
+]
+```
+
+## The Event That Triggers Alerts
+
+The watcher listens for `condition_resolution` oracle events. Here's a real one from a Dota 2 esports market:
+
+```json
+{
+  "event_type": "oracle",
+  "oracle_type": "condition_resolution",
+  "block_number": 84667307,
+  "timestamp": 1774454649000,
+  "tx_hash": "0x863f3e30d4d3e84c80682565d40502257ec1580e34f212838e6954d32b738f7b",
+  "condition_id": "0xf5fbfb50f2ad1f61569fa475b8883d2f1ee10fdceab24f069528b717a40cc101",
+  "question_id": "0x22d5713c949303f38b5add45b0dd694cb6914fcdd33d35e908ef47f918fa2147",
+  "adapter_address": "0x65070be91477460d8a7aeeb94ef92fe056c2f2a7",
+  "resolved_price": 1,
+  "resolved_outcome": "Over",
+  "payouts": [1, 0],
+  "market_title": "Total Kills Over/Under 45.5 in Game 1?",
+  "market_slug": "dota2-ty-mouz-2026-03-25-game1-kill-over-45pt5",
+  "event_title": "Dota 2: Team Yandex vs MOUZ (BO2) - ESL One Birmingham Group A",
+  "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/dota2-7ffacddb21.jpg",
+  "outcomes": ["Over", "Under"],
+  "token_ids": [
+    "57488988409414421964789033691537502121286921656702379301876764465477206797606",
+    "44113030389329339383080791624849973102915570622427276234797737004302338372036"
+  ],
+  "neg_risk": false
+}
+```
+
+**Winner detection:** The watcher finds the wallet's `tokenId` in `event.token_ids`, checks the corresponding index in `event.payouts`. If `payouts[index] > 0`, the position is a winner and pays out `$1 × size`.
+
+## Configuration
+
+```typescript
+interface RedemptionWatcherConfig {
+  apiKey: string;         // required — PolyNode API key
+  baseUrl?: string;       // REST API base (default: https://api.polynode.dev)
+  wsUrl?: string;         // WebSocket URL (default: wss://ws.polynode.dev/ws)
+  compress?: boolean;     // zlib compression (default: true via PolyNodeWS)
+  autoReconnect?: boolean; // auto-reconnect on disconnect (default: true)
+  trackPositionChanges?: boolean; // live position delta tracking (default: true)
+  refreshInterval?: number;       // periodic REST refresh in ms (default: 0 = disabled)
+}
+```
+
+### `trackPositionChanges`
+
+When enabled (default), the watcher subscribes to the wallets WebSocket stream and updates position sizes in real-time as ERC-1155 transfers occur. This means if a user buys or sells tokens after `start()`, the `size` field stays accurate for payout calculations.
+
+### `refreshInterval`
+
+Periodic REST re-fetch of all wallet positions. Set this to catch positions acquired in new markets after `start()`. Position change tracking updates sizes on existing positions but can't discover entirely new condition IDs (since transfer events don't carry market metadata).
+
+Recommended: `60_000` (60 seconds) for production. `0` (disabled) if your wallets don't frequently enter new markets.
+
+## Full Example: Notification Service
+
+```typescript
+import { RedemptionWatcher } from 'polynode-sdk';
+
+const watcher = new RedemptionWatcher({
+  apiKey: process.env.POLYNODE_API_KEY!,
+  trackPositionChanges: true,
+  refreshInterval: 60_000,
+});
+
+watcher.on('error', (err) => console.error('[watcher]', err.message));
+
+watcher.on('ready', () => {
+  console.log(`Monitoring ${watcher.size} positions across ${watcher.wallets.length} wallets`);
+});
+
+// Load wallets from your database
+const userWallets = await db.query('SELECT wallet FROM users WHERE active = true');
+await watcher.start(userWallets.map(u => u.wallet));
+
+// Process alerts
+for await (const alert of watcher) {
+  await db.insert('redemption_alerts', {
+    wallet: alert.wallet,
+    market: alert.marketTitle,
+    outcome: alert.outcome,
+    is_winner: alert.isWinner,
+    payout_usd: alert.estimatedPayoutUsd,
+    condition_id: alert.conditionId,
+    block_number: alert.blockNumber,
+  });
+
+  if (alert.isWinner) {
+    await sendPushNotification(alert.wallet, {
+      title: 'Position Redeemable!',
+      body: `"${alert.marketTitle}" resolved ${alert.winningOutcome}. Redeem ~$${alert.estimatedPayoutUsd.toLocaleString()}.`,
+    });
+  }
+}
+```
+
+## API Reference
+
+### Constructor
+
+```typescript
+new RedemptionWatcher(config: RedemptionWatcherConfig)
+```
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `start(wallets)` | `Promise<void>` | Fetch positions, subscribe to streams, begin watching |
+| `addWallets(wallets)` | `Promise<void>` | Add wallets at runtime, fetch their positions |
+| `removeWallets(wallets)` | `void` | Remove wallets, clean up state |
+| `positionsFor(wallet)` | `TrackedPosition[]` | Get tracked positions for one wallet |
+| `close()` | `void` | Unsubscribe, disconnect, clean up |
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `wallets` | `string[]` | All tracked wallet addresses |
+| `conditions` | `string[]` | All tracked condition IDs |
+| `size` | `number` | Total tracked position count |
+
+### Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `alert` | `RedeemableAlert` | A tracked position's condition resolved |
+| `ready` | (none) | Positions loaded and streams connected |
+| `error` | `Error` | REST fetch failed or stream error |

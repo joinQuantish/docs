@@ -195,6 +195,12 @@
             ]
           },
           {
+            "group": "Redemption Watcher",
+            "pages": [
+              "sdks/redemption-watcher"
+            ]
+          },
+          {
             "group": "Language Reference",
             "pages": [
               "sdks/typescript",

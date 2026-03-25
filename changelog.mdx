@@ -9,6 +9,40 @@ icon: "clock-rotate-left"
 
 ## 2026-03-25
 
+### TypeScript SDK — RedemptionWatcher
+
+New high-level class that monitors wallets and fires alerts the instant any position becomes redeemable on-chain.
+
+```bash
+npm install polynode-sdk@latest
+```
+
+```typescript
+import { RedemptionWatcher } from 'polynode-sdk';
+
+const watcher = new RedemptionWatcher({ apiKey: 'pn_live_...' });
+
+watcher.on('alert', (alert) => {
+  if (alert.isWinner) {
+    console.log(`${alert.wallet} can redeem "${alert.marketTitle}" — ~$${alert.estimatedPayoutUsd}`);
+  }
+});
+
+await watcher.start(['0xabc...', '0xdef...']);
+```
+
+**What it does:** Fetches wallet positions via REST, indexes by `condition_id`, subscribes to the oracle stream for `condition_resolution` events, and cross-references in real-time. Optional live position tracking via the wallets stream keeps sizes accurate as users trade.
+
+**Key features:**
+- Runtime `addWallets()` / `removeWallets()` with automatic re-subscription
+- Callback (`.on('alert', ...)`) and async iterator (`for await`) consumption
+- Winner detection with payout estimates
+- Full market metadata on every alert (title, slug, image, outcomes)
+
+See the [full documentation](/sdks/redemption-watcher) for lifecycle, configuration, and a production example.
+
+---
+
 ### Oracle Stream — `condition_resolution` Event
 
 The oracle WebSocket stream now includes `condition_resolution` events. This is the on-chain signal that positions are redeemable on the Conditional Tokens contract.
