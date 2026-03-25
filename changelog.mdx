@@ -9,6 +9,39 @@ icon: "clock-rotate-left"
 
 ## 2026-03-25
 
+### WebSocket — Application-Level Keepalive
+
+Cloud platform reverse proxies (Railway, Render, Heroku, AWS ALB, fly.io) can intercept WebSocket Ping/Pong control frames, preventing the server from detecting that your client is still alive. This caused connections to drop after 1-2 minutes with an empty error and no close frame.
+
+**What changed:**
+- The server now accepts any incoming message (not just Pong frames) as proof the client is alive
+- New `{"action": "ping"}` message returns `{"type": "pong", "ts": ...}` as an application-level keepalive
+- Stale connection timeout extended from 90 seconds to 5 minutes
+- Stale disconnects now include a close frame with a reason, instead of a silent drop
+
+**If you're running on a cloud platform**, add a periodic ping to your connection:
+
+<CodeGroup>
+```python Python
+async def keepalive():
+    while True:
+        await asyncio.sleep(30)
+        await ws.send(json.dumps({"action": "ping"}))
+
+ping_task = asyncio.create_task(keepalive())
+```
+
+```javascript Node.js
+setInterval(() => ws.send(JSON.stringify({ action: "ping" })), 30000);
+```
+</CodeGroup>
+
+If you're running on bare metal or a VM with no reverse proxy in front of your client, this doesn't affect you. Standard WS Ping/Pong still works as before.
+
+See [WebSocket Overview](/websocket/overview#application-level-keepalive) for full connection examples.
+
+---
+
 ### WebSocket — Reconnect Gap-Fill with `since`
 
 Subscribe messages now accept an optional `since` filter (UNIX milliseconds). When set, the initial snapshot returns all events after that timestamp instead of just the most recent N, letting you fill gaps after a disconnect or cold start without missing data.
