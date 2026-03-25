@@ -9,6 +9,45 @@ icon: "clock-rotate-left"
 
 ## 2026-03-25
 
+### TypeScript SDK v0.4.8 — Composable Leaderboard Builder
+
+The local cache now supports composable leaderboards with multi-metric ranking, market filtering, slug pattern matching, wallet scoping, and time windows.
+
+**New:** Call `cache.leaderboard()` with no arguments to get a `LeaderboardBuilder`:
+
+```typescript
+const rows = cache.leaderboard()
+  .metrics(['total_pnl', 'volume', 'win_rate'])
+  .slugs(['*election*'])
+  .since(weekAgo)
+  .limit(10)
+  .build();
+
+// Each row: { wallet, label, rank, metrics: { total_pnl, volume, win_rate } }
+```
+
+**7 new metrics** (11 total): `roi`, `realized_pnl`, `volume`, `avg_trade_size`, `largest_win`, `largest_loss`, `market_count`.
+
+**Builder methods:**
+- `.metric()` / `.metrics()` — single or multi-metric per row
+- `.sortBy()` / `.sort('ASC' | 'DESC')` — control ranking
+- `.markets([conditionIds])` — filter by market
+- `.slugs([patterns])` — glob match on market slugs (`*election*`, `btc-*`)
+- `.category({ name, slugs })` — reusable named slug groups
+- `.wallets([addrs])` — rank a wallet subset instead of full watchlist
+- `.since(ts)` / `.until(ts)` — time window for trade metrics
+- `.limit(n)` — top N
+
+Backward compatible. Existing `cache.leaderboard('total_pnl')` still returns the same `LeaderboardEntry[]` format.
+
+```bash
+npm install polynode-sdk@0.4.8
+```
+
+Full documentation: [Local Cache — Leaderboard Builder](/sdks/local-cache#leaderboard-builder)
+
+---
+
 ### WebSocket — Application-Level Keepalive
 
 Cloud platform reverse proxies (Railway, Render, Heroku, AWS ALB, fly.io) can intercept WebSocket Ping/Pong control frames, preventing the server from detecting that your client is still alive. This caused connections to drop after 1-2 minutes with an empty error and no close frame.

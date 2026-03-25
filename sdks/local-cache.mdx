@@ -441,6 +441,246 @@ const leaders = cache.leaderboard('total_pnl');
 ]
 ```
 
+### Leaderboard Builder
+
+<Info>
+  New in SDK v0.4.8. The builder extends the basic `leaderboard()` method with multi-metric support, market/slug filtering, wallet scoping, time windows, and 11 available metrics.
+</Info>
+
+Call `cache.leaderboard()` with no arguments to get a `LeaderboardBuilder`. Chain filters and call `.build()` to execute.
+
+#### Single metric
+
+```typescript
+const rows = cache.leaderboard()
+  .metric('total_pnl')
+  .build();
+```
+
+```json Output
+[
+  { "wallet": "0xcarol", "label": "Carol", "rank": 1, "metrics": { "total_pnl": 53.5 } },
+  { "wallet": "0xalice", "label": "Alice", "rank": 2, "metrics": { "total_pnl": 15 } },
+  { "wallet": "0xbob", "label": "Bob", "rank": 3, "metrics": { "total_pnl": -30 } }
+]
+```
+
+#### Multi-metric
+
+Request multiple metrics per row. Each row includes all metrics, sorted by the first one (or use `.sortBy()` to override):
+
+```typescript
+const rows = cache.leaderboard()
+  .metrics(['total_pnl', 'volume', 'win_rate'])
+  .build();
+```
+
+```json Output
+[
+  {
+    "wallet": "0xcarol", "label": "Carol", "rank": 1,
+    "metrics": { "total_pnl": 53.5, "volume": 138.1, "win_rate": 1.0 }
+  },
+  {
+    "wallet": "0xalice", "label": "Alice", "rank": 2,
+    "metrics": { "total_pnl": 15, "volume": 102.5, "win_rate": 0.5 }
+  },
+  {
+    "wallet": "0xbob", "label": "Bob", "rank": 3,
+    "metrics": { "total_pnl": -30, "volume": 70, "win_rate": 0 }
+  }
+]
+```
+
+#### Available metrics
+
+| Metric | Description | Source |
+|--------|-------------|--------|
+| `total_pnl` | Sum of unrealized P&L across positions | Positions |
+| `total_value` | Sum of current position values | Positions |
+| `realized_pnl` | Sum of realized P&L | Positions |
+| `roi` | Return on investment (total_pnl / initial_value) | Positions |
+| `win_rate` | Fraction of positions with positive P&L | Positions |
+| `largest_win` | Highest single-position P&L | Positions |
+| `largest_loss` | Lowest single-position P&L | Positions |
+| `market_count` | Number of distinct markets traded | Positions |
+| `trade_count` | Total trades | Trades |
+| `volume` | Total volume (price * size) | Trades |
+| `avg_trade_size` | Average trade volume | Trades |
+
+#### Sort by a different metric
+
+By default, rows are sorted by the first metric in the array. Override with `.sortBy()`:
+
+```typescript
+const rows = cache.leaderboard()
+  .metrics(['total_pnl', 'volume'])
+  .sortBy('volume')
+  .build();
+// Ranked by volume: Carol (138.1), Alice (102.5), Bob (70)
+```
+
+#### Sort direction
+
+Default is `DESC` (highest first). Flip with `.sort('ASC')`:
+
+```typescript
+const rows = cache.leaderboard()
+  .metric('total_pnl')
+  .sort('ASC')
+  .build();
+// Bob (-30), Alice (15), Carol (53.5)
+```
+
+#### Filter by market
+
+Scope to specific markets by condition ID:
+
+```typescript
+const rows = cache.leaderboard()
+  .metrics(['total_pnl', 'volume'])
+  .markets(['0xcondition_btc'])
+  .build();
+// Only counts positions and trades in the BTC market
+```
+
+```json Output
+[
+  { "wallet": "0xcarol", "rank": 1, "metrics": { "total_pnl": 16, "volume": 40 } },
+  { "wallet": "0xbob", "rank": 2, "metrics": { "total_pnl": 0, "volume": 0 } },
+  { "wallet": "0xalice", "rank": 3, "metrics": { "total_pnl": -5, "volume": 20 } }
+]
+```
+
+#### Filter by slug pattern
+
+Use glob patterns on market slugs. `*` matches any characters:
+
+```typescript
+const rows = cache.leaderboard()
+  .metrics(['total_pnl', 'trade_count'])
+  .slugs(['*trump*'])
+  .build();
+// Only counts positions/trades in markets with "trump" in the slug
+```
+
+```json Output
+[
+  { "wallet": "0xcarol", "rank": 1, "metrics": { "total_pnl": 37.5, "trade_count": 2 } },
+  { "wallet": "0xalice", "rank": 2, "metrics": { "total_pnl": 20, "trade_count": 2 } },
+  { "wallet": "0xbob", "rank": 3, "metrics": { "total_pnl": -30, "trade_count": 1 } }
+]
+```
+
+Multiple patterns are OR'd together:
+
+```typescript
+cache.leaderboard()
+  .slugs(['*trump*', 'btc-*', '*election*'])
+  .metric('total_pnl')
+  .build();
+```
+
+#### Categories
+
+Define reusable named groups of slug patterns:
+
+```typescript
+const ELECTIONS = { name: 'elections', slugs: ['*election*', '*trump*', '*biden*'] };
+const CRYPTO = { name: 'crypto', slugs: ['btc-*', 'eth-*', '*bitcoin*'] };
+const SPORTS = { name: 'sports', slugs: ['*nba*', '*nfl*', '*ncaa*'] };
+
+const rows = cache.leaderboard()
+  .category(ELECTIONS)
+  .metrics(['total_pnl', 'roi', 'win_rate'])
+  .limit(10)
+  .build();
+```
+
+#### Wallet scoping
+
+Rank a subset of wallets instead of the full watchlist:
+
+```typescript
+const rows = cache.leaderboard()
+  .metric('total_pnl')
+  .wallets(['0xalice', '0xcarol'])
+  .build();
+// Only Alice and Carol, Bob excluded
+```
+
+```json Output
+[
+  { "wallet": "0xcarol", "label": "Carol", "rank": 1, "metrics": { "total_pnl": 53.5 } },
+  { "wallet": "0xalice", "label": "Alice", "rank": 2, "metrics": { "total_pnl": 15 } }
+]
+```
+
+#### Time windows
+
+Filter trade-derived metrics to a time range. Pass UNIX timestamps in seconds:
+
+```typescript
+const weekAgo = Date.now() / 1000 - 7 * 86400;
+
+const rows = cache.leaderboard()
+  .metrics(['trade_count', 'volume'])
+  .since(weekAgo)
+  .sortBy('volume')
+  .build();
+```
+
+<Note>
+  Time windows apply to trade-derived metrics only (`trade_count`, `volume`, `avg_trade_size`). Position-derived metrics (`total_pnl`, `roi`, `win_rate`, etc.) always reflect current state, since positions are a snapshot rather than a time series.
+</Note>
+
+#### Limit
+
+Return only the top N:
+
+```typescript
+const top5 = cache.leaderboard()
+  .metrics(['total_pnl', 'volume', 'win_rate'])
+  .limit(5)
+  .build();
+```
+
+#### Full combination
+
+All filters compose together:
+
+```typescript
+const rows = cache.leaderboard()
+  .metrics(['total_pnl', 'volume', 'trade_count'])
+  .slugs(['*trump*'])
+  .since(weekAgo)
+  .wallets(['0xalice', '0xcarol'])
+  .sortBy('volume')
+  .limit(10)
+  .build();
+```
+
+#### Type reference
+
+```typescript
+interface LeaderboardRow {
+  wallet: string;
+  label: string;
+  rank: number;
+  metrics: Record<string, number>;
+}
+
+interface LeaderboardCategory {
+  name: string;
+  slugs: string[];
+}
+
+type LeaderboardMetric =
+  | 'total_pnl' | 'total_value' | 'trade_count' | 'win_rate'
+  | 'roi' | 'realized_pnl' | 'volume' | 'avg_trade_size'
+  | 'largest_win' | 'largest_loss' | 'market_count';
+```
+
 ### Market Overview
 
 All cached positions for a market across watched wallets:
