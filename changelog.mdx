@@ -7,6 +7,40 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-26
+
+### Trader Profile — EOA Wallet Resolution
+
+The `/v1/trader/{wallet}` endpoint now returns an `eoaWallet` field that resolves the underlying EOA (externally owned account) for Polymarket proxy wallets. This is derived onchain from the Gnosis Safe contract.
+
+```json
+{
+  "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+  "eoaWallet": "0xb49e5499562a4bc3345c1a1f2db13a5360dfddac",
+  "name": "beachboy4",
+  ...
+}
+```
+
+For older lightweight proxy wallets, `eoaWallet` returns `null`.
+
+### Tier-Aware Rate Limits on Data-Heavy Endpoints
+
+A handful of data-heavy endpoints now have their own per-key rate limits that scale with your plan:
+
+| Tier | Limit |
+|------|-------|
+| Free | 1 req/sec |
+| Starter | 30 req/sec |
+| Growth | 50 req/sec |
+| Enterprise | 100 req/sec |
+
+Affected endpoints: `/v1/trader/{wallet}`, `/v1/trader/{wallet}/pnl`, `/v1/leaderboard`, `/v1/trending`, `/v1/activity`, `/v1/event/{slug}`, `/v1/movers`, `/v1/markets/{category}`.
+
+All other REST endpoints use your plan's standard rate limit. See [Rate Limits](/guides/rate-limits) for full details.
+
+---
+
 ## 2026-03-25
 
 ### TypeScript SDK — RedemptionWatcher
