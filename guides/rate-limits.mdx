@@ -20,9 +20,14 @@ PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your
 | **Orderbook connections** | 1 | 2 | 10 | Unlimited |
 | **Orderbook market subs** | Unlimited | Unlimited | Unlimited | Unlimited |
 | **API keys** | 1 | 3 | 10 | 25 |
-| **Snapshot size** | 20 | 100 | 200 | 500 |
+| **Snapshot size** (`snapshot_count`) | 20 | 100 | 200 | 500 |
+| **Snapshot lookback** (`since`) | 30 seconds | 2 minutes | 5 minutes | 5 minutes |
 | **Key generation** | 1 per IP per day | Via dashboard | Via dashboard | Via dashboard |
 | **Support** | Community | Email | Priority | Dedicated + Slack |
+
+<Info>
+  **Snapshot size vs snapshot lookback** — these are two separate snapshot modes controlled by different parameters. `snapshot_count` returns the last N events (capped by your tier). `since` returns all events after a UNIX-ms timestamp within your tier's lookback window. If you pass both, `since` takes priority and `snapshot_count` is ignored. See [subscribing](/websocket/subscribing#param-since) for details.
+</Info>
 
 <Note>
   **Enterprise** includes dedicated server infrastructure. Contact [josh@quantish.live](mailto:josh@quantish.live) before activation.

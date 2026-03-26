@@ -180,11 +180,18 @@ All filters are optional. Omit the `filters` object entirely to receive all even
   ```json
   "since": 1774412600000
   ```
-  The server keeps a rolling window of recent events in memory. At typical throughput, this covers the last 1-3 minutes. Events older than the window are not available via `since`. Max lookback varies by tier (free: 30s, starter: 2min, growth/enterprise: 5min).
+  The server keeps a rolling window of recent events in memory. Timestamps older than your tier's lookback window are clamped to the window edge.
+
+  | Tier | Max lookback |
+  |------|-------------|
+  | Free | 30 seconds |
+  | Starter | 2 minutes |
+  | Growth | 5 minutes |
+  | Enterprise | 5 minutes |
 </ParamField>
 
 <Info>
-  **`since` vs `snapshot_count`** — these are two separate snapshot modes. Use `snapshot_count` when you just want the last N events. Use `since` when you need every event after a specific timestamp (e.g. reconnecting after a drop). If you pass both, `since` takes priority and `snapshot_count` is ignored.
+  **`since` vs `snapshot_count`** — these are two separate snapshot modes. Use `snapshot_count` when you just want the last N events (capped by tier). Use `since` when you need every event after a specific timestamp (e.g. reconnecting after a drop). If you pass both, `since` takes priority and `snapshot_count` is ignored. See [tier limits](/guides/rate-limits#tier-limits) for the full breakdown.
 </Info>
 
 ### Price feed filtering
