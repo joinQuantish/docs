@@ -44,7 +44,9 @@ await watcher.start([
 1. **`start(wallets)`** fetches positions for each wallet via REST (parallel), builds an internal index keyed by `condition_id`, then subscribes to the oracle WebSocket stream
 2. When a `condition_resolution` event arrives, the watcher cross-references `event.condition_id` against the position index
 3. For each matched position, a `RedeemableAlert` is emitted with wallet address, win/loss status, payout estimate, and full market metadata
-4. If `trackPositionChanges` is enabled (default), position sizes stay accurate in real-time via the wallets WebSocket stream. If a wallet enters a new market after `start()`, the watcher automatically picks it up from the enriched transfer event and adds it to the index.
+4. After alerts fire, the resolved condition is evicted from memory. Positions that drop to zero size (full sell) are also evicted. This keeps memory bounded to only active, non-zero positions regardless of how long the watcher runs.
+5. If `trackPositionChanges` is enabled (default), position sizes stay accurate in real-time via the wallets WebSocket stream. If a wallet enters a new market after `start()`, the watcher automatically picks it up from the enriched transfer event and adds it to the index.
+6. A periodic REST refresh (default: every 5 minutes) re-fetches all wallet positions as a safety net, catching any positions the stream may have missed during brief disconnections.
 
 <Note>
   `condition_resolution` is the moment positions become redeemable on the Conditional Tokens contract. For neg-risk markets (the majority on Polymarket), this fires in a separate transaction after the UMA `resolution` event. See [Oracle Events](/websocket/events/oracle) for the full resolution lifecycle.
@@ -275,7 +277,7 @@ interface RedemptionWatcherConfig {
   compress?: boolean;     // zlib compression (default: true via PolyNodeWS)
   autoReconnect?: boolean; // auto-reconnect on disconnect (default: true)
   trackPositionChanges?: boolean; // live position delta tracking (default: true)
-  refreshInterval?: number;       // periodic REST refresh in ms (default: 0 = disabled)
+  refreshInterval?: number;       // periodic REST refresh in ms (default: 300000 = 5 min)
 }
 ```
 
@@ -288,9 +290,9 @@ When enabled (default), the watcher subscribes to the wallets WebSocket stream. 
 
 ### `refreshInterval`
 
-Optional periodic REST re-fetch of all wallet positions. Not required for correctness since `trackPositionChanges` handles both size updates and new market discovery. Useful as a safety net in case a transfer event is missed due to a brief WebSocket disconnection.
+Periodic REST re-fetch of all wallet positions. Acts as a safety net in case a transfer event is missed due to a brief WebSocket disconnection, ensuring the watcher eventually picks up any positions the stream didn't catch.
 
-Default: `0` (disabled). Set to `60_000` if you want extra resilience.
+Default: `300_000` (5 minutes). Set to `0` to disable, or lower (e.g. `60_000`) if you need faster recovery.
 
 ## Full Example: Notification Service
 
@@ -331,6 +333,16 @@ for await (const alert of watcher) {
   }
 }
 ```
+
+## Memory Management
+
+The watcher is designed to run indefinitely with bounded memory, even when tracking thousands of wallets.
+
+- **Resolved conditions are evicted** after alerts fire. A condition only resolves once, so there's nothing left to watch.
+- **Zero-size positions are evicted** when a wallet fully sells out of a market. If they buy back in, the position is re-created from the next `position_change` event or the periodic REST refresh.
+- **The periodic REST refresh** (default: every 5 minutes) acts as a safety net. Even if a stream event is missed, the refresh catches it within one cycle.
+
+Memory usage is proportional to the number of active, non-zero positions across all tracked wallets at any given moment. Historical positions, resolved markets, and fully-sold positions do not accumulate.
 
 ## API Reference
 

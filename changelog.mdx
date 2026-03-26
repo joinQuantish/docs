@@ -9,6 +9,27 @@ icon: "clock-rotate-left"
 
 ## 2026-03-26
 
+### TypeScript SDK — RedemptionWatcher Memory Management
+
+The `RedemptionWatcher` now automatically evicts resolved conditions and zero-size positions from its internal index. This keeps memory bounded to only active, non-zero positions regardless of how long the watcher runs or how many wallets it tracks.
+
+Previously, resolved markets and fully-sold positions accumulated in memory indefinitely. For long-running services tracking thousands of wallets, this could grow to hundreds of megabytes over weeks.
+
+**What changed:**
+- Resolved conditions are removed from the index immediately after alerts fire
+- Positions that drop to zero size (full sell) are removed automatically
+- `refreshInterval` default changed from `0` (disabled) to `300_000` (5 minutes). This periodic REST refresh acts as a safety net, re-populating any positions missed during brief WebSocket disconnections.
+
+**No breaking changes.** Alert behavior is identical. If you were explicitly setting `refreshInterval: 0`, that still works.
+
+```bash
+npm install polynode-sdk@latest
+```
+
+See [RedemptionWatcher — Memory Management](/sdks/redemption-watcher#memory-management) for details.
+
+---
+
 ### Trader Profile — EOA Wallet Resolution
 
 The `/v1/trader/{wallet}` endpoint now returns an `eoaWallet` field that resolves the underlying EOA (externally owned account) for Polymarket proxy wallets. This is derived onchain from the Gnosis Safe contract.
