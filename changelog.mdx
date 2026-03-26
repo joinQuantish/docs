@@ -9,6 +9,31 @@ icon: "clock-rotate-left"
 
 ## 2026-03-26
 
+### API — `order_hash` on Settlements and Trades
+
+Every settlement trade and confirmed trade event now includes an `order_hash` field — the EIP-712 hash that uniquely identifies a limit order on Polymarket's order book.
+
+**Why this matters:** A single limit order can be partially filled across multiple transactions. The `order_hash` stays the same across all of them, letting you track order lifecycle, group partial fills, and build order-level analytics.
+
+- **Settlement events:** `order_hash` appears on each trade inside the `trades[]` array. Available on pending (pre-chain) settlements, computed from transaction calldata before block confirmation.
+- **Trade events:** `order_hash` appears as a top-level field, extracted directly from the on-chain `OrderFilled` event log.
+
+```json
+{
+  "type": "trade",
+  "data": {
+    "order_hash": "0x916fa5c2728c93e19ea5d7c254b07234815ad01e59597573c09d852fe53ee564",
+    "maker": "0x4b8cf80092c60b9b23d22133eb63eb4508fe4d31",
+    "price": 0.71,
+    "size": 3.0
+  }
+}
+```
+
+No SDK update required — the field is automatically included in the WebSocket stream.
+
+---
+
 ### TypeScript SDK — RedemptionWatcher Memory Management
 
 The `RedemptionWatcher` now automatically evicts resolved conditions and zero-size positions from its internal index. This keeps memory bounded to only active, non-zero positions regardless of how long the watcher runs or how many wallets it tracks.

@@ -44,6 +44,7 @@ The core PolyNode event. A Polymarket settlement detected before or after on-cha
       {
         "maker": "0x0bfb8009df6c46c1fdd79b65896cf224dc4526a7",
         "maker_amount": "96000000",
+        "order_hash": "0x2ca8ef3e7a72fac98a54fba5d92cdbf352633e3f7d929252f3204c35ca65ae80",
         "outcome": "Yes",
         "price": 0.16,
         "side": "BUY",
@@ -56,6 +57,7 @@ The core PolyNode event. A Polymarket settlement detected before or after on-cha
       {
         "maker": "0x5b78254f3e639788fed14221bf8a8bd15c2fa88a",
         "maker_amount": "10340000",
+        "order_hash": "0x42961ee60f3ad3bea6df8fb1f98abcf090a05cd03b70d697ab899ad4a960059d",
         "outcome": "No",
         "price": 0.85,
         "side": "BUY",
@@ -210,6 +212,9 @@ The core PolyNode event. A Polymarket settlement detected before or after on-cha
         </ResponseField>
         <ResponseField name="outcome" type="string">
           Outcome name for this trade's token (e.g. "Yes", "No", "Up"). Enriched from metadata.
+        </ResponseField>
+        <ResponseField name="order_hash" type="string">
+          EIP-712 order hash for this maker's limit order. Persistent across partial fills. Computed from calldata pre-chain, so this is available on pending settlements before block confirmation.
         </ResponseField>
       </Expandable>
     </ResponseField>

@@ -10,42 +10,43 @@ A confirmed on-chain trade from Polymarket's exchange contracts.
 ```json
 {
   "data": {
-    "block_number": 84697556,
-    "condition_id": "0x742cccb8094536132d2afee783308a6eb3498a094f2082dc26dd13bfd0bf3c2b",
-    "event_slug": "cbb-ill-hou-2026-03-26",
-    "event_title": "Illinois Fighting Illini vs. Houston Cougars",
+    "block_number": 84705489,
+    "condition_id": "0x158fa5bd542d4982a5b09eee29c5d23f8f1304367adc1a8e4396b692eb550466",
+    "event_slug": "eth-updown-5m-1774530900",
+    "event_title": "Ethereum Up or Down - March 26, 9:15AM-9:20AM ET",
     "event_type": "trade",
     "exchange": "ctf_exchange",
-    "fee": 4.739482,
-    "log_index": 2161,
-    "maker": "0xd604ab303e351a9c829606aa7184b9bfd375cb5f",
-    "maker_amount": "37961000",
-    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/ncaa-c14995df96.png",
-    "market_slug": "cbb-ill-hou-2026-03-26",
-    "market_title": "Illinois Fighting Illini vs. Houston Cougars",
+    "fee": 0.122535,
+    "log_index": 1996,
+    "maker": "0x4b8cf80092c60b9b23d22133eb63eb4508fe4d31",
+    "maker_amount": "2130000",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/ETH+fullsize.jpg",
+    "market_slug": "eth-updown-5m-1774530900",
+    "market_title": "Ethereum Up or Down - March 26, 9:15AM-9:20AM ET",
     "neg_risk": false,
-    "outcome": "Houston Cougars",
-    "outcomes": ["Illinois Fighting Illini", "Houston Cougars"],
-    "price": 0.58,
+    "order_hash": "0x916fa5c2728c93e19ea5d7c254b07234815ad01e59597573c09d852fe53ee564",
+    "outcome": "Up",
+    "outcomes": ["Up", "Down"],
+    "price": 0.71,
     "side": "BUY",
-    "size": 65.45,
-    "taker": "0x53a26c4ee0776948f9fc645a6e5184f1af3deb92",
-    "taker_amount": "65450000",
+    "size": 3.0,
+    "taker": "0x536be02af900fe046fa708c8059c04f737a2cee3",
+    "taker_amount": "3000000",
     "taker_base_fee": 1000.0,
     "tick_size": 0.01,
-    "timestamp": 1774515147000,
-    "token_id": "59202108327135535421172568160321982683582378216670455227255549883175903089000",
+    "timestamp": 1774531013000,
+    "token_id": "67838338591118719610402948028043822510398368770316608063235371949564584838291",
     "token_ids": [
-      "32808458875366467745777044160603661512817861173859925631005519080722962618453",
-      "59202108327135535421172568160321982683582378216670455227255549883175903089000"
+      "67838338591118719610402948028043822510398368770316608063235371949564584838291",
+      "106640979554519903529443899392736422684573887313790829687503639341656103167080"
     ],
     "tokens": {
-      "32808458875366467745777044160603661512817861173859925631005519080722962618453": "Illinois Fighting Illini",
-      "59202108327135535421172568160321982683582378216670455227255549883175903089000": "Houston Cougars"
+      "106640979554519903529443899392736422684573887313790829687503639341656103167080": "Down",
+      "67838338591118719610402948028043822510398368770316608063235371949564584838291": "Up"
     },
-    "tx_hash": "0x4ec78046c86dc95e432ad938185dfff4f72644d1c4328483b6a1bcbd024e9d5c"
+    "tx_hash": "0xaf3d097f3b2e799c0a14cca4e7709122b397c9b920c276c0fd3caa4848ea9808"
   },
-  "timestamp": 1774515147000,
+  "timestamp": 1774531013000,
   "type": "trade"
 }
 ```
@@ -118,6 +119,10 @@ A confirmed on-chain trade from Polymarket's exchange contracts.
       Fee charged on this trade in USDC. Decoded from the OrderFilled log. `null` when fee is zero or not present.
     </ResponseField>
 
+    <ResponseField name="order_hash" type="string">
+      EIP-712 order hash. Uniquely identifies the maker's limit order on Polymarket's CLOB. **Persistent across partial fills** — the same `order_hash` appears every time a slice of that limit order is matched.
+    </ResponseField>
+
     <ResponseField name="market_title" type="string">
       Market question. Enriched from metadata.
     </ResponseField>
@@ -184,3 +189,7 @@ A confirmed on-chain trade from Polymarket's exchange contracts.
 <Note>
 A single settlement can contain multiple trades (one per matched maker order). If you subscribe to both `settlement` and `trade`, you'll see the settlement first (pending), then individual trades (confirmed).
 </Note>
+
+<Tip>
+**Tracking limit orders across fills:** Use `order_hash` to group partial fills of the same limit order. When a maker places a 1,000-share order and it fills in three separate transactions, all three trades share the same `order_hash`. This is the EIP-712 hash of the signed order struct — it's deterministic from the order parameters and identical to what Polymarket's CLOB uses internally.
+</Tip>
