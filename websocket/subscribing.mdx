@@ -79,7 +79,7 @@ The `type` field selects a preset of event types. If you also set `filters.event
 <ResponseField name="global" type="string">
   Events: all except `position_split` and `position_merge`
 
-  Unfiltered stream of every event (**firehose**), including oracle events. High throughput — use with caution. This counts toward your plan's firehose connection limit. To include `position_split`/`position_merge`, add them explicitly via the `event_types` filter override.
+  Unfiltered stream of every event (**firehose**, full data stream), including oracle events. High throughput — use with caution. This counts toward your plan's firehose connection limit. To include `position_split`/`position_merge`, add them explicitly via the `event_types` filter override.
 </ResponseField>
 
 <Note>

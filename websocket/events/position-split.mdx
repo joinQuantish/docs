@@ -123,5 +123,5 @@ Emitted when collateral (USDC) is split into outcome tokens (YES/NO shares) via 
 - **Trade enrichment** — pair with `trade` events to see the full lifecycle of a trade (split → fill)
 
 <Note>
-  Not included in `global` firehose by default due to high volume (splits fire on most trades). Subscribe explicitly with `event_types: ["position_split"]` or use the `wallets`/`markets` subscription types which include it automatically.
+  Not included in `global` firehose (full data stream) by default due to high volume (splits fire on most trades). Subscribe explicitly with `event_types: ["position_split"]` or use the `wallets`/`markets` subscription types which include it automatically.
 </Note>

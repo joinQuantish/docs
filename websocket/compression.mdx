@@ -274,5 +274,5 @@ Compression is applied **once per event** on the server, then the same compresse
 |----------|---------------|
 | **Production bots / trading systems** | Use compression — saves bandwidth, no downside |
 | **Prototyping / debugging** | Skip compression — raw JSON is easier to inspect |
-| **High-frequency firehose** | Use compression — critical at scale |
+| **High-frequency firehose (full data stream)** | Use compression — critical at scale |
 | **Browser dashboards** | Use compression with [pako](https://github.com/nichn4nd/pako) — reduces data transfer |
