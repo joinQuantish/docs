@@ -13,54 +13,62 @@ The core PolyNode event. A Polymarket settlement detected before or after on-cha
 {
   "data": {
     "block_number": null,
-    "condition_id": "0x4adecf6f72888a7eb9f30792c5bdccb072590075cbc6a165287982b466b50e8b",
-    "detected_at": 1773301441280,
-    "event_title": "Ethereum Up or Down - March 12, 3:30AM-3:45AM ET",
+    "condition_id": "0xb564e5e20a0d3ab9b07d24ff25b19001d9d6b2d1d3121d4b9a2a0691713643cb",
+    "detected_at": 1774515004952,
+    "event_slug": "will-mara-corina-machado-enter-venezuela-by-january-31",
+    "event_title": "María Corina Machado enters Venezuela by...?",
     "event_type": "settlement",
-    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/ETH+fullsize.jpg",
-    "market_slug": "eth-updown-15m-1773300600",
-    "market_title": "Ethereum Up or Down - March 12, 3:30AM-3:45AM ET",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-mara-corina-machado-enter-venezuela-by-january-31-2JimdK2AkPpQ.jpg",
+    "market_slug": "will-mara-corina-machado-enter-venezuela-by-april-30",
+    "market_title": "Will María Corina Machado enter Venezuela by April 30?",
     "neg_risk": false,
-    "outcome": "Up",
+    "outcome": "No",
+    "outcomes": ["Yes", "No"],
     "status": "pending",
-    "taker_base_fee": 1000.0,
-    "taker_price": 0.99,
+    "taker_base_fee": null,
+    "taker_price": 0.85,
     "taker_side": "BUY",
-    "taker_size": 50.5,
-    "taker_token": "92031998398623404776521611329154744036566205914361454065609349273835272366499",
-    "taker_wallet": "0x19db9b949dc686aa6e33f8a019c7b2bb0d4aabbf",
+    "taker_size": 12.1647,
+    "taker_token": "105661833938076784158167307763414073000325182187633954283290589114908891807534",
+    "taker_wallet": "0x5b78254f3e639788fed14221bf8a8bd15c2fa88a",
     "tick_size": 0.01,
+    "token_ids": [
+      "52054255865962303053567273154012826122522952121382457828722214406382382900565",
+      "105661833938076784158167307763414073000325182187633954283290589114908891807534"
+    ],
     "tokens": {
-      "69502793735506041495672526031462553164156574585593182105038953736496528173977": "Down",
-      "92031998398623404776521611329154744036566205914361454065609349273835272366499": "Up"
+      "105661833938076784158167307763414073000325182187633954283290589114908891807534": "No",
+      "52054255865962303053567273154012826122522952121382457828722214406382382900565": "Yes"
     },
     "trades": [
       {
-        "maker": "0x894d8b81f19fc2af71523b5d9dc26680abf27293",
-        "maker_amount": "1033540000",
-        "price": 0.99,
-        "side": "SELL",
-        "signer": "0x526b434ad115d90cf201eacac117530232b2cf32",
-        "size": 1033.54,
-        "taker": "0x19db9b949dc686aa6e33f8a019c7b2bb0d4aabbf",
-        "taker_amount": "1023204600",
-        "token_id": "92031998398623404776521611329154744036566205914361454065609349273835272366499"
+        "maker": "0x0bfb8009df6c46c1fdd79b65896cf224dc4526a7",
+        "maker_amount": "96000000",
+        "outcome": "Yes",
+        "price": 0.16,
+        "side": "BUY",
+        "signer": "0x9b4371d8fe1fad11c0a2209ebbc4ca97a040b3f2",
+        "size": 600.0,
+        "taker": "0x5b78254f3e639788fed14221bf8a8bd15c2fa88a",
+        "taker_amount": "600000000",
+        "token_id": "52054255865962303053567273154012826122522952121382457828722214406382382900565"
       },
       {
-        "maker": "0x19db9b949dc686aa6e33f8a019c7b2bb0d4aabbf",
-        "maker_amount": "49995000",
-        "price": 0.99,
+        "maker": "0x5b78254f3e639788fed14221bf8a8bd15c2fa88a",
+        "maker_amount": "10340000",
+        "outcome": "No",
+        "price": 0.85,
         "side": "BUY",
-        "signer": "0xdcf0527fcf36f5ae900a1feec87dd15e50c70c37",
-        "size": 50.5,
-        "taker": "0x19db9b949dc686aa6e33f8a019c7b2bb0d4aabbf",
-        "taker_amount": "50500000",
-        "token_id": "92031998398623404776521611329154744036566205914361454065609349273835272366499"
+        "signer": "0x28167f8e9da7739f338056e52cea318892cad166",
+        "size": 12.1647,
+        "taker": "0x5b78254f3e639788fed14221bf8a8bd15c2fa88a",
+        "taker_amount": "12164700",
+        "token_id": "105661833938076784158167307763414073000325182187633954283290589114908891807534"
       }
     ],
-    "tx_hash": "0xf918f59e6c399bbb42c1b81a85af99991e129e2a0ca528c60d92c691f468ed13"
+    "tx_hash": "0xa5afa27aa8a7c1f75e24202f4a92d266b0ca965a306e3846574d0c1004a41b63"
   },
-  "timestamp": 1773301441280,
+  "timestamp": 1774515004952,
   "type": "settlement"
 }
 ```
@@ -115,7 +123,7 @@ The core PolyNode event. A Polymarket settlement detected before or after on-cha
     </ResponseField>
 
     <ResponseField name="taker_size" type="number" required>
-      Fill size in shares. Divide by 10^6 for USDC value.
+      Fill size in shares.
     </ResponseField>
 
     <ResponseField name="market_title" type="string">
@@ -154,6 +162,18 @@ The core PolyNode event. A Polymarket settlement detected before or after on-cha
       Market condition ID (CTF contract identifier). Enriched from metadata.
     </ResponseField>
 
+    <ResponseField name="event_slug" type="string">
+      Parent event URL slug (e.g. `"will-mara-corina-machado-enter-venezuela-by-january-31"`). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="outcomes" type="string[]">
+      Ordered list of outcome names (e.g. `["Yes", "No"]`). Index-aligned with `token_ids`. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="token_ids" type="string[]">
+      Ordered list of token IDs for this market. Index-aligned with `outcomes`. Enriched from metadata.
+    </ResponseField>
+
     <ResponseField name="tokens" type="object">
       Map of token ID → outcome name for all outcomes in this market (e.g. `{"123...": "Yes", "456...": "No"}`). Enriched from metadata.
     </ResponseField>
@@ -187,6 +207,9 @@ The core PolyNode event. A Polymarket settlement detected before or after on-cha
         </ResponseField>
         <ResponseField name="taker_amount" type="string" required>
           Raw taker amount (6 decimal USDC or tokens).
+        </ResponseField>
+        <ResponseField name="outcome" type="string">
+          Outcome name for this trade's token (e.g. "Yes", "No", "Up"). Enriched from metadata.
         </ResponseField>
       </Expandable>
     </ResponseField>

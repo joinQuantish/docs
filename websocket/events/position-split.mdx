@@ -71,7 +71,7 @@ Emitted when collateral (USDC) is split into outcome tokens (YES/NO shares) via 
     </ResponseField>
 
     <ResponseField name="collateral_token" type="string" required>
-      Collateral token address. Always USDC.e (`0x2791bca1f2de4661ed88a30c99a7a9449aa84174`) on Polymarket.
+      Collateral token address. USDC.e (`0x2791bca1f2de4661ed88a30c99a7a9449aa84174`) for standard markets, wrapped collateral (`0x3a3bd7bb...`) for neg_risk markets.
     </ResponseField>
 
     <ResponseField name="condition_id" type="string" required>

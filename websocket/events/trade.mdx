@@ -10,35 +10,42 @@ A confirmed on-chain trade from Polymarket's exchange contracts.
 ```json
 {
   "data": {
-    "block_number": 84090704,
-    "condition_id": "0xab3eea0d5b61cd443affca5fcd19d3541e92f7c96f7e92111982fbcbff56bb55",
-    "event_title": "Bitcoin Up or Down - March 12, 3:40AM-3:45AM ET",
+    "block_number": 84697556,
+    "condition_id": "0x742cccb8094536132d2afee783308a6eb3498a094f2082dc26dd13bfd0bf3c2b",
+    "event_slug": "cbb-ill-hou-2026-03-26",
+    "event_title": "Illinois Fighting Illini vs. Houston Cougars",
     "event_type": "trade",
     "exchange": "ctf_exchange",
-    "log_index": 767,
-    "maker": "0x1e3cb16886d605430a8c5581eddd08e068c08a62",
-    "maker_amount": "3690307",
-    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-    "market_slug": "btc-updown-5m-1773301200",
-    "market_title": "Bitcoin Up or Down - March 12, 3:40AM-3:45AM ET",
+    "fee": 4.739482,
+    "log_index": 2161,
+    "maker": "0xd604ab303e351a9c829606aa7184b9bfd375cb5f",
+    "maker_amount": "37961000",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/ncaa-c14995df96.png",
+    "market_slug": "cbb-ill-hou-2026-03-26",
+    "market_title": "Illinois Fighting Illini vs. Houston Cougars",
     "neg_risk": false,
-    "outcome": "Up",
-    "price": 0.711,
+    "outcome": "Houston Cougars",
+    "outcomes": ["Illinois Fighting Illini", "Houston Cougars"],
+    "price": 0.58,
     "side": "BUY",
-    "size": 5.19,
-    "taker": "0xb9b31d3872d3b14d67d0949642ff13d925b1ab4a",
-    "taker_amount": "5190306",
+    "size": 65.45,
+    "taker": "0x53a26c4ee0776948f9fc645a6e5184f1af3deb92",
+    "taker_amount": "65450000",
     "taker_base_fee": 1000.0,
     "tick_size": 0.01,
-    "timestamp": 1773301441000,
-    "token_id": "47635040450827094965464370243227927750353541381049355332417378831540287352201",
+    "timestamp": 1774515147000,
+    "token_id": "59202108327135535421172568160321982683582378216670455227255549883175903089000",
+    "token_ids": [
+      "32808458875366467745777044160603661512817861173859925631005519080722962618453",
+      "59202108327135535421172568160321982683582378216670455227255549883175903089000"
+    ],
     "tokens": {
-      "47635040450827094965464370243227927750353541381049355332417378831540287352201": "Up",
-      "57924371746740845060329991315866785058480643549619724503463886953768356812176": "Down"
+      "32808458875366467745777044160603661512817861173859925631005519080722962618453": "Illinois Fighting Illini",
+      "59202108327135535421172568160321982683582378216670455227255549883175903089000": "Houston Cougars"
     },
-    "tx_hash": "0x74dbde22f31ce8dcbc5b3c187c33cd131d9bb5791874e139b41c1049ae3589fc"
+    "tx_hash": "0x4ec78046c86dc95e432ad938185dfff4f72644d1c4328483b6a1bcbd024e9d5c"
   },
-  "timestamp": 1773301441000,
+  "timestamp": 1774515147000,
   "type": "trade"
 }
 ```
@@ -107,6 +114,10 @@ A confirmed on-chain trade from Polymarket's exchange contracts.
       Raw taker amount (6 decimal precision).
     </ResponseField>
 
+    <ResponseField name="fee" type="number">
+      Fee charged on this trade in USDC. Decoded from the OrderFilled log. `null` when fee is zero or not present.
+    </ResponseField>
+
     <ResponseField name="market_title" type="string">
       Market question. Enriched from metadata.
     </ResponseField>
@@ -141,6 +152,18 @@ A confirmed on-chain trade from Polymarket's exchange contracts.
 
     <ResponseField name="condition_id" type="string">
       Market condition ID (CTF contract identifier). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="event_slug" type="string">
+      Parent event URL slug. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="outcomes" type="string[]">
+      Ordered list of outcome names (e.g. `["Yes", "No"]`). Index-aligned with `token_ids`. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="token_ids" type="string[]">
+      Ordered list of token IDs for this market. Index-aligned with `outcomes`. Enriched from metadata.
     </ResponseField>
 
     <ResponseField name="tokens" type="object">

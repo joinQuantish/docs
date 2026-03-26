@@ -10,31 +10,36 @@ Emitted when conditional tokens are transferred between wallets (ERC-1155 `Trans
 ```json
 {
   "data": {
-    "amount": 884.472711,
-    "block_number": 84090735,
-    "condition_id": "0x4295664a21b3c402905e20e7f7fe7b32f33ea65ee534044df4b02c78251aabaf",
-    "event_title": "Ethereum Up or Down - March 12, 3:35AM-3:40AM ET",
+    "amount": 0.050921,
+    "block_number": 84697556,
+    "condition_id": "0xc288913391d7d3b484d9e63f60996671a1888207e0d9917691c5257cbab09309",
+    "event_title": "Bitcoin Up or Down - March 26, 4:50AM-4:55AM ET",
     "event_type": "position_change",
-    "from": "0xe041d09715148a9a4a7a881a5580da2c0701f2e5",
-    "log_index": 518,
-    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/ETH+fullsize.jpg",
-    "market_slug": "eth-updown-5m-1773300900",
-    "market_title": "Ethereum Up or Down - March 12, 3:35AM-3:40AM ET",
+    "from": "0xe3f18acc55091e2c48d883fc8c8413319d4ab7b0",
+    "log_index": 2147,
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+    "market_slug": "btc-updown-5m-1774515000",
+    "market_title": "Bitcoin Up or Down - March 26, 4:50AM-4:55AM ET",
     "neg_risk": false,
     "outcome": "Up",
+    "outcomes": ["Up", "Down"],
     "taker_base_fee": 1000.0,
     "tick_size": 0.01,
-    "timestamp": 1773301503000,
-    "to": "0x0000000000000000000000000000000000000000",
-    "token_id": "88079040319084259792317169986778269594929895453001532385270733798362038010575",
+    "timestamp": 1774515147000,
+    "to": "0xb27bc932bf8110d8f78e55da7d5f0497a18b5b82",
+    "token_id": "58779171378753040273547833889411100281640930430837040192014777442237090167078",
+    "token_ids": [
+      "58779171378753040273547833889411100281640930430837040192014777442237090167078",
+      "44910406836464179003614524044201701268382942629198430107881894265432491492514"
+    ],
     "tokens": {
-      "16443073444374918605680266403165867352955585678993470305905845673667591889522": "Down",
-      "88079040319084259792317169986778269594929895453001532385270733798362038010575": "Up"
+      "44910406836464179003614524044201701268382942629198430107881894265432491492514": "Down",
+      "58779171378753040273547833889411100281640930430837040192014777442237090167078": "Up"
     },
     "transfer_type": "single",
-    "tx_hash": "0x2d2c4a493dff9b5912b327fcd680fe5ba0cbc7af6a6f3225a60bc63a895b3189"
+    "tx_hash": "0x2b72f18ba36846fa72c7083e89d1a66438e0b9b15e170325f4efde5d08cc602e"
   },
-  "timestamp": 1773301503000,
+  "timestamp": 1774515147000,
   "type": "position_change"
 }
 ```
@@ -121,6 +126,14 @@ Emitted when conditional tokens are transferred between wallets (ERC-1155 `Trans
 
     <ResponseField name="condition_id" type="string">
       Market condition ID (CTF contract identifier). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="outcomes" type="string[]">
+      Ordered list of outcome names (e.g. `["Yes", "No"]`). Index-aligned with `token_ids`. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="token_ids" type="string[]">
+      Ordered list of token IDs for this market. Index-aligned with `outcomes`. Enriched from metadata.
     </ResponseField>
 
     <ResponseField name="tokens" type="object">

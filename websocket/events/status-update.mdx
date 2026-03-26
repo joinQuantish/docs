@@ -10,34 +10,38 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
 ```json
 {
   "data": {
-    "block_number": 84090705,
-    "condition_id": "0x4531a91f4def8da0773897ad49236eebfb94f687c8985637a43f7e1ac439132f",
-    "confirmed_at": 1773301443000,
-    "event_title": "Ethereum Up or Down - March 12, 3:40AM-3:45AM ET",
+    "block_number": 84697578,
+    "condition_id": "0xcd1b782d94423552e19db1ca2bec7bcf5a445de8586638e41da75fae3d138ac4",
+    "confirmed_at": 1774515191000,
+    "event_title": "Augusta National Invitational - Winner ",
     "event_type": "status_update",
-    "latency_ms": 3598,
+    "latency_ms": 3928,
     "maker_wallets": [
-      "0x8a181a656f089ad649d4500a67c4a94cc25abc9d",
-      "0x11f09d48095b152eb82a6bccc64138735d4c3fa8",
-      "0x7035c3cf9c32e63a13e75177fb1523462ab00398"
+      "0xc51f90d32c30f2f80bae8b0b7b8779b397a7650d",
+      "0x7f8d845693cf4a4242f3c72a78332667fc440002"
     ],
-    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/ETH+fullsize.jpg",
-    "market_slug": "eth-updown-5m-1773301200",
-    "market_title": "Ethereum Up or Down - March 12, 3:40AM-3:45AM ET",
-    "neg_risk": false,
-    "outcome": "Down",
-    "pending_detected_at": 1773301439402,
-    "taker_base_fee": 1000.0,
-    "taker_wallet": "0x7035c3cf9c32e63a13e75177fb1523462ab00398",
-    "tick_size": 0.01,
-    "token_id": "41289058265701027630261530916262400751492270988085662232022084312192713218931",
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-charl-schwartzel-win-the-2026-masters-tournament-aX4CJWWTY-MM.png",
+    "market_slug": "will-charl-schwartzel-win-the-2026-masters-tournament",
+    "market_title": "Will Charl Schwartzel win the 2026 Masters tournament?",
+    "neg_risk": true,
+    "outcome": "No",
+    "outcomes": ["Yes", "No"],
+    "pending_detected_at": 1774515187072,
+    "taker_base_fee": null,
+    "taker_wallet": "0xc51f90d32c30f2f80bae8b0b7b8779b397a7650d",
+    "tick_size": 0.001,
+    "token_id": "97486603884638701907147078120258734284412618667021950609483989581295500093074",
+    "token_ids": [
+      "114433834256520234603606906611634484409025341085225894878418887707063366888909",
+      "97486603884638701907147078120258734284412618667021950609483989581295500093074"
+    ],
     "tokens": {
-      "41289058265701027630261530916262400751492270988085662232022084312192713218931": "Down",
-      "43683199363997825972120625605577475527345563787373900511473168397985098762620": "Up"
+      "114433834256520234603606906611634484409025341085225894878418887707063366888909": "Yes",
+      "97486603884638701907147078120258734284412618667021950609483989581295500093074": "No"
     },
-    "tx_hash": "0xc2cdb3e96ddbde7c56ac7803b2389496669c98c428a348013938f9b433c3cc12"
+    "tx_hash": "0xdeb240ed175eec28895a6b4037f1e91c6fcdb2231c6814de9e1acb07b2ca3c5d"
   },
-  "timestamp": 1773301443000,
+  "timestamp": 1774515191000,
   "type": "status_update"
 }
 ```
@@ -120,6 +124,14 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
 
     <ResponseField name="condition_id" type="string">
       Market condition ID (CTF contract identifier). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="outcomes" type="string[]">
+      Ordered list of outcome names (e.g. `["Yes", "No"]`). Index-aligned with `token_ids`. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="token_ids" type="string[]">
+      Ordered list of token IDs for this market. Index-aligned with `outcomes`. Enriched from metadata.
     </ResponseField>
 
     <ResponseField name="tokens" type="object">
