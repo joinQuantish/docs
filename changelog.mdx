@@ -9,6 +9,33 @@ icon: "clock-rotate-left"
 
 ## 2026-03-26
 
+### API — Wallet Resolver
+
+New endpoint that instantly resolves any Polymarket wallet identity. Pass a proxy wallet address, EOA address, or username and get back all three.
+
+```bash
+curl "https://api.polynode.dev/v1/resolve/DTCahill" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "safe": "0x0ecdd241ec1bc84a40b8142bebe65787aee97514",
+  "eoa": "0xddd57cce99ca962fe23aa2da95b139f86a241459",
+  "username": "DTCahill"
+}
+```
+
+Backed by a pre-indexed table of ~3 million Polymarket wallets, updated daily. Lookups are sub-millisecond. Accepts any of the three identifiers as input:
+
+- `GET /v1/resolve/{safe_address}` — proxy wallet to EOA + username
+- `GET /v1/resolve/{eoa_address}` — EOA to proxy wallet + username
+- `GET /v1/resolve/{username}` — username to both addresses (case-insensitive)
+
+See the [full documentation](/api-reference/wallets/resolve) for details.
+
+---
+
 ### API — `order_hash` on Settlements and Trades
 
 Every settlement trade and confirmed trade event now includes an `order_hash` field — the EIP-712 hash that uniquely identifies a limit order on Polymarket's order book.

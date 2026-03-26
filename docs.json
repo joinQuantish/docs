@@ -105,7 +105,8 @@
               "api-reference/wallets/multi-positions",
               "api-reference/wallets/trades",
               "api-reference/wallets/market-positions",
-              "api-reference/wallets/market-trades"
+              "api-reference/wallets/market-trades",
+              "api-reference/wallets/resolve"
             ]
           },
           {

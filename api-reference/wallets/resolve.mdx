@@ -1,0 +1,104 @@
+---
+title: "Resolve Wallet"
+api: "GET /v1/resolve/{query}"
+description: "Instantly resolve any Polymarket wallet address, EOA, or username."
+---
+
+Look up the full identity triple for any Polymarket user: proxy wallet (safe), EOA (externally owned account), and username. Accepts any of the three as input and returns all three.
+
+Backed by a pre-indexed table of every Polymarket wallet ever created. Lookups are sub-millisecond.
+
+<ParamField path="query" type="string" required>
+  One of:
+  - **Safe address** — Polymarket proxy wallet (`0x...`, 42 chars)
+  - **EOA address** — externally owned account (`0x...`, 42 chars)
+  - **Username** — Polymarket display name (case-insensitive)
+</ParamField>
+
+## By safe address
+
+Look up a Polymarket proxy wallet to get the controlling EOA and username.
+
+```bash
+curl "https://api.polynode.dev/v1/resolve/0xfa85349327a63aa563029737f0492a79dca8f95d" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "safe": "0xfa85349327a63aa563029737f0492a79dca8f95d",
+  "eoa": "0xc2783891b1d2287345e30f75e0f1ecd189a967d0",
+  "username": "Letsgetit6969"
+}
+```
+
+## By EOA address
+
+Look up an EOA to find its Polymarket proxy wallet and username.
+
+```bash
+curl "https://api.polynode.dev/v1/resolve/0xc2783891b1d2287345e30f75e0f1ecd189a967d0" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "safe": "0xfa85349327a63aa563029737f0492a79dca8f95d",
+  "eoa": "0xc2783891b1d2287345e30f75e0f1ecd189a967d0",
+  "username": "Letsgetit6969"
+}
+```
+
+## By username
+
+Look up a Polymarket username to find both wallet addresses. Case-insensitive.
+
+```bash
+curl "https://api.polynode.dev/v1/resolve/DTCahill" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "safe": "0x0ecdd241ec1bc84a40b8142bebe65787aee97514",
+  "eoa": "0xddd57cce99ca962fe23aa2da95b139f86a241459",
+  "username": "DTCahill"
+}
+```
+
+## Response fields
+
+<ResponseField name="safe" type="string" required>
+  Polymarket proxy wallet address (Gnosis Safe). This is the address that holds positions and executes trades on Polymarket.
+</ResponseField>
+
+<ResponseField name="eoa" type="string" required>
+  Externally owned account that controls the proxy wallet. This is the signer address.
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  Polymarket display name. `null` if the user has no profile set.
+</ResponseField>
+
+## Error responses
+
+**404 — Not found**
+
+```json
+{"error": "Address not found."}
+```
+
+```json
+{"error": "Username not found."}
+```
+
+## Coverage
+
+The resolver indexes every Polymarket wallet created through the SafeProxyFactory contract on Polygon. The index updates daily and covers ~3 million wallets. New wallets are picked up within 24 hours of creation.
+
+## Use cases
+
+- **Database enrichment** — bulk-resolve proxy wallets to EOAs for analytics pipelines
+- **Profile lookups** — show usernames alongside wallet addresses in your UI
+- **Cross-referencing** — match on-chain activity (EOA) to Polymarket activity (proxy wallet)
+- **Whale tracking** — identify the EOA behind a proxy wallet to track activity across protocols
