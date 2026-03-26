@@ -32,6 +32,27 @@ Every settlement trade and confirmed trade event now includes an `order_hash` fi
 
 No SDK update required — the field is automatically included in the WebSocket stream.
 
+### API — `order_hashes` on Status Updates
+
+The `status_update` event now includes an `order_hashes` field containing every EIP-712 order hash from the original pending settlement. This lets you correlate confirmed settlements back to specific limit orders without needing to store state from the initial pending event.
+
+```json
+{
+  "type": "status_update",
+  "data": {
+    "tx_hash": "0xbb26c8cd...",
+    "order_hashes": [
+      "0xafc3488df3505c4dbba8797b8b6c645630c8ee9decf811a0acc4d63fdecfdd36",
+      "0x9b5a06de7196bde87b4d8baa6cb80681151338d263fac0e643a2d53c4497e27f"
+    ],
+    "maker_wallets": ["0xd408...", "0x9443..."],
+    "latency_ms": 3959
+  }
+}
+```
+
+Purely additive. Existing clients are unaffected.
+
 ---
 
 ### TypeScript SDK — RedemptionWatcher Memory Management
