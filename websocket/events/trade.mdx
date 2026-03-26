@@ -136,7 +136,7 @@ A confirmed on-chain trade from Polymarket's exchange contracts.
     </ResponseField>
 
     <ResponseField name="taker_base_fee" type="number">
-      Taker fee rate (e.g. `0.02` for 2%). Enriched from metadata.
+      Taker fee rate in basis points. `0` = no fee, `200` = 2%, `1000` = 10%. Short-term crypto markets (5-minute ETH/BTC) typically have `1000` (10%), while standard markets have `200` (2%) or `0`. Enriched from Polymarket metadata.
     </ResponseField>
 
     <ResponseField name="condition_id" type="string">
