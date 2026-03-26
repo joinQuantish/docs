@@ -14,6 +14,7 @@ PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your
 | | Free | Starter ($50/mo) | Growth ($200/mo) | Enterprise ($750/mo) |
 |--|------|-------------------|------------------|----------------------|
 | **Rate limit** | 120 req/min (2 QPS) | 6,000 req/min (100 QPS) | 18,000 req/min (300 QPS) | 60,000 req/min (1,000 QPS) |
+| **Enriched endpoints** | 1 req/sec | 30 req/sec | 50 req/sec | 100 req/sec |
 | **WebSocket connections** | 1 | 500 | 3,000 | Unlimited |
 | **Firehose connections** | 1 | 100 | 750 | Unlimited |
 | **Orderbook connections** | 1 | 2 | 10 | Unlimited |
@@ -26,6 +27,10 @@ PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your
 <Note>
   **Enterprise** includes dedicated server infrastructure. Contact [josh@quantish.live](mailto:josh@quantish.live) before activation.
 </Note>
+
+<Info>
+  **Enriched endpoints** (`/v1/trader/*`, `/v1/leaderboard`, `/v1/trending`, etc.) and **data endpoints** (`/v1/wallets/*/positions`, `/v1/wallets/*/trades`) have separate rate limits from your plan's main limit. See [Enriched endpoints](#enriched-endpoints) and [Data endpoint limits](#data-endpoint-limits) below for details.
+</Info>
 
 ## How it works
 
@@ -120,7 +125,16 @@ Batch requests (multiple wallets) count each wallet as one request toward your l
 
 ### Enriched endpoints
 
-The enriched analytics endpoints have a per-key limit of **50 requests per second**:
+The enriched analytics endpoints have their own per-key rate limit that scales with your tier:
+
+| Tier | Limit |
+|------|-------|
+| Free | 1 req/sec |
+| Starter | 30 req/sec |
+| Growth | 50 req/sec |
+| Enterprise | 100 req/sec |
+
+Enriched endpoints:
 
 - `/v1/trader/{wallet}` — trader profile with EOA resolution
 - `/v1/trader/{wallet}/pnl` — PnL time series
