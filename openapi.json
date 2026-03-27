@@ -1682,6 +1682,591 @@
           }
         ]
       }
+    },
+    "/v1/resolve/{query}": {
+      "get": {
+        "tags": ["Wallets"],
+        "summary": "Resolve wallet",
+        "description": "Instantly resolve any Polymarket wallet address, EOA, or username. Returns the full identity triple: proxy wallet (safe), EOA, and username.",
+        "operationId": "resolve_wallet",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "path",
+            "description": "Safe address, EOA address, or Polymarket username (case-insensitive)",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resolved wallet identity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "safe": { "type": "string", "description": "Polymarket proxy wallet address (Gnosis Safe)" },
+                    "eoa": { "type": "string", "description": "Externally owned account (signer)" },
+                    "username": { "type": "string", "nullable": true, "description": "Polymarket display name, or null" }
+                  }
+                },
+                "example": {
+                  "safe": "0xfa85349327a63aa563029737f0492a79dca8f95d",
+                  "eoa": "0xc2783891b1d2287345e30f75e0f1ecd189a967d0",
+                  "username": "Letsgetit6969"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "api_key": [] }]
+      }
+    },
+    "/v1/leaderboard": {
+      "get": {
+        "tags": ["Enriched Data"],
+        "summary": "Leaderboard",
+        "description": "Top 20 Polymarket traders ranked by profit or volume for a given time period.",
+        "operationId": "leaderboard",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time period",
+            "schema": { "type": "string", "enum": ["daily", "weekly", "monthly", "all"], "default": "monthly" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Ranking metric",
+            "schema": { "type": "string", "enum": ["profit", "volume"], "default": "profit" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leaderboard results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "traders": { "type": "array", "items": { "type": "object" } },
+                    "period": { "type": "string" },
+                    "sort": { "type": "string" },
+                    "count": { "type": "integer" }
+                  }
+                },
+                "example": {
+                  "traders": [
+                    {
+                      "rank": 1,
+                      "wallet": "0x02227b8f5a9636e895607edd3185ed6ee5598ff7",
+                      "name": "HorizonSplendidView",
+                      "pnl": 4016107.83,
+                      "volume": 12394130.31,
+                      "profileImage": "https://polymarket-upload.s3.us-east-2.amazonaws.com/fallback-image.png"
+                    },
+                    {
+                      "rank": 2,
+                      "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+                      "name": "beachboy4",
+                      "pnl": 3762305.48,
+                      "volume": 14130713.15,
+                      "profileImage": "https://polymarket-upload.s3.us-east-2.amazonaws.com/fallback-image.png"
+                    }
+                  ],
+                  "period": "monthly",
+                  "sort": "profit",
+                  "count": 20
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "api_key": [] }]
+      }
+    },
+    "/v1/trader/{wallet}": {
+      "get": {
+        "tags": ["Enriched Data"],
+        "summary": "Trader profile",
+        "description": "Full profile for any Polymarket trader: PnL, volume, trade count, largest win, portfolio value, and account metadata.",
+        "operationId": "trader_profile",
+        "parameters": [
+          {
+            "name": "wallet",
+            "in": "path",
+            "description": "Polymarket wallet address",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trader profile",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" },
+                "example": {
+                  "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+                  "eoaWallet": "0xb49e5499562a4bc3345c1a1f2db13a5360dfddac",
+                  "name": "beachboy4",
+                  "pseudonym": "Threadbare-Skunk",
+                  "profileSlug": "@beachboy4",
+                  "joinDate": "2025-11-30T17:26:07.997000Z",
+                  "trades": 149,
+                  "marketsTraded": 149,
+                  "largestWin": 3487512.61,
+                  "views": 113521,
+                  "totalVolume": 199137316.60,
+                  "totalPnl": 4142102.07,
+                  "realizedPnl": 0,
+                  "unrealizedPnl": 0,
+                  "positionValue": 4418.03,
+                  "profileImage": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "api_key": [] }]
+      }
+    },
+    "/v1/trader/{wallet}/pnl": {
+      "get": {
+        "tags": ["Enriched Data"],
+        "summary": "Trader PnL series",
+        "description": "Cumulative PnL time series for a trader at multiple resolutions.",
+        "operationId": "trader_pnl",
+        "parameters": [
+          {
+            "name": "wallet",
+            "in": "path",
+            "description": "Ethereum wallet address",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Resolution",
+            "schema": { "type": "string", "enum": ["1D", "1W", "1M", "ALL"], "default": "1M" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PnL time series",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" },
+                "example": {
+                  "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+                  "period": "1W",
+                  "series": [
+                    { "timestamp": 1774029600, "pnl": 3902767.20 },
+                    { "timestamp": 1774040400, "pnl": 3902767.20 },
+                    { "timestamp": 1774051200, "pnl": 3892129.00 }
+                  ],
+                  "count": 57
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "api_key": [] }]
+      }
+    },
+    "/v1/trending": {
+      "get": {
+        "tags": ["Enriched Data"],
+        "summary": "Trending",
+        "description": "Curated snapshot of what's trending on Polymarket: carousel highlights, breaking news, hot topics, featured events, and biggest movers.",
+        "operationId": "trending",
+        "responses": {
+          "200": {
+            "description": "Trending data",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" },
+                "example": {
+                  "carousel": [
+                    {
+                      "id": "158299",
+                      "slug": "us-forces-enter-iran-by",
+                      "title": "US forces enter Iran by..?",
+                      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/us-forces-enter-iran-by-L_p5JkCpvr0I.jpg",
+                      "volume": 37065043.01,
+                      "volume24hr": null,
+                      "liquidity": null,
+                      "active": true,
+                      "closed": false
+                    }
+                  ],
+                  "breaking": [],
+                  "hotTopics": [
+                    { "title": "Gen", "volume": 24471729.10, "url": "/search?_q=gen" }
+                  ],
+                  "featured": [],
+                  "movers": []
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "api_key": [] }]
+      }
+    },
+    "/v1/activity": {
+      "get": {
+        "tags": ["Enriched Data"],
+        "summary": "Activity feed",
+        "description": "50 most recent trades across all Polymarket markets with full trade metadata, wallet addresses, and transaction hashes.",
+        "operationId": "activity_feed",
+        "responses": {
+          "200": {
+            "description": "Recent trades",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" },
+                "example": {
+                  "trades": [
+                    {
+                      "wallet": "0xd6c2222ae00d99e97acd234f49ef164ab23ba53d",
+                      "side": "SELL",
+                      "tokenId": "57216272564529548464686463691236811991956032201293786790337952253964682584376",
+                      "conditionId": "0xd595eb9b81885ff018738300c79047e3ec89e87294424f57a29a7fa9162bf116",
+                      "size": 5,
+                      "price": 0.908,
+                      "timestamp": 1774625243,
+                      "title": "Will Trump acquire Greenland before 2027?",
+                      "slug": "will-trump-acquire-greenland-before-2027",
+                      "eventSlug": "will-trump-acquire-greenland-before-2027",
+                      "outcome": "No",
+                      "name": "Impressionable-Set",
+                      "txHash": "0x3d586d03b047a29648b1726123b89b1af6c04ba00de19b1d90921e38407542c2"
+                    }
+                  ],
+                  "count": 50
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "api_key": [] }]
+      }
+    },
+    "/v1/event/{slug}": {
+      "get": {
+        "tags": ["Enriched Data"],
+        "summary": "Event detail",
+        "description": "Full event data with all sub-markets, current prices, volumes, liquidity, and token IDs.",
+        "operationId": "event_detail",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "description": "Event slug from Polymarket URL (e.g. how-many-fed-rate-cuts-in-2026)",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event data",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" },
+                "example": {
+                  "id": "51456",
+                  "slug": "how-many-fed-rate-cuts-in-2026",
+                  "title": "How many Fed rate cuts in 2026?",
+                  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/how-many-fed-rate-cuts-in-2025-9qstZkSL1dn0.jpg",
+                  "active": true,
+                  "closed": false,
+                  "volume": 14019050.01,
+                  "volume24hr": 443602.93,
+                  "liquidity": 1140531.69,
+                  "openInterest": 786628.52,
+                  "startDate": "2025-09-29T22:29:04.30848Z",
+                  "endDate": "2026-12-31T00:00:00Z",
+                  "markets": [
+                    {
+                      "question": "Will no Fed rate cuts happen in 2026?",
+                      "conditionId": "0xd4e77ba6f29fc093509d24f508631abd445ecf506bbdc9c4c80e60256a318527",
+                      "outcomes": ["Yes", "No"],
+                      "outcomePrices": ["0.3985", "0.6015"],
+                      "volume": 2568092.27,
+                      "liquidity": 55996.28,
+                      "active": true,
+                      "closed": false,
+                      "groupItemTitle": "0 (0 bps)",
+                      "tokenId": "12403602920039269077597917340921667997547115084613238528792639013246536343316"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Event not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "api_key": [] }]
+      }
+    },
+    "/v1/events/search": {
+      "get": {
+        "tags": ["Enriched Data"],
+        "summary": "Event search",
+        "description": "Search Polymarket events by text query. Returns events with all sub-markets, token IDs, and current prices.",
+        "operationId": "event_search",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Search query (e.g. recession, Fed rate, Trump tariff)",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum events to return (default 10, max 20)",
+            "schema": { "type": "integer", "default": 10, "maximum": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" },
+                "example": {
+                  "query": "Fed rate",
+                  "events": [
+                    {
+                      "id": "51456",
+                      "slug": "how-many-fed-rate-cuts-in-2026",
+                      "title": "How many Fed rate cuts in 2026?",
+                      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/how-many-fed-rate-cuts-in-2025-9qstZkSL1dn0.jpg",
+                      "active": true,
+                      "markets": [
+                        {
+                          "question": "Will no Fed rate cuts happen in 2026?",
+                          "groupItemTitle": "0 (0 bps)",
+                          "conditionId": "0xd4e77ba6f29fc093509d24f508631abd445ecf506bbdc9c4c80e60256a318527",
+                          "tokenId": "12403602920039269077597917340921667997547115084613238528792639013246536343316",
+                          "price": 0.3985,
+                          "active": true
+                        }
+                      ]
+                    }
+                  ],
+                  "count": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing query parameter",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "api_key": [] }]
+      }
+    },
+    "/v1/movers": {
+      "get": {
+        "tags": ["Enriched Data"],
+        "summary": "Biggest movers",
+        "description": "Markets with the largest 24-hour price changes.",
+        "operationId": "movers",
+        "responses": {
+          "200": {
+            "description": "Biggest movers",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" },
+                "example": {
+                  "markets": [
+                    {
+                      "id": "1437745",
+                      "slug": "will-elon-musks-net-worth-be-between-660b-and-670b-on-march-31",
+                      "question": "Will Elon Musk's net worth be between $660b and $670b on March 31?",
+                      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/elon-musk-net-worth-on-feb-28-6S8eRvSIplAk.png",
+                      "outcomePrices": ["0.09", "0.91"],
+                      "oneDayPriceChange": -0.945
+                    }
+                  ],
+                  "count": 20
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "api_key": [] }]
+      }
+    },
+    "/v2/markets/{category}": {
+      "get": {
+        "tags": ["Enriched Data"],
+        "summary": "Markets by category",
+        "description": "Browse markets by category with event counts and category-specific metadata.",
+        "operationId": "markets_by_category",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "path",
+            "description": "Category slug: crypto, politics, sports, finance, economy, tech, pop-culture, geopolitics, weather, iran, elections, mentions",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category markets",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" },
+                "example": {
+                  "category": "crypto",
+                  "counts": {
+                    "all": "243",
+                    "fiveM": "7",
+                    "fifteenM": "7",
+                    "pre-market": "105",
+                    "etf": "2",
+                    "hourly": "8",
+                    "daily": "11",
+                    "weekly": "62",
+                    "bitcoin": "33",
+                    "ethereum": "21",
+                    "solana": "12"
+                  },
+                  "events": [
+                    {
+                      "id": "310513",
+                      "slug": "btc-updown-5m-1774625400",
+                      "title": "BTC 5 Minute Up or Down",
+                      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+                      "volume": 471.33,
+                      "volume24hr": 471.33
+                    }
+                  ],
+                  "totalResults": 243
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Category not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        },
+        "security": [{ "api_key": [] }]
+      }
     }
   },
   "components": {
