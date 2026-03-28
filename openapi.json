@@ -2685,6 +2685,219 @@
           }
         }
       }
+    },
+    "/v2/wallets/{address}/positions/onchain": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Onchain positions & P&L",
+        "description": "Returns all positions (open and closed) for a wallet with accurate realized P&L from onchain settlement data. Includes positions that no longer appear in the standard v1 positions endpoint.\n\nResponses are cached for 5 minutes per wallet. First request takes 200ms-3s depending on position count. Cached responses return in under 50ms.",
+        "operationId": "get_wallet_onchain_positions",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "Wallet address (0x-prefixed)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xbddf61af533ff524d27154e589d2d7a81510c684"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Onchain positions with P&L",
+            "content": {
+              "application/json": {
+                "example": {
+                  "wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+                  "source": "onchain",
+                  "count": 873,
+                  "open_count": 334,
+                  "closed_count": 288,
+                  "total_realized_pnl": 17183579.48,
+                  "positions_with_pnl": 309,
+                  "positions": [
+                    {
+                      "token_id": "34158857981196154020624191931838064546543114916900689904269497497174344049047",
+                      "size": 0,
+                      "avg_price": 0.316481,
+                      "realized_pnl": 447182.949852,
+                      "total_bought": 654236.312162
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "API key required. Get one at polynode.dev"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Wallet not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "Not found."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/wallets/{address}/closed-positions": {
+      "get": {
+        "tags": [
+          "Wallets"
+        ],
+        "summary": "Closed positions with metadata",
+        "description": "Returns closed positions for a wallet with full market metadata (title, outcome, slug) and realized P&L. Supports pagination and sorting.\n\nComplements the onchain positions endpoint. The onchain endpoint returns all positions with accurate P&L but no market metadata. This endpoint returns closed positions with metadata.",
+        "operationId": "get_wallet_closed_positions",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "Wallet address (0x-prefixed)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xbddf61af533ff524d27154e589d2d7a81510c684"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Results per page (max 50)",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Sort field",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "REALIZEDPNL",
+                "AVGPRICE",
+                "PRICE",
+                "TITLE",
+                "TIMESTAMP"
+              ],
+              "default": "TIMESTAMP"
+            }
+          },
+          {
+            "name": "sortDirection",
+            "in": "query",
+            "description": "Sort direction",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ASC",
+                "DESC"
+              ],
+              "default": "DESC"
+            }
+          },
+          {
+            "name": "market",
+            "in": "query",
+            "description": "Filter by market slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "description": "Filter by title substring",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Closed positions with metadata",
+            "content": {
+              "application/json": {
+                "example": {
+                  "wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+                  "count": 1,
+                  "offset": 0,
+                  "limit": 1,
+                  "positions": [
+                    {
+                      "proxy_wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+                      "asset": "34158857981196154020624191931838064546543114916900689904269497497174344049047",
+                      "condition_id": "0x5346538cbfc880da50fe6b269a47e4f7cd8a38b2b120d85b1bc392d8cde6ced4",
+                      "avg_price": 0.316481,
+                      "total_bought": 654236.312162,
+                      "realized_pnl": 447182.949852,
+                      "cur_price": 1,
+                      "title": "Nuggets vs. Warriors",
+                      "slug": "nba-den-gsw-2026-02-22",
+                      "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/super+cool+basketball+in+red+and+blue+wow.png",
+                      "event_slug": "nba-den-gsw-2026-02-22",
+                      "outcome": "Warriors",
+                      "outcome_index": 1,
+                      "opposite_outcome": "Nuggets",
+                      "opposite_asset": "107945275283604973510604597780969572155224468096168425689613528391046536169017",
+                      "end_date": "2026-02-22T00:00:00Z",
+                      "timestamp": 1771817602
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "API key required. Get one at polynode.dev"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Wallet not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "Not found."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

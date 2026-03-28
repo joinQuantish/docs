@@ -1,6 +1,7 @@
 ---
 title: "Onchain Positions & P&L"
 description: "All positions (open and closed) with accurate realized P&L from onchain settlement data."
+openapi: "GET /v2/wallets/{address}/positions/onchain"
 ---
 
 Returns every position a wallet has ever held, including closed positions that no longer appear in the standard positions endpoint. Each position includes precomputed `realized_pnl`, `avg_price`, and `total_bought` from onchain data.
