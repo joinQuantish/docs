@@ -77,10 +77,10 @@ Parameters: `limit` (max 50), `offset`, `sortBy` (REALIZEDPNL, AVGPRICE, PRICE, 
 
 #### SDK: Automatic onchain P&L backfill
 
-The TypeScript (`polynode-sdk@0.4.9`) and Rust (`polynode@0.4.3`) SDKs now fetch onchain position data automatically during backfill. No code changes needed if you're already using `cache.start()`. The backfill makes one additional API call per wallet (the onchain positions endpoint above) and stores the results in your local SQLite database.
+The TypeScript (`polynode-sdk@0.4.10`) and Rust (`polynode@0.4.3`) SDKs now fetch onchain position data automatically during backfill. No code changes needed if you're already using `cache.start()`. The backfill makes one additional API call per wallet (the onchain positions endpoint above) and stores the results in your local SQLite database.
 
 ```bash
-npm install polynode-sdk@0.4.9
+npm install polynode-sdk@0.4.10
 ```
 
 **Before:** The SDK backfilled trades page by page (up to 6 requests per wallet) and computed P&L from incomplete trade history. Wallets with dropped trades got wrong numbers.
