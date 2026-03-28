@@ -33,8 +33,8 @@ GET /v2/wallets/{address}/positions/onchain
       "token_id": "34158857981196154020624191931838064546543114916900689904269497497174344049047",
       "size": 0,
       "avg_price": 0.316481,
-      "realized_pnl": 447182.95,
-      "total_bought": 654236.31
+      "realized_pnl": 447182.949852,
+      "total_bought": 654236.312162
     }
   ]
 }
@@ -49,7 +49,7 @@ GET /v2/wallets/{address}/positions/onchain
 | `closed_count` | number | Positions with `size = 0` and nonzero `realized_pnl` |
 | `total_realized_pnl` | number | Sum of `realized_pnl` across all positions |
 | `positions_with_pnl` | number | Positions where `realized_pnl != 0` |
-| `positions[].token_id` | string | CTF token ID |
+| `positions[].token_id` | string | CTF token ID (called `asset` on the [closed-positions](/api-reference/wallets/closed-positions) endpoint) |
 | `positions[].size` | number | Current token balance (0 = fully exited) |
 | `positions[].avg_price` | number | Volume-weighted average entry price |
 | `positions[].realized_pnl` | number | Realized profit/loss in USDC |

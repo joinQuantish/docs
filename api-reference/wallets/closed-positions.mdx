@@ -57,8 +57,12 @@ GET /v2/wallets/{address}/closed-positions
 
 | Field | Description |
 |-------|-------------|
+| `wallet` | Queried wallet address (lowercased) |
+| `count` | Number of positions returned |
+| `offset` | Current pagination offset |
+| `limit` | Results per page |
 | `proxy_wallet` | Polymarket proxy wallet address |
-| `asset` | Token ID for this position |
+| `asset` | Token ID for this position (called `token_id` on the [onchain positions](/api-reference/wallets/onchain-positions) endpoint) |
 | `condition_id` | CTF condition ID |
 | `avg_price` | Volume-weighted average entry price |
 | `total_bought` | Total tokens acquired |
