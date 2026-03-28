@@ -1,0 +1,153 @@
+---
+title: "Available Feeds"
+sidebarTitle: "Available Feeds"
+description: "All crypto price feeds with live examples."
+icon: "coins"
+---
+
+## Feed reference
+
+All feeds update at approximately 1 tick per second. Prices are quoted in USD.
+
+### BTC/USD
+
+Bitcoin. The most liquid and widely traded crypto asset.
+
+```json
+{
+  "type": "price_feed",
+  "feed": "BTC/USD",
+  "timestamp": 1774672089,
+  "data": {
+    "feed": "BTC/USD",
+    "price": 66236.61,
+    "bid": 66229.77,
+    "ask": 66237.94,
+    "timestamp": 1774672089
+  }
+}
+```
+
+<Note>BTC/USD has bid/ask spread data. Other feeds currently report bid and ask equal to the mid price.</Note>
+
+### ETH/USD
+
+Ethereum.
+
+```json
+{
+  "data": {
+    "feed": "ETH/USD",
+    "price": 1989.49,
+    "bid": 1989.49,
+    "ask": 1989.49,
+    "timestamp": 1774672089
+  }
+}
+```
+
+### SOL/USD
+
+Solana.
+
+```json
+{
+  "data": {
+    "feed": "SOL/USD",
+    "price": 82.63,
+    "bid": 82.63,
+    "ask": 82.63,
+    "timestamp": 1774672089
+  }
+}
+```
+
+### BNB/USD
+
+BNB (Binance).
+
+```json
+{
+  "data": {
+    "feed": "BNB/USD",
+    "price": 610.78,
+    "bid": 610.78,
+    "ask": 610.78,
+    "timestamp": 1774672089
+  }
+}
+```
+
+### XRP/USD
+
+XRP.
+
+```json
+{
+  "data": {
+    "feed": "XRP/USD",
+    "price": 1.329,
+    "bid": 1.329,
+    "ask": 1.329,
+    "timestamp": 1774672089
+  }
+}
+```
+
+### DOGE/USD
+
+Dogecoin.
+
+```json
+{
+  "data": {
+    "feed": "DOGE/USD",
+    "price": 0.08997,
+    "bid": 0.08997,
+    "ask": 0.08997,
+    "timestamp": 1774672089
+  }
+}
+```
+
+### HYPE/USD
+
+Hyperliquid.
+
+```json
+{
+  "data": {
+    "feed": "HYPE/USD",
+    "price": 38.62,
+    "bid": 38.62,
+    "ask": 38.62,
+    "timestamp": 1774672089
+  }
+}
+```
+
+## Filtering
+
+Subscribe to specific feeds only:
+
+```json
+{
+  "action": "subscribe",
+  "type": "chainlink",
+  "filters": {
+    "feeds": ["BTC/USD", "ETH/USD", "SOL/USD"]
+  }
+}
+```
+
+Feed names are case-insensitive. `"btc/usd"` and `"BTC/USD"` both work.
+
+## Subscribing to all feeds
+
+Omit the `feeds` filter:
+
+```json
+{"action": "subscribe", "type": "chainlink"}
+```
+
+You'll receive ~7 events per second (one per feed). At approximately 200 bytes per event, that's under 1.5 KB/s of bandwidth.

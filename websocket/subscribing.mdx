@@ -95,7 +95,7 @@ The `type` field selects a preset of event types. If you also set `filters.event
 <ResponseField name="chainlink" type="string">
   Events: `price_feed`
 
-  Real-time Chainlink Data Streams prices (~1/second). Use the `feeds` filter to select specific feeds (e.g. `["BTC/USD"]`). See [Price Feed Event](/websocket/events/price-feed).
+  Real-time crypto prices (~1 update/second per feed). 7 feeds available: BTC, ETH, SOL, BNB, XRP, DOGE, HYPE. Use the `feeds` filter to select specific feeds (e.g. `["BTC/USD", "ETH/USD"]`). See [Crypto Prices](/crypto/overview).
 </ResponseField>
 
 ## Filters
@@ -197,11 +197,11 @@ All filters are optional. Omit the `filters` object entirely to receive all even
 ### Price feed filtering
 
 <ParamField body="feeds" type="string[]">
-  Filter by price feed names. Only applies to `chainlink` subscriptions.
+  Filter by price feed names. Only applies to `chainlink` subscriptions. Available feeds: `BTC/USD`, `ETH/USD`, `SOL/USD`, `BNB/USD`, `XRP/USD`, `DOGE/USD`, `HYPE/USD`.
   ```json
-  "feeds": ["BTC/USD"]
+  "feeds": ["BTC/USD", "ETH/USD", "SOL/USD"]
   ```
-  Omit to receive all available feeds.
+  Omit to receive all 7 feeds. See [Crypto Prices](/crypto/overview) for details.
 </ParamField>
 
 ## Matching logic

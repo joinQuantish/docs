@@ -135,6 +135,20 @@
         ]
       },
       {
+        "tab": "Crypto Prices",
+        "badge": "New",
+        "groups": [
+          {
+            "group": "Crypto Price Streaming",
+            "pages": [
+              "crypto/overview",
+              "crypto/feeds",
+              "crypto/event-format"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Orderbook",
         "badge": "New",
         "groups": [

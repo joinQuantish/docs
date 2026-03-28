@@ -1,0 +1,67 @@
+---
+title: "Event Format"
+sidebarTitle: "Event Format"
+description: "Price feed event schema and field reference."
+icon: "code"
+---
+
+## Event payload
+
+```json
+{
+  "type": "price_feed",
+  "feed": "ETH/USD",
+  "timestamp": 1774672089,
+  "data": {
+    "feed": "ETH/USD",
+    "price": 1989.49,
+    "bid": 1989.49,
+    "ask": 1989.49,
+    "timestamp": 1774672089
+  }
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"price_feed"`.
+</ResponseField>
+
+<ResponseField name="feed" type="string" required>
+  Feed name (e.g. `"BTC/USD"`, `"ETH/USD"`). Top-level convenience field, same value as `data.feed`.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Observation timestamp in Unix seconds. Top-level convenience field, same value as `data.timestamp`.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="feed" type="string" required>
+      Feed name (e.g. `"BTC/USD"`).
+    </ResponseField>
+
+    <ResponseField name="price" type="number" required>
+      Mid price in USD. This is the canonical price for this asset at this timestamp.
+    </ResponseField>
+
+    <ResponseField name="bid" type="number" required>
+      Bid price in USD.
+    </ResponseField>
+
+    <ResponseField name="ask" type="number" required>
+      Ask price in USD.
+    </ResponseField>
+
+    <ResponseField name="timestamp" type="number" required>
+      Observation timestamp in Unix seconds.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Notes
+
+- **Update rate**: approximately 1 update per second per feed.
+- **No snapshot**: unlike settlement subscriptions, price feed subscriptions do not include an initial snapshot. The first event arrives with the next price observation (~1 second after subscribing).
+- **Deduplication**: if you subscribe to all feeds, BTC/USD may arrive at a slightly higher rate (~2/second) due to multiple upstream sources. Your application should deduplicate by timestamp if needed.

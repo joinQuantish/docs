@@ -1,0 +1,82 @@
+---
+title: "Crypto Prices"
+sidebarTitle: "Overview"
+description: "Real-time crypto price streaming over WebSocket. 7 assets, ~1 update per second per feed."
+icon: "chart-line"
+---
+
+Stream real-time crypto prices over the same WebSocket connection you use for settlements and orderbook data. Prices update approximately once per second per feed.
+
+## Available feeds
+
+| Feed | Pair | Update rate |
+|------|------|-------------|
+| `BTC/USD` | Bitcoin / US Dollar | ~1/second |
+| `ETH/USD` | Ethereum / US Dollar | ~1/second |
+| `SOL/USD` | Solana / US Dollar | ~1/second |
+| `BNB/USD` | BNB / US Dollar | ~1/second |
+| `XRP/USD` | XRP / US Dollar | ~1/second |
+| `DOGE/USD` | Dogecoin / US Dollar | ~1/second |
+| `HYPE/USD` | Hyperliquid / US Dollar | ~1/second |
+
+## Quick start
+
+Subscribe on your existing WebSocket connection:
+
+```json
+{"action": "subscribe", "type": "chainlink"}
+```
+
+That's it. You'll start receiving price events for all 7 feeds within one second.
+
+### Filter to specific feeds
+
+```json
+{
+  "action": "subscribe",
+  "type": "chainlink",
+  "filters": {
+    "feeds": ["BTC/USD", "ETH/USD"]
+  }
+}
+```
+
+Only the feeds you specify will be delivered. Omit `feeds` to get all 7.
+
+## Event format
+
+Every price update arrives as a `price_feed` event:
+
+```json
+{
+  "type": "price_feed",
+  "feed": "BTC/USD",
+  "timestamp": 1774672089,
+  "data": {
+    "feed": "BTC/USD",
+    "price": 66236.61,
+    "bid": 66229.77,
+    "ask": 66237.94,
+    "timestamp": 1774672089
+  }
+}
+```
+
+## Same connection as everything else
+
+Crypto prices run on the same WebSocket as settlements, trades, and orderbook. Send multiple subscribe messages to combine streams:
+
+```json
+{"action": "subscribe", "type": "settlements"}
+{"action": "subscribe", "type": "chainlink", "filters": {"feeds": ["BTC/USD", "ETH/USD"]}}
+```
+
+Use the `type` field (`"settlement"` vs `"price_feed"`) to route events in your application.
+
+## Use cases
+
+- **Short-form market trading** -- track the underlying asset price alongside 5m/15m/1h crypto markets
+- **Portfolio valuation** -- combine real-time crypto prices with Polymarket positions for live PnL
+- **Hedging signals** -- correlate crypto price moves with prediction market settlements
+- **Dashboards** -- display live crypto prices alongside prediction market data
+- **Trading bots** -- trigger Polymarket trades based on crypto price thresholds
