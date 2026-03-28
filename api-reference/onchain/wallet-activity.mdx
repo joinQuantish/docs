@@ -1,0 +1,70 @@
+---
+title: "Wallet Activity"
+description: "Onchain activity for a wallet: splits, merges, and multi-outcome conversions."
+openapi: "GET /v2/onchain/wallets/{address}/activity"
+---
+
+Returns all onchain activity for a wallet including token splits (minting outcome tokens from collateral), merges (burning outcome tokens back to collateral), and neg-risk conversions (multi-outcome market hedging). This data is not available through Polymarket's API.
+
+## Request
+
+```
+GET /v2/onchain/wallets/{address}/activity?limit=100&offset=0
+```
+
+| Parameter | Type | Location | Description |
+|-----------|------|----------|-------------|
+| `address` | string | path | Wallet address (0x-prefixed, 40 hex chars) |
+| `limit` | integer | query | Max results (default 100, max 1000) |
+| `offset` | integer | query | Skip first N results for pagination |
+
+## Response
+
+```json
+{
+  "wallet": "0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa",
+  "source": "onchain",
+  "count": 3,
+  "offset": 0,
+  "splits": 0,
+  "merges": 3,
+  "conversions": 0,
+  "events": [
+    {
+      "type": "merge",
+      "id": "0x1d249b3b883d9866b6c63263d20cf1ce97b5b496a74d45ae7ae04d74facfe75b_0x7ab",
+      "timestamp": 1774710183,
+      "condition": "0x8180fee481707671aa45de84a9c3740ab607f3f2643b456e0380afb02d12cf7d",
+      "amount": 14.93209
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `splits` | number | Count of split events in this page |
+| `merges` | number | Count of merge events in this page |
+| `conversions` | number | Count of neg-risk conversion events in this page |
+| `events[].type` | string | `"split"`, `"merge"`, or `"neg_risk_conversion"` |
+| `events[].timestamp` | number | Unix timestamp |
+| `events[].condition` | string | Condition ID (for splits/merges) |
+| `events[].amount` | number | USDC amount |
+| `events[].neg_risk_market_id` | string | Neg-risk market ID (conversions only) |
+| `events[].index_set` | string | Index set (conversions only) |
+| `events[].question_count` | number | Number of questions in the neg-risk event (conversions only) |
+
+## Event Types
+
+**Split** — Collateral deposited and split into outcome tokens. This is how positions are entered via the CTF contract (as opposed to buying on the orderbook).
+
+**Merge** — Outcome tokens burned back into collateral. The inverse of a split. Often used when exiting a hedged position.
+
+**Neg-risk conversion** — Converting between outcome tokens in a multi-outcome market (e.g., "Who will win the election?" with 5+ candidates). Used for hedging and arbitrage.
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/wallets/0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa/activity?limit=50" \
+  -H "x-api-key: YOUR_KEY"
+```

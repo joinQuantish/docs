@@ -1,0 +1,50 @@
+---
+title: "Market Volume"
+description: "Lifetime onchain volume statistics for any market token."
+openapi: "GET /v2/onchain/markets/{token_id}/volume"
+---
+
+Returns lifetime trading volume statistics for a specific market token, sourced directly from onchain settlement data.
+
+## Request
+
+```
+GET /v2/onchain/markets/{token_id}/volume
+```
+
+| Parameter | Type | Location | Description |
+|-----------|------|----------|-------------|
+| `token_id` | string | path | CTF token ID (numeric string) |
+
+## Response
+
+```json
+{
+  "token_id": "67584929471303730974266696731552839504685833181501877275173258930851402007275",
+  "source": "onchain",
+  "found": true,
+  "total_trades": 7595,
+  "buys": 6395,
+  "sells": 1200,
+  "volume_usdc": 109077.98,
+  "buy_volume_usdc": 87263.47,
+  "sell_volume_usdc": 21814.50
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `found` | boolean | Whether the token was found onchain |
+| `total_trades` | number | Lifetime number of fills |
+| `buys` | number | Number of buy fills |
+| `sells` | number | Number of sell fills |
+| `volume_usdc` | number | Total volume in USDC |
+| `buy_volume_usdc` | number | Buy-side volume in USDC |
+| `sell_volume_usdc` | number | Sell-side volume in USDC |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/markets/67584929471303730974266696731552839504685833181501877275173258930851402007275/volume" \
+  -H "x-api-key: YOUR_KEY"
+```

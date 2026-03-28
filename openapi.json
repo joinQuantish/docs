@@ -2898,6 +2898,306 @@
           }
         }
       }
+    },
+    "/v2/onchain/wallets/{address}/trades": {
+      "get": {
+        "tags": [
+          "Onchain"
+        ],
+        "summary": "Wallet trade history (onchain)",
+        "description": "Complete onchain trade fill history for any wallet.",
+        "operationId": "onchain_wallet_trades",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Wallet address"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            },
+            "description": "Max results (max 1000)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Skip first N results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trade fills"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/onchain/wallets/{address}/redemptions": {
+      "get": {
+        "tags": [
+          "Onchain"
+        ],
+        "summary": "Wallet redemptions (onchain)",
+        "description": "All onchain redemptions for a wallet.",
+        "operationId": "onchain_wallet_redemptions",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Wallet address"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            },
+            "description": "Max results (max 1000)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Skip first N results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Redemptions"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/onchain/wallets/{address}/activity": {
+      "get": {
+        "tags": [
+          "Onchain"
+        ],
+        "summary": "Wallet activity (onchain)",
+        "description": "Splits, merges, and neg-risk conversions for a wallet.",
+        "operationId": "onchain_wallet_activity",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Wallet address"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            },
+            "description": "Max results (max 1000)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Skip first N results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity events"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/onchain/markets/{token_id}/trades": {
+      "get": {
+        "tags": [
+          "Onchain"
+        ],
+        "summary": "Market trade history (onchain)",
+        "description": "Complete onchain trade history for a market token.",
+        "operationId": "onchain_market_trades",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "CTF token ID"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            },
+            "description": "Max results (max 1000)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Skip first N results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trade fills"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/onchain/markets/{token_id}/volume": {
+      "get": {
+        "tags": [
+          "Onchain"
+        ],
+        "summary": "Market volume (onchain)",
+        "description": "Lifetime onchain volume statistics for a market token.",
+        "operationId": "onchain_market_volume",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "CTF token ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Volume statistics"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/onchain/markets/{condition_id}/oi": {
+      "get": {
+        "tags": [
+          "Onchain"
+        ],
+        "summary": "Market open interest (onchain)",
+        "description": "Onchain open interest for a specific market.",
+        "operationId": "onchain_market_oi",
+        "parameters": [
+          {
+            "name": "condition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Market condition ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Open interest"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/onchain/oi": {
+      "get": {
+        "tags": [
+          "Onchain"
+        ],
+        "summary": "Global open interest (onchain)",
+        "description": "Total platform-wide open interest from onchain data.",
+        "operationId": "onchain_global_oi",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Global open interest"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
     }
   },
   "components": {

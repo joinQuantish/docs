@@ -1,0 +1,68 @@
+---
+title: "Wallet Trade History"
+description: "Complete onchain trade fill history for any wallet. Every fill, every counterparty, every fee."
+openapi: "GET /v2/onchain/wallets/{address}/trades"
+---
+
+Returns every onchain trade fill for a wallet, including both maker and taker sides. This is the complete settlement record from the blockchain, not filtered through Polymarket's API.
+
+Unlike the standard [wallet trade history](/api-reference/wallets/trades) which relies on Polymarket's data API (and can timeout or miss trades for heavy wallets), this endpoint pulls directly from onchain settlement data and never misses a fill.
+
+## Request
+
+```
+GET /v2/onchain/wallets/{address}/trades?limit=100&offset=0
+```
+
+| Parameter | Type | Location | Description |
+|-----------|------|----------|-------------|
+| `address` | string | path | Wallet address (0x-prefixed, 40 hex chars) |
+| `limit` | integer | query | Max results (default 100, max 1000) |
+| `offset` | integer | query | Skip first N results for pagination |
+
+## Response
+
+```json
+{
+  "wallet": "0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa",
+  "source": "onchain",
+  "count": 10,
+  "offset": 0,
+  "trades": [
+    {
+      "tx_hash": "0x4ef280c5f3b6d0f88c837e9fc59e2fd74a8323794b0924bee80dc32265950b4f",
+      "timestamp": 1774710629,
+      "order_hash": "0xccfd23e91e75961a906ff089eed5c13f4751dd4d3d9c92887dfc058ff1560f5e",
+      "maker": "0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa",
+      "taker": "0x10862ef1b1f31a90f4674da45ac7c1e6e570ca05",
+      "maker_asset_id": "0",
+      "taker_asset_id": "28259964888198504796626600028670829230907308741791382637932077388069803412701",
+      "maker_amount": 2.0378,
+      "taker_amount": 4.43,
+      "fee": 0.443,
+      "side": "maker"
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `trades[].tx_hash` | string | Transaction hash |
+| `trades[].timestamp` | number | Unix timestamp of the fill |
+| `trades[].order_hash` | string | Order hash that was filled |
+| `trades[].maker` | string | Maker wallet address |
+| `trades[].taker` | string | Taker wallet address |
+| `trades[].maker_asset_id` | string | Asset the maker provided (`"0"` = USDC) |
+| `trades[].taker_asset_id` | string | Asset the taker provided (CTF token ID) |
+| `trades[].maker_amount` | number | Amount maker provided (USDC) |
+| `trades[].taker_amount` | number | Amount taker provided (tokens) |
+| `trades[].fee` | number | Fee paid on this fill (USDC) |
+| `trades[].side` | string | `"maker"` or `"taker"` relative to the queried wallet |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/wallets/0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa/trades?limit=10" \
+  -H "x-api-key: YOUR_KEY"
+```

@@ -7,7 +7,30 @@ icon: "clock-rotate-left"
 
 ---
 
-## 2026-03-28
+## 2026-03-28 — Onchain Data Endpoints
+
+### New: Onchain Data Section
+
+Seven new endpoints sourced directly from blockchain settlement data. These provide complete, accurate data that never times out or drops records, unlike endpoints that rely on upstream APIs.
+
+All onchain endpoints are under `/v2/onchain/` and documented in the new [Onchain](/api-reference/onchain/wallet-trades) section of the API reference.
+
+#### Wallet endpoints
+
+- **`GET /v2/onchain/wallets/{addr}/trades`** — Complete trade fill history for any wallet. Every fill, every counterparty, every fee. Replaces the unreliable upstream trade API that drops records for heavy wallets.
+- **`GET /v2/onchain/wallets/{addr}/redemptions`** — All redemptions with payout amounts. See who cashed out, when, and how much. Not available anywhere else.
+- **`GET /v2/onchain/wallets/{addr}/activity`** — Splits, merges, and multi-outcome conversions. Shows how wallets interact with the CTF contract beyond simple trading.
+
+#### Market endpoints
+
+- **`GET /v2/onchain/markets/{tokenId}/trades`** — Complete trade tape for any market token.
+- **`GET /v2/onchain/markets/{tokenId}/volume`** — Lifetime volume stats: total trades, buys, sells, USDC volume with buy/sell breakdown.
+- **`GET /v2/onchain/markets/{conditionId}/oi`** — Per-market open interest in USDC.
+- **`GET /v2/onchain/oi`** — Global platform open interest (currently ~$469M).
+
+All endpoints support `limit` and `offset` pagination where applicable. Responses are cached for 1-5 minutes depending on the endpoint.
+
+---
 
 ### Wallet P&L: Complete Position History + Accurate Realized P&L
 

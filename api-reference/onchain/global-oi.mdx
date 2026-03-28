@@ -1,0 +1,35 @@
+---
+title: "Global Open Interest"
+description: "Total platform-wide open interest from onchain data."
+openapi: "GET /v2/onchain/oi"
+---
+
+Returns the total open interest across the entire Polymarket platform, sourced from onchain data.
+
+## Request
+
+```
+GET /v2/onchain/oi
+```
+
+No parameters required.
+
+## Response
+
+```json
+{
+  "source": "onchain",
+  "open_interest_usdc": 468666405.74
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `open_interest_usdc` | number | Total platform open interest in USDC |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/oi" \
+  -H "x-api-key: YOUR_KEY"
+```

@@ -1,0 +1,55 @@
+---
+title: "Wallet Redemptions"
+description: "All onchain redemptions for a wallet. See who cashed out, when, and how much."
+openapi: "GET /v2/onchain/wallets/{address}/redemptions"
+---
+
+Returns every onchain redemption for a wallet. A redemption is when a user claims their payout after a market resolves. This data is not available through Polymarket's API.
+
+## Request
+
+```
+GET /v2/onchain/wallets/{address}/redemptions?limit=100&offset=0
+```
+
+| Parameter | Type | Location | Description |
+|-----------|------|----------|-------------|
+| `address` | string | path | Wallet address (0x-prefixed, 40 hex chars) |
+| `limit` | integer | query | Max results (default 100, max 1000) |
+| `offset` | integer | query | Skip first N results for pagination |
+
+## Response
+
+```json
+{
+  "wallet": "0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa",
+  "source": "onchain",
+  "count": 5,
+  "offset": 0,
+  "total_payout": 40.0,
+  "redemptions": [
+    {
+      "id": "0x75fa9f14a1430329034bad984ae4e84bebdc31608df6dc612214aeb49c1ab0df_0x787",
+      "timestamp": 1774710621,
+      "condition": "0x785ce9bd5529c5ea958729408ba366cd9ce0b327d32cda9a1789a0fac4cb6617",
+      "index_sets": ["1", "2"],
+      "payout": 10.0
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_payout` | number | Sum of all payout amounts (USDC) in this page |
+| `redemptions[].timestamp` | number | Unix timestamp of the redemption |
+| `redemptions[].condition` | string | Condition ID of the resolved market |
+| `redemptions[].index_sets` | array | Outcome index sets redeemed |
+| `redemptions[].payout` | number | USDC payout amount (0 = losing position redeemed) |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/wallets/0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa/redemptions?limit=10" \
+  -H "x-api-key: YOUR_KEY"
+```

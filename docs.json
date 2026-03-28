@@ -102,13 +102,25 @@
             "group": "Wallets",
             "pages": [
               "api-reference/wallets/positions",
-              "api-reference/wallets/onchain-positions",
               "api-reference/wallets/closed-positions",
               "api-reference/wallets/multi-positions",
               "api-reference/wallets/trades",
               "api-reference/wallets/market-positions",
               "api-reference/wallets/market-trades",
               "api-reference/wallets/resolve"
+            ]
+          },
+          {
+            "group": "Onchain",
+            "pages": [
+              "api-reference/wallets/onchain-positions",
+              "api-reference/onchain/wallet-trades",
+              "api-reference/onchain/wallet-redemptions",
+              "api-reference/onchain/wallet-activity",
+              "api-reference/onchain/market-trades",
+              "api-reference/onchain/market-volume",
+              "api-reference/onchain/market-oi",
+              "api-reference/onchain/global-oi"
             ]
           },
           {

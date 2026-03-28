@@ -1,0 +1,48 @@
+---
+title: "Market Trade History"
+description: "Complete onchain trade history for any market token."
+openapi: "GET /v2/onchain/markets/{token_id}/trades"
+---
+
+Returns every onchain trade fill for a specific market token. This is the complete trade tape from the blockchain.
+
+## Request
+
+```
+GET /v2/onchain/markets/{token_id}/trades?limit=100&offset=0
+```
+
+| Parameter | Type | Location | Description |
+|-----------|------|----------|-------------|
+| `token_id` | string | path | CTF token ID (numeric string) |
+| `limit` | integer | query | Max results (default 100, max 1000) |
+| `offset` | integer | query | Skip first N results for pagination |
+
+## Response
+
+```json
+{
+  "token_id": "67584929471303730974266696731552839504685833181501877275173258930851402007275",
+  "source": "onchain",
+  "count": 10,
+  "offset": 0,
+  "trades": [
+    {
+      "tx_hash": "0xa78a9b3c4c7ea57fb1f4cda580e5592c2abf9fabd728a77cf286d8eca98efdf2",
+      "timestamp": 1774710145,
+      "maker": "0x13f0bcec1e2e60ec9acc3bee4d2da2fe9694a50f",
+      "taker": "0xe9c7a6d48a27fcbf77603193f17a0cbb8bb4caae",
+      "maker_amount": 47.2329,
+      "taker_amount": 47.71,
+      "fee": 0.048191
+    }
+  ]
+}
+```
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/markets/67584929471303730974266696731552839504685833181501877275173258930851402007275/trades?limit=20" \
+  -H "x-api-key: YOUR_KEY"
+```
