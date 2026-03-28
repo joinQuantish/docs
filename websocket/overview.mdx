@@ -149,11 +149,18 @@ PolyNode supports multiple subscription types on the same WebSocket:
 
 | Stream | Purpose | Subscribe |
 |--------|---------|-----------|
-| **Settlements** | Decoded Polymarket events with filtering | `{"action": "subscribe", "type": "settlements"}` |
+| **Settlements** | Pending and confirmed Polymarket settlements (default) | `{"action": "subscribe", "type": "settlements"}` |
+| **Trades** | All trade activity including confirmed on-chain trades | `{"action": "subscribe", "type": "trades"}` |
+| **Prices** | Price-moving events for specific markets | `{"action": "subscribe", "type": "prices"}` |
+| **Blocks** | New Polygon block notifications with Polymarket stats | `{"action": "subscribe", "type": "blocks"}` |
+| **Wallets** | All activity for specified wallets | `{"action": "subscribe", "type": "wallets"}` |
+| **Markets** | All activity for specified markets | `{"action": "subscribe", "type": "markets"}` |
+| **Large Trades** | Whale alerts ($1K+ by default) | `{"action": "subscribe", "type": "large_trades"}` |
+| **Global** | Full firehose of all event types | `{"action": "subscribe", "type": "global"}` |
 | **Oracle** | UMA resolution lifecycle (resolutions, disputes, flags) | `{"action": "subscribe", "type": "oracle"}` |
-| **Chainlink** | Real-time BTC/USD prices from Data Streams | `{"action": "subscribe", "type": "chainlink"}` |
+| **Chainlink** | Real-time crypto prices (7 feeds, ~1/sec each) | `{"action": "subscribe", "type": "chainlink"}` |
 
-All can run simultaneously on the same connection.
+All can run simultaneously on the same connection. See [Subscriptions & Filters](/websocket/subscribing) for full details on each type, including default event types and available filters.
 
 ## Heartbeat
 

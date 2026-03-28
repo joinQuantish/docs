@@ -7,6 +7,68 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-28
+
+### Crypto Price Streaming (WebSocket)
+
+Real-time cryptocurrency prices are now available on the same WebSocket connection you already use for settlements and oracle events. Seven feeds, each updating roughly once per second:
+
+**BTC/USD**, **ETH/USD**, **SOL/USD**, **BNB/USD**, **XRP/USD**, **DOGE/USD**, **HYPE/USD**
+
+Subscribe with `{"action": "subscribe", "type": "chainlink"}`. Optionally filter to specific feeds:
+
+```json
+{
+  "action": "subscribe",
+  "type": "chainlink",
+  "filters": { "feeds": ["BTC/USD", "ETH/USD"] }
+}
+```
+
+Each price update includes bid, ask, and mid price:
+
+```json
+{
+  "type": "price_feed",
+  "feed": "BTC/USD",
+  "timestamp": 1774675338,
+  "data": {
+    "feed": "BTC/USD",
+    "price": 66240.86,
+    "bid": 66234.85,
+    "ask": 66243.30,
+    "timestamp": 1774675338
+  }
+}
+```
+
+BTC/USD includes actual bid/ask spread. Other feeds currently report bid and ask equal to the mid price.
+
+See the [full documentation](/crypto/overview) for connection examples, feed details, and event format reference.
+
+---
+
+### Crypto REST Endpoints
+
+Five new REST endpoints for crypto prediction market data:
+
+- `GET /v1/crypto/markets` — All crypto prediction markets with volume, liquidity, and open interest (3 min cache)
+- `GET /v1/crypto/candles?symbol=BTC` — ~30 five-minute OHLC candles (30s cache)
+- `GET /v1/crypto/price?symbol=BTC&window={epoch}` — Open/close price for a specific market window (10s cache)
+- `GET /v1/crypto/active` — Currently active 5-minute up-or-down markets across all 7 coins with live odds (30s cache)
+- `GET /v1/crypto/series` — Recurring crypto market series across timeframes (5 min cache)
+
+```bash
+curl "https://api.polynode.dev/v1/crypto/candles?symbol=ETH" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Supported symbols: `BTC`, `ETH`, `SOL`, `BNB`, `XRP`, `DOGE`, `HYPE`.
+
+See the [REST API reference](/crypto/rest-api) for full parameter details and response samples.
+
+---
+
 ## 2026-03-26
 
 ### API — Wallet Resolver
@@ -129,7 +191,7 @@ A handful of data-heavy endpoints now have their own per-key rate limits that sc
 | Growth | 50 req/sec |
 | Enterprise | 100 req/sec |
 
-Affected endpoints: `/v1/trader/{wallet}`, `/v1/trader/{wallet}/pnl`, `/v1/leaderboard`, `/v1/trending`, `/v1/activity`, `/v1/event/{slug}`, `/v1/movers`, `/v1/markets/{category}`.
+Affected endpoints: `/v1/trader/{wallet}`, `/v1/trader/{wallet}/pnl`, `/v1/leaderboard`, `/v1/trending`, `/v1/activity`, `/v1/event/{slug}`, `/v1/movers`, `/v2/markets/{category}`.
 
 All other REST endpoints use your plan's standard rate limit. See [Rate Limits](/guides/rate-limits) for full details.
 
@@ -415,7 +477,7 @@ Eight new REST endpoints for trader analytics, market discovery, and platform tr
 - `GET /v1/activity` — Platform-wide live trade feed (last 50 trades with tx hashes)
 - `GET /v1/event/{slug}` — Full event data with all sub-markets, outcome prices, condition IDs
 - `GET /v1/movers` — Markets with the largest 24h price changes
-- `GET /v1/markets/{category}` — Category market listings with counts (crypto, politics, sports, etc.)
+- `GET /v2/markets/{category}` — Category market listings with counts (crypto, politics, sports, etc.)
 
 Rate limit: 1 request per second per API key. Responses cached 1-3 minutes.
 
