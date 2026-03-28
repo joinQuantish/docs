@@ -68,7 +68,7 @@ Responses are cached for 5 minutes. First request takes 200ms-3s depending on po
 Closed positions with full metadata (title, outcome, slug). Paginated.
 
 ```bash
-curl "https://api.polynode.dev/v2/wallets/0xbddf.../closed-positions?limit=3&sortBy=REALIZEDPNL&sortDirection=DESC" \
+curl "https://api.polynode.dev/v2/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/closed-positions?limit=3&sortBy=REALIZEDPNL&sortDirection=DESC" \
   -H "x-api-key: YOUR_KEY"
 ```
 
@@ -76,7 +76,11 @@ Parameters: `limit` (max 50), `offset`, `sortBy` (REALIZEDPNL, AVGPRICE, PRICE, 
 
 #### SDK: Automatic onchain P&L backfill
 
-The TypeScript and Rust SDKs now fetch onchain position data automatically during backfill. No code changes needed if you're already using `cache.start()`. The backfill makes one additional API call per wallet (the onchain positions endpoint above) and stores the results in your local SQLite database.
+The TypeScript (`polynode-sdk@0.4.9`) and Rust (`polynode@0.4.3`) SDKs now fetch onchain position data automatically during backfill. No code changes needed if you're already using `cache.start()`. The backfill makes one additional API call per wallet (the onchain positions endpoint above) and stores the results in your local SQLite database.
+
+```bash
+npm install polynode-sdk@0.4.9
+```
 
 **Before:** The SDK backfilled trades page by page (up to 6 requests per wallet) and computed P&L from incomplete trade history. Wallets with dropped trades got wrong numbers.
 
@@ -95,7 +99,7 @@ const pnl = cache.computeRealizedPnl("0xbddf61af533ff524d27154e589d2d7a81510c684
   "wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
   "total_realized_pnl": 17183579.48,
   "total_unrealized_pnl": 3030.53,
-  "total_pnl": 17186610.02,
+  "total_pnl": 17186610.01,
   "confidence": "full",
   "trades_analyzed": 403,
   "tokens": [
@@ -111,13 +115,15 @@ const pnl = cache.computeRealizedPnl("0xbddf61af533ff524d27154e589d2d7a81510c684
 }
 ```
 
+`trades_analyzed` reflects cached trades from the REST API (403 in this case). The `total_realized_pnl` and per-token `realized_pnl` values come from onchain settlement data and are accurate regardless of cached trade count.
+
 `walletDashboard()` now includes `realized_pnl`, `pnl_confidence`, and `token_pnl` fields:
 
 ```typescript
-const dash = cache.walletDashboard("0xbddf...");
+const dash = cache.walletDashboard("0xbddf61af533ff524d27154e589d2d7a81510c684");
 // dash.realized_pnl     → 17183579.48
 // dash.pnl_confidence   → "full"
-// dash.token_pnl        → per-token P&L breakdown (446 entries)
+// dash.token_pnl        → per-token P&L breakdown
 // dash.total_pnl        → unrealized P&L on open positions
 ```
 
