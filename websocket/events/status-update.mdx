@@ -20,6 +20,10 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
       "0xc51f90d32c30f2f80bae8b0b7b8779b397a7650d",
       "0x7f8d845693cf4a4242f3c72a78332667fc440002"
     ],
+    "order_hashes": [
+      "0xafc3488df3505c4dbba8797b8b6c645630c8ee9decf811a0acc4d63fdecfdd36",
+      "0x9b5a06de7196bde87b4d8baa6cb80681151338d263fac0e643a2d53c4497e27f"
+    ],
     "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-charl-schwartzel-win-the-2026-masters-tournament-aX4CJWWTY-MM.png",
     "market_slug": "will-charl-schwartzel-win-the-2026-masters-tournament",
     "market_title": "Will Charl Schwartzel win the 2026 Masters tournament?",
@@ -88,6 +92,10 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
 
     <ResponseField name="maker_wallets" type="string[]">
       Maker wallet addresses from the original settlement.
+    </ResponseField>
+
+    <ResponseField name="order_hashes" type="string[]">
+      EIP-712 order hashes from the original pending settlement. Each hash uniquely identifies a maker's limit order on Polymarket's order book. Persists across partial fills, letting you correlate confirmed settlements back to specific limit orders without storing state from the initial pending event.
     </ResponseField>
 
     <ResponseField name="market_title" type="string">
