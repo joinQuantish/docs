@@ -5,7 +5,15 @@ description: "Real-time crypto price streaming over WebSocket. 7 assets, ~1 upda
 icon: "chart-line"
 ---
 
-Stream real-time crypto prices over the same WebSocket connection you use for settlements and orderbook data. Prices update approximately once per second per feed.
+Stream real-time crypto prices over WebSocket. 7 feeds, ~1 update per second each.
+
+## Connection
+
+```
+wss://ws.polynode.dev/ws?key=YOUR_API_KEY
+```
+
+This is the same WebSocket endpoint used for settlements and orderbook. If you already have a connection open, you don't need a new one.
 
 ## Available feeds
 
@@ -21,15 +29,77 @@ Stream real-time crypto prices over the same WebSocket connection you use for se
 
 ## Quick start
 
-Subscribe on your existing WebSocket connection:
+Connect and subscribe to all 7 feeds:
 
-```json
-{"action": "subscribe", "type": "chainlink"}
+<CodeGroup>
+```javascript JavaScript
+const WebSocket = require("ws");
+
+const ws = new WebSocket(
+  "wss://ws.polynode.dev/ws?key=YOUR_API_KEY"
+);
+
+ws.on("open", () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "chainlink"
+  }));
+});
+
+ws.on("message", (data) => {
+  const msg = JSON.parse(data);
+  if (msg.type === "price_feed") {
+    console.log(`${msg.data.feed}: $${msg.data.price}`);
+  }
+});
 ```
 
-That's it. You'll start receiving price events for all 7 feeds within one second.
+```python Python
+import asyncio
+import json
+import websockets
+
+async def main():
+    uri = "wss://ws.polynode.dev/ws?key=YOUR_API_KEY"
+    async with websockets.connect(uri) as ws:
+        await ws.send(json.dumps({
+            "action": "subscribe",
+            "type": "chainlink"
+        }))
+        async for message in ws:
+            msg = json.loads(message)
+            if msg.get("type") == "price_feed":
+                d = msg["data"]
+                print(f"{d['feed']}: ${d['price']}")
+
+asyncio.run(main())
+```
+
+```rust Rust
+use polynode::PolyNodeWS;
+
+#[tokio::main]
+async fn main() {
+    let mut ws = PolyNodeWS::connect("YOUR_API_KEY").await.unwrap();
+    ws.subscribe_price_feeds(None).await.unwrap(); // None = all feeds
+
+    while let Some(event) = ws.next_event().await {
+        println!("{}: ${}", event.feed, event.price);
+    }
+}
+```
+
+```bash wscat
+wscat -c "wss://ws.polynode.dev/ws?key=YOUR_API_KEY"
+
+# Then send:
+{"action": "subscribe", "type": "chainlink"}
+```
+</CodeGroup>
 
 ### Filter to specific feeds
+
+Only receive the feeds you care about:
 
 ```json
 {
@@ -41,7 +111,7 @@ That's it. You'll start receiving price events for all 7 feeds within one second
 }
 ```
 
-Only the feeds you specify will be delivered. Omit `feeds` to get all 7.
+Omit `feeds` to get all 7.
 
 ## Event format
 
@@ -51,27 +121,58 @@ Every price update arrives as a `price_feed` event:
 {
   "type": "price_feed",
   "feed": "BTC/USD",
-  "timestamp": 1774672089,
+  "timestamp": 1774672588,
   "data": {
     "feed": "BTC/USD",
-    "price": 66236.61,
-    "bid": 66229.77,
-    "ask": 66237.94,
-    "timestamp": 1774672089
+    "price": 66225.49,
+    "bid": 66221.69,
+    "ask": 66229.46,
+    "timestamp": 1774672588
   }
 }
 ```
 
-## Same connection as everything else
+See [Event Format](/crypto/event-format) for the full field reference.
 
-Crypto prices run on the same WebSocket as settlements, trades, and orderbook. Send multiple subscribe messages to combine streams:
+## Combining with other streams
 
-```json
-{"action": "subscribe", "type": "settlements"}
-{"action": "subscribe", "type": "chainlink", "filters": {"feeds": ["BTC/USD", "ETH/USD"]}}
+Crypto prices run on the same WebSocket connection as settlements, orderbook, and oracle streams. Send multiple subscribe messages:
+
+<CodeGroup>
+```javascript JavaScript
+// Settlements + crypto prices on the same connection
+ws.on("open", () => {
+  ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
+  ws.send(JSON.stringify({ action: "subscribe", type: "chainlink" }));
+});
+
+ws.on("message", (data) => {
+  const msg = JSON.parse(data);
+  if (msg.type === "price_feed") {
+    // crypto price tick
+    console.log(`${msg.data.feed}: $${msg.data.price}`);
+  } else if (msg.type === "settlement") {
+    // polymarket settlement
+    console.log(`${msg.question}: ${msg.outcome}`);
+  }
+});
 ```
 
-Use the `type` field (`"settlement"` vs `"price_feed"`) to route events in your application.
+```python Python
+await ws.send(json.dumps({"action": "subscribe", "type": "settlements"}))
+await ws.send(json.dumps({"action": "subscribe", "type": "chainlink"}))
+
+async for message in ws:
+    msg = json.loads(message)
+    if msg.get("type") == "price_feed":
+        d = msg["data"]
+        print(f"Price: {d['feed']} ${d['price']}")
+    elif msg.get("type") == "settlement":
+        print(f"Settlement: {msg.get('question')}")
+```
+</CodeGroup>
+
+Use the `type` field (`"price_feed"` vs `"settlement"`) to route events.
 
 ## Use cases
 
