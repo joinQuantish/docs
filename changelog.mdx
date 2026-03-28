@@ -17,7 +17,7 @@ The existing `GET /v1/wallets/{addr}/positions` endpoint only returns **open** p
 
 This made it impossible to compute accurate P&L through our API. That's fixed now.
 
-Two new v2 endpoints return complete position history with accurate P&L sourced from onchain settlement data. Every `realized_pnl` value has been verified to match Polymarket's own numbers to the penny.
+Two new v2 endpoints return complete position history with accurate P&L sourced from onchain settlement data. Per-position `realized_pnl` values come from the same onchain settlement data Polymarket uses and match individual position P&L to the penny. The `total_realized_pnl` aggregate measures total realized gains, which is different from Polymarket's profile PnL (see [docs](/api-reference/wallets/onchain-positions#total_realized_pnl-vs-polymarket-profile-pnl) for a full breakdown).
 
 #### `GET /v2/wallets/{address}/positions/onchain`
 
@@ -59,7 +59,7 @@ curl "https://api.polynode.dev/v2/wallets/0xbddf61af533ff524d27154e589d2d7a81510
 | `total_realized_pnl` | Sum of all `realized_pnl` values |
 | `positions[].realized_pnl` | Profit or loss for this position in USDC |
 | `positions[].avg_price` | Volume-weighted average entry price |
-| `positions[].total_bought` | Total USDC cost basis |
+| `positions[].total_bought` | Total tokens acquired |
 
 Responses are cached for 5 minutes. First request takes 200ms-3s depending on position count. Cached responses return in under 50ms.
 

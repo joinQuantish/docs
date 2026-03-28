@@ -69,8 +69,27 @@ The formula: `realized_pnl = total_bought × (1 - avg_price)` for positions that
 
 Per-position values (`realized_pnl`, `avg_price`, `total_bought`) come from the same onchain settlement data that Polymarket uses. Individual position P&L matches what Polymarket shows on its portfolio page.
 
+## `total_realized_pnl` vs Polymarket Profile PnL
+
+`total_realized_pnl` is the sum of all individual position `realized_pnl` values. This number will be **higher** than the PnL shown on a Polymarket profile page because they measure different things.
+
+**What `total_realized_pnl` measures:** Total profit taken off the table from closed and resolved positions. This is money the wallet has already extracted.
+
+**What Polymarket's profile PnL measures:** Net portfolio performance, which accounts for capital still deployed in open positions.
+
+A wallet with $17M in realized gains but $14M in cost basis locked in open positions shows ~$3M on Polymarket's profile. Both numbers are correct:
+
+| Metric | Value | Source |
+|--------|-------|--------|
+| Realized gains from closed positions | $17,183,579 | `total_realized_pnl` from this endpoint |
+| Cost basis deployed in open positions | -$14,398,655 | `sum(size × avg_price)` for positions where `size > 0` |
+| Unrealized gains on open positions | +$51,653 | Current market prices vs entry prices |
+| **Net portfolio PnL** | **$2,834,935** | [Trader profile](/api-reference/enriched/trader-profile) `totalPnl` |
+
+To get the Polymarket-equivalent net PnL number, subtract the cost basis of open positions and add any unrealized gains. Or use the [trader profile](/api-reference/enriched/trader-profile) endpoint which returns Polymarket's own `totalPnl` directly.
+
 <Note>
-`total_realized_pnl` is a raw sum of all individual position `realized_pnl` values. This number will differ from the aggregate PnL shown on a Polymarket profile page, which applies its own netting and aggregation logic. For Polymarket's own aggregate PnL, use the [trader profile](/api-reference/enriched/trader-profile) endpoint's `totalPnl` field.
+Use `total_realized_pnl` when you want to know how much profit a wallet has actually extracted. Use the [trader profile](/api-reference/enriched/trader-profile) `totalPnl` when you want the number that matches a Polymarket profile page.
 </Note>
 
 ## Performance

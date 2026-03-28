@@ -4,7 +4,9 @@ openapi: "GET /v1/trader/{wallet}"
 description: "Full profile for any Polymarket trader."
 ---
 
-Returns comprehensive stats for a trader: PnL, volume, trade count, largest win, current portfolio value, and account metadata.
+Returns comprehensive stats for a trader: PnL, volume, trade count, largest win, current portfolio value, and account metadata. Data is sourced from Polymarket's own profile page.
+
+`totalPnl` is the net portfolio PnL that matches the number shown on a Polymarket profile page. This factors in realized gains, cost basis still deployed in open positions, and unrealized gains/losses. If you want total realized gains from closed positions instead, use the [onchain positions](/api-reference/wallets/onchain-positions) endpoint's `total_realized_pnl` field.
 
 The response includes an `eoaWallet` field that resolves the underlying EOA (externally owned account) for Polymarket Safe proxy wallets. This is derived onchain via the Gnosis Safe `getOwners()` call. For older lightweight proxy wallets that don't support this method, `eoaWallet` returns `null`.
 
