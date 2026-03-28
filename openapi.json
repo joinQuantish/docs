@@ -989,7 +989,17 @@
             "description": "Sort positions by field",
             "schema": {
               "type": "string",
-              "enum": ["TOKENS", "CASHPNL", "PERCENTPNL", "CURRENT", "INITIAL", "TITLE", "RESOLVING", "PRICE", "AVGPRICE"],
+              "enum": [
+                "TOKENS",
+                "CASHPNL",
+                "PERCENTPNL",
+                "CURRENT",
+                "INITIAL",
+                "TITLE",
+                "RESOLVING",
+                "PRICE",
+                "AVGPRICE"
+              ],
               "default": "TOKENS"
             }
           },
@@ -999,7 +1009,10 @@
             "description": "Sort direction",
             "schema": {
               "type": "string",
-              "enum": ["ASC", "DESC"],
+              "enum": [
+                "ASC",
+                "DESC"
+              ],
               "default": "DESC"
             }
           },
@@ -1393,7 +1406,12 @@
             "description": "Sort holders by field",
             "schema": {
               "type": "string",
-              "enum": ["TOKENS", "CASH_PNL", "REALIZED_PNL", "TOTAL_PNL"],
+              "enum": [
+                "TOKENS",
+                "CASH_PNL",
+                "REALIZED_PNL",
+                "TOTAL_PNL"
+              ],
               "default": "TOTAL_PNL"
             }
           },
@@ -1403,7 +1421,10 @@
             "description": "Sort direction",
             "schema": {
               "type": "string",
-              "enum": ["ASC", "DESC"],
+              "enum": [
+                "ASC",
+                "DESC"
+              ],
               "default": "DESC"
             }
           },
@@ -1413,7 +1434,11 @@
             "description": "Filter by position status",
             "schema": {
               "type": "string",
-              "enum": ["OPEN", "CLOSED", "ALL"],
+              "enum": [
+                "OPEN",
+                "CLOSED",
+                "ALL"
+              ],
               "default": "ALL"
             }
           },
@@ -1447,7 +1472,10 @@
                   "condition_id": "0x895e01dbf3e6a33cd9a44ca0f8cdb5df1bd2b0b6ebed5300d28f8da7145145e4",
                   "market_title": "Will Donald Trump win the 2028 Republican presidential nomination?",
                   "slug": "will-donald-trump-win-the-2028-republican-presidential-nomination",
-                  "outcome_names": ["Yes", "No"],
+                  "outcome_names": [
+                    "Yes",
+                    "No"
+                  ],
                   "outcomes": [
                     {
                       "token": "3039641309958397001906153616677074061284510636203465131156925998487819889437",
@@ -1567,7 +1595,10 @@
             "description": "Filter by trade direction",
             "schema": {
               "type": "string",
-              "enum": ["BUY", "SELL"]
+              "enum": [
+                "BUY",
+                "SELL"
+              ]
             }
           },
           {
@@ -1685,7 +1716,9 @@
     },
     "/v1/resolve/{query}": {
       "get": {
-        "tags": ["Wallets"],
+        "tags": [
+          "Wallets"
+        ],
         "summary": "Resolve wallet",
         "description": "Instantly resolve any Polymarket wallet address, EOA, or username. Returns the full identity triple: proxy wallet (safe), EOA, and username.",
         "operationId": "resolve_wallet",
@@ -1695,7 +1728,9 @@
             "in": "path",
             "description": "Safe address, EOA address, or Polymarket username (case-insensitive)",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1706,9 +1741,19 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "safe": { "type": "string", "description": "Polymarket proxy wallet address (Gnosis Safe)" },
-                    "eoa": { "type": "string", "description": "Externally owned account (signer)" },
-                    "username": { "type": "string", "nullable": true, "description": "Polymarket display name, or null" }
+                    "safe": {
+                      "type": "string",
+                      "description": "Polymarket proxy wallet address (Gnosis Safe)"
+                    },
+                    "eoa": {
+                      "type": "string",
+                      "description": "Externally owned account (signer)"
+                    },
+                    "username": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Polymarket display name, or null"
+                    }
                   }
                 },
                 "example": {
@@ -1723,7 +1768,9 @@
             "description": "Not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -1731,17 +1778,25 @@
             "description": "Missing API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
         },
-        "security": [{ "api_key": [] }]
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v1/leaderboard": {
       "get": {
-        "tags": ["Enriched Data"],
+        "tags": [
+          "Enriched Data"
+        ],
         "summary": "Leaderboard",
         "description": "Top 20 Polymarket traders ranked by profit or volume for a given time period.",
         "operationId": "leaderboard",
@@ -1750,13 +1805,29 @@
             "name": "period",
             "in": "query",
             "description": "Time period",
-            "schema": { "type": "string", "enum": ["daily", "weekly", "monthly", "all"], "default": "monthly" }
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily",
+                "weekly",
+                "monthly",
+                "all"
+              ],
+              "default": "monthly"
+            }
           },
           {
             "name": "sort",
             "in": "query",
             "description": "Ranking metric",
-            "schema": { "type": "string", "enum": ["profit", "volume"], "default": "profit" }
+            "schema": {
+              "type": "string",
+              "enum": [
+                "profit",
+                "volume"
+              ],
+              "default": "profit"
+            }
           }
         ],
         "responses": {
@@ -1767,10 +1838,21 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "traders": { "type": "array", "items": { "type": "object" } },
-                    "period": { "type": "string" },
-                    "sort": { "type": "string" },
-                    "count": { "type": "integer" }
+                    "traders": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "period": {
+                      "type": "string"
+                    },
+                    "sort": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
                   }
                 },
                 "example": {
@@ -1803,17 +1885,25 @@
             "description": "Missing API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
         },
-        "security": [{ "api_key": [] }]
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v1/trader/{wallet}": {
       "get": {
-        "tags": ["Enriched Data"],
+        "tags": [
+          "Enriched Data"
+        ],
         "summary": "Trader profile",
         "description": "Full profile for any Polymarket trader: PnL, volume, trade count, largest win, portfolio value, and account metadata.",
         "operationId": "trader_profile",
@@ -1823,7 +1913,9 @@
             "in": "path",
             "description": "Polymarket wallet address",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1831,7 +1923,9 @@
             "description": "Trader profile",
             "content": {
               "application/json": {
-                "schema": { "type": "object" },
+                "schema": {
+                  "type": "object"
+                },
                 "example": {
                   "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
                   "eoaWallet": "0xb49e5499562a4bc3345c1a1f2db13a5360dfddac",
@@ -1843,7 +1937,7 @@
                   "marketsTraded": 149,
                   "largestWin": 3487512.61,
                   "views": 113521,
-                  "totalVolume": 199137316.60,
+                  "totalVolume": 199137316.6,
                   "totalPnl": 4142102.07,
                   "realizedPnl": 0,
                   "unrealizedPnl": 0,
@@ -1857,17 +1951,25 @@
             "description": "Missing API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
         },
-        "security": [{ "api_key": [] }]
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v1/trader/{wallet}/pnl": {
       "get": {
-        "tags": ["Enriched Data"],
+        "tags": [
+          "Enriched Data"
+        ],
         "summary": "Trader PnL series",
         "description": "Cumulative PnL time series for a trader at multiple resolutions.",
         "operationId": "trader_pnl",
@@ -1877,13 +1979,24 @@
             "in": "path",
             "description": "Ethereum wallet address",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "period",
             "in": "query",
             "description": "Resolution",
-            "schema": { "type": "string", "enum": ["1D", "1W", "1M", "ALL"], "default": "1M" }
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1D",
+                "1W",
+                "1M",
+                "ALL"
+              ],
+              "default": "1M"
+            }
           }
         ],
         "responses": {
@@ -1891,14 +2004,25 @@
             "description": "PnL time series",
             "content": {
               "application/json": {
-                "schema": { "type": "object" },
+                "schema": {
+                  "type": "object"
+                },
                 "example": {
                   "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
                   "period": "1W",
                   "series": [
-                    { "timestamp": 1774029600, "pnl": 3902767.20 },
-                    { "timestamp": 1774040400, "pnl": 3902767.20 },
-                    { "timestamp": 1774051200, "pnl": 3892129.00 }
+                    {
+                      "timestamp": 1774029600,
+                      "pnl": 3902767.2
+                    },
+                    {
+                      "timestamp": 1774040400,
+                      "pnl": 3902767.2
+                    },
+                    {
+                      "timestamp": 1774051200,
+                      "pnl": 3892129.0
+                    }
                   ],
                   "count": 57
                 }
@@ -1909,17 +2033,25 @@
             "description": "Missing API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
         },
-        "security": [{ "api_key": [] }]
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v1/trending": {
       "get": {
-        "tags": ["Enriched Data"],
+        "tags": [
+          "Enriched Data"
+        ],
         "summary": "Trending",
         "description": "Curated snapshot of what's trending on Polymarket: carousel highlights, breaking news, hot topics, featured events, and biggest movers.",
         "operationId": "trending",
@@ -1928,7 +2060,9 @@
             "description": "Trending data",
             "content": {
               "application/json": {
-                "schema": { "type": "object" },
+                "schema": {
+                  "type": "object"
+                },
                 "example": {
                   "carousel": [
                     {
@@ -1945,7 +2079,11 @@
                   ],
                   "breaking": [],
                   "hotTopics": [
-                    { "title": "Gen", "volume": 24471729.10, "url": "/search?_q=gen" }
+                    {
+                      "title": "Gen",
+                      "volume": 24471729.1,
+                      "url": "/search?_q=gen"
+                    }
                   ],
                   "featured": [],
                   "movers": []
@@ -1957,17 +2095,25 @@
             "description": "Missing API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
         },
-        "security": [{ "api_key": [] }]
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v1/activity": {
       "get": {
-        "tags": ["Enriched Data"],
+        "tags": [
+          "Enriched Data"
+        ],
         "summary": "Activity feed",
         "description": "50 most recent trades across all Polymarket markets with full trade metadata, wallet addresses, and transaction hashes.",
         "operationId": "activity_feed",
@@ -1976,7 +2122,9 @@
             "description": "Recent trades",
             "content": {
               "application/json": {
-                "schema": { "type": "object" },
+                "schema": {
+                  "type": "object"
+                },
                 "example": {
                   "trades": [
                     {
@@ -2004,17 +2152,25 @@
             "description": "Missing API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
         },
-        "security": [{ "api_key": [] }]
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v1/event/{slug}": {
       "get": {
-        "tags": ["Enriched Data"],
+        "tags": [
+          "Enriched Data"
+        ],
         "summary": "Event detail",
         "description": "Full event data with all sub-markets, current prices, volumes, liquidity, and token IDs.",
         "operationId": "event_detail",
@@ -2024,7 +2180,9 @@
             "in": "path",
             "description": "Event slug from Polymarket URL (e.g. how-many-fed-rate-cuts-in-2026)",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2032,7 +2190,9 @@
             "description": "Event data",
             "content": {
               "application/json": {
-                "schema": { "type": "object" },
+                "schema": {
+                  "type": "object"
+                },
                 "example": {
                   "id": "51456",
                   "slug": "how-many-fed-rate-cuts-in-2026",
@@ -2050,8 +2210,14 @@
                     {
                       "question": "Will no Fed rate cuts happen in 2026?",
                       "conditionId": "0xd4e77ba6f29fc093509d24f508631abd445ecf506bbdc9c4c80e60256a318527",
-                      "outcomes": ["Yes", "No"],
-                      "outcomePrices": ["0.3985", "0.6015"],
+                      "outcomes": [
+                        "Yes",
+                        "No"
+                      ],
+                      "outcomePrices": [
+                        "0.3985",
+                        "0.6015"
+                      ],
                       "volume": 2568092.27,
                       "liquidity": 55996.28,
                       "active": true,
@@ -2068,7 +2234,9 @@
             "description": "Event not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -2076,17 +2244,25 @@
             "description": "Missing API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
         },
-        "security": [{ "api_key": [] }]
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v1/events/search": {
       "get": {
-        "tags": ["Enriched Data"],
+        "tags": [
+          "Enriched Data"
+        ],
         "summary": "Event search",
         "description": "Search Polymarket events by text query. Returns events with all sub-markets, token IDs, and current prices.",
         "operationId": "event_search",
@@ -2096,13 +2272,19 @@
             "in": "query",
             "description": "Search query (e.g. recession, Fed rate, Trump tariff)",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "limit",
             "in": "query",
             "description": "Maximum events to return (default 10, max 20)",
-            "schema": { "type": "integer", "default": 10, "maximum": 20 }
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 20
+            }
           }
         ],
         "responses": {
@@ -2110,7 +2292,9 @@
             "description": "Search results",
             "content": {
               "application/json": {
-                "schema": { "type": "object" },
+                "schema": {
+                  "type": "object"
+                },
                 "example": {
                   "query": "Fed rate",
                   "events": [
@@ -2141,7 +2325,9 @@
             "description": "Missing query parameter",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -2149,17 +2335,25 @@
             "description": "Missing API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
         },
-        "security": [{ "api_key": [] }]
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v1/movers": {
       "get": {
-        "tags": ["Enriched Data"],
+        "tags": [
+          "Enriched Data"
+        ],
         "summary": "Biggest movers",
         "description": "Markets with the largest 24-hour price changes.",
         "operationId": "movers",
@@ -2168,7 +2362,9 @@
             "description": "Biggest movers",
             "content": {
               "application/json": {
-                "schema": { "type": "object" },
+                "schema": {
+                  "type": "object"
+                },
                 "example": {
                   "markets": [
                     {
@@ -2176,7 +2372,10 @@
                       "slug": "will-elon-musks-net-worth-be-between-660b-and-670b-on-march-31",
                       "question": "Will Elon Musk's net worth be between $660b and $670b on March 31?",
                       "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/elon-musk-net-worth-on-feb-28-6S8eRvSIplAk.png",
-                      "outcomePrices": ["0.09", "0.91"],
+                      "outcomePrices": [
+                        "0.09",
+                        "0.91"
+                      ],
                       "oneDayPriceChange": -0.945
                     }
                   ],
@@ -2189,17 +2388,25 @@
             "description": "Missing API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
         },
-        "security": [{ "api_key": [] }]
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v2/markets/{category}": {
       "get": {
-        "tags": ["Enriched Data"],
+        "tags": [
+          "Enriched Data"
+        ],
         "summary": "Markets by category",
         "description": "Browse markets by category with event counts and category-specific metadata.",
         "operationId": "markets_by_category",
@@ -2209,7 +2416,9 @@
             "in": "path",
             "description": "Category slug: crypto, politics, sports, finance, economy, tech, pop-culture, geopolitics, weather, iran, elections, mentions",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2217,7 +2426,9 @@
             "description": "Category markets",
             "content": {
               "application/json": {
-                "schema": { "type": "object" },
+                "schema": {
+                  "type": "object"
+                },
                 "example": {
                   "category": "crypto",
                   "counts": {
@@ -2252,7 +2463,9 @@
             "description": "Category not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -2260,12 +2473,217 @@
             "description": "Missing API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
         },
-        "security": [{ "api_key": [] }]
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v1/crypto/markets": {
+      "get": {
+        "tags": [
+          "Crypto"
+        ],
+        "summary": "Crypto markets",
+        "description": "All crypto prediction markets with liquidity, volume, and open interest.",
+        "operationId": "crypto_markets",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Crypto prediction markets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/crypto/candles": {
+      "get": {
+        "tags": [
+          "Crypto"
+        ],
+        "summary": "Oracle candles",
+        "description": "5-minute OHLC candles from Chainlink oracle. Returns ~2.5 hours of history.",
+        "operationId": "crypto_candles",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BTC",
+                "ETH",
+                "SOL",
+                "BNB",
+                "XRP",
+                "DOGE",
+                "HYPE"
+              ]
+            },
+            "description": "Asset symbol"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OHLC candle data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/crypto/price": {
+      "get": {
+        "tags": [
+          "Crypto"
+        ],
+        "summary": "Price to beat",
+        "description": "Open and close price for a specific crypto market window. The open price is the oracle price at market open; the close price updates in real time until the window completes.",
+        "operationId": "crypto_price",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BTC",
+                "ETH",
+                "SOL",
+                "BNB",
+                "XRP",
+                "DOGE",
+                "HYPE"
+              ]
+            },
+            "description": "Asset symbol"
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unix epoch timestamp of the market window start"
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "5m",
+                "15m",
+                "1h",
+                "4h"
+              ]
+            },
+            "description": "Market interval variant"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Price data for the market window",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/crypto/active": {
+      "get": {
+        "tags": [
+          "Crypto"
+        ],
+        "summary": "Active 5-minute markets",
+        "description": "Currently active 5-minute up-or-down markets for all 7 supported coins. Returns live market data with token IDs, outcomes, and current odds. Markets rotate every 5 minutes.",
+        "operationId": "crypto_active",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active short-form crypto markets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/crypto/series": {
+      "get": {
+        "tags": [
+          "Crypto"
+        ],
+        "summary": "Crypto series",
+        "description": "Recurring crypto market series (5m, 15m, 1h, 4h, daily, weekly, monthly patterns).",
+        "operationId": "crypto_series",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Crypto recurring series",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -3583,7 +4001,11 @@
       "WalletPositionsResponse": {
         "type": "object",
         "description": "Wallet positions with P&L breakdown.",
-        "required": ["wallet", "count", "positions"],
+        "required": [
+          "wallet",
+          "count",
+          "positions"
+        ],
         "properties": {
           "wallet": {
             "type": "string",
@@ -3675,7 +4097,7 @@
           },
           "redeemed": {
             "type": "boolean",
-            "description": "Whether the position has been redeemed onchain (tokens burned for USDC). Only present when `redeemable` is true. Determined by checking the CTF contract balance — zero balance means fully redeemed."
+            "description": "Whether the position has been redeemed onchain (tokens burned for USDC). Only present when `redeemable` is true. Determined by checking the CTF contract balance \u2014 zero balance means fully redeemed."
           },
           "unredeemed_balance": {
             "type": "number",
@@ -3698,7 +4120,11 @@
       "WalletTradesResponse": {
         "type": "object",
         "description": "Wallet trade history.",
-        "required": ["wallet", "count", "trades"],
+        "required": [
+          "wallet",
+          "count",
+          "trades"
+        ],
         "properties": {
           "wallet": {
             "type": "string",
@@ -3746,7 +4172,10 @@
           },
           "side": {
             "type": "string",
-            "enum": ["BUY", "SELL"],
+            "enum": [
+              "BUY",
+              "SELL"
+            ],
             "description": "Trade direction."
           },
           "price": {
@@ -3774,7 +4203,11 @@
       "MarketTradesResponse": {
         "type": "object",
         "description": "Trade history for a market.",
-        "required": ["condition_id", "count", "trades"],
+        "required": [
+          "condition_id",
+          "count",
+          "trades"
+        ],
         "properties": {
           "condition_id": {
             "type": "string",
@@ -3799,7 +4232,10 @@
                 },
                 "side": {
                   "type": "string",
-                  "enum": ["BUY", "SELL"],
+                  "enum": [
+                    "BUY",
+                    "SELL"
+                  ],
                   "description": "Trade direction."
                 },
                 "outcome": {
@@ -3842,7 +4278,10 @@
       "MarketPositionsResponse": {
         "type": "object",
         "description": "Holder positions for a market, grouped by outcome token.",
-        "required": ["condition_id", "outcomes"],
+        "required": [
+          "condition_id",
+          "outcomes"
+        ],
         "properties": {
           "condition_id": {
             "type": "string",
@@ -3858,7 +4297,9 @@
           },
           "outcome_names": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "description": "Outcome names (e.g. [\"Yes\", \"No\"])."
           },
           "outcomes": {

@@ -1,0 +1,26 @@
+---
+title: "Price to Beat"
+openapi: "GET /v1/crypto/price"
+description: "Open and close price for a specific crypto market window."
+---
+
+Returns the opening and current closing price for a crypto market window. This is the "price to beat" for short-form markets.
+
+The `openPrice` is the Chainlink oracle price at market open. The `closePrice` updates in real time until the window completes (`completed: true`).
+
+<ResponseExample>
+```json
+{
+  "openPrice": 66285.01,
+  "closePrice": 66238.61,
+  "timestamp": 1774674466843,
+  "completed": false,
+  "incomplete": true,
+  "cached": false
+}
+```
+</ResponseExample>
+
+<Note>
+  Cached for 10 seconds. The `window` parameter is a Unix epoch timestamp. Get window timestamps from the `/v1/crypto/active` endpoint.
+</Note>

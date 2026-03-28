@@ -1,0 +1,36 @@
+---
+title: "Oracle Candles"
+openapi: "GET /v1/crypto/candles"
+description: "5-minute OHLC candles from Chainlink oracle."
+---
+
+Returns 5-minute OHLC candles from the Chainlink oracle for a given crypto asset. Approximately 30 candles (~2.5 hours of history) are returned.
+
+These are the same oracle prices used to resolve Polymarket's short-form crypto markets.
+
+<ResponseExample>
+```json
+{
+  "candles": [
+    {
+      "time": 1774665300,
+      "open": 65954.03,
+      "high": 65992.01,
+      "low": 65947.14,
+      "close": 65949.69
+    },
+    {
+      "time": 1774665600,
+      "open": 65949.69,
+      "high": 65987.20,
+      "low": 65949.69,
+      "close": 65987.20
+    }
+  ]
+}
+```
+</ResponseExample>
+
+<Note>
+  Cached for 30 seconds. Each candle's `time` field is a Unix epoch timestamp marking the start of that 5-minute window.
+</Note>

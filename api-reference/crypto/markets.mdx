@@ -1,0 +1,42 @@
+---
+title: "Crypto Markets"
+openapi: "GET /v1/crypto/markets"
+description: "All crypto prediction markets with liquidity, volume, and open interest."
+---
+
+Returns all currently active crypto prediction markets on Polymarket, including monthly, weekly, and daily markets across 7 supported assets (BTC, ETH, SOL, BNB, XRP, DOGE, HYPE).
+
+<ResponseExample>
+```json
+{
+  "events": [
+    {
+      "id": "238474",
+      "slug": "what-price-will-bitcoin-hit-in-march-2026",
+      "title": "What price will Bitcoin hit in March?",
+      "startDate": "2026-03-01T05:20:27.791222Z",
+      "endDate": "2026-04-01T04:00:00Z",
+      "active": true,
+      "volume": 88886711.74,
+      "volume24hr": 5733750.73,
+      "liquidity": 6074250.39,
+      "openInterest": 12827944.10,
+      "seriesSlug": "bitcoin-hit-price-monthly",
+      "markets": [
+        {
+          "id": "1629442",
+          "question": "$100,000?",
+          "conditionId": "0x...",
+          "outcomePrices": "[\"0.045\", \"0.955\"]",
+          "active": true
+        }
+      ]
+    }
+  ]
+}
+```
+</ResponseExample>
+
+<Note>
+  Cached for 3 minutes.
+</Note>

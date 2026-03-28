@@ -1,0 +1,37 @@
+---
+title: "Crypto Series"
+openapi: "GET /v1/crypto/series"
+description: "Recurring crypto market series."
+---
+
+Returns all recurring crypto market series across different intervals (5m, 15m, 1h, 4h, daily, weekly, monthly). Each series generates new markets on its recurrence schedule.
+
+<ResponseExample>
+```json
+{
+  "series": [
+    {
+      "id": "10684",
+      "slug": "btc-up-or-down-5m",
+      "title": "BTC Up or Down 5m",
+      "recurrence": "5m",
+      "active": true,
+      "eventCount": null
+    },
+    {
+      "id": "10422",
+      "slug": "xrp-up-or-down-15m",
+      "title": "XRP Up or Down 15m",
+      "recurrence": "15m",
+      "active": true,
+      "eventCount": null
+    }
+  ],
+  "count": 7
+}
+```
+</ResponseExample>
+
+<Note>
+  Cached for 5 minutes.
+</Note>

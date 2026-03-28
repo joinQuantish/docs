@@ -1,0 +1,42 @@
+---
+title: "Active 5-Minute Markets"
+openapi: "GET /v1/crypto/active"
+description: "Currently active 5-minute up-or-down markets for all 7 coins."
+---
+
+Returns the currently active 5-minute up-or-down markets for all 7 supported coins. These markets rotate every 5 minutes. Each response includes token IDs, outcomes, and current odds for immediate trading.
+
+<ResponseExample>
+```json
+{
+  "markets": [
+    {
+      "id": "312746",
+      "slug": "btc-updown-5m-1774674300",
+      "title": "Bitcoin Up or Down - March 28, 1:05AM-1:10AM ET",
+      "active": true,
+      "closed": false,
+      "startDate": "2026-03-27T05:16:04.211285Z",
+      "endDate": "2026-03-28T05:10:00Z",
+      "markets": [
+        {
+          "question": "Bitcoin Up or Down - March 28, 1:05AM-1:10AM ET",
+          "conditionId": "0x...",
+          "outcomes": ["Up", "Down"],
+          "outcomePrices": [0.465, 0.535],
+          "tokenId": "12345...",
+          "active": true,
+          "closed": false
+        }
+      ]
+    }
+  ],
+  "count": 7,
+  "windowStart": 1774674300
+}
+```
+</ResponseExample>
+
+<Note>
+  Cached for 30 seconds. The `windowStart` field is the epoch timestamp of the current 5-minute window. Use this as the `window` parameter for the [Price to Beat](/api-reference/crypto/price) endpoint.
+</Note>
