@@ -250,6 +250,18 @@
         ]
       },
       {
+        "tab": "Dome Migration",
+        "badge": "New",
+        "groups": [
+          {
+            "group": "Dome Migration",
+            "pages": [
+              "dome-migration"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Changelog",
         "groups": [
           {

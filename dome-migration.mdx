@@ -1,0 +1,323 @@
+---
+title: "Dome Migration"
+sidebarTitle: "Dome Migration"
+description: "Drop-in replacement for the Dome API WebSocket feed. Same format, same fields, 3-5 seconds faster."
+---
+
+Dome was acquired by Polymarket in February 2026 and is shutting down. If you built on Dome's WebSocket API, polynode provides a drop-in replacement that delivers the same per-fill flat events in the exact same format, 3-5 seconds before Dome.
+
+## What you get
+
+- Identical event format to Dome — same 16 fields, same field names, same types
+- Pre-chain delivery: events arrive 3-5 seconds before on-chain confirmation (and before Dome)
+- All existing filters work: `condition_ids`, `wallets`, `tokens`, `slugs`, `side`, `min_size`
+- One subscription type change: `"dome"` instead of Dome's `"orders"`
+
+## Quick start
+
+### 1. Get an API key
+
+Sign up at [polynode.dev](https://polynode.dev) to get your API key.
+
+### 2. Connect
+
+Replace your Dome WebSocket URL with polynode's:
+
+```diff
+- const ws = new WebSocket(`wss://ws.domeapi.io/${DOME_KEY}`);
++ const ws = new WebSocket(`wss://ws.polynode.dev/ws?key=${POLYNODE_KEY}`);
+```
+
+### 3. Subscribe
+
+The subscribe message changes slightly. Dome used `platform` and `version` fields that polynode doesn't need:
+
+```diff
+- ws.send(JSON.stringify({
+-   action: "subscribe",
+-   platform: "polymarket",
+-   version: 1,
+-   type: "orders",
+-   filters: { condition_ids: ["0xabc..."] }
+- }));
+
++ ws.send(JSON.stringify({
++   action: "subscribe",
++   type: "dome",
++   filters: { condition_ids: ["0xabc..."] }
++ }));
+```
+
+### 4. Process events
+
+No changes needed. The event format is identical:
+
+```js
+ws.on("message", (data) => {
+  const msg = JSON.parse(data);
+
+  if (msg.type === "event") {
+    const fill = msg.data;
+    // These fields work exactly like Dome:
+    console.log(fill.order_hash);  // EIP-712 order hash
+    console.log(fill.user);        // order placer address
+    console.log(fill.taker);       // counterparty address
+    console.log(fill.tx_hash);     // on-chain transaction hash
+    console.log(fill.side);        // "BUY" or "SELL"
+    console.log(fill.price);       // fill price
+    console.log(fill.shares);      // raw token amount (6 decimals)
+  }
+});
+```
+
+## Event format
+
+Every event is a flat object with 16 fields, matching Dome's format exactly.
+
+### Wrapper
+
+```json
+{
+  "type": "event",
+  "data": { ... }
+}
+```
+
+### Data fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `order_hash` | string | EIP-712 order hash. Persistent across partial fills of the same limit order. Use this to track order fill status. |
+| `user` | string | Address of the order placer. The `order_hash` belongs to this address. |
+| `taker` | string | Counterparty address. On the taker's own fill event, this is the exchange contract address (see [Order perspective](#order-perspective) below). |
+| `tx_hash` | string | On-chain transaction hash. |
+| `side` | string | `"BUY"` or `"SELL"` |
+| `price` | number | Fill price as a decimal (e.g. `0.65`). |
+| `shares` | number | Raw token amount with 6 decimal precision (e.g. `25000000` = 25 tokens). |
+| `shares_normalized` | number | Human-readable token amount (e.g. `25.0`). |
+| `token_id` | string | Polymarket conditional token ID. |
+| `token_label` | string | Outcome name (e.g. `"Yes"`, `"No"`, `"Up"`, `"Down"`). |
+| `condition_id` | string | Polymarket condition ID for the market. |
+| `market_slug` | string | URL slug for the market. |
+| `title` | string | Human-readable market title. |
+| `timestamp` | number | UNIX timestamp in seconds when the event was detected. |
+| `block_number` | null | Always `null` for pre-chain events. polynode detects settlements from the mempool before they confirm on-chain. |
+| `log_index` | null | Always `null` for pre-chain events. |
+
+### Example event
+
+```json
+{
+  "type": "event",
+  "data": {
+    "order_hash": "0x717a21e38d22024cac8e9f0a041aded587f8ae5d1ca3407a0ee75467be8dd20e",
+    "user": "0x2b19beaaae9eeaa1898cf2910be04fda27eb8521",
+    "taker": "0x7d4ed386d4c32a012739cfff96d0a8426eaeb700",
+    "tx_hash": "0x1be7333ad265ea04146f4adb7e5f3f8881f5c551e2a638a2de91518fc74a3f3f",
+    "side": "BUY",
+    "price": 0.66,
+    "shares": 14700000,
+    "shares_normalized": 14.7,
+    "token_id": "70473897434054355274348699520137654868233070870789130122447984108273533379399",
+    "token_label": "Up",
+    "condition_id": "0x9b4921efc74c8a208a31917c19a71782c4376d2647396aab5b6332125631f2b7",
+    "market_slug": "btc-updown-5m-1774723200",
+    "title": "Bitcoin Up or Down - March 28, 2:40PM-2:45PM ET",
+    "timestamp": 1774723227,
+    "block_number": null,
+    "log_index": null
+  }
+}
+```
+
+## Order perspective
+
+Each on-chain settlement produces multiple fill events, one per `OrderFilled` log. This is identical to how Dome works.
+
+**Maker fill events:** `user` is the maker's address, `taker` is the actual taker's wallet address, `order_hash` is the maker's EIP-712 order hash.
+
+**Taker fill events:** `user` is the taker's address, `taker` is the exchange contract address (not a real wallet). The `order_hash` is the taker's EIP-712 order hash.
+
+The exchange contract address depends on the market type:
+
+| Market type | Exchange contract |
+|-------------|-------------------|
+| Standard (neg_risk = false) | `0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e` |
+| Neg-risk (neg_risk = true) | `0xc5d563a36ae78145c45a50134d48a1215220f80a` |
+
+This happens because the Polymarket CTF Exchange settles the taker's order against itself as an intermediary. The on-chain `OrderFilled` event reflects this, and both Dome and polynode pass it through as-is.
+
+**To find your order's fills:** Check if `event.user === yourWallet`. When it matches, `event.order_hash` is your order's hash.
+
+## Copy trading example
+
+If you're building a copy trading system that tracks orders by hash:
+
+```js
+const WebSocket = require("ws");
+
+const ws = new WebSocket(
+  "wss://ws.polynode.dev/ws?key=YOUR_KEY"
+);
+
+// Track a specific wallet
+const TRACKED_WALLET = "0x1234...";
+const orderBook = new Map(); // order_hash -> order state
+
+ws.on("open", () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "dome",
+    filters: { wallets: [TRACKED_WALLET] }
+  }));
+});
+
+ws.on("message", (raw) => {
+  const msg = JSON.parse(raw);
+  if (msg.type !== "event") return;
+
+  const fill = msg.data;
+
+  // This fill involves our tracked wallet.
+  // Check if the tracked wallet is the order placer:
+  if (fill.user === TRACKED_WALLET.toLowerCase()) {
+    // This is the tracked wallet's own order being filled.
+    // fill.order_hash is their order's hash.
+    if (orderBook.has(fill.order_hash)) {
+      // Update existing order
+      console.log("Order filled:", fill.order_hash, fill.shares_normalized, "shares at", fill.price);
+    } else {
+      // New order detected
+      orderBook.set(fill.order_hash, {
+        side: fill.side,
+        price: fill.price,
+        totalFilled: fill.shares_normalized,
+        market: fill.title,
+      });
+      console.log("New order:", fill.order_hash, fill.side, fill.price);
+    }
+  }
+});
+```
+
+## Full migration example
+
+Complete before/after showing the Dome to polynode migration:
+
+<CodeGroup>
+
+```js Dome (before)
+const WebSocket = require("ws");
+
+const DOME_KEY = "your_dome_key";
+const ws = new WebSocket(`wss://ws.domeapi.io/${DOME_KEY}`);
+
+ws.on("open", () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    platform: "polymarket",
+    version: 1,
+    type: "orders",
+    filters: {
+      condition_ids: ["0xabc123..."]
+    }
+  }));
+});
+
+ws.on("message", (raw) => {
+  const msg = JSON.parse(raw);
+
+  if (msg.type === "ack") {
+    console.log("Subscribed");
+    return;
+  }
+
+  if (msg.type === "event") {
+    const fill = msg.data;
+    console.log(fill.order_hash, fill.user, fill.side, fill.price);
+  }
+});
+```
+
+```js polynode (after)
+const WebSocket = require("ws");
+
+const PN_KEY = "your_polynode_key";
+const ws = new WebSocket(`wss://ws.polynode.dev/ws?key=${PN_KEY}`);
+
+ws.on("open", () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "dome",
+    filters: {
+      condition_ids: ["0xabc123..."]
+    }
+  }));
+});
+
+ws.on("message", (raw) => {
+  const msg = JSON.parse(raw);
+
+  if (msg.type === "subscribed") {
+    console.log("Subscribed");
+    return;
+  }
+
+  if (msg.type === "event") {
+    const fill = msg.data;
+    // Exact same fields, exact same format
+    console.log(fill.order_hash, fill.user, fill.side, fill.price);
+  }
+});
+```
+
+</CodeGroup>
+
+### What changes
+
+| | Dome | polynode |
+|---|---|---|
+| WebSocket URL | `wss://ws.domeapi.io/{key}` | `wss://ws.polynode.dev/ws?key={key}` |
+| Subscribe type | `"orders"` | `"dome"` |
+| Subscribe fields | `platform`, `version` required | Not needed |
+| Ack message | `{"type": "ack"}` | `{"type": "subscribed"}` |
+| Event format | 16 fields | Same 16 fields |
+| `block_number` | Block number (integer) | `null` (pre-chain) |
+| `log_index` | Log index (integer) | `null` (pre-chain) |
+| Delivery speed | On-chain confirmation (~2s block time) | Pre-chain mempool detection (3-5s earlier) |
+
+### What stays the same
+
+- All 16 data fields: `order_hash`, `user`, `taker`, `tx_hash`, `side`, `price`, `shares`, `shares_normalized`, `token_id`, `token_label`, `condition_id`, `market_slug`, `title`, `timestamp`, `block_number`, `log_index`
+- One event per order fill (not bundled)
+- `order_hash` belongs to `user`
+- Taker fills show exchange contract as `taker`
+- All filter types: `condition_ids`, `wallets`, `tokens`, `slugs`, `side`, `min_size`
+
+## Filters
+
+The dome subscription supports all standard polynode filters:
+
+```json
+{
+  "action": "subscribe",
+  "type": "dome",
+  "filters": {
+    "condition_ids": ["0xabc..."],
+    "wallets": ["0x1234..."],
+    "tokens": ["21742633..."],
+    "slugs": ["bitcoin-100k-2026"],
+    "side": "BUY",
+    "min_size": 100,
+    "max_size": 10000
+  }
+}
+```
+
+## Differences from Dome
+
+**`block_number` and `log_index` are always `null`.** polynode detects settlements from the Polygon mempool before they are included in a block. This is why events arrive 3-5 seconds before Dome. The tradeoff is that block-level fields aren't available at detection time.
+
+**Minor floating-point precision differences on `price` and `shares`.** polynode computes fill amounts from transaction calldata, while Dome reads from on-chain `OrderFilled` event logs. In rare cases (~1% of fills), this produces sub-penny price differences (e.g. `0.76` vs `0.7599999821`) or `shares` off by 1 unit in millions. All other fields are byte-identical.
+
+**No `subscription_id` in event wrapper.** Dome includes a `subscription_id` field in every event message. polynode does not include this field, consistent with all other polynode subscription types. If your code reads `msg.subscription_id`, it will be `undefined` but this should not affect event processing.

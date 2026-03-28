@@ -52,6 +52,12 @@ The `type` field selects a preset of event types. If you also set `filters.event
   Price-moving events only. Useful for building price feeds.
 </ResponseField>
 
+<ResponseField name="dome" type="string">
+  Events: `settlement` (reformatted as per-fill flat events)
+
+  Dome API-compatible feed. Each settlement is exploded into individual flat events — one per order fill — matching the exact field names and structure of Dome's WebSocket API. Designed as a drop-in replacement for Dome with 3-5 second faster delivery. See [Dome Migration](/guides/dome-migration) for field mapping and examples.
+</ResponseField>
+
 <ResponseField name="blocks" type="string">
   Events: `block`
 
