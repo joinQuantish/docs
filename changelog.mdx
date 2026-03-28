@@ -56,6 +56,7 @@ curl "https://api.polynode.dev/v2/wallets/0xbddf61af533ff524d27154e589d2d7a81510
 | `count` | Total positions (open + closed) |
 | `open_count` | Positions still held (`size > 0`) |
 | `closed_count` | Fully exited positions with nonzero P&L |
+| `positions_with_pnl` | Number of positions with nonzero realized P&L |
 | `total_realized_pnl` | Sum of all `realized_pnl` values |
 | `positions[].realized_pnl` | Profit or loss for this position in USDC |
 | `positions[].avg_price` | Volume-weighted average entry price |
