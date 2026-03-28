@@ -52,8 +52,13 @@ curl "https://api.polynode.dev/v1/crypto/markets?key=YOUR_API_KEY"
           "id": "1629442",
           "question": "$100,000?",
           "conditionId": "0x...",
-          "outcomePrices": "[\"0.045\", \"0.955\"]",
-          "active": true
+          "outcomes": ["Yes", "No"],
+          "outcomePrices": [0.045, 0.955],
+          "volume": 24084104.74,
+          "liquidity": 2028310.67,
+          "active": true,
+          "closed": false,
+          "groupItemTitle": "↑ 150,000"
         }
       ]
     }
@@ -189,10 +194,18 @@ curl "https://api.polynode.dev/v1/crypto/series?key=YOUR_API_KEY"
 {
   "series": [
     {
-      "id": "10684",
-      "slug": "btc-up-or-down-5m",
-      "title": "BTC Up or Down 5m",
-      "recurrence": "5m",
+      "id": "10422",
+      "slug": "xrp-up-or-down-15m",
+      "title": "XRP Up or Down 15m",
+      "recurrence": "15m",
+      "active": true,
+      "eventCount": null
+    },
+    {
+      "id": "10065",
+      "slug": "ethereum-neg-risk-weekly",
+      "title": "Ethereum Neg Risk Weekly",
+      "recurrence": "weekly",
       "active": true,
       "eventCount": null
     }
