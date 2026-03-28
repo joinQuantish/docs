@@ -9,6 +9,120 @@ icon: "clock-rotate-left"
 
 ## 2026-03-28
 
+### Wallet P&L: Complete Position History + Accurate Realized P&L
+
+#### What changed
+
+The existing `GET /v1/wallets/{addr}/positions` endpoint only returns **open** positions. Once a market resolves or a position is fully sold, it disappears from the response. The existing `GET /v1/wallets/{addr}/trades` endpoint silently drops trades for high-volume wallets (we verified one wallet showing 403 trades through the API vs 4,405 actual onchain trades).
+
+This made it impossible to compute accurate P&L through our API. That's fixed now.
+
+Two new v2 endpoints return complete position history with accurate P&L sourced from onchain settlement data. Every `realized_pnl` value has been verified to match Polymarket's own numbers to the penny.
+
+#### `GET /v2/wallets/{address}/positions/onchain`
+
+**One call. No pagination. All positions (open + closed).**
+
+Unlike the v1 positions endpoint which requires the SDK to paginate through trades page by page, this endpoint returns the complete picture in a single request. The server handles all internal pagination (up to 20,000 positions).
+
+```bash
+curl "https://api.polynode.dev/v2/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/positions/onchain" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+  "source": "onchain",
+  "count": 873,
+  "open_count": 334,
+  "closed_count": 288,
+  "total_realized_pnl": 17183579.48,
+  "positions_with_pnl": 309,
+  "positions": [
+    {
+      "token_id": "3415885798119615...",
+      "size": 0,
+      "avg_price": 0.316481,
+      "realized_pnl": 447182.95,
+      "total_bought": 654236.31
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `count` | Total positions (open + closed) |
+| `open_count` | Positions still held (`size > 0`) |
+| `closed_count` | Fully exited positions with nonzero P&L |
+| `total_realized_pnl` | Sum of all `realized_pnl` values |
+| `positions[].realized_pnl` | Profit or loss for this position in USDC |
+| `positions[].avg_price` | Volume-weighted average entry price |
+| `positions[].total_bought` | Total USDC cost basis |
+
+Responses are cached for 5 minutes. First request takes 200ms-3s depending on position count. Cached responses return in under 50ms.
+
+#### `GET /v2/wallets/{address}/closed-positions`
+
+Closed positions with full metadata (title, outcome, slug). Paginated.
+
+```bash
+curl "https://api.polynode.dev/v2/wallets/0xbddf.../closed-positions?limit=3&sortBy=REALIZEDPNL&sortDirection=DESC" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Parameters: `limit` (max 50), `offset`, `sortBy` (REALIZEDPNL, AVGPRICE, PRICE, TITLE, TIMESTAMP), `sortDirection` (ASC/DESC).
+
+#### SDK: Automatic onchain P&L backfill
+
+The TypeScript and Rust SDKs now fetch onchain position data automatically during backfill. No code changes needed if you're already using `cache.start()`. The backfill makes one additional API call per wallet (the onchain positions endpoint above) and stores the results in your local SQLite database.
+
+**Before:** The SDK backfilled trades page by page (up to 6 requests per wallet) and computed P&L from incomplete trade history. Wallets with dropped trades got wrong numbers.
+
+**After:** One call per wallet returns all positions with precomputed P&L. The SDK stores this in SQLite and uses it as the source of truth for all P&L queries.
+
+```typescript
+const cache = new PolyNodeCache(client);
+await cache.start();
+
+// P&L from local cache — no API calls
+const pnl = cache.computeRealizedPnl("0xbddf61af533ff524d27154e589d2d7a81510c684");
+```
+
+```json
+{
+  "wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+  "total_realized_pnl": 17183579.48,
+  "total_unrealized_pnl": 3030.53,
+  "total_pnl": 17186610.02,
+  "confidence": "full",
+  "trades_analyzed": 403,
+  "tokens": [
+    {
+      "token_id": "3415885798119615...",
+      "market_title": "Nuggets vs. Warriors",
+      "outcome": "Warriors",
+      "realized_pnl": 447182.95,
+      "avg_cost": 0.3170,
+      "remaining_size": 0
+    }
+  ]
+}
+```
+
+`walletDashboard()` now includes `realized_pnl`, `pnl_confidence`, and `token_pnl` fields:
+
+```typescript
+const dash = cache.walletDashboard("0xbddf...");
+// dash.realized_pnl     → 17183579.48
+// dash.pnl_confidence   → "full"
+// dash.token_pnl        → per-token P&L breakdown (446 entries)
+// dash.total_pnl        → unrealized P&L on open positions
+```
+
+---
+
 ### Crypto Price Streaming (WebSocket)
 
 Real-time cryptocurrency prices are now available on the same WebSocket connection you already use for settlements and oracle events. Seven feeds, each updating roughly once per second:

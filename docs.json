@@ -102,6 +102,8 @@
             "group": "Wallets",
             "pages": [
               "api-reference/wallets/positions",
+              "api-reference/wallets/onchain-positions",
+              "api-reference/wallets/closed-positions",
               "api-reference/wallets/multi-positions",
               "api-reference/wallets/trades",
               "api-reference/wallets/market-positions",

@@ -1,0 +1,56 @@
+---
+title: "Closed Positions"
+description: "Paginated list of closed positions with full metadata and P&L."
+---
+
+Returns closed positions for a wallet with market metadata (title, outcome, slug) and realized P&L. Supports pagination and sorting.
+
+This complements the [onchain positions](/api-reference/wallets/onchain-positions) endpoint. The onchain endpoint returns all positions with accurate P&L but no market metadata. This endpoint returns closed positions with metadata but only those that Polymarket has indexed.
+
+## Request
+
+```
+GET /v2/wallets/{address}/closed-positions
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `address` | path | | Wallet address (0x-prefixed) |
+| `limit` | query | 10 | Results per page (max 50) |
+| `offset` | query | 0 | Pagination offset |
+| `sortBy` | query | TIMESTAMP | Sort field: `REALIZEDPNL`, `AVGPRICE`, `PRICE`, `TITLE`, `TIMESTAMP` |
+| `sortDirection` | query | DESC | `ASC` or `DESC` |
+| `market` | query | | Filter by market slug |
+| `title` | query | | Filter by title substring |
+
+## Response
+
+```json
+{
+  "wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+  "count": 3,
+  "offset": 0,
+  "limit": 3,
+  "positions": [
+    {
+      "asset": "34158857981196154020624191931838064546543114916900689904269497497174344049047",
+      "title": "Nuggets vs. Warriors",
+      "slug": "nuggets-vs-warriors-2026-03-15",
+      "outcome": "Nuggets",
+      "realizedPnl": 447182.95,
+      "avgPrice": 0.316481,
+      "totalBought": 654236.31,
+      "size": 0,
+      "curPrice": 1.0
+    }
+  ]
+}
+```
+
+## Example
+
+```bash
+# Top 5 closed positions by realized P&L
+curl "https://api.polynode.dev/v2/wallets/0xbddf.../closed-positions?limit=5&sortBy=REALIZEDPNL&sortDirection=DESC" \
+  -H "x-api-key: YOUR_KEY"
+```

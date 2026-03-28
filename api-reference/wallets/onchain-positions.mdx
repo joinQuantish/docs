@@ -1,0 +1,87 @@
+---
+title: "Onchain Positions & P&L"
+description: "All positions (open and closed) with accurate realized P&L from onchain settlement data."
+---
+
+Returns every position a wallet has ever held, including closed positions that no longer appear in the standard positions endpoint. Each position includes precomputed `realized_pnl`, `avg_price`, and `total_bought` from onchain data.
+
+The standard `/v1/wallets/{addr}/positions` endpoint only returns open positions. Once a position is fully exited or a market resolves, it disappears. This endpoint fills that gap.
+
+## Request
+
+```
+GET /v2/wallets/{address}/positions/onchain
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `address` | path | Wallet address (0x-prefixed, 40 hex chars) |
+
+## Response
+
+```json
+{
+  "wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+  "source": "onchain",
+  "count": 873,
+  "open_count": 334,
+  "closed_count": 288,
+  "total_realized_pnl": 17183579.48,
+  "positions_with_pnl": 309,
+  "positions": [
+    {
+      "token_id": "34158857981196154020624191931838064546543114916900689904269497497174344049047",
+      "size": 0,
+      "avg_price": 0.316481,
+      "realized_pnl": 447182.95,
+      "total_bought": 654236.31
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallet` | string | Queried wallet address (lowercased) |
+| `source` | string | Always `"onchain"` |
+| `count` | number | Total positions returned |
+| `open_count` | number | Positions with `size > 0` |
+| `closed_count` | number | Positions with `size = 0` and nonzero `realized_pnl` |
+| `total_realized_pnl` | number | Sum of `realized_pnl` across all positions |
+| `positions_with_pnl` | number | Positions where `realized_pnl != 0` |
+| `positions[].token_id` | string | CTF token ID |
+| `positions[].size` | number | Current token balance (0 = fully exited) |
+| `positions[].avg_price` | number | Volume-weighted average entry price |
+| `positions[].realized_pnl` | number | Realized profit/loss in USDC |
+| `positions[].total_bought` | number | Total USDC spent buying this token |
+
+## How `realized_pnl` Works
+
+Each position's `realized_pnl` reflects the profit or loss after the position is closed (sold or redeemed). For a winning binary position bought at $0.40 that resolves at $1.00:
+
+- `avg_price` = 0.40
+- `total_bought` = $10,000 (cost basis)
+- `realized_pnl` = $10,000 × (1.0 - 0.40) / 0.40 = $15,000
+
+These numbers match the values shown on the Polymarket portfolio page to the penny.
+
+<Note>
+`total_realized_pnl` is the sum of all individual position P&L values. This represents total realized gains and losses. It does not include unrealized P&L on open positions. For a combined realized + unrealized total, use the [trader profile](/api-reference/enriched/trader-profile) endpoint's `totalPnl` field.
+</Note>
+
+## Performance
+
+Responses are cached for 5 minutes per wallet. First request for a new wallet takes 200ms-3s depending on position count (up to 20,000 positions supported). Cached responses return in under 50ms.
+
+| Positions | First request | Cached |
+|-----------|--------------|--------|
+| < 500 | ~1s | < 50ms |
+| 500-1,000 | ~1.5s | < 50ms |
+| 1,000-5,000 | ~3s | < 50ms |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v2/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/positions/onchain" \
+  -H "x-api-key: YOUR_KEY"
+```

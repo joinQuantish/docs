@@ -12,9 +12,9 @@ Track wallets, markets, and tokens locally. The SDK streams live events into a S
 Without the cache, every page view that shows trader positions requires upstream API calls. For apps tracking dozens or hundreds of wallets, this hits rate limits fast.
 
 With the cache:
-- **One API call per wallet** to backfill recent history (500 trades)
+- **Three API calls per wallet** to backfill: open positions (metadata), onchain positions (complete P&L), and recent trades
 - **Live WebSocket stream** keeps everything up to date after that
-- **All queries are local** — positions, trades, stats are instant
+- **All queries are local** — positions, trades, P&L, stats are instant
 - **Persists across restarts** — SQLite file stays on disk
 
 ## Quick Start
@@ -106,25 +106,31 @@ With the cache:
 
 ## Backfill Timing
 
-Backfill fetches positions and recent trades for each wallet. Two requests per wallet (positions + trades).
+Backfill makes three requests per wallet, each spaced by `1 / backfillRatePerSecond` seconds:
 
-| Wallets | Requests | Time at 1 req/s |
-|---------|----------|-----------------|
-| 1 | 2 | ~2 seconds |
-| 10 | 20 | ~20 seconds |
-| 50 | 100 | ~2 minutes |
-| 100 | 200 | ~3.5 minutes |
+1. **Open positions** — metadata (title, slug, outcome) from the standard positions API
+2. **Onchain positions** — complete position history with accurate realized P&L (single call, no client-side pagination)
+3. **Recent trades** — trade history for cost basis and trade analytics
 
-For deeper history, set `backfillPages` higher. Each additional page adds one request per wallet:
+| Wallets | Requests | Time at 1 req/s | Time at 2 req/s |
+|---------|----------|-----------------|-----------------|
+| 1 | 3 | ~3 seconds | ~1.5 seconds |
+| 10 | 30 | ~30 seconds | ~15 seconds |
+| 50 | 150 | ~2.5 minutes | ~1.3 minutes |
+| 100 | 300 | ~5 minutes | ~2.5 minutes |
 
-| Pages | Trades per wallet | Time for 10 wallets |
-|-------|------------------|---------------------|
-| 1 (default) | up to 500 | ~10 seconds |
-| 2 | up to 1,000 | ~20 seconds |
-| 6 | up to 3,000 (max) | ~60 seconds |
+P&L data comes from the onchain positions call (step 2). This returns every position the wallet has ever held in a single request, no client-side pagination needed. P&L is accurate and complete regardless of how many trade pages you fetch.
+
+Trade history (step 3) is separate. It's useful if you want individual buy/sell records with prices, timestamps, and maker/taker details. Set `backfillPages` higher for more trade history:
+
+| Pages | Trades per wallet | Extra time per wallet |
+|-------|------------------|-----------------------|
+| 1 (default) | up to 500 | +1 second |
+| 2 | up to 1,000 | +2 seconds |
+| 6 | up to 3,000 | +6 seconds |
 
 <Note>
-  Upstream data caps at 3,000 historical trades per wallet. The live stream captures everything going forward with no limit.
+  Trade history has a 3,000 trade cap from the upstream data source. This does NOT affect P&L accuracy. P&L comes from onchain position data, which is complete and has no cap. The live WebSocket stream captures all new trades going forward with no limit.
 </Note>
 
 ## Configuration
@@ -207,7 +213,7 @@ const oldest = cache.walletTrades('0xad53...', { orderBy: 'timestamp_asc', limit
 
 ### Wallet Positions
 
-Positions are backfilled directly from the API with full P&L, current price, and value data. Trade timestamps are enriched from the local trades table.
+Positions are backfilled from two sources: the standard positions API (metadata like title, outcome, current price) and the onchain positions endpoint (accurate realized P&L, average entry price, total bought). Trade timestamps are enriched from the local trades table.
 
 ```typescript
 const positions = cache.walletPositions('0xad53...');
@@ -422,8 +428,75 @@ Single wallet view with positions grouped, P&L totals, win/loss counts, and rece
 
 ```typescript
 const dash = cache.walletDashboard('0xad53...');
-// dash.total_pnl, dash.win_count, dash.loss_count, dash.positions, dash.recent_trades
 ```
+
+The dashboard includes realized P&L computed from onchain position data:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_positions` | number | All positions in cache |
+| `total_pnl` | number | Sum of unrealized P&L on open positions |
+| `realized_pnl` | number | Total realized P&L from onchain data |
+| `pnl_confidence` | string | `"full"` when onchain data is present, `"partial"` otherwise |
+| `win_count` | number | Positions with positive P&L |
+| `loss_count` | number | Positions with negative P&L |
+| `recent_trades` | array | Last 20 trades |
+| `token_pnl` | array | Per-token P&L breakdown |
+
+### Realized P&L
+
+Compute accurate realized P&L for any wallet in the cache. During backfill, the SDK automatically fetches onchain position data from the [onchain positions endpoint](/api-reference/wallets/onchain-positions), which provides precomputed `realized_pnl` per token that matches Polymarket's numbers exactly.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const pnl = cache.computeRealizedPnl('0xbddf61af533ff524d27154e589d2d7a81510c684');
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    let pnl = cache.compute_realized_pnl("0xbddf61af533ff524d27154e589d2d7a81510c684")?;
+    ```
+  </Tab>
+</Tabs>
+
+```json Example output
+{
+  "wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+  "total_realized_pnl": 17183579.48,
+  "total_unrealized_pnl": 3086.69,
+  "total_pnl": 17186666.17,
+  "confidence": "full",
+  "trades_analyzed": 403,
+  "tokens": [
+    {
+      "token_id": "34158857...",
+      "condition_id": "0x5346...",
+      "market_title": "Nuggets vs. Warriors",
+      "outcome": "Nuggets",
+      "realized_pnl": 447182.95,
+      "unrealized_pnl": 0,
+      "remaining_size": 0,
+      "avg_cost": 0.3165,
+      "cur_price": null,
+      "trades_analyzed": 0,
+      "buys": 0,
+      "sells": 0
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_realized_pnl` | number | Sum of realized P&L across all positions |
+| `total_unrealized_pnl` | number | Unrealized P&L on open positions |
+| `confidence` | string | `"full"` when onchain data is available. `"partial"` when only trade-based computation was possible. |
+| `tokens` | array | Per-token breakdown with individual P&L |
+
+<Note>
+The onchain `realized_pnl` is the source of truth. When available, it takes priority over any trade-based P&L computation. This ensures accuracy even when the trade history is incomplete (Polymarket's trades API silently drops trades for high-volume wallets).
+</Note>
 
 ### Leaderboard
 
@@ -770,14 +843,15 @@ Available filters: `.wallet()`, `.market()`, `.token()`, `.side()`, `.since()`, 
       ▼              │  file watcher    │
 ┌───────────┐        └────────┬─────────┘
 │  REST API │ (backfill)      │ (live events)
-│  1 req/s  │        ┌───────▼──────────┐
-└───────────┘        │ WebSocket stream │
-      │              │ trades + settle. │
+│  3 calls  │        ┌───────▼──────────┐
+│ per wallet│        │ WebSocket stream │
+└───────────┘        │ trades + settle. │
       │              └───────┬──────────┘
       │                      │
       ▼                      ▼
 ┌──────────────────────────────────────┐
 │  SQLite (WAL mode)                   │
+│  positions — open + closed with P&L  │
 │  trades — full inverted index        │
 │  settlements — pending + confirmed   │
 │  backfill_state — crash recovery     │
@@ -785,7 +859,10 @@ Available filters: `.wallet()`, `.market()`, `.token()`, `.side()`, `.since()`, 
 ```
 
 1. **On start**: opens SQLite, loads watchlist, connects WebSocket, begins backfill
-2. **Backfill**: fetches recent trades via REST (1 request per wallet), stores in SQLite
+2. **Backfill** (per wallet, 3 requests):
+   - Fetches open positions from the standard API (metadata: title, outcome, slug)
+   - Fetches onchain positions (complete P&L for all positions including closed, single call, no pagination needed)
+   - Fetches recent trades (individual buy/sell records)
 3. **Live stream**: WebSocket delivers new trades and settlements in real-time
 4. **Dedup**: `INSERT OR IGNORE` with unique constraint prevents duplicates between backfill and live data
 5. **Prune**: hourly timer removes data older than the configured TTL
