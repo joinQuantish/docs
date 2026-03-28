@@ -33,24 +33,52 @@ GET /v2/wallets/{address}/closed-positions
   "limit": 3,
   "positions": [
     {
+      "proxy_wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
       "asset": "34158857981196154020624191931838064546543114916900689904269497497174344049047",
+      "condition_id": "0x5346538cbfc880da50fe6b269a47e4f7cd8a38b2b120d85b1bc392d8cde6ced4",
+      "avg_price": 0.316481,
+      "total_bought": 654236.312162,
+      "realized_pnl": 447182.949852,
+      "cur_price": 1,
       "title": "Nuggets vs. Warriors",
-      "slug": "nuggets-vs-warriors-2026-03-15",
-      "outcome": "Nuggets",
-      "realizedPnl": 447182.95,
-      "avgPrice": 0.316481,
-      "totalBought": 654236.31,
-      "size": 0,
-      "curPrice": 1.0
+      "slug": "nba-den-gsw-2026-02-22",
+      "icon": "https://polymarket-upload.s3.us-east-2.amazonaws.com/super+cool+basketball+in+red+and+blue+wow.png",
+      "event_slug": "nba-den-gsw-2026-02-22",
+      "outcome": "Warriors",
+      "outcome_index": 1,
+      "opposite_outcome": "Nuggets",
+      "opposite_asset": "107945275283604973510604597780969572155224468096168425689613528391046536169017",
+      "end_date": "2026-02-22T00:00:00Z",
+      "timestamp": 1771817602
     }
   ]
 }
 ```
 
+| Field | Description |
+|-------|-------------|
+| `proxy_wallet` | Polymarket proxy wallet address |
+| `asset` | Token ID for this position |
+| `condition_id` | CTF condition ID |
+| `avg_price` | Volume-weighted average entry price |
+| `total_bought` | Total tokens acquired |
+| `realized_pnl` | Profit or loss for this position in USDC |
+| `cur_price` | Current token price (1.0 for resolved winners, 0.0 for losers) |
+| `title` | Market title |
+| `slug` | Market slug |
+| `icon` | Market icon URL |
+| `event_slug` | Parent event slug |
+| `outcome` | Outcome name for this position |
+| `outcome_index` | Index of this outcome (0 or 1 for binary markets) |
+| `opposite_outcome` | Name of the other outcome |
+| `opposite_asset` | Token ID of the other outcome |
+| `end_date` | Market end date (ISO 8601) |
+| `timestamp` | Position timestamp (UNIX seconds) |
+
 ## Example
 
 ```bash
 # Top 5 closed positions by realized P&L
-curl "https://api.polynode.dev/v2/wallets/0xbddf.../closed-positions?limit=5&sortBy=REALIZEDPNL&sortDirection=DESC" \
+curl "https://api.polynode.dev/v2/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/closed-positions?limit=5&sortBy=REALIZEDPNL&sortDirection=DESC" \
   -H "x-api-key: YOUR_KEY"
 ```
