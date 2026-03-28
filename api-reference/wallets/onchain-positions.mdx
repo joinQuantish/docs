@@ -53,20 +53,24 @@ GET /v2/wallets/{address}/positions/onchain
 | `positions[].size` | number | Current token balance (0 = fully exited) |
 | `positions[].avg_price` | number | Volume-weighted average entry price |
 | `positions[].realized_pnl` | number | Realized profit/loss in USDC |
-| `positions[].total_bought` | number | Total USDC spent buying this token |
+| `positions[].total_bought` | number | Total tokens acquired for this position |
 
 ## How `realized_pnl` Works
 
 Each position's `realized_pnl` reflects the profit or loss after the position is closed (sold or redeemed). For a winning binary position bought at $0.40 that resolves at $1.00:
 
 - `avg_price` = 0.40
-- `total_bought` = $10,000 (cost basis)
-- `realized_pnl` = $10,000 × (1.0 - 0.40) / 0.40 = $15,000
+- `total_bought` = 10,000 (tokens acquired)
+- Cost basis = 10,000 × $0.40 = $4,000 USDC
+- Payout at $1.00 = 10,000 × $1.00 = $10,000 USDC
+- `realized_pnl` = $10,000 - $4,000 = **$6,000**
 
-These numbers match the values shown on the Polymarket portfolio page to the penny.
+The formula: `realized_pnl = total_bought × (1 - avg_price)` for positions that resolve at $1.
+
+Per-position values (`realized_pnl`, `avg_price`, `total_bought`) come from the same onchain settlement data that Polymarket uses. Individual position P&L matches what Polymarket shows on its portfolio page.
 
 <Note>
-`total_realized_pnl` is the sum of all individual position P&L values. This represents total realized gains and losses. It does not include unrealized P&L on open positions. For a combined realized + unrealized total, use the [trader profile](/api-reference/enriched/trader-profile) endpoint's `totalPnl` field.
+`total_realized_pnl` is a raw sum of all individual position `realized_pnl` values. This number will differ from the aggregate PnL shown on a Polymarket profile page, which applies its own netting and aggregation logic. For Polymarket's own aggregate PnL, use the [trader profile](/api-reference/enriched/trader-profile) endpoint's `totalPnl` field.
 </Note>
 
 ## Performance
