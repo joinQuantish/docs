@@ -174,6 +174,20 @@ async for message in ws:
 
 Use the `type` field (`"price_feed"` vs `"settlement"`) to route events.
 
+## REST Endpoints
+
+In addition to the WebSocket stream, crypto data is available via REST. See the [REST API reference](/crypto/rest-api) for full details.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v1/crypto/markets` | All crypto prediction markets |
+| `GET /v1/crypto/candles?symbol=BTC` | 5-min OHLC candles from Chainlink oracle |
+| `GET /v1/crypto/price?symbol=BTC&window={epoch}` | Open/close price for a market window |
+| `GET /v1/crypto/active` | Currently active 5-minute markets for all 7 coins |
+| `GET /v1/crypto/series` | Recurring crypto market series |
+
+All endpoints require an API key via `?key=` or `x-api-key` header.
+
 ## Use cases
 
 - **Short-form market trading** -- track the underlying asset price alongside 5m/15m/1h crypto markets

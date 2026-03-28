@@ -1,0 +1,203 @@
+---
+title: "REST API"
+sidebarTitle: "REST API"
+description: "REST endpoints for crypto market discovery, oracle candles, price-to-beat, and active short-form markets."
+icon: "server"
+---
+
+REST endpoints for crypto prediction market data. All endpoints require an API key.
+
+## Authentication
+
+Pass your API key via query parameter or header:
+
+```bash
+# Query parameter
+curl "https://api.polynode.dev/v1/crypto/markets?key=YOUR_API_KEY"
+
+# Header
+curl -H "x-api-key: YOUR_API_KEY" "https://api.polynode.dev/v1/crypto/markets"
+```
+
+---
+
+## GET /v1/crypto/markets
+
+All crypto prediction markets with liquidity, volume, and open interest.
+
+**Cache:** 3 minutes
+
+```bash
+curl "https://api.polynode.dev/v1/crypto/markets?key=YOUR_API_KEY"
+```
+
+<Expandable title="Response">
+```json
+{
+  "events": [
+    {
+      "id": "238474",
+      "slug": "what-price-will-bitcoin-hit-in-march-2026",
+      "title": "What price will Bitcoin hit in March?",
+      "startDate": "2026-03-01T05:20:27.791222Z",
+      "endDate": "2026-04-01T04:00:00Z",
+      "active": true,
+      "volume": 88886711.74,
+      "volume24hr": 5733750.73,
+      "liquidity": 6074250.39,
+      "openInterest": 12827944.10,
+      "seriesSlug": "bitcoin-hit-price-monthly",
+      "markets": [
+        {
+          "id": "1629442",
+          "question": "$100,000?",
+          "conditionId": "0x...",
+          "outcomePrices": "[\"0.045\", \"0.955\"]",
+          "active": true
+        }
+      ]
+    }
+  ]
+}
+```
+</Expandable>
+
+---
+
+## GET /v1/crypto/candles
+
+5-minute OHLC candles from Chainlink oracle. Returns ~2.5 hours of history (30 candles).
+
+**Cache:** 30 seconds
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `symbol` | Yes | Asset symbol: `BTC`, `ETH`, `SOL`, `BNB`, `XRP`, `DOGE`, `HYPE` |
+
+```bash
+curl "https://api.polynode.dev/v1/crypto/candles?symbol=BTC&key=YOUR_API_KEY"
+```
+
+<Expandable title="Response">
+```json
+{
+  "candles": [
+    {
+      "time": 1774665300,
+      "open": 65954.03,
+      "high": 65992.01,
+      "low": 65947.14,
+      "close": 65949.69
+    }
+  ]
+}
+```
+</Expandable>
+
+---
+
+## GET /v1/crypto/price
+
+Open and close price for a specific crypto market window. Use this to get the "price to beat" for a short-form market.
+
+**Cache:** 10 seconds
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `symbol` | Yes | Asset symbol: `BTC`, `ETH`, `SOL`, `BNB`, `XRP`, `DOGE`, `HYPE` |
+| `window` | Yes | Unix epoch timestamp of the market window start |
+| `interval` | No | Market interval variant (e.g. `5m`, `15m`, `1h`, `4h`) |
+
+```bash
+curl "https://api.polynode.dev/v1/crypto/price?symbol=BTC&window=1774674000&key=YOUR_API_KEY"
+```
+
+<Expandable title="Response">
+```json
+{
+  "openPrice": 66285.01,
+  "closePrice": 66238.61,
+  "timestamp": 1774674466843,
+  "completed": false,
+  "incomplete": true,
+  "cached": false
+}
+```
+</Expandable>
+
+The `openPrice` is the oracle price at market open. `closePrice` updates in real time until the window completes. `completed: true` means the market has resolved.
+
+---
+
+## GET /v1/crypto/active
+
+Currently active 5-minute up-or-down markets for all 7 coins. Returns live market data with token IDs, outcomes, and current odds.
+
+**Cache:** 30 seconds
+
+```bash
+curl "https://api.polynode.dev/v1/crypto/active?key=YOUR_API_KEY"
+```
+
+<Expandable title="Response">
+```json
+{
+  "markets": [
+    {
+      "id": "312746",
+      "slug": "btc-updown-5m-1774674300",
+      "title": "Bitcoin Up or Down - March 28, 1:05AM-1:10AM ET",
+      "active": true,
+      "closed": false,
+      "startDate": "2026-03-27T05:16:04.211285Z",
+      "endDate": "2026-03-28T05:10:00Z",
+      "markets": [
+        {
+          "question": "Bitcoin Up or Down - March 28, 1:05AM-1:10AM ET",
+          "conditionId": "0x...",
+          "outcomes": "[\"Up\", \"Down\"]",
+          "outcomePrices": [0.465, 0.535],
+          "tokenId": "12345...",
+          "active": true,
+          "closed": false
+        }
+      ]
+    }
+  ],
+  "count": 7,
+  "windowStart": 1774674300
+}
+```
+</Expandable>
+
+The `windowStart` field is the epoch timestamp of the current 5-minute window. New markets rotate every 5 minutes.
+
+---
+
+## GET /v1/crypto/series
+
+Recurring crypto market series (5m, 15m, 1h, 4h, daily, weekly, monthly patterns).
+
+**Cache:** 5 minutes
+
+```bash
+curl "https://api.polynode.dev/v1/crypto/series?key=YOUR_API_KEY"
+```
+
+<Expandable title="Response">
+```json
+{
+  "series": [
+    {
+      "id": "10684",
+      "slug": "btc-up-or-down-5m",
+      "title": "BTC Up or Down 5m",
+      "recurrence": "5m",
+      "active": true,
+      "eventCount": null
+    }
+  ],
+  "count": 7
+}
+```
+</Expandable>
