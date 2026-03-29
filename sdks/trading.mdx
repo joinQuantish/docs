@@ -7,216 +7,157 @@ icon: "arrow-right-arrow-left"
 
 ## Overview
 
-The trading module lets you place and manage orders on Polymarket. One function call handles everything: wallet setup, credential creation, approvals, and order placement. Credentials stay on your machine. You don't need to know anything about Polymarket's wallet types, contract addresses, or signing protocols.
-
-**What you get:**
-
-- **One call to start trading.** `ensureReady()` detects your wallet type, deploys contracts if needed, sets approvals, creates credentials. All gasless.
-- **Auto-detection.** Don't know if you're EOA, Proxy, or Safe? Don't care. Pass your private key, we figure it out.
-- **Local credential custody.** Your CLOB credentials and order history live in a local SQLite database. Not on our server, not on anyone's server. You control your keys.
-- **Fallback resilience.** If polynode's relay is unreachable, orders go directly to Polymarket. Your trading never stops.
-- **Wallet generation.** Starting from absolute scratch? Generate a fresh wallet with one static method.
-
-## Install
+The trading module lets you place and manage orders on Polymarket. One function call handles wallet setup, credential creation, approvals, and order placement. You don't need to understand Polymarket's wallet types, contract addresses, or signing protocols.
 
 ```bash
-npm install polynode-sdk@0.5.3 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
+npm install polynode-sdk@0.5.4 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
 ```
 
-`viem`, `better-sqlite3`, and the `@polymarket/*` packages are optional peer dependencies. You only need them if you use the trading module.
+<Note>
+Your project must use ESM imports (`import` syntax). Add `"type": "module"` to your `package.json`, or use `.mjs` file extensions.
+</Note>
 
-## Three Scenarios
+## Quick Start
 
-### Scenario 1: Brand new, no wallet
+Pick the path that matches your situation.
+
+### I'm building a backend service (private keys on your server)
+
+Generate wallets, manage them yourself. This is the simplest path.
 
 ```typescript
 import { PolyNodeTrader } from 'polynode-sdk';
 
 const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
 
-// Generate a fresh wallet
+// 1. Generate a wallet (or use an existing private key)
 const { privateKey, address } = await PolyNodeTrader.generateWallet();
-console.log('BACK THIS UP:', privateKey);
+// SAVE THIS KEY. It is not stored anywhere. If you lose it, you lose access.
 
-// One call: deploys a Safe, sets 6 approvals, creates CLOB credentials. All gasless.
+// 2. One call sets up everything: deploys a Safe, sets approvals, creates credentials.
+//    Completely gasless. No MATIC needed. Takes ~10 seconds for a new wallet.
 const status = await trader.ensureReady(privateKey);
-console.log(status.funderAddress); // Your Safe address (where USDC goes)
-console.log(status.credentials);  // Your CLOB API credentials
 
-// Fund your Safe with USDC.e on Polygon, then trade
+// 3. Send USDC.e (Polygon) to the funder address. This is your trading wallet.
+console.log('Send USDC here:', status.funderAddress);
+
+// 4. Place an order
 const result = await trader.order({
-  tokenId: '...',
+  tokenId: '...',  // Get token IDs from /v1/events/search or /v1/crypto/active
   side: 'BUY',
   price: 0.55,
   size: 100,
 });
+
+// 5. Cancel it
+if (result.orderId) {
+  await trader.cancelOrder(result.orderId);
+}
 ```
 
-### Scenario 2: Existing Polymarket user (exported private key)
+`ensureReady()` is idempotent. Call it every time your service starts. If the wallet is already set up, it returns instantly from the local database.
 
-If you already trade on Polymarket and export your private key, you don't need to know which wallet type you have. The SDK auto-detects it.
+### I'm building a platform with Privy (server wallets for each user)
 
-```typescript
-const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
-
-// Just pass your key. ensureReady() checks if you have a Safe or Proxy
-// deployed on-chain and uses the right one automatically.
-const status = await trader.ensureReady('0xYOUR_EXPORTED_KEY');
-
-// status.signatureType tells you what was detected:
-//   2 = Safe (browser wallet / MetaMask / Privy)
-//   1 = Proxy (legacy Magic Link / email signup)
-//   0 = EOA (no contract wallet deployed)
-
-console.log(`Detected: type ${status.signatureType}`);
-console.log(`Trading address: ${status.funderAddress}`);
-
-// Your existing USDC balance is already there. Start trading.
-const balance = await trader.checkBalance();
-console.log(`USDC: $${balance.usdc}`);
-```
-
-### Scenario 3: Already have CLOB credentials
-
-If you have existing API credentials from Polymarket (or from another SDK like Dome), import them directly.
-
-```typescript
-const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
-
-trader.linkCredentials({
-  wallet: '0xYOUR_EOA_ADDRESS',
-  apiKey: 'your-clob-api-key',
-  apiSecret: 'your-clob-api-secret',
-  apiPassphrase: 'your-clob-passphrase',
-  signatureType: 2,                    // 0=EOA, 1=Proxy, 2=Safe
-  funderAddress: '0xYOUR_SAFE_ADDRESS', // where your USDC lives
-});
-
-// Link a signer for order signing
-await trader.linkWallet('0xYOUR_PRIVATE_KEY');
-
-// Ready to trade
-const result = await trader.order({ tokenId: '...', side: 'BUY', price: 0.5, size: 50 });
-```
-
-## How Auto-Detection Works
-
-When you call `ensureReady(privateKey)` without specifying a wallet type, the SDK:
-
-1. Derives your EOA address from the private key
-2. Computes the deterministic Safe address and Proxy address for that EOA (local math, no network call)
-3. Checks both addresses on-chain in parallel to see which is deployed
-4. Uses the detected type for all subsequent operations
-
-| What's deployed | Detected type | Who this is |
-|-----------------|---------------|-------------|
-| Safe contract | POLY_GNOSIS_SAFE (2) | Browser wallet users (MetaMask, Privy, WalletConnect) |
-| Proxy contract | POLY_PROXY (1) | Legacy email / Magic Link users |
-| Neither | POLY_GNOSIS_SAFE (2) | New user. A Safe will be deployed gaslessly. |
-
-You can still force a specific type if you want:
-
-```typescript
-await trader.ensureReady(privateKey, { type: 0 }); // Force EOA
-await trader.ensureReady(privateKey, { type: 2 }); // Force Safe
-```
-
-## Choosing a Wallet Type
-
-This is the most important decision when building on the trading module. Your choice affects cost, complexity, and how your users onboard.
-
-### Safe (type 2) — gasless, no gas needed
-
-| | |
-|---|---|
-| **Deploy** | Safe contract deployed on-chain. Gasless via Polymarket relayer. |
-| **Approvals** | 6 token approvals batched into one gasless transaction through the Safe. |
-| **USDC** | Lives in the Safe contract, not the EOA. |
-| **Gas cost to user** | $0. Zero MATIC needed. |
-| **Gasless operations** | Unlimited gasless on-chain operations (paid tiers). Free tier gets basic gasless onboarding. |
-| **Best for** | Individual traders, small teams, anyone who wants zero-friction onboarding. |
-
-```typescript
-// Safe is the default — just call ensureReady
-await trader.ensureReady(signer); // deploys Safe, sets approvals, creates credentials. All free.
-```
-
-### EOA (type 0) — no builder key, user pays gas
-
-| | |
-|---|---|
-| **Deploy** | Nothing. No contract. The wallet IS the trading account. |
-| **Approvals** | 6 token approval transactions sent directly from the wallet. User pays gas. |
-| **USDC** | Lives in the wallet directly. |
-| **Gas cost to user** | ~0.01 MATIC one-time for approvals (~$0.01). |
-| **Builder key** | NO. Zero builder key quota consumed. |
-| **Best for** | Platforms with many users (avoids burning builder quota), bots, API traders. |
-
-```typescript
-// Force EOA with type: 0
-await trader.ensureReady(signer, { type: 0 }); // no deploy, checks approvals, creates credentials
-```
-
-### Which should I use?
-
-**Building a platform with Privy (hundreds/thousands of users)?** Use **EOA (type 0)**. Each user needs ~$0.01 of MATIC for one-time approvals. If you enable Privy gas sponsorship, even that is free. No builder key quota consumed at any scale.
-
-**Single trader or small team?** Use **Safe (type 2)**. Everything is gasless. No MATIC needed. Builder key quota is not a concern at low volume.
-
-**Migrating from Polymarket or Dome?** Use auto-detection (no type parameter). The SDK checks what's deployed and uses it.
-
-### Proxy (type 1) — legacy
-
-Legacy format from Polymarket's Magic Link / email signup. If you signed up via email on Polymarket, this is what you have. The SDK supports it for order placement, but can't deploy new proxies (deprecated by Polymarket).
-
-## Privy Integration
-
-For server-side trading with Privy-managed wallets, use `createPrivySigner`:
+Use `createPrivySigner` to trade with Privy-managed wallets. Each user gets their own wallet without touching private keys.
 
 ```typescript
 import { PolyNodeTrader, createPrivySigner } from 'polynode-sdk';
 import { PrivyClient } from '@privy-io/server-auth';
 
+// Set up Privy (one client for your whole app)
 const privy = new PrivyClient(
-  process.env.PRIVY_APP_ID,
-  process.env.PRIVY_APP_SECRET,
-  { walletApi: { authorizationPrivateKey: process.env.PRIVY_AUTHORIZATION_KEY } },
+  process.env.PRIVY_APP_ID!,
+  process.env.PRIVY_APP_SECRET!,
+  { walletApi: { authorizationPrivateKey: process.env.PRIVY_AUTHORIZATION_KEY! } },
 );
 
+// Create a signer for a specific user's wallet
 const signer = createPrivySigner(privy, user.privyWalletId, user.walletAddress);
+
 const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
 
-// Option A: Safe (gasless, uses builder key quota)
-await trader.ensureReady(signer);
+// Set up the wallet — gasless, ~10 seconds for new users
+const status = await trader.ensureReady(signer);
 
-// Option B: EOA (no builder key, user/Privy pays ~$0.01 gas for approvals)
-await trader.ensureReady(signer, { type: 0 });
-
-// Either way, order placement works the same
+// Send USDC to status.funderAddress, then trade
 const result = await trader.order({ tokenId: '...', side: 'BUY', price: 0.55, size: 100 });
-await trader.cancelOrder(result.orderId);
 ```
 
-Requires `npm install @privy-io/server-auth` (v1.x+). The Privy authorization key is generated in your Privy dashboard under Wallet infrastructure → Authorization. If you enable Privy gas sponsorship (`sponsor: true` in your Privy dashboard), EOA approval transactions are also free for your users.
+**Privy setup requirements:**
+1. Create a Privy app at [dashboard.privy.io](https://dashboard.privy.io)
+2. Enable **Server wallets** under Wallet infrastructure
+3. Generate an **Authorization keypair** (same section) — this is `PRIVY_AUTHORIZATION_KEY`
+4. Install: `npm install @privy-io/server-auth`
+
+If you enable Privy gas sponsorship in your dashboard, all on-chain operations (approvals, deploys) are free for your users.
+
+### I already have a Polymarket account (exported key or existing credentials)
+
+If you export your private key from Polymarket, the SDK auto-detects your wallet type.
+
+```typescript
+const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
+const status = await trader.ensureReady('0xYOUR_EXPORTED_KEY');
+
+// Your USDC is already in the right place. Start trading.
+const balance = await trader.checkBalance();
+console.log(`USDC: $${balance.usdc}`);
+```
+
+If you already have CLOB credentials (from Polymarket or Dome), import them directly:
+
+```typescript
+trader.linkCredentials({
+  wallet: '0xYOUR_EOA',
+  apiKey: 'your-clob-api-key',
+  apiSecret: 'your-clob-api-secret',
+  apiPassphrase: 'your-clob-passphrase',
+  signatureType: 2,
+  funderAddress: '0xYOUR_SAFE',
+});
+await trader.linkWallet('0xYOUR_PRIVATE_KEY');
+```
+
+## Where to Send USDC
+
+After `ensureReady()`, always send USDC.e (Polygon) to `status.funderAddress`. This is the address that holds your trading balance.
+
+| Wallet type | `funderAddress` is... |
+|-------------|----------------------|
+| Safe (default) | The Safe contract address (different from your private key's address) |
+| EOA | The wallet address itself |
+
+Do not send USDC to the EOA address if you're using a Safe wallet. It will sit there unused.
+
+## Finding Markets
+
+You need a `tokenId` to place orders. Here's how to find one:
+
+```typescript
+import { PolyNode } from 'polynode-sdk';
+const pn = new PolyNode({ apiKey: 'pn_live_...' });
+
+// Search for markets
+const results = await pn.searchEvents('Bitcoin', { limit: 5 });
+for (const event of results.events) {
+  for (const market of event.markets) {
+    console.log(market.question, '→', market.tokenId);
+  }
+}
+```
+
+Or use the REST API directly: `GET /v1/events/search?q=bitcoin&limit=5` or `GET /v1/crypto/active` for live crypto markets.
 
 ## Configuration
 
 ```typescript
 const trader = new PolyNodeTrader({
-  // polynode API key (for builder attribution via relay)
-  polynodeKey: 'pn_live_...',
-
-  // Path to local SQLite database. Default: ./polynode-trading.db
-  dbPath: './my-trading.db',
-
-  // Relay URL. Default: https://trade.polynode.dev
-  cosignerUrl: 'https://trade.polynode.dev',
-
-  // If true, submit directly to CLOB when relay is unreachable. Default: true
-  fallbackDirect: true,
-
-  // RPC URL for on-chain reads. Default: publicnode
-  rpcUrl: 'https://polygon-bor-rpc.publicnode.com',
+  polynodeKey: 'pn_live_...',         // Your polynode API key
+  dbPath: './my-trading.db',          // Local SQLite path (default: ./polynode-trading.db)
+  cosignerUrl: 'https://trade.polynode.dev', // Relay URL (default)
+  fallbackDirect: true,               // Fall back to direct CLOB if relay is down (default: true)
+  rpcUrl: 'https://polygon-bor-rpc.publicnode.com', // RPC for on-chain reads (default)
 });
 ```
 
@@ -224,66 +165,26 @@ const trader = new PolyNodeTrader({
 
 ### `PolyNodeTrader.generateWallet()`
 
-Static method. Generate a fresh EOA wallet from scratch. Returns `{ privateKey, address }`.
+Static async method. Generates a fresh wallet. **You must `await` this call.**
 
 ```typescript
 const { privateKey, address } = await PolyNodeTrader.generateWallet();
-// IMPORTANT: Back up privateKey. It is not stored anywhere.
+// IMPORTANT: Save privateKey securely. It is not stored anywhere by the SDK.
 ```
 
 ### `ensureReady(signer, opts?)`
 
-One-call onboarding. Auto-detects wallet type, deploys Safe if needed, sets approvals if needed, creates CLOB credentials if needed.
-
-```typescript
-// Auto-detect (recommended)
-const status = await trader.ensureReady('0xprivatekey');
-
-// Force a specific type
-const status = await trader.ensureReady('0xprivatekey', { type: 0 });
-```
+One-call onboarding. Detects wallet type, deploys contracts if needed, sets all approvals, creates CLOB credentials.
 
 **Signer types accepted:**
 - `string` — hex private key (most common)
-- ethers v5/v6 Signer — detected by `_signTypedData` method
-- viem WalletClient — detected by `signTypedData` + `account`
-- `{ provider, address }` — EIP-1193 provider (Privy, browser wallets)
+- `createPrivySigner(...)` — Privy server wallet
+- ethers v5/v6 Signer
+- viem WalletClient
 
-**Returns:** `ReadyStatus` with `wallet`, `funderAddress`, `signatureType`, `safeDeployed`, `approvalsSet`, `credentialsStored`, `credentials`, and `actions`.
+**Returns:** `ReadyStatus` with `funderAddress` (where to send USDC), `signatureType`, `approvalsSet`, `credentials`, and `actions` (what it did).
 
-Re-running on an already-ready wallet is a no-op (~0ms, loads from DB).
-
-### `linkWallet(signer, opts?)`
-
-Link a wallet manually. Derives credentials and stores locally. Checks on-chain state but does NOT deploy or approve.
-
-### `linkCredentials(opts)`
-
-Import existing CLOB credentials directly. No signing needed.
-
-### `unlinkWallet(address?)`
-
-Remove a wallet's credentials from the local database.
-
-### `getLinkedWallets()`
-
-List all stored wallets with their credentials.
-
-### `exportWallet(wallet?)` / `exportAll()`
-
-Export wallet state for backup. Includes everything except the private key.
-
-### `importWallet(exported)`
-
-Restore a previously exported wallet.
-
-### `checkApprovals(wallet?)`
-
-Check on-chain token approvals for all 6 required spender contracts.
-
-### `checkBalance(wallet?)`
-
-Check USDC and MATIC balance for the wallet's funder address.
+Calling it again on a ready wallet is instant (loads from local DB).
 
 ### `order(params)`
 
@@ -291,81 +192,69 @@ Place an order on Polymarket.
 
 ```typescript
 const result = await trader.order({
-  tokenId: '...',  // The market token ID
+  tokenId: '...',  // Market token ID (from /v1/events/search)
   side: 'BUY',     // 'BUY' or 'SELL'
-  price: 0.55,     // Limit price (0-1)
+  price: 0.55,     // Limit price (0 to 1)
   size: 100,       // Number of shares
-  type: 'GTC',     // 'GTC' | 'GTD' | 'FOK' | 'FAK'. Default: GTC
-  expiration: ..., // Unix timestamp (GTD only)
-  postOnly: false, // If true, order only rests on the book
+  type: 'GTC',     // 'GTC' | 'GTD' | 'FOK' | 'FAK' (default: GTC)
 });
 
-console.log(result.success);  // boolean
-console.log(result.orderId);  // string (if placed)
-console.log(result.error);    // string (if failed)
+if (result.success) {
+  console.log('Order placed:', result.orderId);
+} else {
+  console.log('Failed:', result.error);
+}
 ```
 
-### `cancelOrder(orderId)`
+### `cancelOrder(orderId)` / `cancelAll(market?)`
 
-Cancel a specific order.
+Cancel a specific order or all orders.
 
-### `cancelAll(market?)`
+### `checkBalance(wallet?)`
 
-Cancel all orders, optionally scoped to a specific market.
+Returns USDC and MATIC balance for the funder address.
+
+### `checkApprovals(wallet?)`
+
+Check if all 6 required token approvals are set on-chain.
 
 ### `getOpenOrders(params?)`
 
-Fetch open orders from Polymarket CLOB. Filters: `market`, `assetId`.
+Fetch open orders from the CLOB. Filters: `market`, `assetId`.
 
 ### `getOrderHistory(params?)`
 
 Query local order history from SQLite. Filters: `limit`, `offset`, `tokenId`, `side`.
 
-### `prefetchMeta(tokenIds)`
+### `linkCredentials(opts)` / `linkWallet(signer)`
 
-Pre-fetch market metadata for faster order construction.
+Import existing credentials or link a wallet manually.
+
+### `exportWallet(wallet?)` / `exportAll()` / `importWallet(exported)`
+
+Export and import wallet state for backup. Private keys are never included.
+
+### `unlinkWallet(address?)` / `getLinkedWallets()`
+
+Remove or list stored wallets.
 
 ### `close()`
 
-Close the SQLite connection and clean up.
+Close the SQLite connection. Call this when shutting down.
 
-## Order Flow
+## How It Works
 
-1. SDK signs the order locally (EIP-712 via `@polymarket/clob-client`)
-2. SDK builds L2 HMAC authentication headers (your CLOB credentials)
-3. SDK sends to polynode's relay at `trade.polynode.dev`
-4. Relay adds builder attribution headers
-5. Relay forwards to `clob.polymarket.com`
-6. CLOB response returned to SDK, logged in local SQLite
+1. SDK signs the order locally (EIP-712)
+2. SDK sends to polynode's relay at `trade.polynode.dev`
+3. Relay adds builder attribution and forwards to Polymarket's CLOB
+4. Response returned to SDK, logged in local SQLite
 
-If the relay is down and `fallbackDirect` is true, steps 3-4 are skipped and the order goes directly to the CLOB. Your trade still executes, just without builder attribution.
-
-## Gasless Onboarding
-
-When `ensureReady()` runs on a new wallet:
-
-1. **Derive Safe address** — deterministic CREATE2, computed locally
-2. **Check deployment** — one GET to Polymarket's relayer
-3. **Deploy Safe** — gasless via the relayer
-4. **Set 6 approvals** — USDC + CTF for 3 exchange contracts, batched into one gasless transaction
-5. **Create CLOB credentials** — EIP-712 signature, registered with Polymarket
-6. **Store everything** — credentials, addresses, and state saved to local SQLite
-
-Total time for a fresh wallet: ~10 seconds. Re-running on an already-ready wallet: ~0ms.
-
-**Important:** After `ensureReady()`, send USDC.e to the `funderAddress` returned in the status object, not to your EOA address. For Safe wallets, `funderAddress` is the Safe contract. For EOA wallets, `funderAddress` is the EOA itself. You can find active market token IDs using the [`/v1/events/search`](/api-reference/events/search) or [`/v1/crypto/active`](/crypto/rest-api) endpoints.
+If the relay is down and `fallbackDirect` is true, orders go directly to Polymarket. Your trading never stops.
 
 ## Credential Custody
 
-Credentials are stored in a local SQLite database (default: `./polynode-trading.db`). The database contains:
-
-- CLOB API key, secret, and passphrase
-- Wallet addresses (EOA + funder/Safe)
-- Signature type and deployment status
-- Order history
-
-**Private keys are never stored.** You pass them at runtime. Back up your credentials using `exportWallet()` or `exportAll()`.
+Credentials are stored in a local SQLite database. The SDK never sends your private key or CLOB credentials to polynode's servers. Back up with `exportWallet()`.
 
 ## Migrating from Dome
 
-If you were using Dome's trading SDK, the polynode trading module is a drop-in replacement. See the [Dome Migration guide](/dome-migration#order-placement) for a line-by-line comparison.
+The polynode trading module is a drop-in replacement for Dome. See the [Dome Migration guide](/dome-migration#order-placement) for a line-by-line comparison.
