@@ -39,7 +39,7 @@ const { privateKey, address } = await PolyNodeTrader.generateWallet();
 const status = await trader.ensureReady(privateKey);
 
 // 3. Send USDC.e (Polygon) to the funder address. This is your trading wallet.
-console.log('Send USDC here:', status.funderAddress);
+console.log('Send USDC.e here:', status.funderAddress);
 
 // 4. Place an order
 const result = await trader.order({
@@ -80,7 +80,7 @@ const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
 // Set up the wallet — gasless, ~10 seconds for new users
 const status = await trader.ensureReady(signer);
 
-// Send USDC to status.funderAddress, then trade
+// Send USDC.e to status.funderAddress, then trade
 const result = await trader.order({ tokenId: '...', side: 'BUY', price: 0.55, size: 100 });
 ```
 
@@ -100,9 +100,9 @@ If you export your private key from Polymarket, the SDK auto-detects your wallet
 const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
 const status = await trader.ensureReady('0xYOUR_EXPORTED_KEY');
 
-// Your USDC is already in the right place. Start trading.
+// Your USDC.e is already in the right place. Start trading.
 const balance = await trader.checkBalance();
-console.log(`USDC: $${balance.usdc}`);
+console.log(`USDC.e: $${balance.usdc}`);
 ```
 
 If you already have CLOB credentials (from Polymarket or Dome), import them directly:
@@ -119,16 +119,20 @@ trader.linkCredentials({
 await trader.linkWallet('0xYOUR_PRIVATE_KEY');
 ```
 
-## Where to Send USDC
+## Where to Send USDC.e
 
-After `ensureReady()`, always send USDC.e (Polygon) to `status.funderAddress`. This is the address that holds your trading balance.
+<Warning>
+Polymarket uses **USDC.e** (bridged USDC) on Polygon, NOT native USDC. These are different tokens at different contract addresses. If you send native USDC, it will not show up as a trading balance. The correct token is USDC.e at `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` on Polygon.
+</Warning>
+
+After `ensureReady()`, send USDC.e to `status.funderAddress`. This is the address that holds your trading balance.
 
 | Wallet type | `funderAddress` is... |
 |-------------|----------------------|
 | Safe (default) | The Safe contract address (different from your private key's address) |
 | EOA | The wallet address itself |
 
-Do not send USDC to the EOA address if you're using a Safe wallet. It will sit there unused.
+Do not send USDC.e to the EOA address if you're using a Safe wallet. It will sit there unused.
 
 ## Finding Markets
 
@@ -182,7 +186,7 @@ One-call onboarding. Detects wallet type, deploys contracts if needed, sets all 
 - ethers v5/v6 Signer
 - viem WalletClient
 
-**Returns:** `ReadyStatus` with `funderAddress` (where to send USDC), `signatureType`, `approvalsSet`, `credentials`, and `actions` (what it did).
+**Returns:** `ReadyStatus` with `funderAddress` (where to send USDC.e), `signatureType`, `approvalsSet`, `credentials`, and `actions` (what it did).
 
 Calling it again on a ready wallet is instant (loads from local DB).
 
@@ -212,7 +216,7 @@ Cancel a specific order or all orders.
 
 ### `checkBalance(wallet?)`
 
-Returns USDC and MATIC balance for the funder address.
+Returns USDC.e and MATIC balance for the funder address.
 
 ### `checkApprovals(wallet?)`
 
