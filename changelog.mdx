@@ -7,6 +7,33 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-29 — Rust SDK v0.5.5 (Order Placement Fix)
+
+### Rust SDK v0.5.5
+
+Critical fixes for order placement. The trading module now passes full end-to-end testing: wallet onboarding, order placement, cancellation, and order history.
+
+**Order signing fixes:**
+- Fixed EIP-712 struct hashing (domain type filtering)
+- Fixed signature `v` normalization for CLOB compatibility
+- Fixed amount rounding to match tick-size-based precision rules
+- Fixed salt generation range for CLOB compatibility
+
+**Authentication fixes:**
+- Fixed HMAC base64 decoding for URL-safe encoded secrets
+- Fixed wallet address checksumming (EIP-55) in all auth headers and order payloads
+
+**Privy integration fixes:**
+- Fixed address formatting in Privy wallet API calls
+- Fixed signature normalization in Privy response extraction
+
+```toml
+[dependencies]
+polynode = { version = "0.5.5", features = ["trading"] }
+```
+
+---
+
 ## 2026-03-29 — Python SDK v0.6.0
 
 ### Python SDK v0.6.0
