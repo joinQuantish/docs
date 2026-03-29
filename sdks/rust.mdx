@@ -43,7 +43,7 @@ async fn main() -> polynode::Result<()> {
     // Search for a market
     let results = client.search("bitcoin", Some(3), None).await?;
     for r in &results.results {
-        println!("{}", r.question);
+        println!("{}", r.question.as_deref().unwrap_or("untitled"));
     }
 
     Ok(())
@@ -88,11 +88,11 @@ let ready = client.readyz().await?;
 
 // System status with metrics
 let status = client.status().await?;
-println!("uptime: {}s, events: {}", status.uptime_seconds, status.total_events);
+println!("uptime: {}s, ws_subscribers: {}", status.uptime_seconds, status.ws_subscribers);
 
 // Generate a new API key (no auth required)
 let key = client.create_key(Some("my-bot")).await?;
-println!("key: {}", key.key);
+println!("key: {}", key.api_key);
 # Ok(())
 # }
 ```
@@ -246,7 +246,7 @@ let movers = client.movers().await?;
 
 // Trader profile
 let profile = client.trader_profile("0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6").await?;
-println!("positions: {}, profit: {}", profile.positions_count, profile.profit);
+println!("trades: {}, pnl: {}", profile.trades, profile.total_pnl);
 
 // Trader P&L time series
 let pnl = client.trader_pnl("0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6", Some("30d")).await?;
@@ -259,6 +259,7 @@ let pnl = client.trader_pnl("0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6", Some("
 Send JSON-RPC requests through `rpc.polynode.dev`. Transaction submission is optimized for speed. Standard read methods are supported for `latest` state.
 
 ```rust,no_run
+# use polynode::serde_json;
 # async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
 // Get current block number
 let block = client.rpc_call("eth_blockNumber", serde_json::json!([])).await?;
@@ -326,6 +327,10 @@ async fn main() -> polynode::Result<()> {
             }
             Ok(WsMessage::Subscribed { subscription_id, .. }) => {
                 println!("subscribed: {}", subscription_id);
+            }
+            Ok(WsMessage::PriceFeed(feed)) => {
+                // Chainlink price feed update
+                println!("{:?}", feed);
             }
             Ok(WsMessage::Heartbeat { ts }) => {
                 // Connection alive
@@ -805,9 +810,7 @@ trader.import_wallet(data)?;
 Implement the `TradingSigner` trait for HSM, KMS, or other signing backends:
 
 ```rust,no_run
-use polynode::trading::TradingSigner;
-use alloy_primitives::Address;
-use async_trait::async_trait;
+use polynode::trading::{TradingSigner, Address, async_trait};
 
 struct MyHsmSigner { /* ... */ }
 
@@ -842,10 +845,10 @@ use polynode::trading::{TraderConfig, SignatureType};
 let config = TraderConfig {
     polynode_key: "pn_live_...".into(),
     db_path: "./my-trading.db".into(),          // local SQLite for credentials + history
-    cosigner_url: "https://cosigner.polynode.dev".into(), // default
+    cosigner_url: "https://trade.polynode.dev".into(), // default
     fallback_direct: true,                       // submit directly if cosigner is down
     default_signature_type: SignatureType::PolyGnosisSafe, // default
-    rpc_url: "https://rpc.polynode.dev".into(),  // for on-chain reads
+    rpc_url: "https://polygon-bor-rpc.publicnode.com".into(),  // default; for on-chain reads
 };
 # }
 ```
@@ -1109,6 +1112,7 @@ match client.market("invalid-token-id").await {
 | `Disconnected` | WebSocket connection lost |
 | `Decompression` | zlib decompression failure |
 | `ConnectionClosed` | Server closed the WebSocket |
+| `Url` | URL parse error |
 | `Trading` | Trading-specific error (feature: `trading`) |
 | `Signing` | EIP-712 signing failure (feature: `trading`) |
 | `Sqlite` | Local database error (feature: `cache` or `trading`) |
