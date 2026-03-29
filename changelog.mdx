@@ -7,7 +7,11 @@ icon: "clock-rotate-left"
 
 ---
 
-## 2026-03-28 — Onchain Data Endpoints
+## 2026-03-28 — Onchain Data Endpoints + Market Metadata Enrichment
+
+### Enrichment: All Onchain Endpoints Now Include Market Metadata
+
+Every onchain endpoint now returns enriched data with human-readable market context. Responses include `market` (question text), `slug`, `outcome` label, `image`, and `condition_id` alongside the raw onchain data. Powered by a full backfill of all 706K+ Polymarket markets into a local metadata store that refreshes every 5 minutes.
 
 ### New: Onchain Data Section
 

@@ -24,18 +24,23 @@ GET /v2/wallets/{address}/positions/onchain
 {
   "wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
   "source": "onchain",
-  "count": 873,
-  "open_count": 334,
+  "count": 879,
+  "open_count": 340,
   "closed_count": 288,
   "total_realized_pnl": 17183579.48,
   "positions_with_pnl": 309,
   "positions": [
     {
-      "token_id": "34158857981196154020624191931838064546543114916900689904269497497174344049047",
+      "token_id": "100424505911492726143069668369640898890012859227903329249368753635028896002613",
       "size": 0,
-      "avg_price": 0.316481,
-      "realized_pnl": 447182.949852,
-      "total_bought": 654236.312162
+      "avg_price": 0.63,
+      "realized_pnl": 147588.53019,
+      "total_bought": 398887.919433,
+      "market": "Will Fulham FC win on 2026-03-21?",
+      "slug": "epl-ful-bur-2026-03-21-ful",
+      "outcome": "Yes",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/Repetitive-markets/premier+league.jpg",
+      "condition_id": "0xae68634cb01137acbe26e65790f7268a523ee1519601f2576bd7b067c7c9f9da"
     }
   ]
 }
@@ -55,6 +60,11 @@ GET /v2/wallets/{address}/positions/onchain
 | `positions[].avg_price` | number | Volume-weighted average entry price |
 | `positions[].realized_pnl` | number | Realized profit/loss in USDC |
 | `positions[].total_bought` | number | Total tokens acquired for this position |
+| `positions[].market` | string | Market question |
+| `positions[].slug` | string | Market slug |
+| `positions[].outcome` | string | Outcome label (e.g. "Yes", "No", "Up") |
+| `positions[].image` | string | Market image URL |
+| `positions[].condition_id` | string | Market condition ID |
 
 ## How `realized_pnl` Works
 

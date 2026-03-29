@@ -4,7 +4,7 @@ description: "All onchain redemptions for a wallet. See who cashed out, when, an
 openapi: "GET /v2/onchain/wallets/{address}/redemptions"
 ---
 
-Returns every onchain redemption for a wallet. A redemption is when a user claims their payout after a market resolves. This data is not available through Polymarket's API.
+Returns every onchain redemption for a wallet. A redemption is when a user claims their payout after a market resolves. This data is not available through Polymarket's API. Each redemption is enriched with market metadata.
 
 ## Request
 
@@ -24,16 +24,19 @@ GET /v2/onchain/wallets/{address}/redemptions?limit=100&offset=0
 {
   "wallet": "0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa",
   "source": "onchain",
-  "count": 5,
+  "count": 1,
   "offset": 0,
-  "total_payout": 40.0,
+  "total_payout": 5,
   "redemptions": [
     {
-      "id": "0x75fa9f14a1430329034bad984ae4e84bebdc31608df6dc612214aeb49c1ab0df_0x787",
-      "timestamp": 1774710621,
-      "condition": "0x785ce9bd5529c5ea958729408ba366cd9ce0b327d32cda9a1789a0fac4cb6617",
+      "id": "0x655555bc5091e07a453667c20afe4af5df2e099311670abf86a718dc48998b53_0x678",
+      "timestamp": 1774749134,
+      "condition": "0xedb2d159f7917cedf2ca9fe5b2fe70ba5db7fee23eff951ce8d7f96983cf6a66",
       "index_sets": ["1", "2"],
-      "payout": 10.0
+      "payout": 5,
+      "market": "Bitcoin Up or Down - March 28, 9:45PM-9:50PM ET",
+      "slug": "btc-updown-5m-1774748700",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png"
     }
   ]
 }
@@ -46,6 +49,9 @@ GET /v2/onchain/wallets/{address}/redemptions?limit=100&offset=0
 | `redemptions[].condition` | string | Condition ID of the resolved market |
 | `redemptions[].index_sets` | array | Outcome index sets redeemed |
 | `redemptions[].payout` | number | USDC payout amount (0 = losing position redeemed) |
+| `redemptions[].market` | string | Market question |
+| `redemptions[].slug` | string | Market slug |
+| `redemptions[].image` | string | Market image URL |
 
 ## Example
 

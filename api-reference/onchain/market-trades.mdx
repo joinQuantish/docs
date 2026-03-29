@@ -4,7 +4,7 @@ description: "Complete onchain trade history for any market token."
 openapi: "GET /v2/onchain/markets/{token_id}/trades"
 ---
 
-Returns every onchain trade fill for a specific market token. This is the complete trade tape from the blockchain.
+Returns every onchain trade fill for a specific market token. This is the complete trade tape from the blockchain, enriched with market metadata.
 
 ## Request
 
@@ -22,27 +22,47 @@ GET /v2/onchain/markets/{token_id}/trades?limit=100&offset=0
 
 ```json
 {
-  "token_id": "67584929471303730974266696731552839504685833181501877275173258930851402007275",
+  "token_id": "21912724974096796009916816278814088615574660931588091764221331842149572809887",
   "source": "onchain",
-  "count": 10,
+  "count": 1,
   "offset": 0,
+  "market": "Bitcoin Up or Down - March 28, 9:55PM-10:00PM ET",
+  "slug": "btc-updown-5m-1774749300",
+  "outcome": "Up",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+  "condition_id": "0xb91dbc2ba7f0d33c71fca765909e98b2023af855f1d69b82d5fd59732085700d",
   "trades": [
     {
-      "tx_hash": "0xa78a9b3c4c7ea57fb1f4cda580e5592c2abf9fabd728a77cf286d8eca98efdf2",
-      "timestamp": 1774710145,
-      "maker": "0x13f0bcec1e2e60ec9acc3bee4d2da2fe9694a50f",
-      "taker": "0xe9c7a6d48a27fcbf77603193f17a0cbb8bb4caae",
-      "maker_amount": 47.2329,
-      "taker_amount": 47.71,
-      "fee": 0.048191
+      "tx_hash": "0xe21d6bb1388057e285cde7cc4032fc1819d5daa562844c6996cefd64ccd4d9d8",
+      "timestamp": 1774749406,
+      "maker": "0x37b3a418576757f4636680fcaf16d1f37a602623",
+      "taker": "0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e",
+      "maker_amount": 4.711,
+      "taker_amount": 6.73,
+      "fee": 0.288428
     }
   ]
 }
 ```
 
+| Field | Type | Description |
+|-------|------|-------------|
+| `market` | string | Market question |
+| `slug` | string | Market slug |
+| `outcome` | string | Outcome label for this token |
+| `image` | string | Market image URL |
+| `condition_id` | string | Market condition ID |
+| `trades[].tx_hash` | string | Transaction hash |
+| `trades[].timestamp` | number | Unix timestamp |
+| `trades[].maker` | string | Maker wallet |
+| `trades[].taker` | string | Taker wallet |
+| `trades[].maker_amount` | number | USDC amount |
+| `trades[].taker_amount` | number | Token amount |
+| `trades[].fee` | number | Fee (USDC) |
+
 ## Example
 
 ```bash
-curl "https://api.polynode.dev/v2/onchain/markets/67584929471303730974266696731552839504685833181501877275173258930851402007275/trades?limit=20" \
+curl "https://api.polynode.dev/v2/onchain/markets/21912724974096796009916816278814088615574660931588091764221331842149572809887/trades?limit=20" \
   -H "x-api-key: YOUR_KEY"
 ```

@@ -4,7 +4,7 @@ description: "Lifetime onchain volume statistics for any market token."
 openapi: "GET /v2/onchain/markets/{token_id}/volume"
 ---
 
-Returns lifetime trading volume statistics for a specific market token, sourced directly from onchain settlement data.
+Returns lifetime trading volume statistics for a specific market token, sourced directly from onchain settlement data. Enriched with market metadata.
 
 ## Request
 
@@ -20,21 +20,31 @@ GET /v2/onchain/markets/{token_id}/volume
 
 ```json
 {
-  "token_id": "67584929471303730974266696731552839504685833181501877275173258930851402007275",
+  "token_id": "21912724974096796009916816278814088615574660931588091764221331842149572809887",
   "source": "onchain",
   "found": true,
-  "total_trades": 7595,
-  "buys": 6395,
-  "sells": 1200,
-  "volume_usdc": 109077.98,
-  "buy_volume_usdc": 87263.47,
-  "sell_volume_usdc": 21814.50
+  "market": "Bitcoin Up or Down - March 28, 9:55PM-10:00PM ET",
+  "slug": "btc-updown-5m-1774749300",
+  "outcome": "Up",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+  "condition_id": "0xb91dbc2ba7f0d33c71fca765909e98b2023af855f1d69b82d5fd59732085700d",
+  "total_trades": 2886,
+  "buys": 2609,
+  "sells": 277,
+  "volume_usdc": 31054.394523,
+  "buy_volume_usdc": 29482.48427,
+  "sell_volume_usdc": 1571.910253
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `found` | boolean | Whether the token was found onchain |
+| `market` | string | Market question |
+| `slug` | string | Market slug |
+| `outcome` | string | Outcome label for this token |
+| `image` | string | Market image URL |
+| `condition_id` | string | Market condition ID |
 | `total_trades` | number | Lifetime number of fills |
 | `buys` | number | Number of buy fills |
 | `sells` | number | Number of sell fills |
@@ -45,6 +55,6 @@ GET /v2/onchain/markets/{token_id}/volume
 ## Example
 
 ```bash
-curl "https://api.polynode.dev/v2/onchain/markets/67584929471303730974266696731552839504685833181501877275173258930851402007275/volume" \
+curl "https://api.polynode.dev/v2/onchain/markets/21912724974096796009916816278814088615574660931588091764221331842149572809887/volume" \
   -H "x-api-key: YOUR_KEY"
 ```

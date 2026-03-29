@@ -4,7 +4,7 @@ description: "Complete onchain trade fill history for any wallet. Every fill, ev
 openapi: "GET /v2/onchain/wallets/{address}/trades"
 ---
 
-Returns every onchain trade fill for a wallet, including both maker and taker sides. This is the complete settlement record from the blockchain, not filtered through Polymarket's API.
+Returns every onchain trade fill for a wallet, including both maker and taker sides. This is the complete settlement record from the blockchain. Each trade is enriched with market metadata (question, slug, outcome, image).
 
 Unlike the standard [wallet trade history](/api-reference/wallets/trades) which relies on Polymarket's data API (and can timeout or miss trades for heavy wallets), this endpoint pulls directly from onchain settlement data and never misses a fill.
 
@@ -26,21 +26,25 @@ GET /v2/onchain/wallets/{address}/trades?limit=100&offset=0
 {
   "wallet": "0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa",
   "source": "onchain",
-  "count": 10,
+  "count": 1,
   "offset": 0,
   "trades": [
     {
-      "tx_hash": "0x4ef280c5f3b6d0f88c837e9fc59e2fd74a8323794b0924bee80dc32265950b4f",
-      "timestamp": 1774710629,
-      "order_hash": "0xccfd23e91e75961a906ff089eed5c13f4751dd4d3d9c92887dfc058ff1560f5e",
+      "tx_hash": "0x2fc63f3efc794d13c747d089d3b42bb9b4539b22216ccb2e6b2ea039ca5bb9ca",
+      "timestamp": 1774749310,
+      "order_hash": "0x84f21e21f5c2a1df3264694a33ec9a8a292b83e163cbda4efe63333243aa08ef",
       "maker": "0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa",
-      "taker": "0x10862ef1b1f31a90f4674da45ac7c1e6e570ca05",
+      "taker": "0x198098d9c6c1dcb843314b9da212c44396c9a1d0",
       "maker_asset_id": "0",
-      "taker_asset_id": "28259964888198504796626600028670829230907308741791382637932077388069803412701",
-      "maker_amount": 2.0378,
-      "taker_amount": 4.43,
-      "fee": 0.443,
-      "side": "maker"
+      "taker_asset_id": "21912724974096796009916816278814088615574660931588091764221331842149572809887",
+      "maker_amount": 3.05,
+      "taker_amount": 5,
+      "fee": 0.319672,
+      "side": "maker",
+      "market": "Bitcoin Up or Down - March 28, 9:55PM-10:00PM ET",
+      "slug": "btc-updown-5m-1774749300",
+      "outcome": "Up",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png"
     }
   ]
 }
@@ -59,6 +63,10 @@ GET /v2/onchain/wallets/{address}/trades?limit=100&offset=0
 | `trades[].taker_amount` | number | Amount taker provided (tokens) |
 | `trades[].fee` | number | Fee paid on this fill (USDC) |
 | `trades[].side` | string | `"maker"` or `"taker"` relative to the queried wallet |
+| `trades[].market` | string | Market question |
+| `trades[].slug` | string | Market slug |
+| `trades[].outcome` | string | Outcome label (e.g. "Yes", "Up", "Trump") |
+| `trades[].image` | string | Market image URL |
 
 ## Example
 

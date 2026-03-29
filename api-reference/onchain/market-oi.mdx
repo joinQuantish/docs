@@ -4,7 +4,7 @@ description: "Onchain open interest for a specific market."
 openapi: "GET /v2/onchain/markets/{condition_id}/oi"
 ---
 
-Returns the current open interest for a specific market, sourced from onchain data.
+Returns the current open interest for a specific market, sourced from onchain data. Enriched with market metadata.
 
 ## Request
 
@@ -20,21 +20,27 @@ GET /v2/onchain/markets/{condition_id}/oi
 
 ```json
 {
-  "condition_id": "0xa241c7f77a6e3918d37de906a8b89866dd27c46e6fa0d0de5624c5ee7fdc7ab6",
+  "condition_id": "0x8180fee481707671aa45de84a9c3740ab607f3f2643b456e0380afb02d12cf7d",
   "source": "onchain",
   "found": true,
-  "open_interest_usdc": 803.52
+  "market": "Bitcoin Up or Down - March 28, 10:55AM-11:00AM ET",
+  "slug": "btc-updown-5m-1774709700",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+  "open_interest_usdc": 393.153937
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `found` | boolean | Whether the market was found onchain |
+| `market` | string | Market question |
+| `slug` | string | Market slug |
+| `image` | string | Market image URL |
 | `open_interest_usdc` | number | Current open interest in USDC |
 
 ## Example
 
 ```bash
-curl "https://api.polynode.dev/v2/onchain/markets/0xa241c7f77a6e3918d37de906a8b89866dd27c46e6fa0d0de5624c5ee7fdc7ab6/oi" \
+curl "https://api.polynode.dev/v2/onchain/markets/0x8180fee481707671aa45de84a9c3740ab607f3f2643b456e0380afb02d12cf7d/oi" \
   -H "x-api-key: YOUR_KEY"
 ```

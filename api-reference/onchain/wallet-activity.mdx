@@ -4,7 +4,7 @@ description: "Onchain activity for a wallet: splits, merges, and multi-outcome c
 openapi: "GET /v2/onchain/wallets/{address}/activity"
 ---
 
-Returns all onchain activity for a wallet including token splits (minting outcome tokens from collateral), merges (burning outcome tokens back to collateral), and neg-risk conversions (multi-outcome market hedging). This data is not available through Polymarket's API.
+Returns all onchain activity for a wallet including token splits (minting outcome tokens from collateral), merges (burning outcome tokens back to collateral), and neg-risk conversions (multi-outcome market hedging). Each event is enriched with market metadata. This data is not available through Polymarket's API.
 
 ## Request
 
@@ -24,18 +24,21 @@ GET /v2/onchain/wallets/{address}/activity?limit=100&offset=0
 {
   "wallet": "0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa",
   "source": "onchain",
-  "count": 3,
+  "count": 1,
   "offset": 0,
   "splits": 0,
-  "merges": 3,
+  "merges": 1,
   "conversions": 0,
   "events": [
     {
       "type": "merge",
-      "id": "0x1d249b3b883d9866b6c63263d20cf1ce97b5b496a74d45ae7ae04d74facfe75b_0x7ab",
-      "timestamp": 1774710183,
-      "condition": "0x8180fee481707671aa45de84a9c3740ab607f3f2643b456e0380afb02d12cf7d",
-      "amount": 14.93209
+      "id": "0x583037e505fc38851d81fc129d2eef0cb57a81270d7b5cb9f500dca9a3f898e9_0x5fd",
+      "timestamp": 1774715707,
+      "condition": "0xe84334d8b082ddf50a6aa659bb19283ac94edfd52a5357fb7547c0371bb18084",
+      "amount": 5,
+      "market": "Bitcoin Up or Down - March 28, 12:30PM-12:35PM ET",
+      "slug": "btc-updown-5m-1774715400",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png"
     }
   ]
 }
@@ -48,11 +51,14 @@ GET /v2/onchain/wallets/{address}/activity?limit=100&offset=0
 | `conversions` | number | Count of neg-risk conversion events in this page |
 | `events[].type` | string | `"split"`, `"merge"`, or `"neg_risk_conversion"` |
 | `events[].timestamp` | number | Unix timestamp |
-| `events[].condition` | string | Condition ID (for splits/merges) |
+| `events[].condition` | string | Condition ID |
 | `events[].amount` | number | USDC amount |
+| `events[].market` | string | Market question |
+| `events[].slug` | string | Market slug |
+| `events[].image` | string | Market image URL |
 | `events[].neg_risk_market_id` | string | Neg-risk market ID (conversions only) |
 | `events[].index_set` | string | Index set (conversions only) |
-| `events[].question_count` | number | Number of questions in the neg-risk event (conversions only) |
+| `events[].question_count` | number | Questions in the neg-risk event (conversions only) |
 
 ## Event Types
 
