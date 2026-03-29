@@ -23,7 +23,7 @@ Enable features in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-polynode = { version = "0.5.3", features = ["trading", "cache"] }
+polynode = { version = "0.5.4", features = ["trading", "cache"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 ```
 
@@ -624,7 +624,7 @@ let all = Coin::all(); // BTC, ETH, SOL, XRP, DOGE, HYPE, BNB
 
 ## Trading Module
 
-<Note>Requires the `trading` feature flag: `polynode = { version = "0.5.3", features = ["trading"] }`</Note>
+<Note>Requires the `trading` feature flag: `polynode = { version = "0.5.4", features = ["trading"] }`</Note>
 
 Place orders on Polymarket with local credential custody and builder attribution. All signing happens locally. Private keys never leave your machine.
 
@@ -899,7 +899,7 @@ async fn main() -> polynode::Result<()> {
 
 ## Local Cache
 
-<Note>Requires the `cache` feature flag: `polynode = { version = "0.5.3", features = ["cache"] }`</Note>
+<Note>Requires the `cache` feature flag: `polynode = { version = "0.5.4", features = ["cache"] }`</Note>
 
 Local SQLite cache that backfills trade history on startup, streams live updates via WebSocket, and serves all queries locally with zero additional API calls after initialization. Driven by a JSON watchlist file that specifies which wallets, markets, and tokens to track.
 
