@@ -836,6 +836,48 @@ impl TradingSigner for MyHsmSigner {
 }
 ```
 
+### Privy Signer
+
+<Note>Requires the `privy` feature flag: `polynode = { version = "0.5.4", features = ["trading", "privy"] }`</Note>
+
+Sign orders with a Privy server-side wallet. No private key needed on your machine. All signing happens via Privy's HTTP API.
+
+```rust,no_run
+use polynode::trading::{PolyNodeTrader, TraderConfig};
+use polynode::trading::privy::{PrivyConfig, PrivySigner};
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let config = PrivyConfig {
+        app_id: "your-privy-app-id".into(),
+        app_secret: "your-privy-app-secret".into(),
+        authorization_key: "wallet-auth:your-authorization-key".into(),
+    };
+
+    // Or load from PRIVY_APP_ID, PRIVY_APP_SECRET, PRIVY_AUTHORIZATION_KEY env vars:
+    // let config = PrivyConfig::from_env()?;
+
+    let signer = PrivySigner::new(
+        config,
+        "privy-wallet-id".into(),
+        "0xYourWalletAddress".parse().unwrap(),
+    );
+
+    let mut trader = PolyNodeTrader::new(TraderConfig {
+        polynode_key: "pn_live_...".into(),
+        ..Default::default()
+    })?;
+
+    let status = trader.ensure_ready(Box::new(signer), None).await?;
+    println!("ready: {}", status.credentials_stored);
+
+    trader.close();
+    Ok(())
+}
+```
+
+The `PrivySigner` implements `TradingSigner`, so it works with `ensure_ready()`, `order()`, and all other trading methods. Get your Privy credentials from the [Privy Dashboard](https://dashboard.privy.io).
+
 ### TraderConfig
 
 ```rust,no_run
