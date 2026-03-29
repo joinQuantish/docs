@@ -235,6 +235,12 @@
             ]
           },
           {
+            "group": "Trading",
+            "pages": [
+              "sdks/trading"
+            ]
+          },
+          {
             "group": "Redemption Watcher",
             "pages": [
               "sdks/redemption-watcher"

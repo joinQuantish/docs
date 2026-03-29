@@ -7,6 +7,50 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-29 — Trading Module (TypeScript SDK v0.5.0)
+
+### TypeScript SDK — Order Placement on Polymarket
+
+Place and manage orders on Polymarket through the polynode SDK. One function call handles wallet setup, credential creation, approvals, and order placement.
+
+```bash
+npm install polynode-sdk@0.5.0 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
+```
+
+**One-call onboarding:**
+
+```typescript
+import { PolyNodeTrader } from 'polynode-sdk';
+
+const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
+
+// Auto-detects your wallet type. Deploys Safe, sets approvals, creates credentials.
+const status = await trader.ensureReady('0xYOUR_PRIVATE_KEY');
+
+const result = await trader.order({
+  tokenId: '...',
+  side: 'BUY',
+  price: 0.55,
+  size: 100,
+});
+
+await trader.cancelOrder(result.orderId);
+```
+
+**Key features:**
+
+- **Auto-detection:** Pass your private key. The SDK checks if you have a Safe, Proxy, or EOA on-chain and uses the right one. No wallet type guessing.
+- **Wallet generation:** `PolyNodeTrader.generateWallet()` for users starting from scratch.
+- **Gasless onboarding:** Safe deployment + 6 token approvals in one call, ~10 seconds, zero gas.
+- **Local credential custody:** CLOB credentials stored in local SQLite. Export, import, and back up freely.
+- **Builder attribution:** Orders route through polynode's relay for affiliate tracking. If the relay is down, orders fall back to direct CLOB submission.
+- **All three wallet types:** EOA (type 0), Proxy (type 1, legacy Magic Link), Safe (type 2, browser wallets).
+- **Dome drop-in:** Same `@polymarket/clob-client` signing under the hood. Import existing Dome credentials with `linkCredentials()`.
+
+Full documentation: [Trading](/sdks/trading) | [Dome Migration](/dome-migration#order-placement)
+
+---
+
 ## 2026-03-28 — Onchain Data Endpoints + Market Metadata Enrichment
 
 ### Enrichment: All Onchain Endpoints Now Include Market Metadata

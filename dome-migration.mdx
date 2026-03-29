@@ -1,10 +1,10 @@
 ---
 title: "Dome Migration"
 sidebarTitle: "Dome Migration"
-description: "Drop-in replacement for the Dome API WebSocket feed. Same format, same fields, 3-5 seconds faster."
+description: "Drop-in replacement for Dome's WebSocket feed and trading SDK. Same format, same fields, 3-5 seconds faster. Local credential custody."
 ---
 
-Dome was acquired by Polymarket in February 2026 and is shutting down. If you built on Dome's WebSocket API, polynode provides a drop-in replacement that delivers the same per-fill flat events in the exact same format, 3-5 seconds before Dome.
+Dome was acquired by Polymarket in February 2026 and is shutting down. polynode provides a drop-in replacement for both Dome's WebSocket feed (same format, 3-5 seconds faster) and Dome's trading SDK (same CLOB signing, but your credentials stay local instead of on Dome's server).
 
 ## What you get
 
@@ -321,3 +321,111 @@ The dome subscription supports all standard polynode filters:
 **Minor floating-point precision differences on `price` and `shares`.** polynode computes fill amounts from transaction calldata, while Dome reads from on-chain `OrderFilled` event logs. In rare cases (~1% of fills), this produces sub-penny price differences (e.g. `0.76` vs `0.7599999821`) or `shares` off by 1 unit in millions. All other fields are byte-identical.
 
 **No `subscription_id` in event wrapper.** Dome includes a `subscription_id` field in every event message. polynode does not include this field, consistent with all other polynode subscription types. If your code reads `msg.subscription_id`, it will be `undefined` but this should not affect event processing.
+
+---
+
+## Order Placement
+
+If you used Dome's trading SDK to place orders on Polymarket, the polynode SDK is a drop-in replacement with two key improvements: your credentials stay on your machine (not on a third-party server), and wallet type is auto-detected so you don't need to know if you're EOA, Proxy, or Safe.
+
+### Quick comparison
+
+| | Dome | polynode |
+|---|---|---|
+| Order signing | `@polymarket/clob-client` | Same `@polymarket/clob-client` |
+| Credential storage | Dome's server | Local SQLite (your machine) |
+| Credential export | Not possible | `exportWallet()` / `exportAll()` |
+| Wallet type | You must specify | Auto-detected from on-chain state |
+| Gasless onboarding | Via relayer | Same relayer, one call (`ensureReady()`) |
+| Works without their server | No | Yes (`fallbackDirect: true`) |
+| Builder attribution | Dome's builder key | polynode's builder key (via relay) |
+| Order format | `orderToJson()` | Same `orderToJson()` |
+| Balance/approval checks | Manual | Built-in methods |
+| Local order history | None | SQLite-backed |
+
+### Migration
+
+<CodeGroup>
+
+```typescript Dome (before)
+import { DomeTrader } from '@dome/sdk';
+
+const trader = new DomeTrader({
+  apiKey: 'dome_...',
+  privateKey: '0x...',
+  walletType: 'safe', // you had to know this
+});
+
+await trader.connect();
+
+const result = await trader.placeOrder({
+  tokenId: '...',
+  side: 'BUY',
+  price: 0.55,
+  size: 100,
+});
+
+await trader.cancelOrder(result.orderId);
+```
+
+```typescript polynode (after)
+import { PolyNodeTrader } from 'polynode-sdk';
+
+const trader = new PolyNodeTrader({
+  polynodeKey: 'pn_live_...',
+});
+
+// Auto-detects wallet type. No need to specify Safe/Proxy/EOA.
+await trader.ensureReady('0x...');
+
+const result = await trader.order({
+  tokenId: '...',
+  side: 'BUY',
+  price: 0.55,
+  size: 100,
+});
+
+await trader.cancelOrder(result.orderId);
+```
+
+</CodeGroup>
+
+### Importing Dome credentials
+
+If you already have CLOB credentials from Dome, import them directly without re-deriving:
+
+```typescript
+const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
+
+// Import your existing credentials
+trader.linkCredentials({
+  wallet: '0xYOUR_EOA',
+  apiKey: 'your-dome-api-key',
+  apiSecret: 'your-dome-api-secret',
+  apiPassphrase: 'your-dome-passphrase',
+  signatureType: 2,  // Safe, or whatever Dome was using
+  funderAddress: '0xYOUR_SAFE',
+});
+
+// Link your signer for order signing
+await trader.linkWallet('0xYOUR_PRIVATE_KEY');
+
+// Done. Same credentials, same orders, different relay.
+```
+
+### Exporting from Polymarket directly
+
+If you exported your private key from Polymarket's settings, you don't need to know anything else:
+
+```typescript
+const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
+
+// Auto-detects your wallet type, finds your Safe or Proxy on-chain,
+// derives CLOB credentials. You don't need to know your wallet type.
+const status = await trader.ensureReady('0xEXPORTED_KEY_FROM_POLYMARKET');
+
+console.log(`Detected: type ${status.signatureType}`);
+console.log(`USDC lives at: ${status.funderAddress}`);
+```
+
+See the full [Trading documentation](/sdks/trading) for all methods and configuration options.
