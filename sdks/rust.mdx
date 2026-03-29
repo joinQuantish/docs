@@ -1,504 +1,1119 @@
 ---
 title: "Rust SDK"
 sidebarTitle: "Rust SDK"
-description: "Official Rust SDK for the PolyNode API"
+description: "Official Rust SDK for the polynode API — real-time Polymarket data, orderbook streaming, trading, and more"
 icon: "rust"
 ---
 
 ## Install
 
-Add to your `Cargo.toml`:
+```bash
+cargo add polynode
+```
+
+The core crate has zero required feature flags. Optional features unlock additional capabilities:
+
+| Feature | What it adds |
+|---------|-------------|
+| `cache` | Local SQLite cache with watchlist, backfill, and P&L computation |
+| `trading` | Order placement, wallet management, credential custody |
+| `privy` | Privy-based signer (requires `trading`) |
+
+Enable features in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-polynode = "0.4"
-tokio = { version = "1", features = ["rt", "macros"] }
-
-# For local cache (optional):
-# polynode = { version = "0.4", features = ["cache"] }
+polynode = { version = "0.5", features = ["trading", "cache"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 ```
 
 ## Quick Start
 
-```rust
+```rust,no_run
 use polynode::PolyNodeClient;
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = PolyNodeClient::new("pn_live_...")?;
+    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
 
-    // Fetch top markets
-    let markets = client.markets(Some(10)).await?;
-    println!("{} markets, {} total", markets.count, markets.total);
+    // Fetch top 5 markets by volume
+    let markets = client.markets(Some(5)).await?;
+    println!("{} markets returned", markets.count);
 
-    // Search
-    let results = client.search("bitcoin", Some(5), None).await?;
+    // Search for a market
+    let results = client.search("bitcoin", Some(3), None).await?;
     for r in &results.results {
-        println!("{}", r.question.as_deref().unwrap_or("?"));
+        println!("{}", r.question);
     }
 
     Ok(())
 }
 ```
 
-## REST Methods
+## Client Configuration
 
-All endpoints are async methods on `PolyNodeClient`:
+Use the builder for full control over endpoints and timeouts:
 
-```rust
-// System
-client.healthz().await?;
-client.status().await?;
-client.create_key(Some("my-bot")).await?;
+```rust,no_run
+use polynode::PolyNodeClient;
+use std::time::Duration;
 
-// Markets
-client.markets(Some(10)).await?;
-client.market("token_id").await?;
-client.market_by_slug("bitcoin-100k").await?;
-client.market_by_condition("0xabc...").await?;
-client.list_markets(&ListMarketsParams {
+# fn example() -> polynode::Result<()> {
+let client = PolyNodeClient::builder("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")
+    .base_url("https://api.polynode.dev")
+    .ws_url("wss://ws.polynode.dev/ws")
+    .ob_url("wss://ob.polynode.dev/ws")
+    .rpc_url("https://rpc.polynode.dev")
+    .timeout(Duration::from_secs(15))
+    .build()?;
+# Ok(())
+# }
+```
+
+All URLs default to the production endpoints shown above.
+
+## REST API
+
+Every REST endpoint has a typed async method on `PolyNodeClient`.
+
+### System
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+// Liveness probe (no auth required)
+let health = client.healthz().await?;
+
+// Readiness check (no auth required)
+let ready = client.readyz().await?;
+
+// System status with metrics
+let status = client.status().await?;
+println!("uptime: {}s, events: {}", status.uptime_seconds, status.total_events);
+
+// Generate a new API key (no auth required)
+let key = client.create_key(Some("my-bot")).await?;
+println!("key: {}", key.key);
+# Ok(())
+# }
+```
+
+### Markets
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+use polynode::rest::ListMarketsParams;
+
+// Top markets by 24h volume
+let markets = client.markets(Some(10)).await?;
+println!("{} markets, {} total", markets.count, markets.total);
+
+// Single market by token ID
+let market = client.market("21742633143463906290569050155826241533067272736897614950488156847949938836455").await?;
+
+// Single market by URL slug
+let market = client.market_by_slug("bitcoin-100k").await?;
+
+// Single market by condition ID
+let market = client.market_by_condition("0xabc...").await?;
+
+// Filtered, paginated listing
+let list = client.list_markets(&ListMarketsParams {
     count: Some(20),
     sort: Some("volume".into()),
-    ..Default::default()
+    category: Some("crypto".into()),
+    min_volume: Some(10000.0),
+    active_only: Some(true),
+    cursor: None,
 }).await?;
-client.search("ethereum", Some(5), None).await?;
 
-// Pricing
-client.candles("token_id", Some(CandleResolution::OneHour), Some(100)).await?;
-client.stats("token_id").await?;
+// Full-text search
+let results = client.search("ethereum", Some(5), Some(false)).await?;
 
-// Settlements
-client.recent_settlements(Some(20)).await?;
-client.token_settlements("token_id", Some(10)).await?;
-client.wallet_settlements("0xabc...", Some(10)).await?;
+// Search events
+let events = client.search_events("election", Some(5)).await?;
 
-// Wallets
-client.wallet("0xabc...").await?;
+// Event detail (includes all markets within the event)
+let event = client.event("presidential-election-2028").await?;
 
-// RPC (rpc.polynode.dev)
-client.rpc_call("eth_blockNumber", serde_json::json!([])).await?;
+// Markets by category
+let crypto = client.markets_by_category("crypto").await?;
+# Ok(())
+# }
+```
+
+### Pricing
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+use polynode::common::CandleResolution;
+
+let token_id = "21742633143463906290569050155826241533067272736897614950488156847949938836455";
+
+// OHLCV candles
+let candles = client.candles(token_id, Some(CandleResolution::OneHour), Some(100)).await?;
+for c in &candles.candles {
+    println!("{}: o={} h={} l={} c={} v={}", c.timestamp, c.open, c.high, c.low, c.close, c.volume);
+}
+
+// Market statistics
+let stats = client.stats(token_id).await?;
+# Ok(())
+# }
+```
+
+### Settlements
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+// Most recent settlements across all markets
+let recent = client.recent_settlements(Some(20)).await?;
+for s in &recent.settlements {
+    println!("{}: {} ${} on {}", s.status, s.taker_side, s.taker_size, s.market_title);
+}
+
+// Settlements for a specific token
+let token_settlements = client.token_settlements("21742633...", Some(10)).await?;
+
+// Settlements for a specific wallet
+let wallet_settlements = client.wallet_settlements("0xabc...", Some(10)).await?;
+# Ok(())
+# }
+```
+
+### Wallets
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+let address = "0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6";
+
+// Wallet activity summary
+let wallet = client.wallet(address).await?;
+
+// Wallet positions with P&L
+let positions = client.wallet_positions_data(address, Some(50), None).await?;
+for p in &positions.positions {
+    println!("{:?}", p);
+}
+
+// Onchain positions (all open + closed, accurate realized P&L)
+let onchain = client.wallet_onchain_positions(address).await?;
+
+// Wallet trade history
+let trades = client.wallet_trades(address, Some(100), None).await?;
+
+// Market trade history (by condition ID or slug)
+let market_trades = client.market_trades("0xabc...", Some(50), None, Some("BUY"), None).await?;
+# Ok(())
+# }
+```
+
+### Orderbook (REST)
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+let token_id = "21742633143463906290569050155826241533067272736897614950488156847949938836455";
+
+// Full orderbook snapshot
+let book = client.orderbook_rest(token_id).await?;
+println!("bids: {}, asks: {}", book.bids.len(), book.asks.len());
+
+// Midpoint price
+let mid = client.midpoint(token_id).await?;
+println!("midpoint: {}", mid.mid);
+
+// Bid-ask spread
+let spread = client.spread(token_id).await?;
+println!("spread: {}", spread.spread);
+# Ok(())
+# }
+```
+
+### Enriched Data
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+// Top traders leaderboard
+let leaders = client.leaderboard(Some("daily"), Some("profit")).await?;
+
+// Trending markets (carousel, breaking, hot topics, featured, movers)
+let trending = client.trending().await?;
+
+// Recent global activity
+let activity = client.activity().await?;
+
+// Biggest 24h price movers
+let movers = client.movers().await?;
+
+// Trader profile
+let profile = client.trader_profile("0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6").await?;
+println!("positions: {}, profit: {}", profile.positions_count, profile.profit);
+
+// Trader P&L time series
+let pnl = client.trader_pnl("0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6", Some("30d")).await?;
+# Ok(())
+# }
+```
+
+### RPC
+
+Send JSON-RPC requests through `rpc.polynode.dev`. Transaction submission is optimized for speed. Standard read methods are supported for `latest` state.
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+// Get current block number
+let block = client.rpc_call("eth_blockNumber", serde_json::json!([])).await?;
+println!("block: {}", block);
+
+// Get a block
+let block_data = client.rpc_call(
+    "eth_getBlockByNumber",
+    serde_json::json!(["latest", false]),
+).await?;
+
+// Send a raw transaction (optimized delivery)
+let tx_hash = client.rpc_call(
+    "eth_sendRawTransaction",
+    serde_json::json!(["0xf86c..."]),
+).await?;
+
+// Gas price (recommended for fast inclusion)
+let gas = client.rpc_call("eth_gasPrice", serde_json::json!([])).await?;
+
+// Standard reads (latest state only)
+let balance = client.rpc_call(
+    "eth_getBalance",
+    serde_json::json!(["0xabc...", "latest"]),
+).await?;
+# Ok(())
+# }
 ```
 
 ## WebSocket Streaming
 
-Open a stream and subscribe with the builder pattern:
+Subscribe to real-time events with 3-5 second pre-confirmation lead time on settlements.
 
-```rust
-use polynode::ws::{Subscription, SubscriptionType, StreamOptions};
-use polynode::WsMessage;
+### Connect and Subscribe
 
-let mut stream = client.stream(StreamOptions {
-    compress: true,
-    auto_reconnect: true,
-    ..Default::default()
-}).await?;
+```rust,no_run
+use polynode::{PolyNodeClient, ws::{StreamOptions, Subscription, SubscriptionType}};
+use polynode::ws_messages::WsMessage;
 
-stream.subscribe(
-    Subscription::new(SubscriptionType::Settlements)
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+
+    let mut stream = client.stream(StreamOptions {
+        compress: true,
+        auto_reconnect: true,
+        ..Default::default()
+    }).await?;
+
+    // Subscribe to settlements with a minimum size filter
+    let sub = Subscription::new(SubscriptionType::Settlements)
         .min_size(100.0)
         .status("pending")
-        .snapshot_count(20)
-).await?;
-```
+        .snapshot_count(20);
+    stream.subscribe(sub).await?;
 
-### Consuming Events
-
-```rust
-while let Some(msg) = stream.next().await {
-    match msg? {
-        WsMessage::Event(event) => {
-            match event {
-                polynode::PolyNodeEvent::Settlement(s) => {
-                    println!("{} ${:.2} on {}",
-                        s.taker_side, s.taker_size,
-                        s.market_title.as_deref().unwrap_or("unknown"));
-                }
-                polynode::PolyNodeEvent::StatusUpdate(u) => {
-                    println!("Confirmed in {}ms", u.latency_ms);
-                }
-                _ => {}
+    // Read events
+    while let Some(msg) = stream.next().await {
+        match msg {
+            Ok(WsMessage::Event(event)) => {
+                println!("{:?}", event);
             }
+            Ok(WsMessage::Snapshot(events)) => {
+                println!("snapshot: {} events", events.len());
+            }
+            Ok(WsMessage::Subscribed { subscription_id, .. }) => {
+                println!("subscribed: {}", subscription_id);
+            }
+            Ok(WsMessage::Heartbeat { ts }) => {
+                // Connection alive
+            }
+            Err(e) => eprintln!("error: {}", e),
+            _ => {}
         }
-        WsMessage::Snapshot(events) => {
-            println!("Snapshot: {} events", events.len());
-        }
-        WsMessage::Subscribed { subscription_id, .. } => {
-            println!("Subscribed: {}", subscription_id);
-        }
-        WsMessage::Heartbeat { ts } => {
-            // Server heartbeat every 30s
-        }
-        WsMessage::Error { message, .. } => {
-            eprintln!("Error: {}", message);
-        }
-        _ => {}
     }
+
+    Ok(())
 }
-```
-
-### Subscription Filters
-
-All filters from the [Subscriptions & Filters](/websocket/subscribing) page are supported:
-
-```rust
-Subscription::new(SubscriptionType::Settlements)
-    .wallets(vec!["0xabc...".into()])
-    .tokens(vec!["21742633...".into()])
-    .slugs(vec!["bitcoin-100k".into()])
-    .condition_ids(vec!["0xabc...".into()])
-    .side("BUY")
-    .status("pending")
-    .min_size(100.0)
-    .max_size(10000.0)
-    .event_types(vec!["settlement".into()])
-    .snapshot_count(50)
-    .feeds(vec!["BTC/USD".into()])
 ```
 
 ### Subscription Types
 
-```rust
-SubscriptionType::Settlements   // pending + confirmed settlements
-SubscriptionType::Trades        // all trade activity
-SubscriptionType::Prices        // price-moving events
-SubscriptionType::Blocks        // new Polygon blocks
-SubscriptionType::Wallets       // all wallet activity
-SubscriptionType::Markets       // all market activity
-SubscriptionType::LargeTrades   // $1K+ trades
-SubscriptionType::Oracle        // UMA resolution events
-SubscriptionType::Chainlink     // real-time price feeds
+```rust,no_run
+use polynode::ws::{Subscription, SubscriptionType};
+
+# fn example() {
+Subscription::new(SubscriptionType::Settlements);   // pending + confirmed settlements
+Subscription::new(SubscriptionType::Trades);         // all trade activity
+Subscription::new(SubscriptionType::Prices);         // price-moving events
+Subscription::new(SubscriptionType::Blocks);         // new Polygon blocks
+Subscription::new(SubscriptionType::Wallets);        // all wallet activity
+Subscription::new(SubscriptionType::Markets);        // all market activity
+Subscription::new(SubscriptionType::LargeTrades);    // $1K+ trades
+Subscription::new(SubscriptionType::Oracle);         // UMA resolution events
+Subscription::new(SubscriptionType::Chainlink);      // real-time price feeds
+Subscription::new(SubscriptionType::Global);         // everything
+# }
+```
+
+### Subscription Filters
+
+All filters from the [Subscriptions & Filters](/websocket/subscribing) page are supported via builder methods:
+
+```rust,no_run
+use polynode::ws::{Subscription, SubscriptionType};
+
+# fn example() {
+let sub = Subscription::new(SubscriptionType::Settlements)
+    .wallets(vec!["0xabc...".into()])          // filter by wallet
+    .tokens(vec!["21742633...".into()])         // filter by token ID
+    .slugs(vec!["bitcoin-100k".into()])         // filter by market slug
+    .condition_ids(vec!["0xabc...".into()])     // filter by condition ID
+    .side("BUY")                                // BUY or SELL
+    .status("pending")                          // pending, confirmed, or all
+    .min_size(100.0)                            // minimum USD size
+    .max_size(10000.0)                          // maximum USD size
+    .event_types(vec!["settlement".into()])     // override event types
+    .snapshot_count(50)                         // initial snapshot (max 200)
+    .feeds(vec!["BTC/USD".into()]);             // chainlink feeds
+# }
 ```
 
 ### Multiple Subscriptions
 
-Subscriptions stack on the same connection:
+Subscriptions stack on the same connection. Events are deduplicated server-side:
 
-```rust
+```rust,no_run
+# async fn example(stream: &polynode::ws::WsStream) -> polynode::Result<()> {
+use polynode::ws::{Subscription, SubscriptionType};
+
+// Whale trades
 stream.subscribe(
-    Subscription::new(SubscriptionType::LargeTrades)
-        .min_size(5000.0)
+    Subscription::new(SubscriptionType::LargeTrades).min_size(5000.0)
 ).await?;
 
+// Specific wallet activity
 stream.subscribe(
     Subscription::new(SubscriptionType::Wallets)
         .wallets(vec!["0xabc...".into()])
 ).await?;
-
-// Both active, events deduplicated
-```
-
-### Compression
-
-Zlib compression is enabled by default for all WebSocket connections (~50% bandwidth savings). Binary frames are transparently decompressed with `flate2`.
-
-```rust
-// To disable (not recommended):
-let mut stream = client.stream(StreamOptions {
-    compress: false,
-    ..Default::default()
-}).await?;
+# Ok(())
+# }
 ```
 
 ### Auto-Reconnect
 
-Enabled by default with exponential backoff:
+Enabled by default. The SDK reconnects with exponential backoff and replays all active subscriptions automatically:
 
-```rust
-let mut stream = client.stream(StreamOptions {
-    auto_reconnect: true,              // default: true
-    max_reconnect_attempts: None,      // None = unlimited
+```rust,no_run
+use polynode::ws::StreamOptions;
+use std::time::Duration;
+
+# fn example() {
+let options = StreamOptions {
+    compress: true,
+    auto_reconnect: true,
+    max_reconnect_attempts: None,          // unlimited by default
     initial_backoff: Duration::from_secs(1),
     max_backoff: Duration::from_secs(30),
-    ..Default::default()
-}).await?;
+};
+# }
 ```
-
-On reconnect, all active subscriptions are replayed automatically.
 
 ### Cleanup
 
-```rust
-stream.unsubscribe(Some("sub_id".into())).await?;  // remove one
-stream.unsubscribe(None).await?;                     // remove all
-stream.close().await?;                                // close connection
-```
+```rust,no_run
+# async fn example(stream: polynode::ws::WsStream) -> polynode::Result<()> {
+// Unsubscribe from a specific subscription
+stream.unsubscribe(Some("sub_id_here".into())).await?;
 
-## Local Cache
+// Unsubscribe from all
+stream.unsubscribe(None).await?;
 
-Store trades and positions in a local SQLite database. Enable the `cache` feature:
-
-```toml
-polynode = { version = "0.4", features = ["cache"] }
-```
-
-```rust
-use polynode::{PolyNodeClient, cache::{PolyNodeCache, QueryOptions, EntityType}};
-use std::sync::Arc;
-
-let client = Arc::new(PolyNodeClient::new("pn_live_...")?);
-let mut cache = PolyNodeCache::builder(client)
-    .db_path("./cache.db")
-    .watchlist_path("./polynode.watch.json")
-    .on_backfill_progress(|p| println!("{}: {} trades ({})", p.label, p.fetched, p.status))
-    .build()?;
-
-cache.start().await?;
-
-// Query locally — instant, no API calls
-let trades = cache.wallet_trades("0xabc...", &QueryOptions { limit: Some(50), ..Default::default() })?;
-let positions = cache.wallet_positions("0xabc...")?;
-let stats = cache.stats()?;
-println!("{} trades, {} positions", stats.trade_count, positions.len());
-
-// Add wallets at runtime
-cache.add_to_watchlist(&[(EntityType::Wallet, "0xnew...".into(), "whale".into(), true)])?;
-
-cache.stop().await?;
-```
-
-See [Local Cache](/sdks/local-cache) for full documentation, watchlist configuration, backfill timing, and all query methods.
-
-## Configuration
-
-```rust
-use std::time::Duration;
-
-let client = PolyNodeClient::builder("pn_live_...")
-    .base_url("https://api.polynode.dev")
-    .ws_url("wss://ws.polynode.dev/ws")
-    .rpc_url("https://rpc.polynode.dev")
-    .timeout(Duration::from_secs(10))
-    .build()?;
-```
-
-## Error Handling
-
-```rust
-use polynode::{PolyNodeClient, Error};
-
-match client.market("invalid-id").await {
-    Ok(detail) => println!("{:?}", detail),
-    Err(Error::NotFound(msg)) => println!("Not found: {}", msg),
-    Err(Error::Auth(msg)) => println!("Auth failed: {}", msg),
-    Err(Error::RateLimited(msg)) => println!("Rate limited: {}", msg),
-    Err(e) => println!("Other error: {}", e),
-}
+// Close the connection
+stream.close().await?;
+# Ok(())
+# }
 ```
 
 ## Orderbook Streaming
 
-The SDK includes a dedicated orderbook stream for real-time book data from `ob.polynode.dev`. This is a separate WebSocket connection from the event stream, with its own URL, protocol, and message format.
+Real-time orderbook data from `ob.polynode.dev`. Three levels of abstraction: raw stream, local state manager, or the fully managed engine.
 
-### Connect and Subscribe
+### Raw Stream
 
-```rust
-use polynode::{PolyNodeClient, ObStreamOptions, ObMessage, OrderbookUpdate};
+For full control over message processing:
 
-let client = PolyNodeClient::new("pn_live_...")?;
-let mut stream = client.orderbook_stream(ObStreamOptions::default()).await?;
+```rust,no_run
+use polynode::{PolyNodeClient, ObStreamOptions};
+use polynode::types::orderbook::ObMessage;
 
-stream.subscribe(vec![
-    "token_id_1".into(),
-    "token_id_2".into(),
-]).await?;
-```
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
 
-### Consuming Messages
+    let mut stream = client.orderbook_stream(ObStreamOptions::default()).await?;
 
-Batches are flattened automatically. `next()` yields individual `ObMessage` items:
+    // Subscribe to specific tokens
+    stream.subscribe(vec![
+        "21742633143463906290569050155826241533067272736897614950488156847949938836455".into(),
+    ]).await?;
 
-```rust
-while let Some(msg) = stream.next().await {
-    match msg? {
-        ObMessage::Update(OrderbookUpdate::Snapshot(snap)) => {
-            println!("{}: {} bids, {} asks",
-                snap.asset_id, snap.bids.len(), snap.asks.len());
-        }
-        ObMessage::Update(OrderbookUpdate::Update(delta)) => {
-            // Incremental delta. A level with size "0" means removal.
-            println!("{}: {} bid changes", delta.asset_id, delta.bids.len());
-        }
-        ObMessage::Update(OrderbookUpdate::PriceChange(change)) => {
-            for asset in &change.assets {
-                println!("{} {}: {}", change.market, asset.outcome, asset.price);
+    while let Some(msg) = stream.next().await {
+        match msg {
+            Ok(ObMessage::Update(update)) => {
+                println!("{:?}", update);
             }
+            Ok(ObMessage::Subscribed { markets }) => {
+                println!("tracking {} markets", markets);
+            }
+            Ok(ObMessage::SnapshotsDone { total }) => {
+                println!("all {} snapshots loaded", total);
+            }
+            Err(e) => eprintln!("error: {}", e),
+            _ => {}
         }
-        ObMessage::SnapshotsDone { total } => {
-            println!("All {} snapshots received", total);
-        }
-        ObMessage::Subscribed { markets } => {
-            println!("Subscribed to {} markets", markets);
-        }
-        ObMessage::Error { error, message } => {
-            eprintln!("Error ({}): {}", error, message);
-        }
-        _ => {}
     }
+
+    Ok(())
 }
 ```
 
-### LocalOrderbook Helper
+### Local Orderbook State
 
-Maintain a sorted local copy of the book:
+Apply snapshots and deltas to maintain a sorted local copy of the book:
 
-```rust
+```rust,no_run
 use polynode::LocalOrderbook;
+use polynode::types::orderbook::{ObMessage, OrderbookUpdate};
 
+# async fn example(stream: &mut polynode::ObStream) -> polynode::Result<()> {
 let mut book = LocalOrderbook::new();
 
-// Apply updates as they arrive
-match update {
-    OrderbookUpdate::Snapshot(snap) => book.apply_snapshot(&snap),
-    OrderbookUpdate::Update(delta) => book.apply_update(&delta),
-    _ => {}
+while let Some(msg) = stream.next().await {
+    if let Ok(ObMessage::Update(update)) = msg {
+        match &update {
+            OrderbookUpdate::Snapshot(snap) => book.apply_snapshot(snap),
+            OrderbookUpdate::Update(delta) => book.apply_update(delta),
+            OrderbookUpdate::PriceChange(_) => {}
+        }
+    }
+
+    let token = "21742633...";
+    if let Some(bid) = book.best_bid(token) {
+        println!("best bid: {} x {}", bid.price, bid.size);
+    }
+    if let Some(ask) = book.best_ask(token) {
+        println!("best ask: {} x {}", ask.price, ask.size);
+    }
+    if let Some(spread) = book.spread(token) {
+        println!("spread: {:.4}", spread);
+    }
 }
+# Ok(())
+# }
+```
 
-// Query state
-if let Some((bids, asks)) = book.get_book("token_id") {
-    println!("{} bids, {} asks", bids.len(), asks.len());
+### Orderbook Engine
+
+The highest-level abstraction. One shared WebSocket, automatic state management, and filtered views for different consumers:
+
+```rust,no_run
+use polynode::{OrderbookEngine, EngineOptions};
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let engine = OrderbookEngine::connect(
+        "pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d",
+        EngineOptions::default(),
+    ).await?;
+
+    // Subscribe to tokens
+    engine.subscribe(vec![
+        "token_a".into(),
+        "token_b".into(),
+    ]).await?;
+
+    // Query the shared state directly
+    if let Some(mid) = engine.midpoint("token_a").await {
+        println!("midpoint: {:.4}", mid);
+    }
+    if let Some(spread) = engine.spread("token_a").await {
+        println!("spread: {:.4}", spread);
+    }
+    if let Some((bids, asks)) = engine.book("token_a").await {
+        println!("bids: {}, asks: {}", bids.len(), asks.len());
+    }
+
+    // Create a filtered view for a subset of tokens
+    let mut view = engine.view(vec!["token_a".into()]);
+    while let Some(update) = view.next().await {
+        if let Some(mid) = view.midpoint("token_a").await {
+            println!("token_a midpoint: {:.4}", mid);
+        }
+    }
+
+    engine.close().await?;
+    Ok(())
 }
-let best_bid = book.best_bid("token_id");
-let best_ask = book.best_ask("token_id");
-let spread = book.spread("token_id");
 ```
 
-### Options
+## Short-Form Markets
 
-```rust
-use std::time::Duration;
+Auto-rotating streams for Polymarket's short-form crypto markets (5m, 15m, 1h windows). The SDK discovers the current market window, subscribes to live events, and automatically rotates to the next window at expiry.
 
-let mut stream = client.orderbook_stream(ObStreamOptions {
-    compress: true,
-    auto_reconnect: true,
-    max_reconnect_attempts: None,       // None = unlimited
-    initial_backoff: Duration::from_secs(1),
-    max_backoff: Duration::from_secs(30),
-}).await?;
+```rust,no_run
+use polynode::{PolyNodeClient, ShortFormInterval, Coin, ShortFormMessage};
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+
+    let mut stream = client
+        .short_form(ShortFormInterval::FifteenMin)
+        .coins(&[Coin::Btc, Coin::Eth, Coin::Sol])
+        .rotation_buffer(3)
+        .start()
+        .await?;
+
+    while let Some(msg) = stream.next().await {
+        match msg {
+            ShortFormMessage::Event(event) => {
+                println!("event: {:?}", event);
+            }
+            ShortFormMessage::Rotation(info) => {
+                println!("--- window rotated ({}) ---", info.interval);
+                for m in &info.markets {
+                    println!("  {}: beat ${:?} | {:.0}% up | {}s left",
+                        m.coin.id(), m.price_to_beat,
+                        m.up_odds * 100.0, info.time_remaining);
+                }
+            }
+            ShortFormMessage::Error(e) => {
+                eprintln!("non-fatal: {}", e);
+            }
+        }
+    }
+
+    Ok(())
+}
 ```
 
-### Custom URL
+### Intervals and Coins
 
-```rust
-let client = PolyNodeClient::builder("pn_live_...")
-    .ob_url("wss://ob.polynode.dev/ws")
-    .build()?;
+```rust,no_run
+use polynode::{ShortFormInterval, Coin};
+
+# fn example() {
+// Intervals
+let _ = ShortFormInterval::FiveMin;     // 5-minute windows
+let _ = ShortFormInterval::FifteenMin;  // 15-minute windows
+let _ = ShortFormInterval::Hourly;      // 1-hour windows
+
+// Supported coins
+let all = Coin::all(); // BTC, ETH, SOL, XRP, DOGE, HYPE, BNB
+# }
 ```
 
-### Cleanup
+## Trading Module
 
-```rust
-stream.unsubscribe().await?;  // unsubscribe from all markets
-stream.close().await?;        // close connection
+<Note>Requires the `trading` feature flag: `polynode = { version = "0.5", features = ["trading"] }`</Note>
+
+Place orders on Polymarket with local credential custody and builder attribution. All signing happens locally. Private keys never leave your machine.
+
+### Generate a Wallet
+
+```rust,no_run
+use polynode::trading::PolyNodeTrader;
+
+# fn example() {
+let (private_key, address) = PolyNodeTrader::generate_wallet();
+println!("address: {}", address);
+println!("key: {}", private_key);
+// Fund this address with USDC and POL on Polygon before trading
+# }
 ```
 
-## OrderbookEngine
+### Onboarding
 
-The `OrderbookEngine` is a higher-level wrapper around the orderbook stream. It manages one WebSocket connection, maintains local state for all subscribed tokens, and lets you create **filtered views** that only deliver updates for specific token subsets.
+`ensure_ready()` handles the full onboarding flow in one call: derives addresses, checks Safe deployment and approvals, creates or loads CLOB credentials, and stores everything in a local SQLite database.
 
-### Create and Subscribe
+```rust,no_run
+use polynode::trading::{PolyNodeTrader, TraderConfig, PrivateKeySigner};
 
-```rust
-use polynode::orderbook::engine::{OrderbookEngine, EngineOptions};
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let mut trader = PolyNodeTrader::new(TraderConfig {
+        polynode_key: "pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d".into(),
+        db_path: "./my-trading.db".into(),
+        ..Default::default()
+    })?;
 
-let engine = OrderbookEngine::connect("pn_live_...", EngineOptions {
-    compress: true,
+    let signer = PrivateKeySigner::from_hex("0xdeadbeef...")?;
+    let status = trader.ensure_ready(Box::new(signer), None).await?;
+
+    println!("wallet: {}", status.wallet);
+    println!("funder: {}", status.funder_address);
+    println!("safe deployed: {}", status.safe_deployed);
+    println!("approvals set: {}", status.approvals_set);
+    println!("actions taken: {:?}", status.actions);
+
+    trader.close();
+    Ok(())
+}
+```
+
+### Place an Order
+
+```rust,no_run
+use polynode::trading::{PolyNodeTrader, TraderConfig, PrivateKeySigner, OrderParams, OrderSide, OrderType};
+
+# async fn example() -> polynode::Result<()> {
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: "pn_live_...".into(),
     ..Default::default()
+})?;
+
+let signer = PrivateKeySigner::from_hex("0x...")?;
+trader.ensure_ready(Box::new(signer), None).await?;
+
+let result = trader.order(OrderParams {
+    token_id: "21742633143463906290569050155826241533067272736897614950488156847949938836455".into(),
+    side: OrderSide::Buy,
+    price: 0.55,
+    size: 100.0,
+    order_type: OrderType::GTC,
+    expiration: None,
+    post_only: false,
 }).await?;
 
-// Subscribe with token IDs, slugs, or condition IDs
-engine.subscribe(vec![
-    "114694726451307654528948558967898493662917070661203465131156925998487819889437".into(),
-    "66255671088804707681511323064315150986307471908131081808279119719218775249892".into(),
-]).await?;
+if result.success {
+    println!("order placed: {:?}", result.order_id);
+} else {
+    println!("order failed: {:?}", result.error);
+}
 
-// Wait for snapshots to load
-tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-println!("{} books loaded", engine.len().await);
+trader.close();
+# Ok(())
+# }
 ```
 
-### Query State
+### Order Types
 
-The engine exposes computed helpers that read from the shared local orderbook. All queries are async because they acquire a read lock on the shared state:
+| Type | Behavior |
+|------|----------|
+| `GTC` | Good til canceled (default) |
+| `GTD` | Good til date (set `expiration` to a Unix timestamp) |
+| `FOK` | Fill or kill, entire order fills or nothing |
+| `FAK` | Fill and kill, partial fills allowed, remainder canceled |
 
-```rust
-engine.midpoint(token_id).await;   // Option<f64> — (best_bid + best_ask) / 2
-engine.spread(token_id).await;     // Option<f64> — best_ask - best_bid
-engine.best_bid(token_id).await;   // Option<OrderbookLevel>
-engine.best_ask(token_id).await;   // Option<OrderbookLevel>
-engine.book(token_id).await;       // Option<(Vec<OrderbookLevel>, Vec<OrderbookLevel>)>
+### Cancel Orders
+
+```rust,no_run
+# async fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
+// Cancel a specific order
+let result = trader.cancel_order("order_id_here").await?;
+println!("canceled: {:?}", result.canceled);
+
+// Cancel all orders
+let result = trader.cancel_all(None).await?;
+
+// Cancel all orders for a specific market
+let result = trader.cancel_all(Some("condition_id")).await?;
+# Ok(())
+# }
 ```
 
-### Filtered Views
+### Query Open Orders
 
-Create views that only receive updates for specific tokens. No extra connections — views filter the shared stream.
+```rust,no_run
+# async fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
+// All open orders
+let orders = trader.get_open_orders(None).await?;
+for o in &orders {
+    println!("{}: {} {} @ {} (matched: {}/{})",
+        o.id, o.side, o.asset_id, o.price, o.size_matched, o.original_size);
+}
 
-```rust
-let mut trade_view = engine.view(vec![token_a.into(), token_b.into()]);
+// Open orders for a specific market
+let orders = trader.get_open_orders(Some("condition_id")).await?;
+# Ok(())
+# }
+```
 
-// Receive filtered updates via async channel
-while let Some(update) = trade_view.next().await {
-    match update {
-        OrderbookUpdate::Snapshot(snap) => {
-            println!("{}: {} bids", snap.asset_id, snap.bids.len());
-        }
-        OrderbookUpdate::Update(delta) => {
-            println!("{}: {} changes", delta.asset_id, delta.bids.len());
-        }
-        _ => {}
+### Pre-Trade Checks
+
+```rust,no_run
+# async fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
+// Check token approvals
+let approvals = trader.check_approvals(None).await?;
+println!("all approved: {}", approvals.all_approved);
+
+// Check USDC and POL balances
+let balance = trader.check_balance(None).await?;
+println!("USDC: {}, POL: {}", balance.usdc, balance.matic);
+# Ok(())
+# }
+```
+
+### Local Order History
+
+All orders are logged locally in SQLite:
+
+```rust,no_run
+use polynode::trading::HistoryParams;
+
+# fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
+let history = trader.get_order_history(Some(HistoryParams {
+    limit: Some(50),
+    offset: None,
+    token_id: None,
+    side: None,
+}))?;
+for row in &history {
+    println!("{}: {} {} @ {} — {}", row.token_id, row.side, row.size, row.price, row.status);
+}
+# Ok(())
+# }
+```
+
+### Wallet Export and Import
+
+Back up and restore wallet credentials:
+
+```rust,no_run
+# fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
+// Export
+let exported = trader.export_wallet(None)?;
+if let Some(ref data) = exported {
+    let json = serde_json::to_string_pretty(data).unwrap();
+    std::fs::write("wallet-backup.json", json).unwrap();
+}
+
+// Import
+let json = std::fs::read_to_string("wallet-backup.json").unwrap();
+let data: polynode::trading::WalletExport = serde_json::from_str(&json).unwrap();
+trader.import_wallet(data)?;
+# Ok(())
+# }
+```
+
+### Custom Signers
+
+Implement the `TradingSigner` trait for HSM, KMS, or other signing backends:
+
+```rust,no_run
+use polynode::trading::TradingSigner;
+use alloy_primitives::Address;
+use async_trait::async_trait;
+
+struct MyHsmSigner { /* ... */ }
+
+#[async_trait]
+impl TradingSigner for MyHsmSigner {
+    fn address(&self) -> Address {
+        // Return the EOA address
+        todo!()
+    }
+
+    async fn sign_typed_data(
+        &self,
+        payload: &polynode::trading::Eip712Payload,
+    ) -> polynode::Result<Vec<u8>> {
+        // Sign EIP-712 typed data, return 65-byte signature
+        todo!()
+    }
+
+    async fn sign_message(&self, message: &[u8]) -> polynode::Result<Vec<u8>> {
+        // Sign raw message (personal_sign), return 65-byte signature
+        todo!()
     }
 }
 ```
 
-Views have the same query helpers as the engine:
+### TraderConfig
 
-```rust
-trade_view.midpoint(token_a).await;
-trade_view.spread(token_a).await;
-trade_view.book(token_a).await;
-```
+```rust,no_run
+use polynode::trading::{TraderConfig, SignatureType};
 
-### Swap Tokens
-
-Change which tokens a view tracks at runtime:
-
-```rust
-trade_view.set_tokens(vec![new_token_x.into(), new_token_y.into()]).await;
-```
-
-### Cleanup
-
-```rust
-engine.close().await?;
-```
-
-## Event Types
-
-All event types are fully typed with serde:
-
-```rust
-use polynode::{
-    PolyNodeEvent,         // tagged enum of all events
-    SettlementEvent,
-    TradeEvent,
-    StatusUpdateEvent,
-    BlockEvent,
-    PositionChangeEvent,
-    DepositEvent,
-    PositionSplitEvent,
-    PositionMergeEvent,
-    OracleEvent,
-    PriceFeedEvent,        // Chainlink (separate from PolyNodeEvent)
-
-    // Orderbook types
-    OrderbookLevel,
-    BookSnapshot,
-    BookUpdate,
-    PriceChange,
-    OrderbookUpdate,       // tagged enum of snapshot | update | price_change
-    ObMessage,             // what the stream yields
+# fn example() {
+let config = TraderConfig {
+    polynode_key: "pn_live_...".into(),
+    db_path: "./my-trading.db".into(),          // local SQLite for credentials + history
+    cosigner_url: "https://cosigner.polynode.dev".into(), // default
+    fallback_direct: true,                       // submit directly if cosigner is down
+    default_signature_type: SignatureType::PolyGnosisSafe, // default
+    rpc_url: "https://rpc.polynode.dev".into(),  // for on-chain reads
 };
+# }
 ```
+
+## Redemption Watcher
+
+Monitor wallets for redeemable positions after oracle resolution. The watcher fetches current positions via REST, then listens for real-time oracle events on the WebSocket and emits alerts when a watched wallet holds a position in a resolved market.
+
+```rust,no_run
+use polynode::{PolyNodeClient, RedemptionWatcher, RedemptionWatcherConfig};
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let client = Arc::new(PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?);
+
+    let mut watcher = RedemptionWatcher::new(client, RedemptionWatcherConfig {
+        track_position_changes: true,
+        refresh_interval_secs: 300,
+        compress: true,
+    });
+
+    // Start watching specific wallets
+    watcher.start(&[
+        "0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6",
+        "0xBB39C16C3fc54d3C9B1f9f9E8dF4a09Ee25AB7df",
+    ]).await?;
+
+    println!("tracking {} positions", watcher.size());
+
+    // Add more wallets at runtime
+    watcher.add_wallets(&["0x7a25dA10f8cA3b67D5fF55e87E2B0C076D3Dd0bD"]).await?;
+
+    // Listen for alerts
+    while let Some(alert) = watcher.next_alert().await {
+        if alert.is_winner {
+            println!("REDEEMABLE: {} holds {} on '{}' — payout: ${:.2}",
+                alert.wallet, alert.outcome, alert.market_title, alert.estimated_payout_usd);
+        } else {
+            println!("RESOLVED (loss): {} on '{}'", alert.wallet, alert.market_title);
+        }
+    }
+
+    watcher.close();
+    Ok(())
+}
+```
+
+## Local Cache
+
+<Note>Requires the `cache` feature flag: `polynode = { version = "0.5", features = ["cache"] }`</Note>
+
+Local SQLite cache that backfills trade history on startup, streams live updates via WebSocket, and serves all queries locally with zero additional API calls after initialization. Driven by a JSON watchlist file that specifies which wallets, markets, and tokens to track.
+
+### Setup
+
+Create a `polynode.watch.json` file:
+
+```json
+{
+  "version": 1,
+  "wallets": [
+    { "address": "0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6", "label": "whale-1", "backfill": true },
+    { "address": "0xBB39C16C3fc54d3C9B1f9f9E8dF4a09Ee25AB7df", "label": "whale-2", "backfill": true }
+  ],
+  "markets": [
+    { "condition_id": "0xabc...", "label": "bitcoin-100k", "backfill": true }
+  ],
+  "tokens": [],
+  "settings": {
+    "ttl_days": 30,
+    "backfill_rate": 2.0,
+    "purge_on_remove": false
+  }
+}
+```
+
+### Start the Cache
+
+```rust,no_run
+use polynode::{PolyNodeClient, cache::PolyNodeCache};
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let client = Arc::new(PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?);
+
+    let mut cache = PolyNodeCache::builder(client)
+        .db_path("./polynode-cache.db")
+        .watchlist_path("./polynode.watch.json")
+        .ttl_seconds(30 * 86400)            // 30 days
+        .backfill_rate(2.0)                  // 2 requests/sec
+        .backfill_pages(3)                   // 3 pages per entity
+        .backfill_page_size(500)             // 500 trades per page
+        .purge_on_remove(false)              // keep data when removing from watchlist
+        .on_backfill_progress(|p| {
+            println!("[{}] {}: {} fetched ({})", p.entity_type, p.label, p.fetched, p.status);
+        })
+        .build()?;
+
+    cache.start().await?;
+
+    // All queries are local, instant, no API calls
+    let positions = cache.wallet_positions("0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6")?;
+    for p in &positions {
+        println!("{}: {} {} @ {:.4} (pnl: {:?})",
+            p.market_title, p.outcome, p.size, p.avg_price, p.cash_pnl);
+    }
+
+    cache.stop().await?;
+    Ok(())
+}
+```
+
+### Query Methods
+
+All queries are synchronous and read from local SQLite:
+
+```rust,no_run
+use polynode::cache::{QueryOptions, OrderBy};
+
+# fn example(cache: &polynode::cache::PolyNodeCache) -> polynode::Result<()> {
+// Wallet positions
+let positions = cache.wallet_positions("0xabc...")?;
+
+// Multi-wallet positions
+let multi = cache.multi_wallet_positions(&[
+    "0xabc...".into(),
+    "0xdef...".into(),
+])?;
+
+// Wallet trades with filters
+let trades = cache.wallet_trades("0xabc...", &QueryOptions {
+    limit: Some(100),
+    offset: None,
+    since: Some(1711843200.0),
+    until: None,
+    side: Some("BUY".into()),
+    order_by: Some(OrderBy::TimestampDesc),
+})?;
+
+// Market trades
+let market_trades = cache.market_trades("condition_id", &QueryOptions::default())?;
+
+// Market positions
+let market_pos = cache.market_positions("condition_id")?;
+
+// Token trades
+let token_trades = cache.token_trades("token_id", &QueryOptions::default())?;
+
+// Settlements
+let settlements = cache.wallet_settlements("0xabc...", &QueryOptions::default())?;
+
+// Lookup by tx hash
+let tx = cache.trade_by_tx_hash("0xdeadbeef...")?;
+
+// Realized P&L (weighted average cost basis)
+let pnl = cache.wallet_realized_pnl("0xabc...")?;
+println!("realized: ${:.2}, unrealized: ${:.2}, confidence: {}",
+    pnl.total_realized_pnl, pnl.total_unrealized_pnl, pnl.confidence);
+
+// Cache stats
+let stats = cache.stats()?;
+println!("{} trades, {} settlements, {:.1}MB",
+    stats.trade_count, stats.settlement_count, stats.db_size_bytes as f64 / 1_048_576.0);
+# Ok(())
+# }
+```
+
+### Runtime Watchlist Management
+
+Add or remove entities without restarting:
+
+```rust,no_run
+use polynode::cache::EntityType;
+
+# fn example(cache: &polynode::cache::PolyNodeCache) -> polynode::Result<()> {
+// Add a wallet at runtime (will backfill automatically)
+cache.add_to_watchlist(&[
+    (EntityType::Wallet, "0xnew...".into(), "new-whale".into(), true),
+])?;
+
+// Remove a wallet
+cache.remove_from_watchlist(&[
+    (EntityType::Wallet, "0xold...".into()),
+])?;
+# Ok(())
+# }
+```
+
+The cache also watches the `polynode.watch.json` file for changes. Edit the file and the cache picks up additions and removals automatically.
+
+### Manual Pruning
+
+```rust,no_run
+# fn example(cache: &polynode::cache::PolyNodeCache) -> polynode::Result<()> {
+let pruned = cache.prune()?;
+println!("pruned {} expired records", pruned);
+# Ok(())
+# }
+```
+
+## Testing Utilities
+
+Helpers for integration tests that need active wallet addresses:
+
+```rust,no_run
+use polynode::testing;
+
+#[tokio::main]
+async fn main() {
+    // Get a single active wallet (from leaderboard or fallback list)
+    let wallet = testing::get_active_test_wallet(true).await;
+    println!("test wallet: {}", wallet);
+
+    // Get multiple
+    let wallets = testing::get_active_test_wallets(3, true).await;
+    for w in &wallets {
+        println!("  {}", w);
+    }
+}
+```
+
+Set `fresh` to `true` to attempt fetching recently active wallets from the Polymarket leaderboard. Falls back to a hardcoded list of known-active addresses.
+
+## Error Handling
+
+All SDK methods return `polynode::Result<T>`, which wraps `polynode::Error`:
+
+```rust,no_run
+use polynode::{PolyNodeClient, Error};
+
+# async fn example() -> polynode::Result<()> {
+let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+
+match client.market("invalid-token-id").await {
+    Ok(market) => println!("{:?}", market),
+    Err(Error::NotFound(msg)) => println!("not found: {}", msg),
+    Err(Error::Auth(msg)) => println!("auth failed: {}", msg),
+    Err(Error::RateLimited(msg)) => println!("rate limited: {}", msg),
+    Err(Error::Api { status, message }) => println!("API error {}: {}", status, message),
+    Err(Error::Http(e)) => println!("network error: {}", e),
+    Err(Error::Disconnected) => println!("WebSocket disconnected"),
+    Err(e) => println!("other: {}", e),
+}
+# Ok(())
+# }
+```
+
+### Error Variants
+
+| Variant | When it occurs |
+|---------|---------------|
+| `Http` | Network-level request failure |
+| `WebSocket` | WebSocket connection or protocol error |
+| `Json` | Response deserialization failure |
+| `Api { status, message }` | Server returned a non-success status |
+| `Auth` | 401 or 403 from the API |
+| `RateLimited` | 429 from the API |
+| `NotFound` | 404 from the API |
+| `Disconnected` | WebSocket connection lost |
+| `Decompression` | zlib decompression failure |
+| `ConnectionClosed` | Server closed the WebSocket |
+| `Trading` | Trading-specific error (feature: `trading`) |
+| `Signing` | EIP-712 signing failure (feature: `trading`) |
+| `Sqlite` | Local database error (feature: `cache` or `trading`) |
+| `Cache` | Cache-specific error (feature: `cache`) |
 
 ## Source
 
-[crates.io](https://crates.io/crates/polynode) | [GitHub](https://github.com/joinQuantish/polynode-rs)
+[GitHub](https://github.com/joinQuantish/polynode-rs) | [crates.io](https://crates.io/crates/polynode)

@@ -7,6 +7,48 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-29 — Rust SDK v0.5.0 (Feature Parity)
+
+### Rust SDK v0.5.0
+
+Major release bringing the Rust SDK to feature parity with the TypeScript SDK.
+
+**New REST endpoints (12 methods):**
+- Orderbook REST: `orderbook_rest()`, `midpoint()`, `spread()`
+- Enriched data: `leaderboard()`, `trending()`, `activity()`, `movers()`
+- Trader analytics: `trader_profile()`, `trader_pnl()`
+- Events: `event()`, `search_events()`, `markets_by_category()`
+
+**Trading module** (`--features trading`):
+- `PolyNodeTrader` for full order lifecycle on Polymarket
+- Wallet generation, onboarding (auto-detect Safe/Proxy), order placement, cancellation
+- Native EIP-712 signing via `TradingSigner` trait + `PrivateKeySigner`
+- CREATE2 address derivation for Safe and Proxy wallets
+- CLOB authentication with L2 HMAC headers
+- Builder attribution via co-signer proxy
+- Local SQLite storage for credentials and order history
+- On-chain approval and balance checks
+
+**Privy integration** (`--features privy`):
+- `PrivySigner` for server-side trading with Privy-managed wallets
+- Pure HTTP-based, no native SDK dependency
+
+**Redemption watcher:**
+- Monitor wallets for redeemable positions after oracle resolution
+- Fires alerts with winner detection and payout estimation
+
+```toml
+[dependencies]
+polynode = "0.5"
+
+# With trading:
+# polynode = { version = "0.5", features = ["trading"] }
+```
+
+Full documentation: [Rust SDK](/sdks/rust)
+
+---
+
 ## 2026-03-29 — Trading Module v0.5.5 (TypeScript SDK)
 
 ### TypeScript SDK v0.5.5
