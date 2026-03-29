@@ -215,6 +215,18 @@
         ]
       },
       {
+        "tab": "Trading",
+        "badge": "New",
+        "groups": [
+          {
+            "group": "Trading",
+            "pages": [
+              "sdks/trading"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "SDKs",
         "groups": [
           {
@@ -232,12 +244,6 @@
               "sdks/orderbook",
               "sdks/rest-api",
               "sdks/rpc"
-            ]
-          },
-          {
-            "group": "Trading",
-            "pages": [
-              "sdks/trading"
             ]
           },
           {
