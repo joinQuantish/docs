@@ -7,18 +7,18 @@ icon: "clock-rotate-left"
 
 ---
 
-## 2026-03-29 — Trading Module v0.5.4 (TypeScript SDK)
+## 2026-03-29 — Trading Module v0.5.5 (TypeScript SDK)
 
-### TypeScript SDK v0.5.4
+### TypeScript SDK v0.5.5
 
-- **EOA auto-approvals:** `ensureReady()` now automatically sends approval transactions for EOA wallets. Previously, EOA users were left with `approvalsSet: false` and no way to fix it. Requires ~$0.01 MATIC in the wallet.
+- **EOA auto-approvals:** `ensureReady()` now automatically sends approval transactions for EOA wallets with proper nonce management. Requires ~0.05 MATIC in the wallet (~$0.01).
 - **Fix:** `createPrivySigner`, `createPrivyClient`, and other Privy helpers are now correctly exported from the package root. In v0.5.2 these were only reachable via internal module paths.
 - **Privy server-auth integration:** `createPrivySigner()` and `createPrivyClient()` for server-side trading with Privy-managed wallets.
 - **Unlimited gasless operations:** Paid tiers get unlimited gasless on-chain operations. Free tier gets basic gasless onboarding.
 - **ethers v5/v6 compatibility:** Safe transaction signing works with both ethers v5 and v6.
 
 ```bash
-npm install polynode-sdk@0.5.4 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
+npm install polynode-sdk@0.5.5 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
 ```
 
 Full documentation: [Trading](/sdks/trading)
