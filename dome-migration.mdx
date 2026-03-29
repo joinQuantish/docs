@@ -328,6 +328,12 @@ The dome subscription supports all standard polynode filters:
 
 If you used Dome's trading SDK to place orders on Polymarket, the polynode SDK is a drop-in replacement with two key improvements: your credentials stay on your machine (not on a third-party server), and wallet type is auto-detected so you don't need to know if you're EOA, Proxy, or Safe.
 
+```bash
+npm install polynode-sdk@0.5.5 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
+```
+
+<Note>Requires Node.js 18 or later.</Note>
+
 ### Quick comparison
 
 | | Dome | polynode |
