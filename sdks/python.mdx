@@ -107,7 +107,7 @@ pn.trader_profile("0xabc...")         # TraderProfile
 pn.trader_pnl("0xabc...", period="1W")  # TraderPnlResponse
 pn.event("how-many-fed-rate-cuts-2026")  # EventDetailResponse
 pn.search_events("recession", limit=5)  # EventSearchResponse
-pn.markets_by_category("crypto")      # MarketsByCategoryResponse
+pn.markets_by_category("crypto")      # MarketsListResponse
 
 # RPC (rpc.polynode.dev)
 pn.rpc("eth_blockNumber")
@@ -177,7 +177,8 @@ sub.on("*", lambda e: print(e.event_type))  # catch-all
 All filters from the [Subscriptions & Filters](/websocket/subscribing) page are supported:
 
 ```python
-pn.ws.subscribe("settlements") \
+(
+    pn.ws.subscribe("settlements")
     .wallets(["0xabc..."])          # by wallet
     .tokens(["21742633..."])        # by token ID
     .slugs(["bitcoin-100k"])        # by market slug
@@ -190,6 +191,7 @@ pn.ws.subscribe("settlements") \
     .snapshot_count(50)             # initial snapshot (max 200)
     .feeds(["BTC/USD"])             # chainlink feeds
     .send()
+)
 ```
 
 ### Subscription Types
@@ -405,7 +407,7 @@ print(f"Actions: {status.actions}")
 from polynode.trading import OrderParams
 
 result = await trader.order(OrderParams(
-    token_id="21742633143463906290569050155826241533067272736897614950488156847949938836455",
+    token_id="51037625779056581606819614184446816710505006861008496087735536016411882582167",
     side="BUY",
     price=0.55,
     size=100,

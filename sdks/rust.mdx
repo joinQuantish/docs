@@ -108,7 +108,7 @@ let markets = client.markets(Some(10)).await?;
 println!("{} markets, {} total", markets.count, markets.total);
 
 // Single market by token ID
-let market = client.market("21742633143463906290569050155826241533067272736897614950488156847949938836455").await?;
+let market = client.market("51037625779056581606819614184446816710505006861008496087735536016411882582167").await?;
 
 // Single market by URL slug
 let market = client.market_by_slug("bitcoin-100k").await?;
@@ -141,13 +141,17 @@ let crypto = client.markets_by_category("crypto").await?;
 # }
 ```
 
+<Tip>
+  Token IDs change as markets open and close. Use `client.markets(Some(1)).await?` to get a currently active token ID for testing.
+</Tip>
+
 ### Pricing
 
 ```rust,no_run
 # async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
 use polynode::common::CandleResolution;
 
-let token_id = "21742633143463906290569050155826241533067272736897614950488156847949938836455";
+let token_id = "51037625779056581606819614184446816710505006861008496087735536016411882582167";
 
 // OHLCV candles
 let candles = client.candles(token_id, Some(CandleResolution::OneHour), Some(100)).await?;
@@ -211,7 +215,7 @@ let market_trades = client.market_trades("0xabc...", Some(50), None, Some("BUY")
 
 ```rust,no_run
 # async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
-let token_id = "21742633143463906290569050155826241533067272736897614950488156847949938836455";
+let token_id = "51037625779056581606819614184446816710505006861008496087735536016411882582167";
 
 // Full orderbook snapshot
 let book = client.orderbook_rest(token_id).await?;
@@ -463,7 +467,7 @@ async fn main() -> polynode::Result<()> {
 
     // Subscribe to specific tokens
     stream.subscribe(vec![
-        "21742633143463906290569050155826241533067272736897614950488156847949938836455".into(),
+        "51037625779056581606819614184446816710505006861008496087735536016411882582167".into(),
     ]).await?;
 
     while let Some(msg) = stream.next().await {
@@ -685,7 +689,7 @@ let signer = PrivateKeySigner::from_hex("0x...")?;
 trader.ensure_ready(Box::new(signer), None).await?;
 
 let result = trader.order(OrderParams {
-    token_id: "21742633143463906290569050155826241533067272736897614950488156847949938836455".into(),
+    token_id: "51037625779056581606819614184446816710505006861008496087735536016411882582167".into(),
     side: OrderSide::Buy,
     price: 0.55,
     size: 100.0,
