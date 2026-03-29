@@ -7,6 +7,36 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-29 — Python SDK v0.6.0
+
+### Python SDK v0.6.0
+
+Trading module fixes and Privy server-side wallet support.
+
+**Trading fixes:**
+- Fixed CLOB credential creation (endpoint, auth headers, EIP-712 message structure)
+- Fixed order signing (domain name, signature format, payload serialization)
+- Fixed HMAC authentication for URL-safe base64 secrets
+- Fixed `fetch_tick_size` and `fetch_neg_risk` response parsing
+- Full end-to-end verified: wallet generation, onboarding, order placement, cancellation, gasless flow
+
+**New: Privy signer**
+- `PrivySigner` for server-side trading with Privy-managed wallets
+- No private key needed, signing via Privy's wallet API
+- Works with all trading methods (`ensure_ready`, `order`, `cancel_all`, etc.)
+
+**Other fixes:**
+- `markets_by_category()` now correctly filters via query parameter
+- Fixed subscription filters code example in docs
+
+```bash
+pip install polynode==0.6.0
+# With trading support:
+pip install "polynode[trading]==0.6.0"
+```
+
+---
+
 ## 2026-03-29 — Rust SDK v0.5.0 (Feature Parity)
 
 ### Rust SDK v0.5.0

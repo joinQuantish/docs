@@ -503,6 +503,31 @@ trader = PolyNodeTrader(config)
 | `SignatureType.POLY_PROXY` | 1 | Legacy Polymarket proxy wallet |
 | `SignatureType.POLY_GNOSIS_SAFE` | 2 | Gnosis Safe (default, gasless onboarding) |
 
+### Privy Signer (Server-Side Wallets)
+
+Use Privy-managed wallets for headless server-side trading. No private key needed — signing is done through Privy's wallet API:
+
+```python
+from polynode.trading import PolyNodeTrader, TraderConfig
+from polynode.trading.privy import PrivySigner, PrivyConfig
+
+signer = PrivySigner(
+    PrivyConfig(
+        app_id="your-privy-app-id",
+        app_secret="your-privy-app-secret",
+        authorization_key="wallet-auth:your-authorization-key",
+    ),
+    wallet_id="your-privy-wallet-id",
+    wallet_address="0xYourWalletAddress",
+)
+
+trader = PolyNodeTrader(TraderConfig(polynode_key="pn_live_..."))
+status = await trader.ensure_ready(signer)
+result = await trader.order(OrderParams(token_id="...", side="BUY", price=0.50, size=100))
+```
+
+The Privy signer implements the same `RouterSigner` interface and works with all trading methods (`ensure_ready`, `order`, `cancel_all`, etc.). Gnosis Safe wallets (type 2) are fully gasless.
+
 ### Cleanup
 
 ```python
