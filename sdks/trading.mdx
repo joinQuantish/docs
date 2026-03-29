@@ -62,15 +62,15 @@ if (result.orderId) {
 Use `createPrivySigner` to trade with Privy-managed wallets. Each user gets their own wallet without touching private keys.
 
 ```typescript
-import { PolyNodeTrader, createPrivySigner } from 'polynode-sdk';
-import { PrivyClient } from '@privy-io/server-auth';
+import { PolyNodeTrader, createPrivySigner, createPrivyClient } from 'polynode-sdk';
 
 // Set up Privy (one client for your whole app)
-const privy = new PrivyClient(
-  process.env.PRIVY_APP_ID!,
-  process.env.PRIVY_APP_SECRET!,
-  { walletApi: { authorizationPrivateKey: process.env.PRIVY_AUTHORIZATION_KEY! } },
-);
+// createPrivyClient handles the wallet API config for you.
+const privy = createPrivyClient({
+  appId: process.env.PRIVY_APP_ID!,
+  appSecret: process.env.PRIVY_APP_SECRET!,
+  authorizationKey: process.env.PRIVY_AUTHORIZATION_KEY!,
+});
 
 // Create a signer for a specific user's wallet
 const signer = createPrivySigner(privy, user.privyWalletId, user.walletAddress);
@@ -88,7 +88,7 @@ const result = await trader.order({ tokenId: '...', side: 'BUY', price: 0.55, si
 1. Create a Privy app at [dashboard.privy.io](https://dashboard.privy.io)
 2. Enable **Server wallets** under Wallet infrastructure
 3. Generate an **Authorization keypair** (same section) — this is `PRIVY_AUTHORIZATION_KEY`
-4. Install: `npm install @privy-io/server-auth`
+4. Install: `npm install @privy-io/server-auth` (the SDK imports it automatically via `createPrivyClient`)
 
 If you enable Privy gas sponsorship in your dashboard, all on-chain operations (approvals, deploys) are free for your users.
 
@@ -122,7 +122,12 @@ await trader.linkWallet('0xYOUR_PRIVATE_KEY');
 ## Where to Send USDC.e
 
 <Warning>
-Polymarket uses **USDC.e** (bridged USDC) on Polygon, NOT native USDC. These are different tokens at different contract addresses. If you send native USDC, it will not show up as a trading balance. The correct token is USDC.e at `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` on Polygon.
+Polymarket uses **USDC.e** (bridged USDC) on Polygon, NOT native USDC. These are different tokens.
+
+- **USDC.e (correct):** `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174`
+- **Native USDC (wrong):** `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359`
+
+If you accidentally send native USDC, the tokens are still in your wallet (recoverable), but they won't work as a trading balance on Polymarket.
 </Warning>
 
 After `ensureReady()`, send USDC.e to `status.funderAddress`. This is the address that holds your trading balance.
