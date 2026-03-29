@@ -5,9 +5,9 @@ description: "Official client libraries for the PolyNode API"
 icon: "code"
 ---
 
-PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST API and WebSocket streaming interface with typed responses, auto-reconnection, and zlib compression support.
+PolyNode provides official SDKs for TypeScript, Rust, and Python. All wrap the full REST API and WebSocket streaming interface with typed responses, auto-reconnection, and zlib compression support.
 
-<CardGroup cols={2}>
+<CardGroup cols={3}>
   <Card title="TypeScript / Node.js" icon="js" href="/sdks/typescript">
     `npm install polynode-sdk`
 
@@ -17,6 +17,11 @@ PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST
     `polynode = "0.3"`
 
     Async with tokio. Typed events via serde.
+  </Card>
+  <Card title="Python" icon="python" href="/sdks/python">
+    `pip install polynode`
+
+    Sync + async. Pydantic v2 types. Python 3.10+.
   </Card>
 </CardGroup>
 
@@ -51,23 +56,23 @@ PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST
 
 ## What the SDKs Cover
 
-| Feature | TypeScript | Rust |
-|---------|-----------|------|
-| Local cache (SQLite) | Yes | Yes |
-| REST API (25 endpoints) | Yes | Yes |
-| WebSocket streaming | Yes | Yes |
-| Short-form markets (auto-rotation) | Yes | Yes |
-| All 10 event types | Typed interfaces | Typed structs + enum |
-| Subscription filters | Builder pattern | Builder pattern |
-| Orderbook streaming | Yes | Yes |
-| Local orderbook state | `LocalOrderbook` | `LocalOrderbook` |
-| OrderbookEngine (views) | Yes | Yes |
-| Zlib compression | Transparent | Transparent |
-| Auto-reconnect | Exponential backoff | Exponential backoff |
-| Enriched data (leaderboard, trending, profiles) | Yes | Yes |
-| RPC proxy | Yes | Yes |
-| Redemption watcher | Yes | — |
-| Trading (order placement) | Yes | — |
+| Feature | TypeScript | Rust | Python |
+|---------|-----------|------|--------|
+| Local cache (SQLite) | Yes | Yes | Planned |
+| REST API (25 endpoints) | Yes | Yes | Yes |
+| WebSocket streaming | Yes | Yes | Yes (async) |
+| Short-form markets (auto-rotation) | Yes | Yes | Yes |
+| All 10 event types | Typed interfaces | Typed structs + enum | Pydantic models |
+| Subscription filters | Builder pattern | Builder pattern | Builder pattern |
+| Orderbook streaming | Yes | Yes | Yes |
+| Local orderbook state | `LocalOrderbook` | `LocalOrderbook` | `LocalOrderbook` |
+| OrderbookEngine (views) | Yes | Yes | Yes |
+| Zlib compression | Transparent | Transparent | Transparent |
+| Auto-reconnect | Exponential backoff | Exponential backoff | Exponential backoff |
+| Enriched data (leaderboard, trending, profiles) | Yes | Yes | Yes |
+| RPC proxy | Yes | Yes | Yes |
+| Redemption watcher | Yes | — | Yes |
+| Trading (order placement) | Yes | — | Yes |
 
 ## Quick Comparison
 
@@ -118,6 +123,26 @@ PolyNode provides official SDKs for TypeScript and Rust. Both wrap the full REST
             ShortFormMessage::Error(e) => eprintln!("{}", e),
         }
     }
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import asyncio
+    from polynode import AsyncPolyNode
+
+    async def main():
+        async with AsyncPolyNode(api_key="pn_live_...") as pn:
+            # Subscribe to settlements with filters
+            sub = await pn.ws.subscribe("settlements") \
+                .min_size(1000) \
+                .status("all") \
+                .send()
+
+            async for event in sub:
+                print(f"{event.taker_side} ${event.taker_size:.0f} on {event.market_title}")
+                print(f"  status: {event.status}, price: {event.taker_price}")
+
+    asyncio.run(main())
     ```
   </Tab>
 </Tabs>

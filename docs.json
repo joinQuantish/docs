@@ -256,7 +256,8 @@
             "group": "Language Reference",
             "pages": [
               "sdks/typescript",
-              "sdks/rust"
+              "sdks/rust",
+              "sdks/python"
             ]
           }
         ]
