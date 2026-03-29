@@ -20,7 +20,7 @@ The trading module lets you place and manage orders on Polymarket. One function 
 ## Install
 
 ```bash
-npm install polynode-sdk@0.5.2 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
+npm install polynode-sdk@0.5.3 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
 ```
 
 `viem`, `better-sqlite3`, and the `@polymarket/*` packages are optional peer dependencies. You only need them if you use the trading module.
@@ -352,6 +352,8 @@ When `ensureReady()` runs on a new wallet:
 6. **Store everything** — credentials, addresses, and state saved to local SQLite
 
 Total time for a fresh wallet: ~10 seconds. Re-running on an already-ready wallet: ~0ms.
+
+**Important:** After `ensureReady()`, send USDC.e to the `funderAddress` returned in the status object, not to your EOA address. For Safe wallets, `funderAddress` is the Safe contract. For EOA wallets, `funderAddress` is the EOA itself. You can find active market token IDs using the [`/v1/events/search`](/api-reference/events/search) or [`/v1/crypto/active`](/crypto/rest-api) endpoints.
 
 ## Credential Custody
 
