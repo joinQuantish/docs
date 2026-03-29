@@ -14,7 +14,7 @@ PolyNode provides official SDKs for TypeScript, Rust, and Python. All wrap the f
     Zero runtime dependencies. ESM + CJS. Node 18+.
   </Card>
   <Card title="Rust" icon="rust" href="/sdks/rust">
-    `polynode = "0.3"`
+    `polynode = "0.5"`
 
     Async with tokio. Typed events via serde.
   </Card>
@@ -35,7 +35,7 @@ PolyNode provides official SDKs for TypeScript, Rust, and Python. All wrap the f
     Auto-rotating streams for 5m, 15m, and 1h crypto prediction markets. Includes price-to-beat, odds, and liquidity.
   </Card>
   <Card title="WebSocket Streaming" icon="bolt" href="/sdks/websocket-streaming">
-    Builder-pattern subscriptions with 9 presets, 12 filter dimensions, and transparent compression.
+    Builder-pattern subscriptions with 10 presets, 11 filter dimensions, and transparent compression.
   </Card>
   <Card title="Orderbook" icon="layer-group" href="/sdks/orderbook">
     Real-time orderbook data with local state management, filtered views, and 108k+ markets.
@@ -62,7 +62,7 @@ PolyNode provides official SDKs for TypeScript, Rust, and Python. All wrap the f
 | REST API (25 endpoints) | Yes | Yes | Yes |
 | WebSocket streaming | Yes | Yes | Yes (async) |
 | Short-form markets (auto-rotation) | Yes | Yes | Yes |
-| All 10 event types | Typed interfaces | Typed structs + enum | Pydantic models |
+| All 9 event types + price feeds | Typed interfaces | Typed structs + enum | Pydantic models |
 | Subscription filters | Builder pattern | Builder pattern | Builder pattern |
 | Orderbook streaming | Yes | Yes | Yes |
 | Local orderbook state | `LocalOrderbook` | `LocalOrderbook` | `LocalOrderbook` |
@@ -71,8 +71,8 @@ PolyNode provides official SDKs for TypeScript, Rust, and Python. All wrap the f
 | Auto-reconnect | Exponential backoff | Exponential backoff | Exponential backoff |
 | Enriched data (leaderboard, trending, profiles) | Yes | Yes | Yes |
 | RPC proxy | Yes | Yes | Yes |
-| Redemption watcher | Yes | — | Yes |
-| Trading (order placement) | Yes | — | Yes |
+| Redemption watcher | Yes | Yes | Yes |
+| Trading (order placement) | Yes | Yes (feature: `trading`) | Yes |
 
 ## Quick Comparison
 

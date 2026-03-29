@@ -1116,6 +1116,7 @@ match client.market("invalid-token-id").await {
 | `Trading` | Trading-specific error (feature: `trading`) |
 | `Signing` | EIP-712 signing failure (feature: `trading`) |
 | `Sqlite` | Local database error (feature: `cache` or `trading`) |
+| `Io` | File I/O error (feature: `cache` or `trading`) |
 | `Cache` | Cache-specific error (feature: `cache`) |
 
 ## Source
