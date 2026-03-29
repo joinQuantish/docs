@@ -20,7 +20,7 @@ The trading module lets you place and manage orders on Polymarket. One function 
 ## Install
 
 ```bash
-npm install polynode-sdk@0.5.0 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
+npm install polynode-sdk@0.5.2 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
 ```
 
 `viem`, `better-sqlite3`, and the `@polymarket/*` packages are optional peer dependencies. You only need them if you use the trading module.
@@ -121,21 +121,83 @@ await trader.ensureReady(privateKey, { type: 0 }); // Force EOA
 await trader.ensureReady(privateKey, { type: 2 }); // Force Safe
 ```
 
-## Wallet Types Explained
+## Choosing a Wallet Type
 
-Polymarket uses three wallet types. Each one determines where your USDC lives and how orders are signed.
+This is the most important decision when building on the trading module. Your choice affects cost, complexity, and how your users onboard.
 
-| Type | Name | Funder (holds USDC) | Order maker | Order signer | Gasless? |
-|------|------|---------------------|-------------|-------------|----------|
-| 0 | EOA | Your wallet directly | Your address | Your address | No |
-| 1 | POLY_PROXY | Proxy contract | Proxy address | Your EOA | No |
-| 2 | POLY_GNOSIS_SAFE | Safe contract | Safe address | Your EOA | Yes |
+### Safe (type 2) — gasless, no gas needed
 
-**Safe (type 2)** is recommended for new users. The SDK deploys it gaslessly, sets all approvals gaslessly, and you never pay a transaction fee to get started.
+| | |
+|---|---|
+| **Deploy** | Safe contract deployed on-chain. Gasless via Polymarket relayer. |
+| **Approvals** | 6 token approvals batched into one gasless transaction through the Safe. |
+| **USDC** | Lives in the Safe contract, not the EOA. |
+| **Gas cost to user** | $0. Zero MATIC needed. |
+| **Gasless operations** | Unlimited gasless on-chain operations (paid tiers). Free tier gets basic gasless onboarding. |
+| **Best for** | Individual traders, small teams, anyone who wants zero-friction onboarding. |
 
-**Proxy (type 1)** is the legacy format from Polymarket's Magic Link / email signup flow. If you signed up via email on Polymarket, this is what you have. The SDK supports it fully for order placement, but can't deploy new proxies (Polymarket deprecated this path).
+```typescript
+// Safe is the default — just call ensureReady
+await trader.ensureReady(signer); // deploys Safe, sets approvals, creates credentials. All free.
+```
 
-**EOA (type 0)** is a direct wallet with no contract. You pay gas for your own approvals. `ensureReady()` will check your approvals and tell you what's missing, but won't set them for you.
+### EOA (type 0) — no builder key, user pays gas
+
+| | |
+|---|---|
+| **Deploy** | Nothing. No contract. The wallet IS the trading account. |
+| **Approvals** | 6 token approval transactions sent directly from the wallet. User pays gas. |
+| **USDC** | Lives in the wallet directly. |
+| **Gas cost to user** | ~0.01 MATIC one-time for approvals (~$0.01). |
+| **Builder key** | NO. Zero builder key quota consumed. |
+| **Best for** | Platforms with many users (avoids burning builder quota), bots, API traders. |
+
+```typescript
+// Force EOA with type: 0
+await trader.ensureReady(signer, { type: 0 }); // no deploy, checks approvals, creates credentials
+```
+
+### Which should I use?
+
+**Building a platform with Privy (hundreds/thousands of users)?** Use **EOA (type 0)**. Each user needs ~$0.01 of MATIC for one-time approvals. If you enable Privy gas sponsorship, even that is free. No builder key quota consumed at any scale.
+
+**Single trader or small team?** Use **Safe (type 2)**. Everything is gasless. No MATIC needed. Builder key quota is not a concern at low volume.
+
+**Migrating from Polymarket or Dome?** Use auto-detection (no type parameter). The SDK checks what's deployed and uses it.
+
+### Proxy (type 1) — legacy
+
+Legacy format from Polymarket's Magic Link / email signup. If you signed up via email on Polymarket, this is what you have. The SDK supports it for order placement, but can't deploy new proxies (deprecated by Polymarket).
+
+## Privy Integration
+
+For server-side trading with Privy-managed wallets, use `createPrivySigner`:
+
+```typescript
+import { PolyNodeTrader, createPrivySigner } from 'polynode-sdk';
+import { PrivyClient } from '@privy-io/server-auth';
+
+const privy = new PrivyClient(
+  process.env.PRIVY_APP_ID,
+  process.env.PRIVY_APP_SECRET,
+  { walletApi: { authorizationPrivateKey: process.env.PRIVY_AUTHORIZATION_KEY } },
+);
+
+const signer = createPrivySigner(privy, user.privyWalletId, user.walletAddress);
+const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
+
+// Option A: Safe (gasless, uses builder key quota)
+await trader.ensureReady(signer);
+
+// Option B: EOA (no builder key, user/Privy pays ~$0.01 gas for approvals)
+await trader.ensureReady(signer, { type: 0 });
+
+// Either way, order placement works the same
+const result = await trader.order({ tokenId: '...', side: 'BUY', price: 0.55, size: 100 });
+await trader.cancelOrder(result.orderId);
+```
+
+Requires `npm install @privy-io/server-auth` (v1.x+). The Privy authorization key is generated in your Privy dashboard under Wallet infrastructure → Authorization. If you enable Privy gas sponsorship (`sponsor: true` in your Privy dashboard), EOA approval transactions are also free for your users.
 
 ## Configuration
 

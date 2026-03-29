@@ -7,6 +7,25 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-29 — Trading Module v0.5.2 (TypeScript SDK)
+
+### TypeScript SDK v0.5.2
+
+- **Privy server-auth integration:** New `createPrivySigner()` and `createPrivyClient()` helpers for server-side trading with Privy-managed wallets. Works with both Safe (gasless) and EOA (minimal gas) wallet types.
+- **RouterSigner interface:** Dome-compatible signer abstraction for custom wallet providers.
+- **Auto-detection of wallet type:** `ensureReady()` now checks Safe, Proxy, and EOA deployments on-chain and picks the right one automatically.
+- **Wallet generation:** `PolyNodeTrader.generateWallet()` static method for users starting from scratch.
+- **Unlimited gasless operations:** Paid tiers (starter, growth, enterprise) get unlimited gasless on-chain operations for Safe deploys, approvals, and redemptions. Free tier gets basic gasless onboarding.
+- **ethers v5/v6 compatibility:** Fixed Safe transaction signing to work with both ethers v5 (`_signTypedData`) and v6 (`signTypedData`) signer interfaces.
+
+```bash
+npm install polynode-sdk@0.5.2 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
+```
+
+Full documentation: [Trading](/sdks/trading)
+
+---
+
 ## 2026-03-29 — Trading Module (TypeScript SDK v0.5.0)
 
 ### TypeScript SDK — Order Placement on Polymarket
