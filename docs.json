@@ -129,6 +129,7 @@
               "api-reference/enriched/leaderboard",
               "api-reference/enriched/trader-profile",
               "api-reference/enriched/trader-pnl",
+              "api-reference/enriched/equity-curve",
               "api-reference/enriched/trending",
               "api-reference/enriched/activity",
               "api-reference/enriched/event",
