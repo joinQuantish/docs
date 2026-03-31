@@ -17,11 +17,11 @@ Full equity curve for any Polymarket wallet. Returns a time-ordered series of cu
 
 **Features:**
 - Raw P&L curve with realized gains/losses and mark-to-market on open positions
-- $1-normalized curve for copy-trade analysis: each position scaled to $1 of risk, showing expected returns per dollar deployed
+- \$1-normalized curve for copy-trade analysis: each position scaled to \$1 of risk, showing expected returns per dollar deployed
 - Period filtering: `7d`, `30d`, `90d`, `1y`, `all`
 - Accuracy within 2-3% of Polymarket's own P&L calculations (variance from real-time price differences on open positions only)
 
-**$1 normalization** answers the question: "If I copy every trade this wallet makes but only risk $1 per position, what are my returns?" Useful for evaluating trader skill independent of position sizing.
+**\$1 normalization** answers the question: "If I copy every trade this wallet makes but only risk \$1 per position, what are my returns?" Useful for evaluating trader skill independent of position sizing.
 
 ```bash
 curl "https://api.polynode.dev/v2/trader/0x.../equity?period=all&normalize=1" \

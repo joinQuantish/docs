@@ -1,10 +1,10 @@
 ---
 title: "Equity Curve"
 openapi: "GET /v2/trader/{wallet}/equity"
-description: "Full equity curve for any Polymarket wallet, with optional $1-normalized copy-trade analysis."
+description: "Full equity curve for any Polymarket wallet, with optional dollar-normalized copy-trade analysis."
 ---
 
-Returns a time-ordered equity curve showing cumulative profit and loss for every position a wallet has ever taken on Polymarket. Optionally returns a $1-normalized curve that shows what your returns would look like if you copied every trade with exactly $1 of risk per position.
+Returns a time-ordered equity curve showing cumulative profit and loss for every position a wallet has ever taken on Polymarket. Optionally returns a \$1-normalized curve that shows what your returns would look like if you copied every trade with exactly \$1 of risk per position.
 
 ## How it works
 
@@ -18,17 +18,17 @@ We line up every position chronologically by entry date. For each one, we add it
 
 For positions that are still open, we fetch the current market price and compute unrealized P&L: `(current_price - avg_entry_price) * shares_held`. This gets included so the curve reflects the wallet's current standing, not just closed trades.
 
-## $1 Normalized curve
+## \$1 Normalized curve
 
-When `normalize=1` is set, each position is scaled so the entry cost equals exactly $1.
+When `normalize=1` is set, each position is scaled so the entry cost equals exactly \$1.
 
-If someone put $500 into a market and made $50, their raw P&L is +$50. The normalized P&L is `$50 * (1 / $500) = $0.10`. For every dollar risked on that market, they made 10 cents.
+If someone put \$500 into a market and made \$50, their raw P&L is +\$50. The normalized P&L is `$50 * (1 / $500) = $0.10`. For every dollar risked on that market, they made 10 cents.
 
 The scale factor for each position is `1 / total_bought`, where `total_bought` is the total number of shares ever acquired for that position regardless of acquisition method.
 
-Sum all the normalized P&Ls across all positions and you get the normalized equity curve. This answers the question: "If I copy every trade this wallet makes but only risk $1 per position, what are my expected returns?"
+Sum all the normalized P&Ls across all positions and you get the normalized equity curve. This answers the question: "If I copy every trade this wallet makes but only risk \$1 per position, what are my expected returns?"
 
-A wallet with 2,000 positions and a normalized final PnL of +$12 means each $1 bet returned about $0.006 on average. Across thousands of positions, that indicates a consistent edge.
+A wallet with 2,000 positions and a normalized final PnL of +\$12 means each \$1 bet returned about \$0.006 on average. Across thousands of positions, that indicates a consistent edge.
 
 ## Accuracy
 
@@ -45,7 +45,7 @@ Realized P&L on closed positions is exact. The small variance only applies to th
 </ParamField>
 
 <ParamField query="normalize" type="string" default="0">
-  Set to `1` to include the $1-normalized equity curve alongside the raw curve.
+  Set to `1` to include the \$1-normalized equity curve alongside the raw curve.
 </ParamField>
 
 <ResponseExample>
@@ -89,7 +89,7 @@ Realized P&L on closed positions is exact. The small variance only applies to th
 | `raw.final_pnl` | Final cumulative P&L in USD |
 | `raw.curve[].t` | Unix timestamp (when the position was first entered) |
 | `raw.curve[].pnl` | Cumulative P&L at that point in USD |
-| `normalized.bet_size` | Always `1` (each position scaled to $1 risk) |
+| `normalized.bet_size` | Always `1` (each position scaled to \$1 risk) |
 | `normalized.final_pnl` | Final cumulative normalized P&L |
 | `normalized.curve[].pnl` | Cumulative normalized P&L at that point |
 
