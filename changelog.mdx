@@ -7,6 +7,51 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-31 — Equity Curve Endpoint
+
+### New: Trader Equity Curve
+
+Full equity curve for any Polymarket wallet. Returns a time-ordered series of cumulative profit and loss across every position the wallet has ever taken.
+
+**Endpoint:** `GET /v2/trader/{wallet}/equity?period=all&normalize=1`
+
+**Features:**
+- Raw P&L curve with realized gains/losses and mark-to-market on open positions
+- $1-normalized curve for copy-trade analysis: each position scaled to $1 of risk, showing expected returns per dollar deployed
+- Period filtering: `7d`, `30d`, `90d`, `1y`, `all`
+- Accuracy within 2-3% of Polymarket's own P&L calculations (variance from real-time price differences on open positions only)
+
+**$1 normalization** answers the question: "If I copy every trade this wallet makes but only risk $1 per position, what are my returns?" Useful for evaluating trader skill independent of position sizing.
+
+```bash
+curl "https://api.polynode.dev/v2/trader/0x.../equity?period=all&normalize=1" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "positions_count": 278,
+  "open_count": 83,
+  "raw": {
+    "final_pnl": -395.90,
+    "curve": [{"t": 1774555427, "pnl": 10.56}, ...]
+  },
+  "normalized": {
+    "bet_size": 1,
+    "final_pnl": -3.19,
+    "curve": [{"t": 1774555427, "pnl": 0.07}, ...]
+  }
+}
+```
+
+See the [full documentation](/api-reference/enriched/equity-curve) for methodology details and response field reference.
+
+### Fix: Market Price Fetching
+
+Fixed an issue where current market prices were not being fetched correctly for open positions across multiple endpoints. Price accuracy is now significantly improved for any endpoint that reports unrealized P&L.
+
+---
+
 ## 2026-03-29 — Rust SDK v0.5.6 (Order Placement Fix)
 
 ### Rust SDK v0.5.6
