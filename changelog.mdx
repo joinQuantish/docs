@@ -7,6 +7,33 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-03-31 — TypeScript SDK v0.5.6 (Cache Crash Recovery)
+
+### TypeScript SDK v0.5.6
+
+Fixes a crash that could occur when stopping the cache mid-backfill, and adds proper crash recovery for interrupted backfills.
+
+**Graceful shutdown**: `cache.stop()` now waits for any in-flight backfill operation to complete before closing the database. Previously, stopping during an active backfill could crash with a `Cannot read properties of null` error on the SQLite handle.
+
+**Crash recovery**: on startup, any backfills that were interrupted by a previous crash or kill are automatically detected and retried. The cache logs exactly what's happening:
+
+```
+# Restart after crash — resumes incomplete backfills only
+[PolyNodeCache] Reset 1 interrupted backfill(s) from previous session.
+[PolyNodeCache] Backfilling 2 entities (1 page of 500 each) — ETA: ~1s
+
+# Clean restart — all data persisted, no network calls needed
+[PolyNodeCache] All 4 entities already backfilled, skipping.
+```
+
+**Accurate logging**: the startup log now only reports entities that actually need backfilling, instead of the total watchlist count.
+
+```bash
+npm install polynode-sdk@0.5.6
+```
+
+---
+
 ## 2026-03-31 — Equity Curve Endpoint
 
 ### New: Trader Equity Curve

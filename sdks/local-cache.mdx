@@ -858,31 +858,49 @@ Available filters: `.wallet()`, `.market()`, `.token()`, `.side()`, `.since()`, 
 └──────────────────────────────────────┘
 ```
 
-1. **On start**: opens SQLite, loads watchlist, connects WebSocket, begins backfill
-2. **Backfill** (per wallet, 3 requests):
+1. **On start**: opens SQLite, resets any interrupted backfills from a previous crash, loads watchlist, connects WebSocket, begins backfill
+2. **Backfill** (per wallet, 3 requests — skipped entirely if already complete):
    - Fetches open positions from the standard API (metadata: title, outcome, slug)
    - Fetches onchain positions (complete P&L for all positions including closed, single call, no pagination needed)
    - Fetches recent trades (individual buy/sell records)
 3. **Live stream**: WebSocket delivers new trades and settlements in real-time
 4. **Dedup**: `INSERT OR IGNORE` with unique constraint prevents duplicates between backfill and live data
 5. **Prune**: hourly timer removes data older than the configured TTL
+6. **On stop**: waits for any in-flight backfill to finish, then closes WebSocket and DB cleanly
 
-## Persistence
+## Persistence & Crash Recovery
 
-The SQLite database persists across restarts. When you call `cache.start()` again:
-- Existing data is preserved
-- Completed backfills are not repeated
+The SQLite database persists across restarts, deploys, and crashes. When you call `cache.start()` again:
+- All trades, positions, and settlements are preserved in the SQLite file
+- Completed backfills are skipped entirely (no network calls)
+- Interrupted backfills resume automatically. Any entity that was mid-backfill when the process was killed gets retried on the next start
 - WebSocket stream reconnects and picks up live events
-- Any trades that happened while offline are captured on the next backfill
+- The console logs exactly what's happening: how many entities need backfilling vs how many are already done
+
+```
+# First run — backfills everything
+[PolyNodeCache] Backfilling 4 entities (1 page of 500 each) — ETA: ~4s
+
+# Process killed mid-backfill, then restarted — only resumes incomplete ones
+[PolyNodeCache] Reset 1 interrupted backfill(s) from previous session.
+[PolyNodeCache] Backfilling 2 entities (1 page of 500 each) — ETA: ~1s
+
+# Clean restart after everything is done — no network calls
+[PolyNodeCache] All 4 entities already backfilled, skipping.
+```
+
+Backfill state is tracked in the `backfill_state` table with per-entity status (`pending`, `in_progress`, `complete`, `failed`). On startup, any `in_progress` entries left over from a crash are automatically reset to `pending` so they get retried.
 
 ## Stop and Cleanup
 
 ```typescript
-await cache.stop();  // closes WebSocket, stops backfill, closes DB
+await cache.stop();  // closes WebSocket, waits for in-flight backfill to finish, closes DB
 
 // Manual prune
 const deleted = cache.prune();  // removes data older than TTL
 ```
+
+`stop()` is safe to call at any time. It waits for any in-flight backfill operation to complete before closing the database, so you won't get partial writes or corrupted state.
 
 ## Testing Utilities
 
@@ -946,13 +964,14 @@ const cache = new PolyNodeCache(pn, {
 });
 
 await cache.start();
-// Output:
-// [PolyNodeCache] Backfilling 10 entities (1 page of 500 each) — ETA: ~10s
-// ⟳ trader-1: 500 trades
-// ✓ trader-1: 500 trades
-// ⟳ trader-2: 346 trades
-// ✓ trader-2: 346 trades
-// ...
+// First run:
+//   [PolyNodeCache] Backfilling 10 entities (1 page of 500 each) — ETA: ~10s
+//   ⟳ trader-1: 500 trades
+//   ✓ trader-1: 500 trades
+//   ...
+//
+// Subsequent runs (data persisted):
+//   [PolyNodeCache] All 10 entities already backfilled, skipping.
 
 // Query locally — instant
 const positions = cache.walletPositions('0xabc...');
