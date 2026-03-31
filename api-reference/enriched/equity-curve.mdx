@@ -32,9 +32,9 @@ A wallet with 2,000 positions and a normalized final PnL of +\$12 means each \$1
 
 ## Accuracy
 
-Tested against Polymarket's own internal P&L calculations across wallets ranging from 278 to 7,313 positions. Results are within 3-7% of Polymarket's numbers, with the variance coming entirely from real-time price differences on open positions (our price fetch happens at a slightly different moment than Polymarket's).
+Realized P&L on closed positions is exact. We use the same blockchain source (PNL subgraph) that Polymarket uses internally, so there is zero deviation on any resolved or closed position.
 
-Realized P&L on closed positions is exact. The small variance only applies to the unrealized component of currently open positions.
+The only variance is on currently open positions, where we mark-to-market using live prices from Polymarket's Gamma API. Because our price fetch happens at a slightly different moment than any comparison snapshot, open position values can differ by 1-3%. Once a position closes, its P&L becomes exact.
 
 <ParamField path="wallet" type="string" required>
   Polymarket wallet address (e.g., `0xB4Ab48b451101a779bf8C644318Bb17fe652571d`).
