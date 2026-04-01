@@ -167,8 +167,39 @@ const trader = new PolyNodeTrader({
   cosignerUrl: 'https://trade.polynode.dev', // Relay URL (default)
   fallbackDirect: true,               // Fall back to direct CLOB if relay is down (default: true)
   rpcUrl: 'https://polygon-bor-rpc.publicnode.com', // RPC for on-chain reads (default)
+  builderCredentials: {               // Optional: your own Polymarket builder credentials
+    key: process.env.POLY_BUILDER_API_KEY!,
+    secret: process.env.POLY_BUILDER_SECRET!,
+    passphrase: process.env.POLY_BUILDER_PASSPHRASE!,
+  },
 });
 ```
+
+### Builder Attribution (Your Own Credentials)
+
+By default, orders placed through polynode are attributed to polynode's builder profile on Polymarket. If you're running a platform and want volume credited to **your own** builder account, pass your credentials in `builderCredentials`.
+
+1. Go to [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder) and create a builder profile
+2. Generate API credentials (key, secret, passphrase)
+3. Pass them in `builderCredentials` when constructing the trader
+
+```typescript
+const trader = new PolyNodeTrader({
+  polynodeKey: 'pn_live_...',
+  builderCredentials: {
+    key: process.env.POLY_BUILDER_API_KEY!,
+    secret: process.env.POLY_BUILDER_SECRET!,
+    passphrase: process.env.POLY_BUILDER_PASSPHRASE!,
+  },
+});
+```
+
+When `builderCredentials` is set:
+- All orders are attributed to your builder profile on the [Builder Leaderboard](https://builders.polymarket.com)
+- Gasless Safe deployments and approvals use your builder account
+- polynode never stores your builder credentials. They're sent per-request and used only for HMAC signing.
+
+When `builderCredentials` is omitted, polynode's default builder credentials are used. Your orders still go through, you just don't get the builder attribution on your own profile.
 
 ## API Reference
 
