@@ -1,0 +1,70 @@
+---
+title: "Remove Wallets"
+description: "Remove wallets from your tracked leaderboard set."
+---
+
+Remove one or more wallets from your BYOL set. They will no longer appear in your leaderboard queries.
+
+```
+DELETE /v2/leaderboard/wallets
+```
+
+## Authentication
+
+Pass your API key via query parameter `?key=`, header `x-api-key`, or `Authorization: Bearer`.
+
+## Request body
+
+```json
+{
+  "wallets": [
+    "0xd252bce657d99d4e943708a8d7a2b3222da2775b"
+  ]
+}
+```
+
+<ParamField body="wallets" type="string[]" required>
+  Array of wallet addresses to remove from your set.
+</ParamField>
+
+## Response
+
+```json
+{
+  "removed": 1,
+  "total": 101
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `removed` | number | Number of wallets removed |
+| `total` | number | Remaining wallets in your set |
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE "https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "wallets": ["0xd252bce657d99d4e943708a8d7a2b3222da2775b"]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY", {
+  method: "DELETE",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    wallets: ["0xd252bce657d99d4e943708a8d7a2b3222da2775b"]
+  })
+});
+const data = await response.json();
+console.log(`Removed: ${data.removed}, Remaining: ${data.total}`);
+```
+</CodeGroup>
+
+<Note>
+  Removing a wallet from your set does not affect other API keys that may be tracking the same wallet.
+</Note>

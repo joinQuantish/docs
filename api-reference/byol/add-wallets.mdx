@@ -1,0 +1,101 @@
+---
+title: "Add Wallets"
+description: "Add wallets to your tracked leaderboard set."
+---
+
+Add one or more Polymarket proxy wallet addresses to your BYOL set. These wallets will be indexed on the next refresh cycle (~30 minutes) and will then appear in your leaderboard queries.
+
+```
+POST /v2/leaderboard/wallets
+```
+
+## Authentication
+
+Pass your API key via query parameter `?key=`, header `x-api-key`, or `Authorization: Bearer`.
+
+## Request body
+
+```json
+{
+  "wallets": [
+    "0xd252bce657d99d4e943708a8d7a2b3222da2775b",
+    "0x05d5e0403427a6223f5673b3234ac9405c19db37"
+  ]
+}
+```
+
+<ParamField body="wallets" type="string[]" required>
+  Array of Polymarket proxy wallet addresses. Each must be a valid Ethereum address (`0x` + 40 hex characters). Maximum 500 wallets per request.
+</ParamField>
+
+## Response
+
+```json
+{
+  "added": 2,
+  "already_tracked": 0,
+  "total": 102,
+  "limit": 5000,
+  "daily_remaining": 4998
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `added` | number | Number of new wallets added |
+| `already_tracked` | number | Wallets that were already in your set (not counted toward limits) |
+| `total` | number | Total wallets now in your set |
+| `limit` | number | Maximum wallets allowed for your tier |
+| `daily_remaining` | number | How many more wallets you can add today |
+
+## Deduplication
+
+If you add a wallet that's already in your set, it's silently ignored and does not count toward your daily add limit. This means you can safely re-send your full wallet list without worrying about duplicates.
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "wallets": [
+      "0xd252bce657d99d4e943708a8d7a2b3222da2775b",
+      "0x05d5e0403427a6223f5673b3234ac9405c19db37"
+    ]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    wallets: [
+      "0xd252bce657d99d4e943708a8d7a2b3222da2775b",
+      "0x05d5e0403427a6223f5673b3234ac9405c19db37"
+    ]
+  })
+});
+const data = await response.json();
+console.log(`Added: ${data.added}, Total: ${data.total}`);
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.polynode.dev/v2/leaderboard/wallets",
+    params={"key": "YOUR_API_KEY"},
+    json={"wallets": [
+        "0xd252bce657d99d4e943708a8d7a2b3222da2775b",
+        "0x05d5e0403427a6223f5673b3234ac9405c19db37"
+    ]}
+)
+print(response.json())
+```
+</CodeGroup>
+
+<Note>
+  Newly added wallets won't appear in leaderboard queries until the next background refresh cycle completes (~30 minutes max).
+</Note>

@@ -124,6 +124,16 @@
             ]
           },
           {
+            "group": "BYOL",
+            "pages": [
+              "api-reference/byol/overview",
+              "api-reference/byol/get-leaderboard",
+              "api-reference/byol/add-wallets",
+              "api-reference/byol/remove-wallets",
+              "api-reference/byol/list-wallets"
+            ]
+          },
+          {
             "group": "Enriched Data",
             "pages": [
               "api-reference/enriched/leaderboard",

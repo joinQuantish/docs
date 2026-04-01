@@ -1,0 +1,48 @@
+---
+title: "List Wallets"
+description: "List all wallets currently in your tracked leaderboard set."
+---
+
+Returns every wallet address in your BYOL set along with your tier limits.
+
+```
+GET /v2/leaderboard/wallets
+```
+
+## Authentication
+
+Pass your API key via query parameter `?key=`, header `x-api-key`, or `Authorization: Bearer`.
+
+## Response
+
+```json
+{
+  "wallets": [
+    "0xd252bce657d99d4e943708a8d7a2b3222da2775b",
+    "0x05d5e0403427a6223f5673b3234ac9405c19db37",
+    "0x5146aebe8f5cff09d9a62f79c53f064e975c8d97"
+  ],
+  "count": 3,
+  "limit": 5000
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | string[] | All wallet addresses in your set |
+| `count` | number | Total number of wallets |
+| `limit` | number | Maximum wallets allowed for your tier |
+
+## Example
+
+<CodeGroup>
+```bash cURL
+curl "https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY"
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY");
+const data = await response.json();
+console.log(`Tracking ${data.count} wallets (limit: ${data.limit})`);
+```
+</CodeGroup>

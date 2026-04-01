@@ -1,0 +1,51 @@
+---
+title: "BYOL Overview"
+description: "Bring Your Own Leaderboard. Track any set of Polymarket wallets and get a private, ranked leaderboard with P&L across all time periods and categories."
+---
+
+BYOL (Bring Your Own Leaderboard) lets you build a custom Polymarket leaderboard from any set of wallets you choose. Add the wallets you care about, and polynode continuously indexes their P&L, volume, and global rank across every time period and category that Polymarket tracks.
+
+## How it works
+
+1. **Add wallets** you want to track via the API
+2. polynode indexes every wallet across all time periods and categories in the background (~30 min refresh cycle)
+3. **Query your leaderboard** by time period, category, or get everything at once
+4. Each API key has its own private wallet set. Your wallets and leaderboard are completely isolated from other users.
+
+## What you get back
+
+Every wallet in your set is indexed across:
+
+**4 time periods** matching Polymarket's leaderboard:
+- `day` (Today)
+- `week` (Weekly)
+- `month` (Monthly)
+- `all` (All time)
+
+**9 categories:**
+- `overall` `politics` `sports` `crypto` `finance` `tech` `weather` `culture` `mentions`
+
+**2 sort options:**
+- `pnl` (Profit/Loss)
+- `vol` (Volume)
+
+The response fields match Polymarket's leaderboard format exactly: `rank`, `proxyWallet`, `userName`, `xUsername`, `verifiedBadge`, `vol`, `pnl`, `profileImage`. We add `localRank` to show where each wallet ranks within your custom set.
+
+## Limits
+
+| Tier | Max wallets | Add per day |
+|------|------------|-------------|
+| Starter | 100 | 100 |
+| Growth | 1,000 | 100 |
+| Enterprise | 5,000 | 5,000 |
+
+Adding a wallet that's already in your set doesn't count toward your daily limit.
+
+## Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/v2/leaderboard/wallets` | Add wallets to your tracked set |
+| `DELETE` | `/v2/leaderboard/wallets` | Remove wallets from your set |
+| `GET` | `/v2/leaderboard/wallets` | List all wallets in your set |
+| `GET` | `/v2/leaderboard/custom` | Query your leaderboard |
