@@ -1,0 +1,91 @@
+---
+title: "List Games"
+openapi: "GET /v2/sports/leagues/{code}/games"
+description: "Games for a league with scores, teams, and market data."
+---
+
+Returns daily matchups for a league. Use `status=closed` to get completed games with final scores.
+
+<ParamField path="code" type="string" required>
+  League code from `/v2/sports/leagues` (e.g. `nba`, `lol`, `cs2`).
+</ParamField>
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+<ParamField query="status" type="string" default="active">
+  `active` for upcoming/in-progress games, `closed` for completed games with scores.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="50">
+  Max results per page (1-200).
+</ParamField>
+
+<ParamField query="offset" type="integer" default="0">
+  Pagination offset.
+</ParamField>
+
+<ParamField query="sort" type="string" default="startDate">
+  Sort by `startDate` or `volume`.
+</ParamField>
+
+<ParamField query="direction" type="string" default="desc">
+  `asc` or `desc`.
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "league": "nba",
+  "status": "closed",
+  "count": 5,
+  "games": [
+    {
+      "id": "304966",
+      "slug": "nba-nyk-hou-2026-03-31",
+      "title": "Knicks vs. Rockets",
+      "score": "94-111",
+      "gameId": 20023567,
+      "startDate": "2026-03-25T03:00:04Z",
+      "endDate": "2026-04-08T00:00:00Z",
+      "closed": true,
+      "volume24hr": 7684869,
+      "markets": [
+        {
+          "id": "1716626",
+          "question": "Knicks vs. Rockets",
+          "sportsMarketType": "moneyline",
+          "outcomePrices": "[\"0.01\",\"0.99\"]"
+        }
+      ]
+    }
+  ]
+}
+```
+</ResponseExample>
+
+## How to get scores
+
+```bash
+# Get last night's NBA results with scores
+curl "https://api.polynode.dev/v2/sports/leagues/nba/games?status=closed&limit=10&key=YOUR_KEY"
+
+# Get upcoming NHL games
+curl "https://api.polynode.dev/v2/sports/leagues/nhl/games?status=active&limit=20&key=YOUR_KEY"
+```
+
+Each game has a `slug` field. Use it with the [Game Detail](/api-reference/sports/game-detail) endpoint to get full team info, all markets, and AI-generated game previews.
+
+## Esports score format
+
+Esports scores use a different format than traditional sports:
+
+| Sport | Score format | Example |
+|-------|-------------|---------|
+| NBA, NHL, MLB | `home-away` | `94-111` |
+| LoL, CS2, Valorant | `mapScores\|seriesScore\|format` | `000-000\|2-0\|Bo3` |
+
+<Note>
+  Only returns daily matchups, not season-long futures (MVP, Champion, etc.). If you need futures markets, use the [Event Detail](/api-reference/enriched/event) endpoint.
+</Note>

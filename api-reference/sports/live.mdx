@@ -1,0 +1,60 @@
+---
+title: "Live Overview"
+openapi: "GET /v2/sports/live"
+description: "Real-time snapshot across all sports: volumes, market counts, upcoming leagues."
+---
+
+Returns a dashboard view of what's happening across all sports and esports right now. Use this to see which leagues are active, where the volume is, and what's coming up.
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "volumes_24h": {
+    "nba": 19219377.26,
+    "league-of-legends": 9525630.77,
+    "mlb": 1483646.98,
+    "cs2": 701435.31,
+    "nhl": 229851.77,
+    "epl": 117259.89,
+    "mls": 180371.74,
+    "atp": 339177.77
+  },
+  "market_counts": {
+    "mls": 171,
+    "nhl": 125,
+    "cs2": 108,
+    "mlb": 83,
+    "nba": 75,
+    "atp": 65
+  },
+  "upcoming_leagues": [
+    "atp", "bkcba", "cricipl", "cs2",
+    "league-of-legends", "mlb", "nba",
+    "nhl", "valorant", "wta"
+  ],
+  "latest_event_dates": {
+    "nba": "2026-04-13",
+    "nhl": "2026-04-13",
+    "mlb": "2026-04-06",
+    "epl": "2026-04-12"
+  }
+}
+```
+</ResponseExample>
+
+## What each field tells you
+
+| Field | What it is |
+|-------|-----------|
+| `volumes_24h` | 24-hour trading volume in USD per league |
+| `market_counts` | Number of active markets per league |
+| `upcoming_leagues` | Leagues with games starting soon |
+| `latest_event_dates` | Last scheduled game date per league |
+
+<Note>
+  Refreshes every 60 seconds. The league codes in `volumes_24h` and `market_counts` may differ slightly from the `sport` codes in `/leagues` (e.g. `league-of-legends` vs `lol`). Use the `sport` code from `/leagues` for all other endpoints.
+</Note>

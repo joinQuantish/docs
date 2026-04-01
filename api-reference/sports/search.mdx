@@ -1,0 +1,60 @@
+---
+title: "Search"
+openapi: "GET /v2/sports/search"
+description: "Search for games, teams, and events by name."
+---
+
+Search across all sports and esports events. Returns matching games with their slugs so you can drill into [Game Detail](/api-reference/sports/game-detail).
+
+<ParamField query="q" type="string" required>
+  Search query (e.g. `celtics`, `fnatic`, `manchester`).
+</ParamField>
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="20">
+  Max results (up to 50).
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "query": "fnatic",
+  "count": 5,
+  "results": [
+    {
+      "title": "Counter-Strike: fnatic vs FaZe (BO3) - DraculaN Playoffs",
+      "slug": "cs2-fnc-faze-2026-03-31",
+      "category": "Sports",
+      "active": false,
+      "closed": true,
+      "volume": 15420.50
+    },
+    {
+      "title": "Valorant: Fnatic vs ULF Esports (BO3) - VCT EMEA Group Stage",
+      "slug": "val-fnc1-ulf-2026-04-01",
+      "category": "Sports",
+      "active": true,
+      "closed": false,
+      "volume": 8230.00
+    }
+  ]
+}
+```
+</ResponseExample>
+
+## Search then drill down
+
+```bash
+# Step 1: Search for a team or matchup
+curl "https://api.polynode.dev/v2/sports/search?q=celtics&key=YOUR_KEY"
+
+# Step 2: Take the slug from results and get full game detail
+curl "https://api.polynode.dev/v2/sports/games/nba-nyk-hou-2026-03-31?key=YOUR_KEY"
+```
+
+<Note>
+  Search covers all Polymarket events, not just games with scores. Results include season futures, playoff series, and prop markets. Use the `slug` to get full details on any result.
+</Note>

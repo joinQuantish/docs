@@ -149,6 +149,20 @@
             ]
           },
           {
+            "group": "Sports & Esports",
+            "pages": [
+              "api-reference/sports/leagues",
+              "api-reference/sports/games",
+              "api-reference/sports/game-detail",
+              "api-reference/sports/teams",
+              "api-reference/sports/search",
+              "api-reference/sports/live",
+              "api-reference/sports/market-types",
+              "api-reference/sports/series",
+              "api-reference/sports/tournaments"
+            ]
+          },
+          {
             "group": "System",
             "pages": [
               "api-reference/system/system-status",

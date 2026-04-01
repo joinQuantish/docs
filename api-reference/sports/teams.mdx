@@ -1,0 +1,75 @@
+---
+title: "List Teams"
+openapi: "GET /v2/sports/leagues/{code}/teams"
+description: "Teams for a league with logos, records, and colors."
+---
+
+Returns all teams for a league. Includes current season records, team logos, colors, and abbreviations.
+
+<ParamField path="code" type="string" required>
+  League code from `/v2/sports/leagues` (e.g. `nba`, `nhl`, `lol`).
+</ParamField>
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="500">
+  Max results (up to 500).
+</ParamField>
+
+<ParamField query="offset" type="integer" default="0">
+  Pagination offset. Use for leagues with 500+ entries (ATP, UFC, Dota 2).
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "league": "nba",
+  "count": 37,
+  "teams": [
+    {
+      "id": 100519,
+      "name": "Thunder",
+      "league": "nba",
+      "record": "60-16",
+      "logo": "https://polymarket-upload.s3.us-east-2.amazonaws.com/NBA+Team+Logos/OKC.png",
+      "abbreviation": "okc",
+      "alias": "Thunder",
+      "color": "#008ECC",
+      "providerId": 27
+    },
+    {
+      "id": 100498,
+      "name": "Celtics",
+      "league": "nba",
+      "record": "50-25",
+      "logo": "https://polymarket-upload.s3.us-east-2.amazonaws.com/NBA+Team+Logos/BOS.png",
+      "abbreviation": "bos",
+      "alias": "Celtics",
+      "color": "#008040"
+    }
+  ]
+}
+```
+</ResponseExample>
+
+## Team counts by league
+
+| League | Code | Teams |
+|--------|------|-------|
+| NBA | `nba` | 37 |
+| NHL | `nhl` | 36 |
+| MLB | `mlb` | 32 |
+| NFL | `nfl` | 32 |
+| MLS | `mls` | 30 |
+| EPL | `epl` | 23 |
+| IPL | `ipl` | 20 |
+| ATP | `atp` | 500+ |
+| UFC | `ufc` | 500+ |
+| LoL | `lol` | 500+ |
+| Dota 2 | `dota2` | 500+ |
+
+<Note>
+  For leagues with 500+ entries (ATP, UFC, esports), use `offset` to paginate. Some esports leagues like CS2 (`cs2`) and Valorant (`val`) don't have team roster data.
+</Note>

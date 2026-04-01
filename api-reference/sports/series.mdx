@@ -1,0 +1,67 @@
+---
+title: "Series"
+openapi: "GET /v2/sports/series"
+description: "All recurring series: sports seasons, crypto markets, weather."
+---
+
+Returns all active series. Each series represents a recurring set of events (e.g. "NBA 2026", "BTC Up or Down 5m", "NYC Daily Weather").
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+<ParamField query="status" type="string" default="active">
+  `active` or `all`.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="500">
+  Max results (up to 500).
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "count": 300,
+  "series": [
+    {
+      "id": "10345",
+      "slug": "nba-2026",
+      "title": "NBA 2026",
+      "seriesType": "single",
+      "recurrence": "daily",
+      "active": true,
+      "volume24hr": 25702583,
+      "volume": 1200000000,
+      "liquidity": 15000000
+    },
+    {
+      "id": "10311",
+      "slug": "league-of-legends",
+      "title": "League of Legends",
+      "seriesType": "single",
+      "recurrence": "daily",
+      "active": true,
+      "volume24hr": 9500000
+    }
+  ]
+}
+```
+</ResponseExample>
+
+## Series Detail
+
+Get a single series by ID:
+
+```
+GET /v2/sports/series/{id}
+```
+
+```bash
+curl "https://api.polynode.dev/v2/sports/series/10345?key=YOUR_KEY"
+```
+
+Returns the full series object with volume, liquidity, recurrence interval, and linked event count.
+
+<Note>
+  Series cover more than just sports. You'll also see crypto recurring markets (BTC 5m, ETH daily), weather markets, and political series. Filter by title or slug for sports-only results.
+</Note>

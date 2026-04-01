@@ -1,0 +1,64 @@
+---
+title: "List Leagues"
+openapi: "GET /v2/sports/leagues"
+description: "All available sports and esports leagues."
+---
+
+Returns every league available for querying. The `sport` field is the code you use in all other sports endpoints.
+
+**This is your starting point.** Call this first, then use the `sport` code to get teams, games, and scores.
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "count": 170,
+  "leagues": [
+    {
+      "id": 34,
+      "sport": "nba",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/super+cool+basketball+in+red+and+blue+wow.png",
+      "resolution": "https://www.nba.com/",
+      "ordering": "away",
+      "tags": "1,745,100639",
+      "series": "10345"
+    },
+    {
+      "id": 39,
+      "sport": "lol",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/league-of-legends.png",
+      "resolution": "https://liquipedia.net/leagueoflegends/Main_Page",
+      "ordering": "home",
+      "tags": "1,64,102366,100639",
+      "series": "10311"
+    }
+  ]
+}
+```
+</ResponseExample>
+
+## Common league codes
+
+| Code | League | Type |
+|------|--------|------|
+| `nba` | NBA | Sports |
+| `nhl` | NHL | Sports |
+| `mlb` | MLB | Sports |
+| `nfl` | NFL | Sports |
+| `epl` | English Premier League | Sports |
+| `mls` | MLS | Sports |
+| `ufc` | UFC | Sports |
+| `atp` | ATP Tennis | Sports |
+| `wta` | WTA Tennis | Sports |
+| `ipl` | Indian Premier League (Cricket) | Sports |
+| `lol` | League of Legends | Esports |
+| `cs2` | Counter-Strike 2 | Esports |
+| `val` | Valorant | Esports |
+| `dota2` | Dota 2 | Esports |
+
+<Note>
+  170 leagues total, covering 80+ traditional sports leagues and 90+ esports leagues globally. Use the `sport` field as the code for `/leagues/{code}/games` and `/leagues/{code}/teams`.
+</Note>

@@ -1,0 +1,104 @@
+---
+title: "Game Detail"
+openapi: "GET /v2/sports/games/{slug}"
+description: "Full game data: score, teams, markets, and AI-generated preview."
+---
+
+Returns everything about a single game. This is the most detailed sports endpoint. Use the `slug` from the [List Games](/api-reference/sports/games) or [Search](/api-reference/sports/search) endpoints.
+
+<ParamField path="slug" type="string" required>
+  Game slug (e.g. `nba-nyk-hou-2026-03-31`).
+</ParamField>
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "title": "Knicks vs. Rockets",
+  "slug": "nba-nyk-hou-2026-03-31",
+  "score": "94-111",
+  "gameId": 20023567,
+  "startTime": "2026-04-01T00:00:00Z",
+  "eventDate": "2026-03-31",
+  "closed": true,
+  "volume24hr": 7684869,
+  "teams": [
+    {
+      "id": 100494,
+      "name": "Knicks",
+      "league": "nba",
+      "record": "48-28",
+      "logo": "https://polymarket-upload.s3.us-east-2.amazonaws.com/NBA+Team+Logos/NYK.png",
+      "abbreviation": "nyk",
+      "alias": "Knicks",
+      "color": "#E08020",
+      "providerId": 6
+    },
+    {
+      "id": 100503,
+      "name": "Rockets",
+      "league": "nba",
+      "record": "46-29",
+      "logo": "https://polymarket-upload.s3.us-east-2.amazonaws.com/NBA+Team+Logos/HOU.png",
+      "abbreviation": "hou",
+      "alias": "Rockets",
+      "color": "#C00020",
+      "providerId": 14
+    }
+  ],
+  "markets": [
+    {
+      "question": "Knicks vs. Rockets: O/U 217.5",
+      "sportsMarketType": "totals",
+      "outcomePrices": "[\"0\",\"1\"]",
+      "clobTokenIds": "[\"token1\",\"token2\"]",
+      "volume24hr": 250000,
+      "gameStartTime": "2026-04-01 00:00:00+00",
+      "clearBookOnStart": true,
+      "secondsDelay": 3
+    },
+    {
+      "question": "Jalen Brunson: Points O/U 24.5",
+      "sportsMarketType": "points",
+      "outcomePrices": "[\"0.46\",\"0.54\"]"
+    }
+  ],
+  "eventMetadata": {
+    "context_description": "The New York Knicks entered their March 31 matchup at the Houston Rockets as the Eastern Conference's No. 3 seed at 48-27..."
+  }
+}
+```
+</ResponseExample>
+
+## What you get
+
+| Field | Description |
+|-------|-------------|
+| `score` | Final score (e.g. `94-111`) or live score during game |
+| `teams` | Team names, logos, records, colors, abbreviations |
+| `markets` | All betting markets: moneyline, spreads, totals, player props |
+| `eventMetadata.context_description` | AI-generated game preview with injuries, stats, matchup context |
+| `gameId` | Unique game identifier |
+| `startTime` | Scheduled start time (UTC) |
+| `clearBookOnStart` | Whether the order book clears at game start |
+| `secondsDelay` | Seconds delay for live market updates (typically 3s) |
+
+## Market types you'll see
+
+| `sportsMarketType` | What it is |
+|--------------------|-----------|
+| `moneyline` | Who wins the game |
+| `spreads` | Point spread betting |
+| `totals` | Over/under total points |
+| `points` | Player points prop |
+| `rebounds` | Player rebounds prop |
+| `assists` | Player assists prop |
+| `nrfi` | No run first inning (MLB) |
+| `first_blood_game` | First blood (esports) |
+| `kill_over_under_game` | Total kills over/under (esports) |
+| `lol_penta_kill` | Any player penta kill (LoL) |
+
+See [Market Types](/api-reference/sports/market-types) for the full list of 99 types.

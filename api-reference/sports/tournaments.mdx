@@ -1,0 +1,53 @@
+---
+title: "Tournaments"
+openapi: "GET /v2/sports/tournaments"
+description: "Tournament brackets with phases, teams, and seeds."
+---
+
+Returns tournament bracket data. Currently includes March Madness with full bracket structure: 64 teams, 6 phases, division assignments, seeds, and game scheduling.
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+<ResponseExample>
+```json
+{
+  "count": 1,
+  "tournaments": [
+    {
+      "id": 2,
+      "name": "March Madness 2026",
+      "numEntrants": 64,
+      "phases": [
+        {
+          "id": 7,
+          "tournamentId": 2,
+          "roundSize": 64,
+          "displayName": "Round of 64"
+        },
+        {
+          "id": 8,
+          "roundSize": 32,
+          "displayName": "Round of 32"
+        }
+      ]
+    }
+  ]
+}
+```
+</ResponseExample>
+
+## Tournament Detail
+
+Get a single tournament by ID with full bracket:
+
+```
+GET /v2/sports/tournaments/{id}
+```
+
+```bash
+curl "https://api.polynode.dev/v2/sports/tournaments/2?key=YOUR_KEY"
+```
+
+Returns complete bracket structure with teams, seeds, divisions, game slugs, and scheduling.
