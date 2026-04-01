@@ -3,7 +3,7 @@ title: "Add Wallets"
 description: "Add wallets to your tracked leaderboard set."
 ---
 
-Add one or more Polymarket proxy wallet addresses to your BYOL set. These wallets will be indexed on the next refresh cycle (~30 minutes) and will then appear in your leaderboard queries.
+Add one or more Polymarket proxy wallet addresses to your BYOL set. Newly added wallets are indexed immediately in the background and will appear in your leaderboard queries within seconds.
 
 ```
 POST /v2/leaderboard/wallets
@@ -18,8 +18,8 @@ Pass your API key via query parameter `?key=`, header `x-api-key`, or `Authoriza
 ```json
 {
   "wallets": [
-    "0xd252bce657d99d4e943708a8d7a2b3222da2775b",
-    "0x05d5e0403427a6223f5673b3234ac9405c19db37"
+    "0x94f199fb7789f1aef7fff6b758d6b375100f4c7a",
+    "0xe9ad918c7678cd38b12603a762e638a5d1ee7091"
   ]
 }
 ```
@@ -34,7 +34,7 @@ Pass your API key via query parameter `?key=`, header `x-api-key`, or `Authoriza
 {
   "added": 2,
   "already_tracked": 0,
-  "total": 102,
+  "total": 106,
   "limit": 5000
 }
 ```
@@ -48,9 +48,27 @@ Pass your API key via query parameter `?key=`, header `x-api-key`, or `Authoriza
 
 ## Deduplication
 
-If you add a wallet that's already in your set, it's silently ignored and does not count toward your daily add limit. This means you can safely re-send your full wallet list without worrying about duplicates.
+If you add wallets that are already in your set, they are silently ignored. This means you can safely re-send your full wallet list without worrying about duplicates.
 
-## Example
+```json
+// Request: adding 2 wallets that are already tracked
+{
+  "wallets": [
+    "0x94f199fb7789f1aef7fff6b758d6b375100f4c7a",
+    "0xe9ad918c7678cd38b12603a762e638a5d1ee7091"
+  ]
+}
+
+// Response: nothing was added, total unchanged
+{
+  "added": 0,
+  "already_tracked": 2,
+  "total": 106,
+  "limit": 5000
+}
+```
+
+## Examples
 
 <CodeGroup>
 ```bash cURL
@@ -58,23 +76,26 @@ curl -X POST "https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY" 
   -H "Content-Type: application/json" \
   -d '{
     "wallets": [
-      "0xd252bce657d99d4e943708a8d7a2b3222da2775b",
-      "0x05d5e0403427a6223f5673b3234ac9405c19db37"
+      "0x94f199fb7789f1aef7fff6b758d6b375100f4c7a",
+      "0xe9ad918c7678cd38b12603a762e638a5d1ee7091"
     ]
   }'
 ```
 
 ```javascript JavaScript
-const response = await fetch("https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    wallets: [
-      "0xd252bce657d99d4e943708a8d7a2b3222da2775b",
-      "0x05d5e0403427a6223f5673b3234ac9405c19db37"
-    ]
-  })
-});
+const response = await fetch(
+  "https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      wallets: [
+        "0x94f199fb7789f1aef7fff6b758d6b375100f4c7a",
+        "0xe9ad918c7678cd38b12603a762e638a5d1ee7091"
+      ]
+    })
+  }
+);
 const data = await response.json();
 console.log(`Added: ${data.added}, Total: ${data.total}`);
 ```
@@ -85,15 +106,18 @@ import requests
 response = requests.post(
     "https://api.polynode.dev/v2/leaderboard/wallets",
     params={"key": "YOUR_API_KEY"},
-    json={"wallets": [
-        "0xd252bce657d99d4e943708a8d7a2b3222da2775b",
-        "0x05d5e0403427a6223f5673b3234ac9405c19db37"
-    ]}
+    json={
+        "wallets": [
+            "0x94f199fb7789f1aef7fff6b758d6b375100f4c7a",
+            "0xe9ad918c7678cd38b12603a762e638a5d1ee7091"
+        ]
+    }
 )
-print(response.json())
+data = response.json()
+print(f"Added: {data['added']}, Total: {data['total']}")
 ```
 </CodeGroup>
 
 <Note>
-  Newly added wallets won't appear in leaderboard queries until the next background refresh cycle completes (~30 minutes max).
+  Newly added wallets are fetched immediately in the background. They typically appear in leaderboard queries within a few seconds.
 </Note>

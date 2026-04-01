@@ -44,7 +44,11 @@ Pass your API key via query parameter `?key=`, header `x-api-key`, or `Authoriza
 
 ## Response: all categories (default)
 
-When `category=all` or omitted, the response groups results by category:
+When `category=all` or omitted, the response groups results by category. Each category is sorted and ranked independently.
+
+```bash
+curl "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=all&key=YOUR_API_KEY"
+```
 
 ```json
 {
@@ -53,7 +57,7 @@ When `category=all` or omitted, the response groups results by category:
   "orderBy": "pnl",
   "offset": 0,
   "limit": 50,
-  "lastRefreshed": "2026-04-01T15:22:20.000Z",
+  "lastRefreshed": "2026-04-01T16:04:19.000Z",
   "categories": {
     "overall": [
       {
@@ -69,18 +73,53 @@ When `category=all` or omitted, the response groups results by category:
       },
       {
         "localRank": 2,
-        "rank": "5001",
-        "proxyWallet": "0xb595d09ce5bbc4d39e3b3d04e80c402d2c8d5922",
-        "userName": "TraderX",
+        "rank": "8",
+        "proxyWallet": "0x8119010a6e589062aa03583bb3f39ca632d9f887",
+        "userName": "PrincessCaro",
         "xUsername": "",
         "verifiedBadge": false,
-        "vol": 2467175.01,
-        "pnl": 22614.92,
+        "vol": 23520809.95,
+        "pnl": 6083643.10,
+        "profileImage": ""
+      },
+      {
+        "localRank": 3,
+        "rank": "5004",
+        "proxyWallet": "0xb595d09ce5bbc4d39e3b3d04e80c402d2c8d5922",
+        "userName": "...",
+        "xUsername": "",
+        "verifiedBadge": false,
+        "vol": 2467445.01,
+        "pnl": 22617.64,
         "profileImage": ""
       }
     ],
-    "politics": [...],
-    "sports": [...],
+    "politics": [
+      {
+        "localRank": 1,
+        "rank": "1",
+        "proxyWallet": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
+        "userName": "Theo4",
+        "xUsername": "",
+        "verifiedBadge": false,
+        "vol": 43012710.75,
+        "pnl": 22053952.53,
+        "profileImage": ""
+      }
+    ],
+    "sports": [
+      {
+        "localRank": 1,
+        "rank": "1696",
+        "proxyWallet": "0xb595d09ce5bbc4d39e3b3d04e80c402d2c8d5922",
+        "userName": "...",
+        "xUsername": "",
+        "verifiedBadge": false,
+        "vol": 2466252.61,
+        "pnl": 22677.91,
+        "profileImage": ""
+      }
+    ],
     "crypto": [...],
     "finance": [...],
     "tech": [],
@@ -93,7 +132,11 @@ When `category=all` or omitted, the response groups results by category:
 
 ## Response: single category
 
-When you specify a category like `category=crypto`, the response is a flat leaderboard:
+When you specify a category like `category=crypto`, the response is a flat leaderboard with a `total` count.
+
+```bash
+curl "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=week&category=crypto&key=YOUR_API_KEY"
+```
 
 ```json
 {
@@ -103,7 +146,7 @@ When you specify a category like `category=crypto`, the response is a flat leade
   "total": 6,
   "offset": 0,
   "limit": 50,
-  "lastRefreshed": "2026-04-01T15:22:20.000Z",
+  "lastRefreshed": "2026-04-01T16:04:19.000Z",
   "leaderboard": [
     {
       "localRank": 1,
@@ -114,6 +157,101 @@ When you specify a category like `category=crypto`, the response is a flat leade
       "verifiedBadge": false,
       "vol": 0,
       "pnl": 11077.58,
+      "profileImage": ""
+    },
+    {
+      "localRank": 2,
+      "rank": "34808",
+      "proxyWallet": "0x05d5e0403427a6223f5673b3234ac9405c19db37",
+      "userName": "0x05d5e0403427a6223f5673b3234ac9405c19db37",
+      "xUsername": "",
+      "verifiedBadge": false,
+      "vol": 0,
+      "pnl": 23.24,
+      "profileImage": ""
+    }
+  ]
+}
+```
+
+## Response: sorted by volume
+
+```bash
+curl "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=month&category=overall&orderBy=vol&limit=5&key=YOUR_API_KEY"
+```
+
+```json
+{
+  "timePeriod": "month",
+  "category": "overall",
+  "orderBy": "vol",
+  "total": 18,
+  "offset": 0,
+  "limit": 5,
+  "lastRefreshed": "2026-04-01T16:04:19.000Z",
+  "leaderboard": [
+    {
+      "localRank": 1,
+      "rank": "1086",
+      "proxyWallet": "0xb595d09ce5bbc4d39e3b3d04e80c402d2c8d5922",
+      "userName": "...",
+      "xUsername": "",
+      "verifiedBadge": false,
+      "vol": 43406.94,
+      "pnl": 22107.49,
+      "profileImage": ""
+    },
+    {
+      "localRank": 2,
+      "rank": "129764",
+      "proxyWallet": "0xc0220b02ad4cf50f8d612dbb3aa7783973266494",
+      "userName": "...",
+      "xUsername": "",
+      "verifiedBadge": false,
+      "vol": 25.75,
+      "pnl": 11.87,
+      "profileImage": ""
+    }
+  ]
+}
+```
+
+## Response: today's activity
+
+```bash
+curl "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=day&category=sports&key=YOUR_API_KEY"
+```
+
+```json
+{
+  "timePeriod": "day",
+  "category": "sports",
+  "orderBy": "pnl",
+  "total": 9,
+  "offset": 0,
+  "limit": 50,
+  "lastRefreshed": "2026-04-01T16:04:19.000Z",
+  "leaderboard": [
+    {
+      "localRank": 1,
+      "rank": "768",
+      "proxyWallet": "0xb595d09ce5bbc4d39e3b3d04e80c402d2c8d5922",
+      "userName": "...",
+      "xUsername": "",
+      "verifiedBadge": false,
+      "vol": 43406.94,
+      "pnl": 516.36,
+      "profileImage": ""
+    },
+    {
+      "localRank": 2,
+      "rank": "96658",
+      "proxyWallet": "0x1116147499ba1da24081a5f09077cdbc4586997c",
+      "userName": "...",
+      "xUsername": "",
+      "verifiedBadge": false,
+      "vol": 0,
+      "pnl": 0.13,
       "profileImage": ""
     }
   ]
@@ -139,7 +277,7 @@ When you specify a category like `category=crypto`, the response is a flat leade
 | Field | Type | Description |
 |-------|------|-------------|
 | `localRank` | number | Rank within your custom leaderboard set |
-| `rank` | string | Global rank on Polymarket's leaderboard. This is a string (matching Polymarket's API format). |
+| `rank` | string | Global rank on Polymarket's leaderboard. This is a string matching Polymarket's API format. |
 | `proxyWallet` | string | Polymarket proxy wallet address |
 | `userName` | string | Polymarket display name |
 | `xUsername` | string | Twitter/X username (if set) |
@@ -148,9 +286,124 @@ When you specify a category like `category=crypto`, the response is a flat leade
 | `pnl` | number | Profit/Loss (USD) for this time period |
 | `profileImage` | string | Profile image URL |
 
-## Rate limit errors
+## Code examples
 
-When you exceed the 1 request per 5 seconds limit, the response is:
+### Get everything for the current week
+
+<CodeGroup>
+```bash cURL
+curl "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=week&key=YOUR_API_KEY"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=week&key=YOUR_API_KEY"
+);
+const data = await response.json();
+
+// All 9 categories in one response
+for (const [category, traders] of Object.entries(data.categories)) {
+  if (traders.length > 0) {
+    console.log(`${category}: ${traders.length} traders`);
+    console.log(`  Top trader: ${traders[0].userName} ($${traders[0].pnl.toFixed(2)})`);
+  }
+}
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.polynode.dev/v2/leaderboard/custom",
+    params={"timePeriod": "week", "key": "YOUR_API_KEY"}
+)
+data = response.json()
+
+for category, traders in data["categories"].items():
+    if traders:
+        top = traders[0]
+        print(f"{category}: {len(traders)} traders, top: {top['userName']} (${top['pnl']:,.2f})")
+```
+</CodeGroup>
+
+### Get a single category
+
+<CodeGroup>
+```bash cURL
+curl "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=month&category=crypto&orderBy=pnl&key=YOUR_API_KEY"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=month&category=crypto&orderBy=pnl&key=YOUR_API_KEY"
+);
+const data = await response.json();
+
+// Flat leaderboard array
+console.log(`${data.total} traders in crypto this month`);
+for (const trader of data.leaderboard) {
+  console.log(`#${trader.localRank} ${trader.userName} — $${trader.pnl.toFixed(2)} P&L (global rank: ${trader.rank})`);
+}
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.polynode.dev/v2/leaderboard/custom",
+    params={
+        "timePeriod": "month",
+        "category": "crypto",
+        "orderBy": "pnl",
+        "key": "YOUR_API_KEY"
+    }
+)
+data = response.json()
+
+print(f"{data['total']} traders in crypto this month")
+for trader in data["leaderboard"]:
+    print(f"#{trader['localRank']} {trader['userName']} — ${trader['pnl']:,.2f} (global #{trader['rank']})")
+```
+</CodeGroup>
+
+### Sort by volume, paginated
+
+<CodeGroup>
+```bash cURL
+# Top 10 by volume, all time
+curl "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=all&category=overall&orderBy=vol&limit=10&key=YOUR_API_KEY"
+
+# Next 10
+curl "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=all&category=overall&orderBy=vol&limit=10&offset=10&key=YOUR_API_KEY"
+```
+
+```javascript JavaScript
+// Paginate through all results
+let offset = 0;
+const limit = 50;
+
+while (true) {
+  const response = await fetch(
+    `https://api.polynode.dev/v2/leaderboard/custom?timePeriod=all&category=overall&orderBy=vol&limit=${limit}&offset=${offset}&key=YOUR_API_KEY`
+  );
+  const data = await response.json();
+
+  for (const trader of data.leaderboard) {
+    console.log(`#${trader.localRank} ${trader.userName} — $${trader.vol.toFixed(2)} volume`);
+  }
+
+  if (data.leaderboard.length < limit) break;
+  offset += limit;
+
+  // Respect rate limit: 1 request per 5 seconds
+  await new Promise(resolve => setTimeout(resolve, 5000));
+}
+```
+</CodeGroup>
+
+## Rate limiting
+
+This endpoint is rate limited to **1 request per 5 seconds** per API key. If you exceed this, you'll get a 429 response:
 
 ```json
 {
@@ -166,55 +419,6 @@ When you exceed the 1 request per 5 seconds limit, the response is:
 
 The response also includes a `Retry-After` header (in seconds).
 
-## Examples
-
-### Get everything for the current week
-
-<CodeGroup>
-```bash cURL
-curl "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=week&key=YOUR_API_KEY"
-```
-
-```javascript JavaScript
-const response = await fetch(
-  "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=week&key=YOUR_API_KEY"
-);
-const data = await response.json();
-
-// data.categories.overall — ranked by P&L across all markets
-// data.categories.crypto  — ranked by P&L in crypto markets only
-// data.categories.sports  — ranked by P&L in sports markets only
-for (const [category, traders] of Object.entries(data.categories)) {
-  console.log(`${category}: ${traders.length} traders`);
-}
-```
-
-```python Python
-import requests
-
-response = requests.get(
-    "https://api.polynode.dev/v2/leaderboard/custom",
-    params={"timePeriod": "week", "key": "YOUR_API_KEY"}
-)
-data = response.json()
-
-for category, traders in data["categories"].items():
-    print(f"{category}: {len(traders)} traders")
-```
-</CodeGroup>
-
-### Get just the crypto leaderboard, sorted by volume
-
-```bash
-curl "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=month&category=crypto&orderBy=vol&key=YOUR_API_KEY"
-```
-
-### Get today's top 10 overall
-
-```bash
-curl "https://api.polynode.dev/v2/leaderboard/custom?timePeriod=day&category=overall&limit=10&key=YOUR_API_KEY"
-```
-
 <Note>
-  Rate limit: 1 request per 5 seconds. Data refreshes every ~30 minutes. Repeat requests within 60 seconds are served from cache.
+  Data refreshes every ~30 minutes in the background. Repeat requests within 60 seconds are served from an in-memory cache for maximum speed.
 </Note>

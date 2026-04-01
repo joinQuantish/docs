@@ -18,7 +18,8 @@ Pass your API key via query parameter `?key=`, header `x-api-key`, or `Authoriza
 ```json
 {
   "wallets": [
-    "0xd252bce657d99d4e943708a8d7a2b3222da2775b"
+    "0x94f199fb7789f1aef7fff6b758d6b375100f4c7a",
+    "0xe9ad918c7678cd38b12603a762e638a5d1ee7091"
   ]
 }
 ```
@@ -31,8 +32,8 @@ Pass your API key via query parameter `?key=`, header `x-api-key`, or `Authoriza
 
 ```json
 {
-  "removed": 1,
-  "total": 101
+  "removed": 2,
+  "total": 104
 }
 ```
 
@@ -41,27 +42,53 @@ Pass your API key via query parameter `?key=`, header `x-api-key`, or `Authoriza
 | `removed` | number | Number of wallets removed |
 | `total` | number | Remaining wallets in your set |
 
-## Example
+## Examples
 
 <CodeGroup>
 ```bash cURL
 curl -X DELETE "https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "wallets": ["0xd252bce657d99d4e943708a8d7a2b3222da2775b"]
+    "wallets": [
+      "0x94f199fb7789f1aef7fff6b758d6b375100f4c7a",
+      "0xe9ad918c7678cd38b12603a762e638a5d1ee7091"
+    ]
   }'
 ```
 
 ```javascript JavaScript
-const response = await fetch("https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY", {
-  method: "DELETE",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    wallets: ["0xd252bce657d99d4e943708a8d7a2b3222da2775b"]
-  })
-});
+const response = await fetch(
+  "https://api.polynode.dev/v2/leaderboard/wallets?key=YOUR_API_KEY",
+  {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      wallets: [
+        "0x94f199fb7789f1aef7fff6b758d6b375100f4c7a",
+        "0xe9ad918c7678cd38b12603a762e638a5d1ee7091"
+      ]
+    })
+  }
+);
 const data = await response.json();
 console.log(`Removed: ${data.removed}, Remaining: ${data.total}`);
+```
+
+```python Python
+import requests
+
+response = requests.delete(
+    "https://api.polynode.dev/v2/leaderboard/wallets",
+    params={"key": "YOUR_API_KEY"},
+    json={
+        "wallets": [
+            "0x94f199fb7789f1aef7fff6b758d6b375100f4c7a",
+            "0xe9ad918c7678cd38b12603a762e638a5d1ee7091"
+        ]
+    }
+)
+data = response.json()
+print(f"Removed: {data['removed']}, Remaining: {data['total']}")
 ```
 </CodeGroup>
 
