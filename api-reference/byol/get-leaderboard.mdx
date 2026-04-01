@@ -120,12 +120,26 @@ When you specify a category like `category=crypto`, the response is a flat leade
 }
 ```
 
-## Response fields
+## Top-level response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timePeriod` | string | The time period used for this query |
+| `category` | string | `"all"` or the specific category queried |
+| `orderBy` | string | Sort metric used (`pnl` or `vol`) |
+| `total` | number | Total wallets with data for this query (single-category mode only) |
+| `offset` | number | Pagination offset |
+| `limit` | number | Maximum entries returned |
+| `lastRefreshed` | string | ISO timestamp of the last background data refresh |
+| `categories` | object | Leaderboard entries grouped by category (when `category=all`) |
+| `leaderboard` | array | Flat leaderboard entries (when a specific category is requested) |
+
+## Leaderboard entry fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `localRank` | number | Rank within your custom leaderboard set |
-| `rank` | string | Global rank on Polymarket's leaderboard for this time period and category |
+| `rank` | string | Global rank on Polymarket's leaderboard. This is a string (matching Polymarket's API format). |
 | `proxyWallet` | string | Polymarket proxy wallet address |
 | `userName` | string | Polymarket display name |
 | `xUsername` | string | Twitter/X username (if set) |
@@ -133,7 +147,24 @@ When you specify a category like `category=crypto`, the response is a flat leade
 | `vol` | number | Trading volume (USD) for this time period |
 | `pnl` | number | Profit/Loss (USD) for this time period |
 | `profileImage` | string | Profile image URL |
-| `lastRefreshed` | string | ISO timestamp of the last background data refresh |
+
+## Rate limit errors
+
+When you exceed the 1 request per 5 seconds limit, the response is:
+
+```json
+{
+  "error": "Leaderboard is rate limited to 1 request per 5 seconds.",
+  "retryAfterMs": 3784
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `error` | string | Error message |
+| `retryAfterMs` | number | Milliseconds to wait before retrying |
+
+The response also includes a `Retry-After` header (in seconds).
 
 ## Examples
 
