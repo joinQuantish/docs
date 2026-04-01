@@ -35,18 +35,16 @@ Pass your API key via query parameter `?key=`, header `x-api-key`, or `Authoriza
   "added": 2,
   "already_tracked": 0,
   "total": 102,
-  "limit": 5000,
-  "daily_remaining": 4998
+  "limit": 5000
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `added` | number | Number of new wallets added |
-| `already_tracked` | number | Wallets that were already in your set (not counted toward limits) |
+| `already_tracked` | number | Wallets that were already in your set (not counted toward the limit) |
 | `total` | number | Total wallets now in your set |
-| `limit` | number | Maximum wallets allowed for your tier |
-| `daily_remaining` | number | How many more wallets you can add today |
+| `limit` | number | Maximum wallets allowed (5,000) |
 
 ## Deduplication
 
