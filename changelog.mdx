@@ -7,6 +7,36 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-01 — Builder Credentials (All SDKs)
+
+### TypeScript SDK v0.5.7 / Rust SDK v0.5.7 / Python SDK v0.6.1
+
+Platforms can now pass their own Polymarket builder credentials for order attribution. All volume gets credited to your builder profile on the [Builder Leaderboard](https://builders.polymarket.com).
+
+```typescript
+const trader = new PolyNodeTrader({
+  polynodeKey: 'pn_live_...',
+  builderCredentials: {
+    key: process.env.POLY_BUILDER_API_KEY,
+    secret: process.env.POLY_BUILDER_SECRET,
+    passphrase: process.env.POLY_BUILDER_PASSPHRASE,
+  },
+});
+```
+
+- Get your builder credentials at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder)
+- polynode never stores your builder credentials. They're used per-request for HMAC signing only.
+- When omitted, polynode's default builder attribution is used (orders still go through).
+
+Install:
+```bash
+npm install polynode-sdk@0.5.7    # TypeScript
+cargo add polynode@0.5.7          # Rust
+pip install polynode==0.6.1       # Python
+```
+
+---
+
 ## 2026-03-31 — TypeScript SDK v0.5.6 (Cache Crash Recovery)
 
 ### TypeScript SDK v0.5.6
