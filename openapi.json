@@ -3198,6 +3198,418 @@
           }
         ]
       }
+    },
+    "/v2/sports/leagues": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "List Leagues",
+        "description": "All 170 available sports and esports leagues. The sport field is the code you use in all other sports endpoints.",
+        "operationId": "sports_leagues",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "League list"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/sports/leagues/{code}/games": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "List Games",
+        "description": "Games for a league with scores, teams, and market data.",
+        "operationId": "sports_games",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "description": "League code (e.g. nba, lol, cs2)",
+            "schema": {
+              "type": "string",
+              "default": "nba"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "active or closed",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "closed"
+              ],
+              "default": "active"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max results (1-200)",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "startDate",
+                "volume"
+              ],
+              "default": "startDate"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "Sort direction",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game list"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/sports/games/{slug}": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "Game Detail",
+        "description": "Full game data: score, teams, markets, and AI-generated preview.",
+        "operationId": "sports_game_detail",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Game slug (e.g. nba-nyk-hou-2026-03-31)",
+            "schema": {
+              "type": "string",
+              "default": "nba-nyk-hou-2026-03-31"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game detail"
+          },
+          "404": {
+            "description": "Game not found"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/sports/leagues/{code}/teams": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "List Teams",
+        "description": "Teams for a league with logos, records, and colors.",
+        "operationId": "sports_teams",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "description": "League code (e.g. nba, nhl, lol)",
+            "schema": {
+              "type": "string",
+              "default": "nba"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max results (up to 500)",
+            "schema": {
+              "type": "integer",
+              "default": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team list"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/sports/search": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "Search",
+        "description": "Search for games, teams, and events by name.",
+        "operationId": "sports_search",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search query (e.g. celtics, fnatic)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max results (up to 50)",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/sports/live": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "Live Overview",
+        "description": "Real-time snapshot across all sports: volumes, market counts, upcoming leagues.",
+        "operationId": "sports_live",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Live overview"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/sports/market-types": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "Market Types",
+        "description": "All 99 sports and esports market types.",
+        "operationId": "sports_market_types",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Market type list"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/sports/series": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "Series",
+        "description": "All recurring series: sports seasons, crypto markets, weather.",
+        "operationId": "sports_series",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "active or all",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "all"
+              ],
+              "default": "active"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max results (up to 500)",
+            "schema": {
+              "type": "integer",
+              "default": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Series list"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/sports/series/{id}": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "Series Detail",
+        "description": "Single series with volume and linked events.",
+        "operationId": "sports_series_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Series ID (e.g. 10345 for NBA)",
+            "schema": {
+              "type": "string",
+              "default": "10345"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Series detail"
+          },
+          "404": {
+            "description": "Series not found"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/sports/tournaments": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "Tournaments",
+        "description": "Tournament brackets with phases, teams, and seeds.",
+        "operationId": "sports_tournaments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Tournament list"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/sports/tournaments/{id}": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "Tournament Detail",
+        "description": "Single tournament bracket with phases, teams, and seeds.",
+        "operationId": "sports_tournament_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Tournament ID",
+            "schema": {
+              "type": "string",
+              "default": "2"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tournament detail"
+          },
+          "404": {
+            "description": "Tournament not found"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
     }
   },
   "components": {
