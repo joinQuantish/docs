@@ -1,0 +1,156 @@
+---
+title: "Position Management"
+sidebarTitle: "Position Management"
+description: "Split, merge, and convert positions on Polymarket. Gasless via the TypeScript SDK."
+icon: "rotate"
+---
+
+## What are split, merge, and convert?
+
+Polymarket positions are ERC-1155 tokens representing outcomes. Three on-chain operations let you manage them directly:
+
+**Split** — Turn USDC into YES + NO tokens for a market. You put in $100 and get 100 YES shares + 100 NO shares. One side will be worth $1 at resolution, the other $0.
+
+**Merge** — The reverse. Put YES + NO tokens back together and get USDC. 100 YES + 100 NO = $100 USDC returned.
+
+**Convert** — Rebalance positions across outcomes in a multi-outcome market (neg-risk only). If you hold NO tokens on certain outcomes, convert them into USDC plus YES tokens on the remaining outcomes.
+
+## When to use each
+
+| Operation | Use case |
+|-----------|----------|
+| **Split** | Mint new outcome tokens without going through the orderbook. Useful for market making or taking positions on illiquid markets. |
+| **Merge** | Exit positions without selling on the orderbook. Redeem paired YES+NO tokens for USDC at any time. |
+| **Convert** | Rebalance across outcomes in multi-outcome markets (e.g. "Who will win the World Cup?"). Swap your NO exposure on some outcomes into YES exposure on others. |
+
+## TypeScript (gasless)
+
+The TypeScript SDK executes these operations gaslessly through the Polymarket relayer. No MATIC/POL needed.
+
+```bash
+npm install polynode-sdk@latest
+```
+
+### Split
+
+```typescript
+import { PolyNodeTrader } from 'polynode-sdk';
+
+const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
+await trader.ensureReady('0xYOUR_PRIVATE_KEY');
+
+// Split $100 into YES + NO tokens
+const result = await trader.split({
+  conditionId: '0x895e01db...', // from market data
+  amount: 100,                   // $100 USDC
+});
+
+console.log(result.txHash); // on-chain transaction hash
+```
+
+### Merge
+
+```typescript
+// Merge YES + NO tokens back into $50 USDC
+const result = await trader.merge({
+  conditionId: '0x895e01db...',
+  amount: 50,
+});
+```
+
+### Convert
+
+Convert is only available on neg-risk multi-outcome markets (e.g. "Republican Presidential Nominee" with 36 outcomes).
+
+```typescript
+// Convert NO positions on outcomes 0 and 1 ($100 each)
+const result = await trader.convert({
+  marketId: '0xc7d902c4...', // negRiskMarketID from market data
+  outcomeIndices: [0, 1],     // which outcomes to convert
+  amount: 100,                // $100 per outcome
+});
+```
+
+**What happens:**
+- Your NO tokens on outcomes 0 and 1 are burned
+- You receive **(number of outcomes - 1) x amount** in USDC (here: $100)
+- You receive YES tokens on all other outcomes (here: outcomes 2 through 35)
+
+The `outcomeIndices` correspond to the position of each outcome in the market. Index 0 is the first outcome, index 1 is the second, etc. You can find these by looking at the `questionID` field in market data — the last byte of each questionID is the outcome index.
+
+## Rust (transaction builder)
+
+The Rust SDK builds transactions that you submit via your own provider or the Polymarket relayer.
+
+```rust
+use polynode::trading::position_management::*;
+
+// Build a split transaction
+let tx = build_split_txn(
+    "0x895e01db...", // conditionId
+    100.0,            // $100
+    true,             // neg_risk
+);
+
+// tx.to = contract address
+// tx.data = ABI-encoded calldata
+// Submit via your provider or the Polymarket relayer
+```
+
+```rust
+// Build a convert transaction
+let tx = build_convert_txn(
+    "0xc7d902c4...", // marketId
+    &[0, 1],          // outcome indices
+    100.0,             // $100 per outcome
+);
+```
+
+## Python (transaction builder)
+
+```python
+from polynode.trading.position_management import build_split_txn, build_convert_txn
+
+# Build a split transaction
+tx = build_split_txn("0x895e01db...", 100.0, neg_risk=True)
+# tx.to, tx.data, tx.value — submit via your provider
+
+# Build a convert transaction
+tx = build_convert_txn("0xc7d902c4...", [0, 1], 100.0)
+```
+
+## Finding market IDs
+
+To use these operations, you need the right identifiers from market data:
+
+| Field | Where to find it | Used by |
+|-------|-------------------|---------|
+| `conditionId` | Market data from `/v1/events/search` or Gamma API | `split()`, `merge()` |
+| `negRiskMarketID` | Market data (only on neg-risk markets) | `convert()` |
+| Outcome index | Last byte of each outcome's `questionID` | `convert()` outcomeIndices |
+
+```typescript
+// Example: finding IDs for a market
+import { PolyNode } from 'polynode-sdk';
+const pn = new PolyNode({ apiKey: 'pn_live_...' });
+
+const results = await pn.searchEvents('Republican nominee', { limit: 1 });
+const market = results.events[0].markets[0];
+console.log(market.conditionId);       // for split/merge
+console.log(market.negRiskMarketID);   // for convert
+```
+
+## Neg-risk vs standard markets
+
+| | Standard markets | Neg-risk markets |
+|---|---|---|
+| **Outcomes** | 2 (binary YES/NO) | Many (e.g. 36 candidates) |
+| **Split/Merge** | Via CTF contract | Via NegRiskAdapter |
+| **Convert** | Not available | Available |
+| **Auto-detection** | TypeScript SDK handles this | TypeScript SDK handles this |
+
+The TypeScript SDK auto-detects the market type and routes to the correct contract. Rust and Python default to neg-risk (most multi-outcome markets). Pass `neg_risk=False` for standard binary markets.
+
+<Note>
+Convert operations are gasless in the TypeScript SDK. Rust and Python SDKs return pre-built transactions — submit them via the Polymarket relayer or your own provider.
+</Note>

@@ -250,6 +250,43 @@ if (result.success) {
 
 Cancel a specific order or all orders.
 
+### `split(params)`
+
+Split USDC into YES + NO outcome tokens. Gasless for Safe wallets. Auto-detects neg-risk vs standard markets.
+
+```typescript
+const result = await trader.split({
+  conditionId: '0x895e01db...', // market condition ID
+  amount: 100,                   // $100 USDC
+});
+// result: { success: true, txHash: '0x...' }
+```
+
+### `merge(params)`
+
+Merge YES + NO outcome tokens back into USDC. Gasless for Safe wallets.
+
+```typescript
+const result = await trader.merge({
+  conditionId: '0x895e01db...',
+  amount: 50,
+});
+```
+
+### `convert(params)`
+
+Convert NO positions on selected outcomes into USDC + YES on complementary outcomes. Only works on neg-risk multi-outcome markets. Gasless for Safe wallets.
+
+```typescript
+const result = await trader.convert({
+  marketId: '0xc7d902c4...', // negRiskMarketID
+  outcomeIndices: [0, 1],     // which outcomes to convert
+  amount: 100,                // $100 per outcome
+});
+```
+
+See the [Position Management guide](/guides/position-management) for a full explanation of how conversions work and when to use each operation.
+
 ### `checkBalance(wallet?)`
 
 Returns USDC.e and MATIC balance for the funder address.

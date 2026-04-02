@@ -7,6 +7,29 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-02 — Position Management (All SDKs)
+
+Split, merge, and convert positions directly from the SDK. No need to interact with smart contracts manually.
+
+**TypeScript** — gasless execution via the Polymarket relayer:
+```typescript
+await trader.split({ conditionId: '0x...', amount: 100 });
+await trader.merge({ conditionId: '0x...', amount: 100 });
+await trader.convert({ marketId: '0x...', outcomeIndices: [0, 1], amount: 100 });
+```
+
+**Rust & Python** — transaction builders that return ready-to-submit calldata:
+```python
+tx = build_split_txn("0x...", 100.0, neg_risk=True)
+tx = build_convert_txn("0x...", [0, 1], 100.0)
+```
+
+- [Position Management guide](/guides/position-management) — full walkthrough with examples
+- Convert is unique to neg-risk multi-outcome markets (e.g. "Who will win the World Cup?")
+- TypeScript SDK handles neg-risk vs standard market routing automatically
+
+---
+
 ## 2026-04-02 — Positions Converted Event (WebSocket API)
 
 New `positions_converted` event type for tracking position conversions on neg-risk multi-outcome markets.
