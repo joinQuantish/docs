@@ -7,6 +7,35 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-02 — Positions Converted Event (WebSocket API)
+
+New `positions_converted` event type for tracking position conversions on neg-risk multi-outcome markets.
+
+When a trader converts NO positions into USDC + YES positions on complementary outcomes (via the NegRiskAdapter `convertPositions` function), this event fires with the full decoded details.
+
+```json
+{
+  "data": {
+    "event_type": "positions_converted",
+    "event_title": "Hungary Parliamentary Election Winner",
+    "stakeholder": "0x30cecdf29f069563ea21b8ae94492e41e53a6b2b",
+    "converted_outcomes": ["Fidesz-KDNP", "TISZA"],
+    "amount": 98,
+    "market_id": "0x355e7310dd6e18ef5fa456de7ce1331bd8c7540c...",
+    "index_set": "0x...0021",
+    "neg_risk": true
+  }
+}
+```
+
+- `converted_outcomes` decodes the bitmask into human-readable outcome names
+- `event_title` shows the parent multi-outcome event
+- Included by default in `wallets` and `markets` subscription types
+- Add explicitly via `event_types: ["positions_converted"]` for other subscription types
+- Fires ~13 times per minute across all active neg-risk markets
+
+---
+
 ## 2026-04-01 — Builder Credentials (All SDKs)
 
 ### TypeScript SDK v0.5.7 / Rust SDK v0.5.7 / Python SDK v0.6.1

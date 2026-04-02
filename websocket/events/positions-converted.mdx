@@ -1,0 +1,134 @@
+---
+title: "Positions Converted Event"
+sidebarTitle: "positions_converted"
+description: "Position conversion on neg-risk multi-outcome markets."
+icon: "rotate"
+---
+
+Emitted when a user calls `convertPositions` on the NegRiskAdapter contract. This converts NO positions on selected outcomes into USDC plus YES positions on the complementary outcomes within the same multi-outcome market.
+
+Conversions are unique to neg-risk markets (multi-outcome events like "Republican Presidential Nominee" or "FIFA World Cup Winner"). They allow traders to rebalance positions across outcomes without going through the orderbook.
+
+```json
+{
+  "data": {
+    "amount": 98,
+    "block_number": 85007631,
+    "converted_outcomes": [
+      "Fidesz-KDNP",
+      "TISZA"
+    ],
+    "event_title": "Hungary Parliamentary Election Winner",
+    "event_type": "positions_converted",
+    "index_set": "0x0000000000000000000000000000000000000000000000000000000000000021",
+    "log_index": 943,
+    "market_id": "0x355e7310dd6e18ef5fa456de7ce1331bd8c7540c4c39028db05325be19050100",
+    "neg_risk": true,
+    "stakeholder": "0x30cecdf29f069563ea21b8ae94492e41e53a6b2b",
+    "taker_base_fee": null,
+    "timestamp": 1775135299000,
+    "tx_hash": "0x74fcb24732007ec58042c6e2ed7596c44a12f2fb34dec8bef9bbd3eaeb020718"
+  },
+  "timestamp": 1775135299000,
+  "type": "positions_converted"
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"positions_converted"`.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Block timestamp in Unix milliseconds.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="tx_hash" type="string" required>
+      Transaction hash.
+    </ResponseField>
+
+    <ResponseField name="block_number" type="number" required>
+      Block number.
+    </ResponseField>
+
+    <ResponseField name="log_index" type="number" required>
+      Log index within the transaction.
+    </ResponseField>
+
+    <ResponseField name="timestamp" type="number" required>
+      Block timestamp in Unix milliseconds.
+    </ResponseField>
+
+    <ResponseField name="stakeholder" type="string" required>
+      Wallet address that performed the conversion.
+    </ResponseField>
+
+    <ResponseField name="market_id" type="string" required>
+      The neg-risk market group ID (bytes32). All outcomes within the same multi-outcome event share this ID.
+    </ResponseField>
+
+    <ResponseField name="index_set" type="string" required>
+      Bitmask (hex) of which outcome indices were converted. Each bit position corresponds to an outcome in the market. For example, `0x03` (binary `11`) means outcomes at index 0 and 1 were converted.
+    </ResponseField>
+
+    <ResponseField name="amount" type="number" required>
+      USDC amount per outcome that was converted (6 decimal precision).
+    </ResponseField>
+
+    <ResponseField name="converted_outcomes" type="string[]">
+      Human-readable names of the outcomes that were converted. Decoded from the `index_set` bitmask using market metadata. For example: `["Fidesz-KDNP", "TISZA"]`.
+    </ResponseField>
+
+    <ResponseField name="event_title" type="string">
+      Parent event title (e.g. "Hungary Parliamentary Election Winner"). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="neg_risk" type="boolean">
+      Always `true` for conversion events (conversions only exist on neg-risk markets).
+    </ResponseField>
+
+    <ResponseField name="market_title" type="string">
+      Market question. Enriched from metadata when available.
+    </ResponseField>
+
+    <ResponseField name="market_slug" type="string">
+      URL slug for the market. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="market_image" type="string">
+      Market image URL. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="taker_base_fee" type="number">
+      Taker fee rate in basis points. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="tokens" type="object">
+      Map of token ID to outcome name for all outcomes in this market. Enriched from metadata.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## How conversions work
+
+On a neg-risk market with N outcomes, a user holding NO positions on selected outcomes can convert them:
+
+1. The user's NO tokens on the selected outcomes are burned
+2. The user receives **(number of NO positions - 1) x amount** in USDC
+3. The user receives YES tokens on all complementary outcomes (the ones NOT in the index_set)
+
+This enables efficient position rebalancing without using the orderbook.
+
+## Use cases
+
+- **Whale tracking** — large conversions signal sophisticated repositioning across outcomes
+- **Market structure analysis** — conversion flow reveals which outcomes traders are moving between
+- **Liquidity detection** — conversions create new YES token supply on complementary outcomes
+- **Arbitrage monitoring** — conversions can indicate perceived mispricing between outcomes
+
+<Note>
+  Not included in `global` firehose by default (same as `position_split`/`position_merge`). Subscribe explicitly with `event_types: ["positions_converted"]` or use the `wallets`/`markets` subscription types which include it automatically.
+</Note>
