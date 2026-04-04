@@ -7,6 +7,20 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-04 — Crypto Price Fix (All SDKs)
+
+Fixed stale price-to-beat values in short-form crypto markets. Polymarket changed the variant parameter on their crypto-price endpoint for 5-minute and hourly markets. The SDK now sends the correct values, matching what Polymarket's own frontend uses.
+
+**Affected intervals:** 5-minute and hourly. 15-minute was unaffected.
+
+```bash
+npm install polynode-sdk@0.5.9    # TypeScript
+cargo add polynode@0.5.8          # Rust
+pip install polynode==0.6.2       # Python
+```
+
+---
+
 ## 2026-04-04 — TypeScript SDK v0.5.8
 
 Fixed a bug where `price_feed` events from Chainlink subscriptions were silently dropped in the TypeScript SDK. The `.on('price_feed', ...)` handler now fires correctly.
