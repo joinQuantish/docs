@@ -7,6 +7,25 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-04 — TypeScript SDK v0.5.8
+
+Fixed a bug where `price_feed` events from Chainlink subscriptions were silently dropped in the TypeScript SDK. The `.on('price_feed', ...)` handler now fires correctly.
+
+```typescript
+const sub = await pn.ws
+  .subscribe('chainlink')
+  .feeds(['BTC/USD'])
+  .send();
+
+sub.on('price_feed', (event) => {
+  console.log(`${event.feed}: $${event.price}`);
+});
+```
+
+Update with `npm install polynode-sdk@0.5.8`.
+
+---
+
 ## 2026-04-02 — Position Management (All SDKs)
 
 Split, merge, and convert positions directly from the SDK. No need to interact with smart contracts manually.
