@@ -179,11 +179,31 @@ Settlement events flow in real-time as trades happen. Here's a real settlement c
 
 ### Slug Calculator
 
-Pick a coin and interval to get the current market slug. Updates live.
+Pick a coin and interval to get the current market slug. The `{timestamp}` is the Unix epoch (seconds) of the window start, always aligned to the interval boundary.
 
-<div id="slug-calculator" style="padding:20px; border-radius:12px; border:1px solid rgba(128,128,128,0.2); margin:16px 0;"></div>
+| Coin | 5-minute slug | 15-minute slug |
+|------|--------------|----------------|
+| BTC | `btc-updown-5m-{timestamp}` | `btc-updown-15m-{timestamp}` |
+| ETH | `eth-updown-5m-{timestamp}` | `eth-updown-15m-{timestamp}` |
+| SOL | `sol-updown-5m-{timestamp}` | `sol-updown-15m-{timestamp}` |
+| BNB | `bnb-updown-5m-{timestamp}` | `bnb-updown-15m-{timestamp}` |
+| XRP | `xrp-updown-5m-{timestamp}` | `xrp-updown-15m-{timestamp}` |
+| DOGE | `doge-updown-5m-{timestamp}` | `doge-updown-15m-{timestamp}` |
+| HYPE | `hype-updown-5m-{timestamp}` | `hype-updown-15m-{timestamp}` |
 
-<Note>The `{timestamp}` in 5m and 15m slugs is the Unix epoch (seconds) of the window start, always aligned to the interval boundary. For example, a 15m window starting at 10:00:00 UTC has timestamp `1775397600`.</Note>
+Compute the current window timestamp:
+
+```javascript
+// Get the current 5-minute window timestamp
+const now = Math.floor(Date.now() / 1000);
+const window5m = Math.floor(now / 300) * 300;
+const window15m = Math.floor(now / 900) * 900;
+
+console.log(`btc-updown-5m-${window5m}`);   // current BTC 5m slug
+console.log(`eth-updown-15m-${window15m}`);  // current ETH 15m slug
+```
+
+<Tip>You don't need to compute slugs manually. The SDK's `shortForm()` handles discovery automatically and gives you the `slug`, `conditionId`, and `clobTokenIds` on every rotation event.</Tip>
 
 ## Supported Coins
 
