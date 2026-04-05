@@ -179,22 +179,13 @@ Settlement events flow in real-time as trades happen. Here's a real settlement c
 
 ### Slug Calculator
 
-Pick a coin and interval to get the current market slug. The `{timestamp}` is the Unix epoch (seconds) of the window start, always aligned to the interval boundary.
+Pick a coin and interval to see the current market slug. Updates live with a countdown to the next window.
 
-| Coin | 5-minute slug | 15-minute slug |
-|------|--------------|----------------|
-| BTC | `btc-updown-5m-{timestamp}` | `btc-updown-15m-{timestamp}` |
-| ETH | `eth-updown-5m-{timestamp}` | `eth-updown-15m-{timestamp}` |
-| SOL | `sol-updown-5m-{timestamp}` | `sol-updown-15m-{timestamp}` |
-| BNB | `bnb-updown-5m-{timestamp}` | `bnb-updown-15m-{timestamp}` |
-| XRP | `xrp-updown-5m-{timestamp}` | `xrp-updown-15m-{timestamp}` |
-| DOGE | `doge-updown-5m-{timestamp}` | `doge-updown-15m-{timestamp}` |
-| HYPE | `hype-updown-5m-{timestamp}` | `hype-updown-15m-{timestamp}` |
+<div id="slug-calc"></div>
 
-Compute the current window timestamp:
+The slug pattern is deterministic: `{coin}-updown-{interval}-{windowTimestamp}`. Compute it yourself:
 
 ```javascript
-// Get the current 5-minute window timestamp
 const now = Math.floor(Date.now() / 1000);
 const window5m = Math.floor(now / 300) * 300;
 const window15m = Math.floor(now / 900) * 900;
