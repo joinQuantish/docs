@@ -177,6 +177,14 @@ Settlement events flow in real-time as trades happen. Here's a real settlement c
 | 15 minutes | `'15m'` / `FifteenMin` | 900s | `btc-updown-15m-{timestamp}` |
 | 1 hour | `'1h'` / `Hourly` | 3600s | `bitcoin-up-or-down-march-21-2026-2am-et` |
 
+### Slug Calculator
+
+Pick a coin and interval to get the current market slug. Updates live.
+
+<div id="slug-calculator" style="padding:20px; border-radius:12px; border:1px solid rgba(128,128,128,0.2); margin:16px 0;"></div>
+
+<Note>The `{timestamp}` in 5m and 15m slugs is the Unix epoch (seconds) of the window start, always aligned to the interval boundary. For example, a 15m window starting at 10:00:00 UTC has timestamp `1775397600`.</Note>
+
 ## Supported Coins
 
 All 7 Chainlink-tracked coins are supported:
