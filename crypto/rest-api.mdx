@@ -177,6 +177,10 @@ curl "https://api.polynode.dev/v1/crypto/active?key=YOUR_API_KEY"
 
 The `windowStart` field is the epoch timestamp of the current 5-minute window. New markets rotate every 5 minutes.
 
+<Tip>
+  Slug pattern is deterministic: `{coin}-updown-5m-{windowStart}`. You can compute the current window yourself with `Math.floor(Date.now() / 1000 / 300) * 300`. The SDK's `shortForm()` method handles this automatically with auto-rotation, enriched market data, and settlement streaming. See [Short-Form Markets](/sdks/short-form) for the interactive slug calculator and full reference.
+</Tip>
+
 ---
 
 ## GET /v1/crypto/series

@@ -188,6 +188,71 @@ In addition to the WebSocket stream, crypto data is available via REST. See the 
 
 All endpoints require an API key via `?key=` or `x-api-key` header.
 
+## Short-Form Crypto Markets
+
+<Info>
+  **These prices power prediction markets.** All 7 coins have active 5-minute, 15-minute, and 1-hour "Up or Down" prediction markets on Polymarket. The Chainlink price feed determines the opening price (price-to-beat), and the closing price at window end decides the outcome. Hundreds of trades happen every minute on these markets.
+</Info>
+
+Here's how it works: a BTC 5-minute market opens at 10:00 with BTC at $66,800. If BTC is above $66,800 at 10:05, "Up" wins. If it's below, "Down" wins. A new market opens at 10:05 with the new price as the target. This repeats every 5 minutes, 15 minutes, and every hour, across all 7 coins.
+
+### What you can do with this
+
+| Stream | What it gives you | How to get it |
+|--------|-------------------|---------------|
+| **Chainlink prices** | Underlying asset price at ~1/sec | `subscribe('chainlink')` on the main WS |
+| **Short-form settlements** | Every trade on 5m/15m/1h markets | SDK `shortForm('15m')` auto-rotates between windows |
+| **Short-form orderbook** | Bid/ask depth on crypto markets | `OrderbookEngine` with `clobTokenIds` from rotation |
+| **Price-to-beat** | Chainlink opening price per window | Included in SDK rotation events |
+| **Odds & liquidity** | Market-implied probabilities | Included in SDK rotation events |
+
+### Quick example
+
+Track BTC price alongside 15-minute market odds:
+
+```javascript
+import { PolyNodeWS } from 'polynode-sdk';
+
+const ws = new PolyNodeWS('pn_live_...', 'wss://ws.polynode.dev/ws');
+
+// Live BTC price from Chainlink
+const prices = await ws.subscribe('chainlink')
+  .filters({ feeds: ['BTC/USD'] })
+  .send();
+
+prices.on('price_feed', (msg) => {
+  console.log(`BTC: $${msg.data.price}`);
+});
+
+// 15-minute market rotation + settlements
+const stream = ws.shortForm('15m', { coins: ['btc'] });
+
+stream.on('rotation', (r) => {
+  const m = r.markets[0];
+  console.log(`Window: beat $${m.priceToBeat} | ${(m.upOdds * 100).toFixed(0)}% up | ${r.timeRemaining}s left`);
+});
+
+stream.on('settlement', (e) => {
+  console.log(`Trade: ${e.outcome} $${e.taker_size}`);
+});
+```
+
+<Tip>
+  The SDK handles market discovery, slug computation, token resolution, and automatic rotation between windows. See [Short-Form Markets](/sdks/short-form) for the full reference including the interactive slug calculator, all 14 market fields, and how to connect the orderbook.
+</Tip>
+
+### Market slug patterns
+
+Slugs are deterministic, based on the window's Unix epoch timestamp:
+
+| Interval | Pattern | Example |
+|----------|---------|---------|
+| 5 min | `{coin}-updown-5m-{epoch}` | `btc-updown-5m-1775399100` |
+| 15 min | `{coin}-updown-15m-{epoch}` | `eth-updown-15m-1775397600` |
+| 1 hour | Human-readable | `bitcoin-up-or-down-april-5-2026-10am-et` |
+
+The epoch timestamp is always aligned to the interval boundary: `Math.floor(now / intervalSeconds) * intervalSeconds`.
+
 ## Use cases
 
 - **Short-form market trading** -- track the underlying asset price alongside 5m/15m/1h crypto markets
