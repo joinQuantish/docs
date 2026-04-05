@@ -221,6 +221,16 @@ The core PolyNode event. A Polymarket settlement detected before or after on-cha
   </Expandable>
 </ResponseField>
 
+## Ordering guarantees
+
+**Confirmed settlements** are delivered in strict block order. All confirmed events from block N arrive before any from block N+1. Within a block, events are ordered by log index. Polygon uses Bor consensus with single-validator sprints, making chain reorganizations effectively nonexistent.
+
+**Pending settlements** are best-effort ordered by detection time. Because they are extracted from the mempool before block inclusion, there is no guaranteed global sequence. Two pending events detected within the same second may arrive in either order. Do not assume pending ordering reflects eventual on-chain ordering.
+
+**Pending-to-confirmed pairing:** every pending settlement will be followed by a corresponding `status_update` event when the same `tx_hash` confirms on-chain. You will never receive a confirmed update without a prior pending event for the same transaction.
+
+**A note on sender and nonce:** Polymarket trades are submitted by Polymarket's relayer EOAs, not by the traders themselves. Users sign EIP-712 orders off-chain, and the relayer submits the on-chain transaction. The transaction sender and nonce reflect the relayer's state, not the trader's intent or ordering. For this reason, sender address and nonce are not included in settlement events — they would be misleading to build on.
+
 ## Pending vs confirmed
 
 | Field | Pending | Confirmed |

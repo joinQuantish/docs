@@ -177,6 +177,12 @@ A confirmed on-chain trade from Polymarket's exchange contracts.
   </Expandable>
 </ResponseField>
 
+## Ordering guarantees
+
+Trade events are delivered in strict block order. All trades from block N arrive before any trades from block N+1. Within a block, trades are ordered by `log_index`. The tuple `(tx_hash, log_index)` is globally unique and can be used as a deduplication key.
+
+Polygon uses Bor consensus with single-validator sprints, making chain reorganizations effectively nonexistent. You can safely assume that once you receive a trade from block N+1, you have received all trades from block N.
+
 ## Settlement vs trade
 
 | | Settlement | Trade |
