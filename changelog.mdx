@@ -7,6 +7,16 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-05 — Short-Form Docs: Full Field Reference + Orderbook Guide
+
+Updated the [Short-Form Markets](/sdks/short-form) documentation with the complete `ShortFormMarket` field reference. All 14 fields are now documented, including `conditionId`, `clobTokenIds`, `windowStart`, `windowEnd`, `outcomes`, and `outcomePrices` which were previously undocumented.
+
+Added a new **"Connect the Orderbook to Crypto Markets"** section showing how to pass `clobTokenIds` from a short-form rotation event directly to `OrderbookEngine` for real-time depth data on crypto prediction markets. Includes TypeScript and Rust examples.
+
+No SDK changes. All fields were already available in the SDK — this is a docs-only update.
+
+---
+
 ## 2026-04-04 — Crypto Price Fix (All SDKs)
 
 Fixed stale price-to-beat values in short-form crypto markets. Polymarket changed the variant parameter on their crypto-price endpoint for 5-minute and hourly markets. The SDK now sends the correct values, matching what Polymarket's own frontend uses.

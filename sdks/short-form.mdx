@@ -94,6 +94,8 @@ Each market in the rotation includes enrichment data at zero cost:
   "coin": "btc",
   "slug": "btc-updown-15m-1774072800",
   "title": "Bitcoin Up or Down - March 21, 2:00AM-2:15AM ET",
+  "conditionId": "0x037ad8cf0b1d7dc7febd2a46c400398838163dc3...",
+  "clobTokenIds": ["11496172...", "66255671..."],
   "upOdds": 0.845,
   "downOdds": 0.155,
   "priceToBeat": 70694.18,
@@ -194,6 +196,42 @@ If no coins are specified, all 7 are subscribed.
 ## Market Enrichments
 
 Every `ShortFormMarket` includes these fields, all populated during discovery with zero hot-path cost:
+
+<ResponseField name="coin" type="string">
+  Coin identifier (`'btc'`, `'eth'`, `'sol'`, etc.).
+</ResponseField>
+
+<ResponseField name="slug" type="string">
+  Market URL slug (e.g., `'btc-updown-15m-1774072800'`).
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Human-readable market title (e.g., "Bitcoin Up or Down - March 21, 2:00AM-2:15AM ET").
+</ResponseField>
+
+<ResponseField name="conditionId" type="string">
+  The Polymarket condition ID. Use this to subscribe via the main WebSocket with `condition_ids` filters.
+</ResponseField>
+
+<ResponseField name="clobTokenIds" type="string[]">
+  The two CLOB token IDs (Up and Down outcomes). Pass these directly to `OrderbookEngine.subscribe()` to get real-time orderbook data for this market. See [Orderbook + Short-Form](#orderbook--short-form) below.
+</ResponseField>
+
+<ResponseField name="outcomes" type="string[]">
+  Outcome labels, always `["Up", "Down"]`.
+</ResponseField>
+
+<ResponseField name="outcomePrices" type="number[]">
+  Raw outcome prices from the CLOB, matching the `outcomes` array order.
+</ResponseField>
+
+<ResponseField name="windowStart" type="number">
+  Unix timestamp (seconds) when this market window opened.
+</ResponseField>
+
+<ResponseField name="windowEnd" type="number">
+  Unix timestamp (seconds) when this market window closes.
+</ResponseField>
 
 <ResponseField name="priceToBeat" type="number | null">
   The Chainlink opening price for this window. For "Up" to win, the closing price must exceed this value. Fetched once per rotation via the Polymarket crypto-price API.
@@ -485,3 +523,95 @@ ROTATION: 1h | 2029s remaining | 2 markets
   eth | ethereum-up-or-down-march-21-2026-2am-et | beat $2153.39 | 52% up | $7162 liq
   Events in 10s: 20
 ```
+
+## Connect the Orderbook to Crypto Markets
+
+<Info>
+  **Want depth data for crypto markets?** Every `ShortFormMarket` in the rotation event includes `clobTokenIds` — the token IDs for both Up and Down outcomes. Pass them straight to `OrderbookEngine` and you get live orderbook depth, bid/ask spreads, and price moves alongside your settlement stream. One setup, three real-time feeds.
+</Info>
+
+Here's the full pattern: short-form discovers markets, hands the token IDs to the orderbook engine, and both streams run in parallel.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { PolyNodeWS, OrderbookEngine } from 'polynode-sdk';
+
+    const KEY = 'pn_live_...';
+    const ws = new PolyNodeWS(KEY, 'wss://ws.polynode.dev/ws');
+    const engine = new OrderbookEngine({ apiKey: KEY, compress: true });
+
+    // 1. Start the short-form stream
+    const stream = ws.shortForm('5m', { coins: ['btc', 'eth'] });
+
+    // 2. On each rotation, subscribe the orderbook to the new markets
+    stream.on('rotation', async (r) => {
+      const tokenIds = r.markets.flatMap(m => m.clobTokenIds);
+      await engine.subscribe(tokenIds);
+
+      for (const m of r.markets) {
+        console.log(`${m.coin}: beat $${m.priceToBeat} | ${(m.upOdds * 100).toFixed(0)}% up`);
+      }
+    });
+
+    // 3. Orderbook events
+    engine.on('ready', () => console.log(`${engine.size} books loaded`));
+    engine.on('price', (p) => {
+      for (const a of p.assets) {
+        console.log(`Book: ${a.outcome} = ${a.price}`);
+      }
+    });
+
+    // 4. Settlement events (trades happening on these markets)
+    stream.on('settlement', (e) => {
+      console.log(`Trade: ${e.outcome} $${e.taker_size} on ${e.event_slug}`);
+    });
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::{PolyNodeClient, ShortFormInterval, ShortFormMessage, OrderbookEngine, Coin};
+
+    let client = PolyNodeClient::new("pn_live_...")?;
+    let mut engine = OrderbookEngine::new("pn_live_...", true)?;
+
+    let mut stream = client
+        .short_form(ShortFormInterval::FiveMin)
+        .coins(&[Coin::Btc, Coin::Eth])
+        .start()
+        .await?;
+
+    while let Some(msg) = stream.next().await {
+        match msg {
+            ShortFormMessage::Rotation(r) => {
+                // Pass token IDs from the rotation to the orderbook engine
+                let token_ids: Vec<&str> = r.markets.iter()
+                    .flat_map(|m| m.clob_token_ids.iter().map(|s| s.as_str()))
+                    .collect();
+                engine.subscribe(&token_ids).await?;
+
+                for m in &r.markets {
+                    println!("{}: beat ${:?} | {:.0}% up",
+                        m.coin.id(), m.price_to_beat, m.up_odds * 100.0);
+                }
+            }
+            ShortFormMessage::Event(e) => { /* handle settlements */ }
+            ShortFormMessage::Error(e) => eprintln!("{}", e),
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  This gives you three real-time feeds from one setup: **settlements** (trade flow), **orderbook** (depth and price moves), and **rotation enrichments** (odds, liquidity, price-to-beat). Add a `chainlink` subscription on the same WebSocket connection for the underlying asset price too.
+</Tip>
+
+### What you get
+
+| Stream | Source | Data |
+|--------|--------|------|
+| Settlements | `stream.on('settlement')` | Every trade on the crypto market: size, price, side, wallet |
+| Orderbook | `engine.on('price')` | Bid/ask depth, price changes, spread |
+| Market info | `stream.on('rotation')` | Price-to-beat, odds, liquidity, volume, time remaining |
+| Crypto price | Chainlink subscription | Underlying BTC/ETH/SOL price at ~1/sec |
