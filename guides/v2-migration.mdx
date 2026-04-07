@@ -25,52 +25,91 @@ Tested against live V2 contracts on Polygon mainnet:
 - All existing market data, token IDs, and enrichment confirmed identical between V1 and V2
 - **Order hash verification:** our EIP-712 order hash computation produces byte-for-byte identical results to the live V2 exchange contract's `hashOrder()` function on Polygon mainnet — cryptographic proof that our implementation is correct
 
-## V2 Contracts
-
-These are the new contracts Polymarket has deployed for V2. All are live on Polygon mainnet.
+## V2 Contract Addresses
 
 | Contract | Address |
 |----------|---------|
-| CTF Exchange (standard markets) | `0xe111180000d2663c0091e4f400237545b87b996b` |
-| NegRisk Exchange A (multi-outcome) | `0xe2222d279d744050d28e00520010520000310f59` |
-| NegRisk Exchange B (multi-outcome) | `0xe2222d002000ba0053cef3375333610f64600036` |
-| PolyUSD (collateral token) | `0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb` |
-| Collateral Onramp (USDC.e → PolyUSD) | `0x93070a847efef7f70739046a929d47a521f5b8ee` |
-| Collateral Offramp (PolyUSD → USDC.e) | `0x2957922eb93258b93368531d39facca3b4dc5854` |
+| PolyUSD | `0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb` |
+| Collateral Onramp | `0x93070a847efef7f70739046a929d47a521f5b8ee` |
+| Collateral Offramp | `0x2957922eb93258b93368531d39facca3b4dc5854` |
 | CTFCollateralAdapter | `0xada100874d00e3331d00f2007a9c336a65009718` |
 | NegRiskCTFCollateralAdapter | `0xada200001000ef00d07553cee7006808f895c6f1` |
-| ConditionalTokens (unchanged from V1) | `0x4D97DCd97eC945f40cF65F87097ACe5EA0476045` |
+| V2 CTF Exchange | `0xe111180000d2663c0091e4f400237545b87b996b` |
+| V2 NegRisk Exchange A | `0xe2222d279d744050d28e00520010520000310f59` |
+| V2 NegRisk Exchange B | `0xe2222d002000ba0053cef3375333610f64600036` |
+| ConditionalTokens (unchanged) | `0x4D97DCd97eC945f40cF65F87097ACe5EA0476045` |
 
 <Warning>
-These contracts are deployed but V2 trading is not yet fully public. Addresses are subject to change before the official migration. Do not build production systems against these addresses without confirming with Polymarket's official announcements.
+All V2 contracts listed above are deployed and live on Polygon mainnet. V2 trading volume is currently minimal as Polymarket has not yet migrated users to V2. Addresses may change if Polymarket redeploys before the full migration.
 </Warning>
 
-## What's New in V2
+## How V2 Fits Together
 
-### PolyUSD Collateral
+The key architectural insight: V2 only changes the **exchange layer** (how orders are matched and settled). The **token layer** (ConditionalTokens) is completely unchanged and cannot be replaced.
 
-V2 uses **PolyUSD** instead of USDC.e as the exchange collateral. PolyUSD is a 1:1 wrapper around USDC.e with 6 decimals. See the [PolyUSD Guide](/guides/polyusd) for details on wrapping and unwrapping.
+### Why Token IDs Don't Change
 
-### Updated Order Struct
+All prediction market positions live inside the [ConditionalTokens](https://polygonscan.com/address/0x4D97DCd97eC945f40cF65F87097ACe5EA0476045) contract. This is a Gnosis protocol contract that has been on Polygon since Polymarket launched. Every token ID is derived from a condition ID and outcome index inside this contract.
 
-The V2 order has a different set of fields than V1. Four fields were removed (`taker`, `expiration`, `nonce`, `feeRateBps`) and three were added (`timestamp`, `metadata`, `builder`). The polynode SDK handles this automatically.
+V2 does not replace ConditionalTokens. It can't. Doing so would invalidate every open position on the platform. Instead, V2 introduces an **adapter layer** between the new exchange contracts and the existing ConditionalTokens contract:
 
-### EIP-712 Domain
+```
+V1 (current):
+  USDC.e → V1 Exchange → ConditionalTokens (mints/burns tokens directly)
 
-The signing domain version changed from `"1"` to `"2"`. The SDK handles this based on your exchange version config.
+V2 (new):
+  PolyUSD → V2 Exchange → CollateralAdapter → ConditionalTokens
+                                 |
+                           Unwraps PolyUSD → USDC.e
+                           Deposits USDC.e into ConditionalTokens
+                           Same tokens minted as V1
+```
 
-### No More Settlement Routers
+The CollateralAdapter translates between PolyUSD (V2's collateral) and USDC.e (what ConditionalTokens expects). ConditionalTokens never sees PolyUSD. From its perspective, nothing changed.
 
-V1 used FeeModule router contracts between operators and the exchange. V2 eliminates routers — operators call the exchange contracts directly.
+This means:
+- Same token IDs across V1 and V2
+- Same condition IDs
+- Same market metadata (Gamma API, enrichment)
+- Positions opened on V1 are fully compatible with V2 and vice versa
 
-## What Didn't Change
+### New V2 Contracts
 
-- **Token IDs** — same ConditionalTokens contract, same position IDs, same enrichment
-- **Market data** — same markets, same condition IDs
+Five new contracts support the V2 architecture. These are all live on Polygon mainnet:
+
+| Contract | Role | Status |
+|----------|------|--------|
+| **PolyUSD** | Wrapped USDC.e (1:1, 6 decimals) | Deployed |
+| **Collateral Onramp** | Wraps USDC.e → PolyUSD | Deployed |
+| **Collateral Offramp** | Unwraps PolyUSD → USDC.e | Deployed |
+| **CTFCollateralAdapter** | Bridges PolyUSD ↔ USDC.e for standard market settlements | Deployed |
+| **NegRiskCTFCollateralAdapter** | Bridges PolyUSD ↔ USDC.e for multi-outcome market settlements | Deployed |
+| **V2 CTF Exchange** | New order matching for standard markets | Deployed |
+| **V2 NegRisk Exchange A** | New order matching for multi-outcome markets | Deployed |
+| **V2 NegRisk Exchange B** | Additional multi-outcome capacity | Deployed |
+
+All V2 contracts are deployed on Polygon mainnet. V2 trading volume is currently minimal as Polymarket has not yet migrated users to V2.
+
+### What's New in V2
+
+**PolyUSD Collateral** — V2 uses PolyUSD instead of USDC.e as the exchange collateral. PolyUSD is a 1:1 wrapper around USDC.e with 6 decimals. See the [PolyUSD Guide](/guides/polyusd) for details on wrapping and unwrapping.
+
+**Updated Order Struct** — Four fields removed (`taker`, `expiration`, `nonce`, `feeRateBps`), three added (`timestamp`, `metadata`, `builder`). The polynode SDK handles this automatically.
+
+**EIP-712 Domain** — The signing domain version changed from `"1"` to `"2"`. The SDK handles this based on your exchange version config.
+
+**No More Settlement Routers** — V1 used FeeModule router contracts between operators and the exchange. V2 eliminates routers. Operators call the exchange contracts directly.
+
+**exchange_version Field** — V2 trades include `"exchange_version": "v2"` on each trade object in settlement and trade events. V1 trades omit this field. Use it to distinguish which exchange system processed a settlement.
+
+### What Didn't Change
+
+- **ConditionalTokens contract** — same address, same position system, same token IDs
+- **Market data** — same condition IDs, same Gamma metadata, same enrichment pipeline
 - **Authentication** — same API key derivation, same HMAC headers
 - **WebSocket subscriptions** — same event types, same format
-- **Position splits/merges** — same ConditionalTokens events
-- **Oracle system** — unchanged UMA adapters
+- **Position splits/merges/conversions** — same ConditionalTokens events
+- **Oracle system** — unchanged UMA adapters and resolution flow
 - **Orderbook streaming** — same WebSocket protocol and message format
 
 ## Impact on polynode Users
