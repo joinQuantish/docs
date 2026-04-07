@@ -5,20 +5,44 @@ description: "polynode is ready for the Polymarket V2 exchange upgrade. Here's w
 icon: "arrows-rotate"
 ---
 
-Polymarket is deploying a V2 exchange system on Polygon mainnet. polynode detected, decoded, and verified every V2 contract on day one. Our settlement stream, event pipeline, and trading SDK support V2 alongside V1 with zero disruption.
+<Note>
+**Last updated: April 7, 2026.** This page reflects what we've verified as of today. V2 is still in early deployment — details are subject to change as Polymarket finalizes the migration. We'll update this page as things develop.
+</Note>
 
-**No action is required from existing settlement stream users.** V2 trades flow through the same WebSocket feed automatically.
+Polymarket is deploying a V2 exchange system on Polygon mainnet. polynode has identified, decoded, and verified the V2 contracts. Our settlement stream and trading SDK are ready for V2 alongside V1 with zero disruption.
+
+**No action is required from existing settlement stream users.** V2 trades will flow through the same WebSocket feed automatically when V2 goes live.
 
 ## What We've Verified
 
-All of the following has been tested against live V2 contracts on Polygon mainnet:
+Tested against live V2 contracts on Polygon mainnet:
 
-- V2 settlement calldata decoded and verified against real on-chain transactions
-- V2 OrderFilled and OrdersMatched events decoded from real block receipts
-- PolyUSD wrapping and unwrapping executed and detected through our P2P pipeline
+- V2 settlement decoding verified against real on-chain transactions
+- V2 trade events (OrderFilled, OrdersMatched) decoded from block receipts
+- PolyUSD wrapping and unwrapping tested and detected in real time
 - V2 order placement tested live on the V2 CLOB
 - Full order lifecycle verified: place, check status, cancel, re-place
 - All existing market data, token IDs, and enrichment confirmed identical between V1 and V2
+
+## V2 Contracts
+
+These are the new contracts Polymarket has deployed for V2. All are live on Polygon mainnet.
+
+| Contract | Address |
+|----------|---------|
+| CTF Exchange (standard markets) | `0xe111180000d2663c0091e4f400237545b87b996b` |
+| NegRisk Exchange A (multi-outcome) | `0xe2222d279d744050d28e00520010520000310f59` |
+| NegRisk Exchange B (multi-outcome) | `0xe2222d002000ba0053cef3375333610f64600036` |
+| PolyUSD (collateral token) | `0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb` |
+| Collateral Onramp (USDC.e → PolyUSD) | `0x93070a847efef7f70739046a929d47a521f5b8ee` |
+| Collateral Offramp (PolyUSD → USDC.e) | `0x2957922eb93258b93368531d39facca3b4dc5854` |
+| CTFCollateralAdapter | `0xada100874d00e3331d00f2007a9c336a65009718` |
+| NegRiskCTFCollateralAdapter | `0xada200001000ef00d07553cee7006808f895c6f1` |
+| ConditionalTokens (unchanged from V1) | `0x4D97DCd97eC945f40cF65F87097ACe5EA0476045` |
+
+<Warning>
+These contracts are deployed but V2 trading is not yet fully public. Addresses are subject to change before the official migration. Do not build production systems against these addresses without confirming with Polymarket's official announcements.
+</Warning>
 
 ## What's New in V2
 
@@ -28,22 +52,22 @@ V2 uses **PolyUSD** instead of USDC.e as the exchange collateral. PolyUSD is a 1
 
 ### Updated Order Struct
 
-The V2 order has a different set of fields than V1. Four fields were removed (`taker`, `expiration`, `nonce`, `feeRateBps`) and three were added (`timestamp`, `metadata`, `builder`). The polynode SDK handles this automatically — you don't need to construct orders manually.
+The V2 order has a different set of fields than V1. Four fields were removed (`taker`, `expiration`, `nonce`, `feeRateBps`) and three were added (`timestamp`, `metadata`, `builder`). The polynode SDK handles this automatically.
 
-### New Exchange Contracts
-
-V2 uses three new exchange contracts for standard and multi-outcome (neg-risk) markets. The underlying ConditionalTokens contract is unchanged.
-
-### EIP-712 Domain Update
+### EIP-712 Domain
 
 The signing domain version changed from `"1"` to `"2"`. The SDK handles this based on your exchange version config.
+
+### No More Settlement Routers
+
+V1 used FeeModule router contracts between operators and the exchange. V2 eliminates routers — operators call the exchange contracts directly.
 
 ## What Didn't Change
 
 - **Token IDs** — same ConditionalTokens contract, same position IDs, same enrichment
-- **Market data** — same markets, same condition IDs, same CLOB API paths
+- **Market data** — same markets, same condition IDs
 - **Authentication** — same API key derivation, same HMAC headers
-- **WebSocket protocol** — same subscriptions, same event types, same format
+- **WebSocket subscriptions** — same event types, same format
 - **Position splits/merges** — same ConditionalTokens events
 - **Oracle system** — unchanged UMA adapters
 - **Orderbook streaming** — same WebSocket protocol and message format
@@ -52,14 +76,14 @@ The signing domain version changed from `"1"` to `"2"`. The SDK handles this bas
 
 ### Settlement Stream
 
-No changes required. V2 settlements produce the same event types:
+No changes required. V2 settlements produce the same event types you already receive:
 
-- `settlement` — pending detection from mempool (3-5 seconds pre-confirmation)
+- `settlement` — early detection (3-5 seconds pre-confirmation)
 - `status_update` — block confirmation with latency measurement
 - `trade` — confirmed trade from OrderFilled event
 - `deposit` — now includes PolyUSD wrapping/unwrapping alongside USDC.e
 
-V2 detection is automatic. polynode identifies V2 transactions and decodes them alongside V1.
+polynode detects V2 transactions automatically alongside V1. Both versions are supported simultaneously.
 
 ### Trading SDK
 
@@ -132,9 +156,11 @@ result = trader.order(
 </CodeGroup>
 
 <Info>
-The SDK handles all V2 differences internally: order struct, EIP-712 signing, CLOB endpoint routing, and PolyUSD collateral. You don't need to change how you construct orders, fund wallets, or manage positions.
+The SDK handles all V2 differences internally: order struct, EIP-712 signing, CLOB endpoint routing, and PolyUSD collateral. You don't need to change how you construct orders or manage positions.
 </Info>
 
 ## Timeline
 
-V2 contracts are deployed on Polygon mainnet. Polymarket will announce the full migration date with advance notice. polynode supports both V1 and V2 simultaneously throughout the transition — no downtime, no missed trades.
+V2 contracts are deployed on Polygon mainnet. Polymarket will announce the full migration date with advance notice. polynode will support both V1 and V2 simultaneously throughout the transition — no downtime, no disruption.
+
+We'll keep this page updated as the migration progresses.
