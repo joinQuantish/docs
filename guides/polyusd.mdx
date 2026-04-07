@@ -95,8 +95,27 @@ tx = usdc.functions.approve(ONRAMP, 2**256 - 1).build_transaction({
 })
 w3.eth.send_raw_transaction(account.sign_transaction(tx).raw_transaction)
 
-# 2. Wrap
-# wrap(underlyingToken=USDC.e, recipient=self, amount)
+# 2. Wrap USDC.e → PolyUSD
+amount = w3.eth.call({"to": USDC_E, "data": usdc.functions.balanceOf(account.address)._encode_transaction_data()})
+amount = int.from_bytes(amount, "big")
+
+wrap_data = Web3.keccak(text="wrap(address,address,uint256)")[:4]
+wrap_data += bytes.fromhex(USDC_E[2:].zfill(64))
+wrap_data += bytes.fromhex(account.address[2:].zfill(64))
+wrap_data += amount.to_bytes(32, "big")
+
+tx = {
+    "from": account.address,
+    "to": ONRAMP,
+    "data": "0x" + wrap_data.hex(),
+    "gas": 300000,
+    "nonce": w3.eth.get_transaction_count(account.address),
+    "gasPrice": w3.eth.gas_price,
+    "chainId": 137,
+}
+signed = account.sign_transaction(tx)
+w3.eth.send_raw_transaction(signed.raw_transaction)
+print(f"Wrapped {amount / 1e6:.2f} USDC.e → PolyUSD")
 ```
 </CodeGroup>
 
