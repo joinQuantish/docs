@@ -220,6 +220,9 @@ The core polynode event. A Polymarket settlement detected before or after on-cha
         <ResponseField name="order_hash" type="string">
           EIP-712 order hash for this maker's limit order. Persistent across partial fills. Computed from calldata pre-chain, so this is available on pending settlements before block confirmation.
         </ResponseField>
+        <ResponseField name="exchange_version" type="string">
+          Exchange contract version: `"v2"` for trades settled on Polymarket's V2 exchange contracts. Absent for V1 trades (current default). Use this to distinguish which exchange system processed the settlement.
+        </ResponseField>
       </Expandable>
     </ResponseField>
   </Expandable>

@@ -127,6 +127,10 @@ A confirmed on-chain trade from Polymarket's exchange contracts.
       EIP-712 order hash. Uniquely identifies the maker's limit order on Polymarket's CLOB. **Persistent across partial fills** — the same `order_hash` appears every time a slice of that limit order is matched.
     </ResponseField>
 
+    <ResponseField name="exchange_version" type="string">
+      Exchange contract version: `"v2"` for trades on Polymarket's V2 exchange contracts. Absent for V1 trades (current default).
+    </ResponseField>
+
     <ResponseField name="market_title" type="string">
       Market question. Enriched from metadata.
     </ResponseField>
