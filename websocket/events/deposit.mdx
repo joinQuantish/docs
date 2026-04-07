@@ -1,11 +1,15 @@
 ---
 title: "Deposit Event"
 sidebarTitle: "deposit"
-description: "USDC deposits and withdrawals on Polymarket."
+description: "USDC and PolyUSD deposits and withdrawals on Polymarket."
 icon: "money-bill-transfer"
 ---
 
-Emitted when USDC.e moves into or out of Polymarket contracts — deposits (funding a trading account) and withdrawals.
+Emitted when USDC.e or PolyUSD moves into or out of Polymarket contracts — deposits (funding a trading account) and withdrawals.
+
+<Info>
+**V2 update:** Polymarket V2 uses PolyUSD (a 1:1 USDC.e wrapper) as collateral. Deposit events now include PolyUSD wrapping (USDC.e → PolyUSD via Onramp) and unwrapping (PolyUSD → USDC.e via Offramp). The event format is identical — `amount` is in USD with 6 decimal precision regardless of whether the underlying transfer is USDC.e or PolyUSD. See the [V2 Migration Guide](/guides/v2-migration) for details.
+</Info>
 
 ```json
 {

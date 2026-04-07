@@ -230,15 +230,23 @@ curl https://clob-v2.polymarket.com/version
 
 ## polynode SDK Support
 
-The polynode SDK supports V2 with a single config change:
+The polynode SDK supports V2 with a single config change. All three SDKs use the same pattern: set the exchange version to V2 in your trader config. Everything else (wallet setup, `ensureReady`, order placement) stays the same.
 
 <CodeGroup>
 ```rust Rust
-let mut config = TraderConfig::default();
-config.exchange_version = ExchangeVersion::V2;
+use polynode::trading::{PolyNodeTrader, TraderConfig, OrderParams, OrderSide, ExchangeVersion};
+
+let mut config = TraderConfig {
+    polynode_key: "pn_live_...".into(),
+    exchange_version: ExchangeVersion::V2,  // ← only change needed
+    ..Default::default()
+};
 
 let mut trader = PolyNodeTrader::new(config)?;
-// Everything else is the same
+let signer = PrivateKeySigner::from_hex("0x...")?;
+let status = trader.ensure_ready(Box::new(signer), None).await?;
+
+// Order placement is identical to V1
 let result = trader.order(OrderParams {
     token_id: "10293...".into(),
     side: OrderSide::Buy,
@@ -249,13 +257,18 @@ let result = trader.order(OrderParams {
 ```
 
 ```typescript TypeScript (SDK)
-// npm install polynode
-const client = new PolyNodeClient({
-  exchangeVersion: "v2",
-  // ... rest is the same
+// npm install polynode-sdk
+import { PolyNodeTrader } from "polynode-sdk";
+
+const trader = new PolyNodeTrader({
+  polynodeKey: "pn_live_...",
+  exchangeVersion: "v2",  // ← only change needed
 });
 
-const result = await client.placeOrder({
+await trader.ensureReady("0xprivatekey...");
+
+// Order placement is identical to V1
+const result = await trader.order({
   tokenId: "10293...",
   side: "BUY",
   price: 0.05,
@@ -264,12 +277,19 @@ const result = await client.placeOrder({
 ```
 
 ```python Python
-client = PolyNodeClient(
-    exchange_version="v2",
-    # ... rest is the same
+# pip install polynode[trading]
+from polynode.trading import PolyNodeTrader, TraderConfig, ExchangeVersion
+
+config = TraderConfig(
+    polynode_key="pn_live_...",
+    exchange_version=ExchangeVersion.V2,  # ← only change needed
 )
 
-result = client.place_order(
+trader = PolyNodeTrader(config)
+trader.ensure_ready("0xprivatekey...")
+
+# Order placement is identical to V1
+result = trader.order(
     token_id="10293...",
     side="BUY",
     price=0.05,
@@ -277,6 +297,10 @@ result = client.place_order(
 )
 ```
 </CodeGroup>
+
+<Info>
+The SDK handles all V2 differences internally: order struct fields, EIP-712 domain version, CLOB endpoint routing (`clob-v2.polymarket.com`), and PolyUSD collateral. You don't need to change how you construct orders, fund wallets, or manage positions.
+</Info>
 
 ## Timeline
 

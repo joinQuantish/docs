@@ -5,9 +5,13 @@ description: "Polymarket settlement — pending (pre-chain) or confirmed (on-cha
 icon: "bolt"
 ---
 
-The core PolyNode event. A Polymarket settlement detected before or after on-chain confirmation.
+The core polynode event. A Polymarket settlement detected before or after on-chain confirmation.
 
-**Pending settlements arrive 2–5 seconds before on-chain confirmation (1–2 Polygon blocks).** This is the data that makes PolyNode unique.
+**Pending settlements arrive 3–5 seconds before on-chain confirmation (1–2 Polygon blocks).** This is the data that makes polynode unique.
+
+<Info>
+**V2 compatible.** Settlement events work identically for both V1 and V2 Polymarket exchanges. V2 settlements are detected automatically — no subscription changes needed. The event format, trade fields, and enrichment are the same. V2 settlement events may include `condition_id` directly from the V2 matchOrders calldata. See the [V2 Migration Guide](/guides/v2-migration).
+</Info>
 
 ```json
 {
