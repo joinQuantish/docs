@@ -7,6 +7,38 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-07 — Polymarket V2 Exchange Support
+
+polynode now supports the Polymarket V2 exchange system alongside V1. All V2 contracts have been identified, decoded, and verified against live mainnet data.
+
+### Settlement Stream
+- V2 settlements are detected and streamed automatically — no subscription changes needed
+- Same event types: `settlement`, `status_update`, `trade`, `deposit`
+- PolyUSD wrapping/unwrapping events now included in deposit stream
+- V2 detection is automatic alongside V1 (both supported simultaneously)
+
+### Trading SDK (Rust v0.6.0, TypeScript v0.6.0, Python v0.7.0)
+- New `ExchangeVersion::V2` / `exchangeVersion: "v2"` config option
+- V2 order signing with updated EIP-712 domain (version "2")
+- `wrapToPolyUsd()` and `unwrapFromPolyUsd()` helper methods
+- `getPolyUsdBalance()` and `getUsdceBalance()` balance checking
+- V2 approval management (PolyUSD to V2 exchange contracts)
+- One config change to switch from V1 to V2 — everything else stays the same
+
+### Documentation
+- [V2 Migration Guide](/guides/v2-migration) — what changed, what stayed the same, SDK examples
+- [PolyUSD Guide](/guides/polyusd) — how to wrap/unwrap PolyUSD with code examples
+- [V2 Technical Details](/guides/v2-details) — contract addresses, order struct, event signatures (subscribers only)
+- Deposit and settlement event pages updated with V2 notes
+
+### What We Verified
+- V2 order placement tested live on the V2 CLOB
+- EIP-712 order hash matches the live V2 exchange contract on Polygon mainnet
+- PolyUSD wrapping detected through our event pipeline in real time
+- All existing market data, token IDs, and enrichment identical between V1 and V2
+
+---
+
 ## 2026-04-05 — Short-Form Docs: Full Field Reference + Orderbook Guide
 
 Updated the [Short-Form Markets](/sdks/short-form) documentation with the complete `ShortFormMarket` field reference. All 14 fields are now documented, including `conditionId`, `clobTokenIds`, `windowStart`, `windowEnd`, `outcomes`, and `outcomePrices` which were previously undocumented.
