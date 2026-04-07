@@ -63,6 +63,7 @@
           {
             "group": "Guides",
             "pages": [
+              "guides/v2-migration",
               "guides/best-practices",
               "guides/position-management",
               "guides/errors",

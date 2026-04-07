@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "wallets": [
+    {
+      "address": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+      "label": "test-trader",
+      "backfill": true
+    },
+    {
+      "address": "0xnew...",
+      "label": "new-whale",
+      "backfill": true
+    }
+  ],
+  "markets": [],
+  "tokens": [],
+  "settings": {
+    "ttl_days": 30,
+    "backfill_rate": 1,
+    "purge_on_remove": false
+  }
+}
