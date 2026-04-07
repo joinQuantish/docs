@@ -23,6 +23,7 @@ Tested against live V2 contracts on Polygon mainnet:
 - V2 order placement tested live on the V2 CLOB
 - Full order lifecycle verified: place, check status, cancel, re-place
 - All existing market data, token IDs, and enrichment confirmed identical between V1 and V2
+- **Order hash verification:** our EIP-712 order hash computation produces byte-for-byte identical results to the live V2 exchange contract's `hashOrder()` function on Polygon mainnet — cryptographic proof that our implementation is correct
 
 ## V2 Contracts
 
