@@ -1,236 +1,69 @@
 ---
 title: "Polymarket V2 Migration"
 sidebarTitle: "V2 Migration"
-description: "Everything you need to know about the Polymarket V2 exchange upgrade and how polynode is ready for it."
+description: "polynode is ready for the Polymarket V2 exchange upgrade. Here's what you need to know."
 icon: "arrows-rotate"
 ---
 
-Polymarket has deployed a V2 exchange system on Polygon mainnet. polynode detected, decoded, and verified every V2 contract on day one. Our settlement stream, event pipeline, and trading SDK support V2 alongside V1 with zero disruption.
+Polymarket is deploying a V2 exchange system on Polygon mainnet. polynode detected, decoded, and verified every V2 contract on day one. Our settlement stream, event pipeline, and trading SDK support V2 alongside V1 with zero disruption.
 
-No action is required from existing settlement stream users. V2 trades flow through the same WebSocket feed automatically.
+**No action is required from existing settlement stream users.** V2 trades flow through the same WebSocket feed automatically.
 
 ## What We've Verified
 
 All of the following has been tested against live V2 contracts on Polygon mainnet:
 
 - V2 settlement calldata decoded and verified against real on-chain transactions
-- EIP-712 order hash computation matches the live V2 exchange's `hashOrder()` function
 - V2 OrderFilled and OrdersMatched events decoded from real block receipts
 - PolyUSD wrapping and unwrapping executed and detected through our P2P pipeline
-- V2 API key derivation (same auth flow as V1, shared database)
-- Live V2 order placed and verified on the V2 CLOB orderbook
-- Full order lifecycle tested: place, check status, cancel, re-place
+- V2 order placement tested live on the V2 CLOB
+- Full order lifecycle verified: place, check status, cancel, re-place
+- All existing market data, token IDs, and enrichment confirmed identical between V1 and V2
 
-## What Changed in V2
-
-### New Exchange Contracts
-
-V2 uses three new exchange contracts. V1 contracts remain active during the transition.
-
-| Contract | Address |
-|----------|---------|
-| CTF Exchange | `0xe111180000d2663c0091e4f400237545b87b996b` |
-| NegRisk Exchange A | `0xe2222d279d744050d28e00520010520000310f59` |
-| NegRisk Exchange B | `0xe2222d002000ba0053cef3375333610f64600036` |
+## What's New in V2
 
 ### PolyUSD Collateral
 
-V2 uses **PolyUSD** instead of USDC.e as the exchange collateral. PolyUSD is a 1:1 wrapper around USDC.e with 6 decimals.
+V2 uses **PolyUSD** instead of USDC.e as the exchange collateral. PolyUSD is a 1:1 wrapper around USDC.e with 6 decimals. See the [PolyUSD Guide](/guides/polyusd) for details on wrapping and unwrapping.
 
-| Contract | Address |
-|----------|---------|
-| PolyUSD | `0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb` |
-| Collateral Onramp | `0x93070a847efef7f70739046a929d47a521f5b8ee` |
-| Collateral Offramp | `0x2957922eb93258b93368531d39facca3b4dc5854` |
+### Updated Order Struct
 
-To deposit into V2: wrap USDC.e into PolyUSD via the Onramp. To withdraw: unwrap PolyUSD back to USDC.e via the Offramp.
+The V2 order has a different set of fields than V1. Four fields were removed (`taker`, `expiration`, `nonce`, `feeRateBps`) and three were added (`timestamp`, `metadata`, `builder`). The polynode SDK handles this automatically — you don't need to construct orders manually.
 
-### V2 Order Struct
+### New Exchange Contracts
 
-The V2 order has 11 EIP-712 fields (V1 had 12):
+V2 uses three new exchange contracts for standard and multi-outcome (neg-risk) markets. The underlying ConditionalTokens contract is unchanged.
 
-| Field | Type | Notes |
-|-------|------|-------|
-| salt | uint256 | Unique order identifier |
-| maker | address | Order creator's wallet |
-| signer | address | Signing key |
-| tokenId | uint256 | Conditional token position ID |
-| makerAmount | uint256 | Amount maker provides (6 decimals) |
-| takerAmount | uint256 | Amount maker receives (6 decimals) |
-| side | uint8 | 0 = BUY, 1 = SELL |
-| signatureType | uint8 | 0 = EOA, 1 = Proxy, 2 = GnosisSafe |
-| timestamp | uint256 | **New.** Order creation time in milliseconds |
-| metadata | bytes32 | **New.** Hashed order metadata |
-| builder | bytes32 | **New.** Builder attribution code |
+### EIP-712 Domain Update
 
-**Removed from V1:** `taker`, `expiration`, `nonce`, `feeRateBps`
-
-### EIP-712 Domain
-
-```json
-{
-  "name": "Polymarket CTF Exchange",
-  "version": "2",
-  "chainId": 137,
-  "verifyingContract": "<exchange_address>"
-}
-```
+The signing domain version changed from `"1"` to `"2"`. The SDK handles this based on your exchange version config.
 
 ## What Didn't Change
 
-- **Token IDs** — same ConditionalTokens contract (`0x4D97DCd97eC945f40cF65F87097ACe5EA0476045`)
-- **Market data** — same markets, same condition IDs, same enrichment
+- **Token IDs** — same ConditionalTokens contract, same position IDs, same enrichment
+- **Market data** — same markets, same condition IDs, same CLOB API paths
 - **Authentication** — same API key derivation, same HMAC headers
-- **CLOB API paths** — same endpoints (`/order`, `/book`, `/data/orders`)
-- **WebSocket protocol** — same subscriptions, same event format
+- **WebSocket protocol** — same subscriptions, same event types, same format
 - **Position splits/merges** — same ConditionalTokens events
-- **Oracle system** — unchanged
+- **Oracle system** — unchanged UMA adapters
+- **Orderbook streaming** — same WebSocket protocol and message format
 
-## Settlement Stream (WebSocket)
+## Impact on polynode Users
 
-No changes required for settlement stream subscribers. V2 settlements produce the same event types:
+### Settlement Stream
+
+No changes required. V2 settlements produce the same event types:
 
 - `settlement` — pending detection from mempool (3-5 seconds pre-confirmation)
 - `status_update` — block confirmation with latency measurement
 - `trade` — confirmed trade from OrderFilled event
 - `deposit` — now includes PolyUSD wrapping/unwrapping alongside USDC.e
 
-V2 detection is automatic. polynode identifies V2 transactions by the `matchOrders` selector (`0x3c2b4399`) and V2 exchange addresses.
+V2 detection is automatic. polynode identifies V2 transactions and decodes them alongside V1.
 
-## V2 Order Placement
+### Trading SDK
 
-### Live Example
-
-The following order was placed on the V2 CLOB and verified live:
-
-**Request:**
-```bash
-POST https://clob-v2.polymarket.com/order
-```
-
-```json
-{
-  "order": {
-    "salt": 1775531234000,
-    "maker": "0xb9178CEd8aeEF832b1AE9D29E698F461d30dF293",
-    "signer": "0xb9178CEd8aeEF832b1AE9D29E698F461d30dF293",
-    "tokenId": "102936224134271070189104847090829839924697394514566827387181305960175107677216",
-    "makerAmount": "50000",
-    "takerAmount": "5000000",
-    "side": "BUY",
-    "signatureType": 0,
-    "timestamp": "1775531234000",
-    "metadata": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "signature": "0x..."
-  },
-  "owner": "<api_key>",
-  "orderType": "GTC"
-}
-```
-
-**Response:**
-```json
-{
-  "errorMsg": "",
-  "orderID": "0xa9a8a1dd02b191743f85a7c3d11b6c0a1ca0ae70166f222b65db6f69e50db90e",
-  "status": "live",
-  "success": true
-}
-```
-
-### Payload Format
-
-Key formatting rules verified against the live V2 CLOB:
-
-- `salt` — **number** (not string)
-- `side` — `"BUY"` or `"SELL"` (**string**, not 0/1)
-- `signatureType` — **number** (0, 1, or 2)
-- `makerAmount` — **string**, max 4 decimal places in token units
-- `takerAmount` — **string**, max 2 decimal places in token units
-- `timestamp` — **string**, milliseconds since epoch
-- `metadata`, `builder` — **bytes32 hex strings** (zero-padded)
-- `owner` — the CLOB API key UUID
-- Minimum order size: **5 tokens**
-
-### HMAC Authentication
-
-Same as V1. The HMAC signature uses URL-safe base64:
-
-```
-message = timestamp + method + path + body
-hmac = HMAC-SHA256(base64_decode(api_secret), message)
-signature = base64_encode(hmac)
-             .replace('+', '-')
-             .replace('/', '_')
-```
-
-Headers:
-```
-POLY_ADDRESS: <wallet_address>
-POLY_API_KEY: <api_key>
-POLY_SIGNATURE: <url_safe_base64_hmac>
-POLY_TIMESTAMP: <unix_seconds>
-POLY_PASSPHRASE: <passphrase>
-```
-
-### Cancel Order
-
-```bash
-DELETE https://clob-v2.polymarket.com/order
-```
-
-```json
-{
-  "orderID": "0xa9a8a1dd02b191743f85a7c3d11b6c0a1ca0ae70166f222b65db6f69e50db90e"
-}
-```
-
-**Response:**
-```json
-{
-  "canceled": ["0xa9a8a1dd..."],
-  "not_canceled": {}
-}
-```
-
-### Check Open Orders
-
-```bash
-GET https://clob-v2.polymarket.com/data/orders
-```
-
-**Response:**
-```json
-{
-  "data": [{
-    "id": "0xa9a8a1dd...",
-    "status": "LIVE",
-    "side": "BUY",
-    "price": "0.01",
-    "original_size": "5",
-    "size_matched": "0",
-    "outcome": "Yes",
-    "order_type": "GTC"
-  }]
-}
-```
-
-## V2 CLOB Endpoint
-
-```
-https://clob-v2.polymarket.com
-```
-
-Same API paths as V1. Verify with:
-```bash
-curl https://clob-v2.polymarket.com/version
-# {"version":2}
-```
-
-## polynode SDK Support
-
-The polynode SDK supports V2 with a single config change. All three SDKs use the same pattern: set the exchange version to V2 in your trader config. Everything else (wallet setup, `ensureReady`, order placement) stays the same.
+The polynode SDK supports V2 with a single config change:
 
 <CodeGroup>
 ```rust Rust
@@ -299,9 +132,9 @@ result = trader.order(
 </CodeGroup>
 
 <Info>
-The SDK handles all V2 differences internally: order struct fields, EIP-712 domain version, CLOB endpoint routing (`clob-v2.polymarket.com`), and PolyUSD collateral. You don't need to change how you construct orders, fund wallets, or manage positions.
+The SDK handles all V2 differences internally: order struct, EIP-712 signing, CLOB endpoint routing, and PolyUSD collateral. You don't need to change how you construct orders, fund wallets, or manage positions.
 </Info>
 
 ## Timeline
 
-V2 contracts are deployed on Polygon mainnet and processing test trades. The V2 CLOB is live and accepting orders. Polymarket will announce the full migration date with advance notice. polynode supports both V1 and V2 simultaneously throughout the transition.
+V2 contracts are deployed on Polygon mainnet. Polymarket will announce the full migration date with advance notice. polynode supports both V1 and V2 simultaneously throughout the transition — no downtime, no missed trades.

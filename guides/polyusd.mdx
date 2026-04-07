@@ -1,0 +1,136 @@
+---
+title: "PolyUSD Guide"
+sidebarTitle: "PolyUSD"
+description: "How to wrap and unwrap PolyUSD — the collateral token for Polymarket V2."
+icon: "coins"
+---
+
+PolyUSD is the collateral token for Polymarket's V2 exchange system. It is a 1:1 wrapper around USDC.e on Polygon with 6 decimals. To trade on V2, you need PolyUSD instead of USDC.e.
+
+## Quick Reference
+
+| | Address |
+|---|---------|
+| PolyUSD Token | `0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb` |
+| Collateral Onramp (wrap) | `0x93070a847efef7f70739046a929d47a521f5b8ee` |
+| Collateral Offramp (unwrap) | `0x2957922eb93258b93368531d39facca3b4dc5854` |
+| USDC.e (underlying) | `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` |
+
+## Wrapping: USDC.e → PolyUSD
+
+To get PolyUSD, wrap your USDC.e through the Collateral Onramp contract.
+
+### Steps
+
+1. **Approve** the Onramp to spend your USDC.e
+2. **Call** `wrap(underlyingToken, recipient, amount)` on the Onramp
+
+<CodeGroup>
+```javascript Node.js
+import { ethers } from "ethers";
+
+const provider = new ethers.JsonRpcProvider("YOUR_RPC_URL");
+const wallet = new ethers.Wallet("YOUR_PRIVATE_KEY", provider);
+
+const USDC_E = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+const ONRAMP = "0x93070a847efef7f70739046a929d47a521f5b8ee";
+
+// 1. Approve Onramp for USDC.e
+const usdc = new ethers.Contract(USDC_E, [
+  "function approve(address,uint256) returns (bool)",
+  "function balanceOf(address) view returns (uint256)"
+], wallet);
+
+await (await usdc.approve(ONRAMP, ethers.MaxUint256)).wait();
+
+// 2. Wrap USDC.e → PolyUSD
+const amount = await usdc.balanceOf(wallet.address);
+const wrapData = new ethers.Interface(["function wrap(address,address,uint256)"])
+  .encodeFunctionData("wrap", [USDC_E, wallet.address, amount]);
+
+const tx = await wallet.sendTransaction({ to: ONRAMP, data: wrapData, gasLimit: 300000 });
+await tx.wait();
+
+console.log("Wrapped", (Number(amount) / 1e6).toFixed(2), "USDC.e → PolyUSD");
+```
+
+```python Python
+from web3 import Web3
+
+w3 = Web3(Web3.HTTPProvider("YOUR_RPC_URL"))
+account = w3.eth.account.from_key("YOUR_PRIVATE_KEY")
+
+USDC_E = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+ONRAMP = "0x93070a847efef7f70739046a929d47a521f5b8ee"
+
+# 1. Approve
+usdc = w3.eth.contract(address=USDC_E, abi=[{
+    "name": "approve", "type": "function",
+    "inputs": [{"name": "spender", "type": "address"}, {"name": "amount", "type": "uint256"}],
+    "outputs": [{"name": "", "type": "bool"}]
+}])
+tx = usdc.functions.approve(ONRAMP, 2**256 - 1).build_transaction({
+    "from": account.address, "nonce": w3.eth.get_transaction_count(account.address)
+})
+w3.eth.send_raw_transaction(account.sign_transaction(tx).raw_transaction)
+
+# 2. Wrap
+# wrap(underlyingToken=USDC.e, recipient=self, amount)
+```
+</CodeGroup>
+
+### Wrap Function Signature
+
+```
+function wrap(address underlyingToken, address recipient, uint256 amount)
+```
+
+- `underlyingToken` — the USDC.e contract address
+- `recipient` — who receives the PolyUSD (usually yourself)
+- `amount` — raw amount in 6-decimal units (1 USDC = 1,000,000)
+
+## Unwrapping: PolyUSD → USDC.e
+
+To withdraw from V2, unwrap your PolyUSD back to USDC.e through the Collateral Offramp.
+
+### Steps
+
+1. **Approve** the Offramp to spend your PolyUSD
+2. **Call** `unwrap(underlyingToken, recipient, amount)` on the Offramp
+
+The function signature is identical to wrapping:
+
+```
+function unwrap(address underlyingToken, address recipient, uint256 amount)
+```
+
+## How It Works Under the Hood
+
+PolyUSD is backed 1:1 by USDC.e held in a reserve contract. When you wrap:
+
+1. Your USDC.e transfers to the reserve
+2. PolyUSD is minted to your wallet
+
+When you unwrap:
+
+1. Your PolyUSD is burned
+2. USDC.e is released from the reserve to your wallet
+
+During V2 trade settlements, the exchange automatically wraps/unwraps through the CTFCollateralAdapter. You don't need to manage this — the exchange handles collateral conversion internally.
+
+## Tracking PolyUSD Events
+
+polynode detects PolyUSD wrapping and unwrapping through the settlement stream. These appear as `deposit` events:
+
+- **Wrap** (deposit): `direction: "deposit"`, `from` is the Onramp contract
+- **Unwrap** (withdrawal): `direction: "withdrawal"`, `to` is the user wallet
+
+Subscribe to `deposits` on the WebSocket to receive these events. Internal settlement wraps/unwraps (between exchange and adapter contracts) are filtered out automatically.
+
+## Key Facts
+
+- **Decimals:** 6 (same as USDC.e)
+- **Exchange rate:** Always 1:1 with USDC.e
+- **Proxy:** ERC-1967 upgradeable proxy
+- **Chain:** Polygon mainnet (chain ID 137)
+- **Minimum wrap:** No minimum (tested with amounts as low as $0.007)

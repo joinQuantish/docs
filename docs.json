@@ -64,6 +64,7 @@
             "group": "Guides",
             "pages": [
               "guides/v2-migration",
+              "guides/polyusd",
               "guides/best-practices",
               "guides/position-management",
               "guides/errors",
