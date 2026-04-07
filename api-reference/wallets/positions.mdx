@@ -3,6 +3,17 @@ title: "Wallet Positions & P&L"
 openapi: "GET /v1/wallets/{addr}/positions"
 ---
 
+## Filtering
+
+Two optional query parameters let you filter the response:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `redeemable` | boolean | `true` returns only redeemable positions (resolved markets with claimable tokens). `false` returns only active positions. Omit to return all. |
+| `condition_id` | string | Filter to positions in a specific market by condition ID. |
+
+These can be combined: `?redeemable=true&condition_id=0x1234...` returns only redeemable positions in that market.
+
 ## Onchain Redemption Enrichment
 
 When a position is on a resolved market (`redeemable: true`), polynode checks the [Conditional Token Framework contract](https://polygonscan.com/address/0x4D97DCd97eC945f40cF65F87097ACe5EA0476045) onchain to determine whether the tokens have actually been burned (redeemed for USDC).
