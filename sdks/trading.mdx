@@ -10,7 +10,7 @@ icon: "arrow-right-arrow-left"
 The trading module lets you place and manage orders on Polymarket. One function call handles wallet setup, credential creation, approvals, and order placement. You don't need to understand Polymarket's wallet types, contract addresses, or signing protocols.
 
 ```bash
-npm install polynode-sdk@0.5.5 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
+npm install polynode-sdk@0.6.0 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
 ```
 
 <Note>
@@ -200,6 +200,34 @@ When `builderCredentials` is set:
 - polynode never stores your builder credentials. They're sent per-request and used only for HMAC signing.
 
 When `builderCredentials` is omitted, polynode's default builder credentials are used. Your orders still go through, you just don't get the builder attribution on your own profile.
+
+## Polymarket V2 Exchange
+
+The Polymarket V2 exchange uses PolyUSD as collateral instead of USDC.e directly. One config change enables V2 support:
+
+```typescript
+const trader = new PolyNodeTrader({
+  polynodeKey: 'pn_live_...',
+  exchangeVersion: 'v2',
+});
+```
+
+Before placing orders on V2 markets, you need to wrap your USDC.e into PolyUSD:
+
+```typescript
+// Wrap USDC.e → PolyUSD
+await trader.wrapToPolyUsd(100);
+
+// Check PolyUSD balance
+const balance = await trader.getPolyUsdBalance();
+console.log(`PolyUSD: $${balance}`);
+```
+
+All other trading methods (`order()`, `cancelOrder()`, `split()`, `merge()`, etc.) work the same on V2 markets.
+
+<Tip>
+See the [V2 Migration Guide](/guides/v2-migration) for full details on the Polymarket V2 exchange upgrade, and the [PolyUSD Guide](/guides/polyusd) for wrapping and unwrapping mechanics.
+</Tip>
 
 ## API Reference
 

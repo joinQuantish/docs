@@ -478,10 +478,41 @@ safe = derive_safe_address(eoa)    # 0xf75564cEe0ed847463E18D20B5005c9db245c374
 proxy = derive_proxy_address(eoa)  # 0x65FA7F1aFB344A3F78a62D662798A32d850738c8
 ```
 
+### Polymarket V2 Exchange
+
+To trade on the Polymarket V2 exchange, set `exchange_version` on your `TraderConfig`:
+
+```python
+from polynode.trading import TraderConfig, ExchangeVersion
+
+config = TraderConfig(
+    polynode_key="pn_live_...",
+    exchange_version=ExchangeVersion.V2,
+)
+trader = PolyNodeTrader(config)
+```
+
+V2 uses PolyUSD (a 1:1 USDC.e wrapper) as collateral. You must wrap USDC.e into PolyUSD before placing orders:
+
+```python
+# Wrap USDC.e → PolyUSD
+result = await trader.wrap_to_polyusd(100.0)
+
+# Unwrap PolyUSD → USDC.e
+result = await trader.unwrap_from_polyusd(50.0)
+
+# Check balances
+polyusd = await trader.get_polyusd_balance()
+usdce = await trader.get_usdce_balance()
+print(f"PolyUSD: {polyusd}, USDC.e: {usdce}")
+```
+
+See the [V2 Migration Guide](/guides/v2-migration) for details on the Polymarket V2 exchange upgrade.
+
 ### Configuration
 
 ```python
-from polynode.trading import TraderConfig, SignatureType
+from polynode.trading import TraderConfig, SignatureType, ExchangeVersion
 
 config = TraderConfig(
     polynode_key="pn_live_...",                          # for builder attribution
@@ -490,6 +521,7 @@ config = TraderConfig(
     fallback_direct=True,                                 # direct CLOB if co-signer down
     default_signature_type=SignatureType.POLY_GNOSIS_SAFE,  # Safe (2), Proxy (1), or EOA (0)
     rpc_url="https://polygon-bor-rpc.publicnode.com",    # for on-chain reads
+    exchange_version=ExchangeVersion.V1,                  # default; set to V2 for the Polymarket V2 exchange
 )
 
 trader = PolyNodeTrader(config)
