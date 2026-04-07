@@ -918,41 +918,6 @@ async fn main() -> polynode::Result<()> {
 
 The `PrivySigner` implements `TradingSigner`, so it works with `ensure_ready()`, `order()`, and all other trading methods. Get your Privy credentials from the [Privy Dashboard](https://dashboard.privy.io).
 
-### Polymarket V2 Exchange
-
-To trade on the Polymarket V2 exchange, set `exchange_version` on your `TraderConfig`:
-
-```rust,no_run
-use polynode::trading::{TraderConfig, ExchangeVersion};
-
-# fn example() {
-let config = TraderConfig {
-    exchange_version: ExchangeVersion::V2,
-    ..Default::default()
-};
-# }
-```
-
-V2 uses PolyUSD (a 1:1 USDC.e wrapper) as collateral. You must wrap USDC.e into PolyUSD before placing orders:
-
-```rust,no_run
-# async fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
-// Wrap USDC.e → PolyUSD
-let result = trader.wrap_to_polyusd(100.0).await?;
-
-// Unwrap PolyUSD → USDC.e
-let result = trader.unwrap_from_polyusd(50.0).await?;
-
-// Check balances
-let polyusd = trader.get_polyusd_balance().await?;
-let usdce = trader.get_usdce_balance().await?;
-println!("PolyUSD: {}, USDC.e: {}", polyusd, usdce);
-# Ok(())
-# }
-```
-
-See the [V2 Migration Guide](/guides/v2-migration) for details on the Polymarket V2 exchange upgrade.
-
 ### TraderConfig
 
 ```rust,no_run
