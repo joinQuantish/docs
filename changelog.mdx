@@ -7,6 +7,28 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-08 — Redemption Event Streaming
+
+New `redemption` event type in the WebSocket stream. Every time a user redeems their outcome tokens after a market resolves, you get a real-time event with the redeemer address, payout amount, condition ID, and full market metadata enrichment.
+
+### WebSocket Stream
+- New event type: `redemption` — available in the firehose and via `event_types` filter
+- Decoded from `PayoutRedemption` logs on the Conditional Tokens contract
+- Includes payout amount in USDC, redeemer wallet, outcome slots redeemed
+- Enriched with market title, slug, image, tokens map, neg_risk flag
+- Filter with `min_size` to see only winning redemptions, or track specific wallets
+
+### Subscribe
+
+```json
+{"action": "subscribe", "type": "settlements", "filters": {"event_types": ["redemption"]}}
+```
+
+### Documentation
+- [Redemption Event Reference](/websocket/events/redemption) — full field reference, examples, and use cases
+
+---
+
 ## 2026-04-07 — Polymarket V2 Exchange Support
 
 polynode now supports the Polymarket V2 exchange system alongside V1. All V2 contracts have been identified, decoded, and verified against live mainnet data.

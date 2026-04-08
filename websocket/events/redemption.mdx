@@ -1,0 +1,167 @@
+---
+title: "Redemption Event"
+sidebarTitle: "redemption"
+description: "Position payout redemptions on Polymarket."
+icon: "coins"
+---
+
+Emitted when a user redeems their outcome tokens for collateral after a market resolves. The `redeemPositions` function on the Conditional Tokens contract burns the user's shares and pays out USDC based on the resolved outcome.
+
+Every resolved market generates redemption events as holders claim their payouts. A non-zero `payout` means the user held winning shares. A zero payout means the user redeemed losing shares (no collateral returned).
+
+```json
+{
+  "data": {
+    "block_number": 85244342,
+    "collateral_token": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+    "condition_id": "0x487f28579354d6c4408eea243888cdedbe03e83a219a4708523ef455dcbc5e31",
+    "event_title": "Bitcoin Up or Down - April 7, 8:15PM-8:20PM ET",
+    "event_type": "redemption",
+    "index_sets": [1, 2],
+    "log_index": 1282,
+    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+    "market_slug": "btc-updown-5m-1775607300",
+    "market_title": "Bitcoin Up or Down - April 7, 8:15PM-8:20PM ET",
+    "neg_risk": false,
+    "payout": 7.566434,
+    "redeemer": "0x8858aae9c92a82b00986a0f1a66338e8b0cc8641",
+    "taker_base_fee": 1000,
+    "tick_size": 0.01,
+    "timestamp": 1775608721000,
+    "tokens": {
+      "112731399428633109059368520083498445904538970112239739400592554575174180266461": "Down",
+      "81518481532502107093994258923994884503752044066839262771005198927094175386674": "Up"
+    },
+    "tx_hash": "0xcfb51c25a8f6ebb0b5a7484de7812d66f2cbf9935f29c0b56561e74722c64fac"
+  },
+  "timestamp": 1775608721000,
+  "type": "redemption"
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"redemption"`.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Block timestamp in Unix milliseconds.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="tx_hash" type="string" required>
+      Transaction hash.
+    </ResponseField>
+
+    <ResponseField name="block_number" type="number" required>
+      Block number.
+    </ResponseField>
+
+    <ResponseField name="log_index" type="number" required>
+      Log index within the transaction.
+    </ResponseField>
+
+    <ResponseField name="timestamp" type="number" required>
+      Block timestamp in Unix milliseconds.
+    </ResponseField>
+
+    <ResponseField name="redeemer" type="string" required>
+      Address that redeemed positions. This is the wallet that held the outcome tokens and called `redeemPositions`.
+    </ResponseField>
+
+    <ResponseField name="collateral_token" type="string" required>
+      Collateral token address. USDC.e (`0x2791bca1f2de4661ed88a30c99a7a9449aa84174`) for standard markets.
+    </ResponseField>
+
+    <ResponseField name="condition_id" type="string" required>
+      Market condition ID — identifies which resolved market's positions were redeemed.
+    </ResponseField>
+
+    <ResponseField name="index_sets" type="number[]" required>
+      Which outcome slots were redeemed. `[1]` = first outcome only, `[2]` = second outcome only, `[1, 2]` = both outcomes. Most redemptions include all outcomes (`[1, 2]`).
+    </ResponseField>
+
+    <ResponseField name="payout" type="number" required>
+      USDC amount paid out to the redeemer (6 decimal precision). `0` means the user redeemed losing shares and received nothing.
+    </ResponseField>
+
+    <ResponseField name="market_title" type="string">
+      Human-readable market question. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="market_slug" type="string">
+      URL slug for the market.
+    </ResponseField>
+
+    <ResponseField name="market_image" type="string">
+      Market image URL. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="event_title" type="string">
+      Parent event title. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="neg_risk" type="boolean">
+      Whether this market uses the negRisk contract type. Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="tick_size" type="number">
+      Minimum price increment (e.g. `0.01` or `0.001`). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="taker_base_fee" type="number">
+      Taker fee rate in basis points. `200` = 2%, `1000` = 10%, `null` = no fee. Enriched from Polymarket metadata.
+    </ResponseField>
+
+    <ResponseField name="tokens" type="object">
+      Map of token ID to outcome name for all outcomes in this market. Enriched from metadata.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Use cases
+
+- **Payout tracking** — monitor who is cashing out resolved positions and how much they receive
+- **Wallet PnL** — combine with trade data to calculate realized profit/loss per wallet
+- **Market lifecycle** — track the full arc from trading to resolution to redemption
+- **Winning wallet alerts** — filter for large `payout` values to spot big winners as they redeem
+
+## Subscribing
+
+```json
+{
+  "action": "subscribe",
+  "type": "settlements",
+  "filters": {
+    "event_types": ["redemption"]
+  }
+}
+```
+
+Filter to only winning redemptions using `min_size`:
+
+```json
+{
+  "action": "subscribe",
+  "type": "settlements",
+  "filters": {
+    "event_types": ["redemption"],
+    "min_size": 0.01
+  }
+}
+```
+
+Track redemptions for specific wallets:
+
+```json
+{
+  "action": "subscribe",
+  "type": "wallets",
+  "filters": {
+    "wallets": ["0x8858aae9c92a82b00986a0f1a66338e8b0cc8641"],
+    "event_types": ["redemption"]
+  }
+}
+```

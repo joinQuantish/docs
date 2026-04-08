@@ -341,7 +341,7 @@ const data = await response.json();
 
 // Flat leaderboard array
 console.log(`${data.total} traders in crypto this month`);
-for (const trader of data.leaderboard) {
+for (const trader of data.leaderboard || []) {
   console.log(`#${trader.localRank} ${trader.userName} — $${trader.pnl.toFixed(2)} P&L (global rank: ${trader.rank})`);
 }
 ```
@@ -388,11 +388,11 @@ while (true) {
   );
   const data = await response.json();
 
-  for (const trader of data.leaderboard) {
+  for (const trader of data.leaderboard || []) {
     console.log(`#${trader.localRank} ${trader.userName} — $${trader.vol.toFixed(2)} volume`);
   }
 
-  if (data.leaderboard.length < limit) break;
+  if (!data.leaderboard || data.leaderboard.length < limit) break;
   offset += limit;
 
   // Respect rate limit: 1 request per 5 seconds
