@@ -238,17 +238,66 @@ The core polynode event. A Polymarket settlement detected before or after on-cha
 
 **A note on sender and nonce:** Polymarket trades are submitted by Polymarket's relayer EOAs, not by the traders themselves. Users sign EIP-712 orders off-chain, and the relayer submits the on-chain transaction. The transaction sender and nonce reflect the relayer's state, not the trader's intent or ordering. For this reason, sender address and nonce are not included in settlement events — they would be misleading to build on.
 
-## Pending vs confirmed
+## The full lifecycle
+
+For every Polymarket settlement, polynode emits up to three events on the WebSocket stream as the transaction moves from mempool to confirmed block:
+
+| Event | When it fires | Source | What it contains |
+|---|---|---|---|
+| **`settlement` (pending)** | 3–5s before block confirmation | Mempool calldata | All fills in `data.trades[]`, decoded from the matchOrders calldata. Per-maker prices are estimated from aggregate amounts. |
+| **`status_update`** | At block confirmation | Receipt logs | Confirmation metadata (block, latency) **plus** `data.confirmed_fills[]` — exact per-fill data from the on-chain `OrderFilled` logs. |
+| **`settlement` (confirmed)** *(legacy)* | At block confirmation | Calldata replay | Same shape as the pending settlement, with `status: "confirmed"` and `block_number` set. Same calldata-derived prices. |
+
+The pending settlement gives you speed (2–5 second lead before the block). The `status_update` with `confirmed_fills` gives you exactness — those are the canonical prices Polymarket itself reads from the chain.
+
+### Pending → confirmed pairing
+
+Every pending settlement is followed by a corresponding `status_update` event when the same `tx_hash` confirms on-chain. Match them by `tx_hash`:
+
+```javascript
+const pending = new Map();
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.type === "settlement" && msg.data.status === "pending") {
+    pending.set(msg.data.tx_hash, msg.data);
+    return;
+  }
+
+  if (msg.type === "status_update") {
+    const original = pending.get(msg.data.tx_hash);
+    pending.delete(msg.data.tx_hash);
+
+    // The status_update has confirmed_fills with the EXACT prices from
+    // the on-chain OrderFilled logs. Compare against the pending estimate
+    // if you want, or just use confirmed_fills as the source of truth.
+    for (const fill of msg.data.confirmed_fills || []) {
+      console.log(`Confirmed: ${fill.side} ${fill.size} @ ${fill.price} (block ${msg.data.block_number})`);
+    }
+  }
+};
+```
+
+### When to use which
+
+- **Pending `settlement` only** — you want the 2–5 second lead time and you don't mind ~0.01–0.04 estimation error on the rare multi-maker fill (e.g. copy trading, frontend price ticks).
+- **`status_update.confirmed_fills` only** — you need exact prices and don't care about pre-confirmation. (e.g. analytics, P&L, bookkeeping).
+- **Both together (pending settlement + status_update with confirmed_fills)** — you want the speed of pending detection AND the exact prices once confirmed. The recommended pattern for most production integrations.
+
+For the full schema of `confirmed_fills[]` and a longer treatment of when to use each layer, see the [Trade Tracking guide](/guides/trade-tracking) and the [Status Update event reference](/websocket/events/status-update).
+
+## Pending vs confirmed (field-level)
 
 | Field | Pending | Confirmed |
 |-------|---------|-----------|
 | `status` | `"pending"` | `"confirmed"` |
 | `block_number` | `null` | block number |
-| `detected_at` | when PolyNode first detected TX | same value |
+| `detected_at` | when polynode first detected TX | same value |
 | Latency | ~0ms from detection | 2–5s after detection (1–2 blocks) |
 
 <Tip>
-Subscribe with `"status": "pending"` to get the 2–5 second edge. You'll receive a separate `status_update` event when the same transaction confirms on-chain, including `latency_ms`.
+Subscribe with `"status": "pending"` to get the 2–5 second edge. You'll receive a separate `status_update` event when the same transaction confirms on-chain, including `latency_ms` and `confirmed_fills[]`.
 </Tip>
 
 ## Use cases
