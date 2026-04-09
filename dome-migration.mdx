@@ -149,6 +149,8 @@ This happens because the Polymarket CTF Exchange settles the taker's order again
 
 **To find your order's fills:** Check if `event.user === yourWallet`. When it matches, `event.order_hash` is your order's hash.
 
+If you're using polynode's standard `trade` or `settlement` event subscriptions instead of the Dome-format feed, the same logic applies but the field is called `maker` instead of `user`. See [Tracking a specific wallet's trades](/websocket/events/trade#tracking-a-specific-wallets-trades) on the Trade Event reference or the equivalent section on the [Settlement Event](/websocket/events/settlement#tracking-a-specific-wallets-trades) page.
+
 If you're using polynode's standard `trade` event subscription instead of the Dome-format feed, the same logic applies but the field is called `maker` instead of `user`. See [Tracking a specific wallet's trades](/websocket/events/trade#tracking-a-specific-wallets-trades) on the Trade Event reference for the equivalent explanation.
 
 ## Copy trading example

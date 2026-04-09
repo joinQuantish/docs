@@ -257,3 +257,53 @@ Subscribe with `"status": "pending"` to get the 2–5 second edge. You'll receiv
 - **Market making** — adjust spreads based on incoming settlements
 - **Analytics** — track real-time volume and price movements
 - **Alerts** — notify on large trades or specific wallet activity
+
+## Tracking a specific wallet's trades
+
+<Warning>
+**The user's actual trade is in the top-level `taker_*` fields, OR it's the LAST entry in `trades[]`, OR it's the entry where `maker === your_wallet`. All three point to the same fill.** Do **not** iterate `trades[]` and pick the first match by `taker === wallet` — that's a counterparty fill with the OPPOSITE token and the COMPLEMENT price.
+</Warning>
+
+A `settlement` event bundles every fill from one `matchOrders` transaction into a single message. Inside the `data.trades[]` array, each entry is one `OrderFilled` log. The structure mirrors the on-chain reality:
+
+- **`trades[0]` through `trades[N-1]`** — one entry per matched maker order, showing each counterparty's side, token, and price (the maker's perspective)
+- **`trades[trades.length - 1]`** (the last entry) — the taker's own fill, where the user's wallet appears as `maker` and the exchange contract appears as `taker`. **This is the user's actual trade.**
+
+The top-level `taker_wallet`, `taker_token`, `taker_side`, `taker_price`, and `taker_size` fields are populated from this last entry, so reading them directly is equivalent to reading `trades[trades.length - 1]`.
+
+### Three equivalent ways to find the user's trade
+
+```javascript
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type !== "settlement") return;
+  const d = msg.data;
+
+  if (d.taker_wallet.toLowerCase() !== MY_WALLET.toLowerCase()) return;
+
+  // Option 1 — read top-level taker_* fields directly (simplest)
+  console.log("My trade:", d.taker_side, d.taker_size, "@", d.taker_price, "token:", d.taker_token);
+
+  // Option 2 — take the last entry in trades[] (always the user's leg)
+  const myFill = d.trades[d.trades.length - 1];
+
+  // Option 3 — find the entry where maker === your wallet
+  const myFill2 = d.trades.find(t => t.maker.toLowerCase() === MY_WALLET.toLowerCase());
+};
+```
+
+### What NOT to do
+
+```javascript
+// WRONG — picks the first counterparty fill, which has the OPPOSITE
+// token and the COMPLEMENT price (e.g. shows BUY Down 0.20 when the
+// user actually bought Up at 0.80).
+const myFill = d.trades[0];
+
+// WRONG — same issue. The wallet appears as `taker` on every counterparty
+// fill, so this returns the first counterparty's perspective, not the
+// user's actual trade.
+const myFill = d.trades.find(t => t.taker.toLowerCase() === MY_WALLET.toLowerCase());
+```
+
+For a deeper explanation of why this asymmetry exists in the on-chain `OrderFilled` events, see the [Trade Event reference](/websocket/events/trade#tracking-a-specific-wallets-trades) or the [Dome migration guide](/dome-migration#order-perspective).

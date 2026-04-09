@@ -210,40 +210,47 @@ A single settlement can contain multiple trades (one per matched maker order). I
 
 ## Tracking a specific wallet's trades
 
-This is the part that trips up most people. **One transaction produces multiple `trade` events**, and only one of them is the wallet's actual trade. The rest are the counterparties' fills, where the wallet appears as the `taker`.
+<Warning>
+**TL;DR — Always filter by `maker`, never by `taker`.** A single transaction emits multiple `trade` events as separate WebSocket messages. The wallet's actual fill is the event where `data.maker === your_wallet`. The other events show the counterparties' perspective.
+</Warning>
 
-This is identical to how Dome and Polymarket's own activity API report trades, and it directly mirrors the on-chain `OrderFilled` event structure. If you previously used Dome and the same `event.user === yourWallet` pattern worked there, the same logic applies here — just match by `maker` instead of `user`. See the [Dome migration guide](/dome-migration#order-perspective) for the equivalent explanation in Dome's terminology.
+This is the most common source of confusion when integrating with the trade stream. Once you understand the on-chain structure, the fix is one line.
+
+<Note>
+**`trade` events have no sub-array.** Each fill arrives as its own WebSocket message with top-level `maker`, `taker`, `side`, `price`, `token_id`, etc. Inspect each incoming message individually. If you're looking for a `trades[]` array, you're thinking of [settlement events](/websocket/events/settlement), which bundle all fills from a single `matchOrders` transaction into one message with a nested `data.trades[]` array.
+</Note>
 
 ### How `OrderFilled` events work on-chain
 
-Every match on Polymarket emits one `OrderFilled` log per maker order. The `side`, `token_id`, and `price` on each event are recorded **from the maker's perspective**:
+Every match on Polymarket emits one `OrderFilled` log per maker order, plus one additional log for the taker's own order. **All fields on each log — `side`, `token_id`, `price`, `size` — are recorded from the maker's perspective on that specific log.**
 
-- `maker` = whoever placed the limit order (was already on the book)
+- `maker` = whoever placed the limit order that got filled (the resting order)
 - `taker` = whoever's order matched into it
 - `side` = whether the maker was buying or selling
 
-When a user places a market order (or any order that matches existing orders), the on-chain settlement records:
+When a user submits an order that matches against N existing maker orders, the on-chain settlement emits **N + 1 events**:
 
-1. **N events with the user as `taker`** — one per counterparty maker order they matched against. These show the **counterparties' tokens, prices, and sides**, not the user's.
-2. **One additional event with the user as `maker`** and the exchange contract (`0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e` or `0xc5d563a36ae78145c45a50134d48a1215220f80a` for neg-risk) as the `taker`. **This is the user's actual fill.**
+1. **N events with the user as `taker`** — one per counterparty maker order they matched against. These show the counterparties' tokens, prices, and sides, not the user's.
+2. **One additional event with the user as `maker`** and the exchange contract as `taker` (`0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e` for standard markets, `0xc5d563a36ae78145c45a50134d48a1215220f80a` for neg-risk markets). **This is the user's actual fill.**
 
-For complement merges and neg-risk crosses, the user's actual fill is on the OPPOSITE token from their counterparties' fills. If you filter by `taker == wallet`, you get the wrong token and the complement price.
+Polymarket's activity API and Dome both follow this same convention, because they read directly from these `OrderFilled` logs. If you've used Dome before with `event.user === yourWallet`, the equivalent here is `event.maker === yourWallet`. See the [Dome migration guide](/dome-migration#order-perspective) for the same explanation in Dome's terminology.
 
 ### Real example
 
-Live data from transaction `0x288f2c93984a54c2de5b04e29f6529092807e25c99ea24041155732b00d372dd`:
+Live data from transaction `0x910466c40141da9784fe0dd6b8e7a81d0b46ed3667100b83c714ee70eaf39ab2` on April 9, 2026. The user `0xf5a77527f5154e4cd84ef32c73fab4ba58ec4be0` placed a market BUY for the Up token on an Ethereum 5-minute market. The transaction emitted **4 trade events**:
 
 ```
-Wallet:  0x56660426a5afb3936c445a344d153081012e5bc0
-Market:  Map 2: Odd/Even Total Kills?
-
-Event 1: maker=0x9b4a3062 taker=0x56660426 side=BUY price=0.01 token=Odd
-Event 2: maker=0x56660426 taker=0xExchange side=BUY price=0.99 token=Even
+log_index=586  maker=0x0b9353ae taker=0xf5a77527  side=BUY price=0.21  size=5     token=Down
+log_index=596  maker=0xfcdc071d taker=0xf5a77527  side=BUY price=0.20  size=12    token=Down
+log_index=606  maker=0x2e9b93fa taker=0xf5a77527  side=BUY price=0.19  size=1.79  token=Down
+log_index=610  maker=0xf5a77527 taker=0xExchange  side=BUY price=0.7983 size=18.79 token=Up    ← USER'S ACTUAL TRADE
 ```
 
-The wallet's actual trade is **BUY Even at 0.99** (Event 2 — they appear as `maker`). Polymarket's activity API confirms: `side=BUY outcome=Even price=0.99 size=5.578`.
+The first three events show counterparties (other wallets) buying the **Down** token at 0.21, 0.20, 0.19. The user happens to appear as the `taker` on each of those because the contract matched their order against them, but those events represent the counterparties' trades, not the user's.
 
-If you filtered by `taker == wallet`, you would get Event 1 — `BUY Odd at 0.01`, the **counterparty's** trade. That trade has the opposite token and the complement price.
+The user's actual trade is the fourth event: **`BUY Up at 0.7983 size=18.79`**, where they appear as `maker` and the CTF Exchange contract appears as `taker`. Polymarket's activity API confirms this exact trade: `side=BUY outcome=Up price=0.7983 size=18.51` (the slight size difference is the fee deduction).
+
+If you filter by `taker == wallet`, you get the first three events (counterparty perspective on the Down token). If you filter by `maker == wallet`, you get the user's actual fourth event (the Up token at 0.7983).
 
 ### The right way to filter
 
@@ -253,18 +260,21 @@ ws.onmessage = (event) => {
   if (msg.type !== "trade") return;
   const t = msg.data;
 
-  // Match by maker — this is the user's actual fill
+  // CORRECT — match by maker. This is the user's actual fill.
   if (t.maker.toLowerCase() === MY_WALLET.toLowerCase()) {
     console.log("My trade:", t.side, t.size, t.outcome, "@", t.price);
   }
+
+  // WRONG — match by taker. Returns counterparty fills with the OPPOSITE
+  // token and the COMPLEMENT price (e.g. BUY Down 0.20 when you actually
+  // bought Up at 0.80).
+  // if (t.taker.toLowerCase() === MY_WALLET.toLowerCase()) { ... }
 };
 ```
 
-Do **not** match by `taker == wallet`. That field reports the counterparty's perspective on each maker fill, and a single transaction can contain many such events.
-
 ### Subscribing only to a specific wallet
 
-If you only want events involving a specific wallet, use the `wallets` filter on the subscription. The server-side filter matches on **both** `maker` and `taker` fields, so you receive every event the wallet appears in. Then apply the `maker == wallet` filter on the client side to get the wallet's actual trades:
+If you only want events involving a specific wallet, use the `wallets` filter on the subscription. The server-side filter matches **both** `maker` and `taker` fields, so you receive every event the wallet appears in. Apply `maker === wallet` on the client side to get only the wallet's actual trades:
 
 ```javascript
 ws.send(JSON.stringify({
