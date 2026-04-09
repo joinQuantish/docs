@@ -55,7 +55,66 @@ The `type` field selects a preset of event types. If you also set `filters.event
 <ResponseField name="dome" type="string">
   Events: `settlement` (reformatted as per-fill flat events)
 
-  Dome API-compatible feed. Each settlement is exploded into individual flat events — one per order fill — matching the exact field names and structure of Dome's WebSocket API. Designed as a drop-in replacement for Dome with 3-5 second faster delivery. See [Dome Migration](/guides/dome-migration) for field mapping and examples.
+  Dome API-compatible feed. Each settlement is exploded into individual flat events — one per order fill — matching the exact field names and structure of Dome's WebSocket API. Designed as a drop-in replacement for Dome with 3-5 second faster delivery. See [Dome Migration](/dome-migration) for full field reference and copy trading examples.
+
+  This is the simplest subscription type for **per-wallet trade tracking**. Each fill arrives as its own flat event with a `user` field. Filter incoming events by `event.data.user === your_wallet` to get the wallet's actual trades — no array iteration, no maker/taker confusion.
+
+  ```javascript
+  import WebSocket from "ws";
+
+  const TRACKED_WALLET = "0x...";
+  const ws = new WebSocket("wss://ws.polynode.dev/ws?key=YOUR_KEY");
+
+  ws.on("open", () => {
+    ws.send(JSON.stringify({
+      action: "subscribe",
+      type: "dome"
+    }));
+  });
+
+  ws.on("message", (raw) => {
+    const msg = JSON.parse(raw);
+    if (msg.type !== "event") return;
+
+    const fill = msg.data;
+    if (fill.user.toLowerCase() !== TRACKED_WALLET.toLowerCase()) return;
+
+    console.log(
+      fill.side, fill.shares_normalized, fill.token_label,
+      "@", fill.price, "in", fill.title
+    );
+  });
+  ```
+
+  **Real captured event** (live data from April 9, 2026):
+
+  ```json
+  {
+    "type": "event",
+    "data": {
+      "order_hash": "0x7b281ecba532e47147e9919e073635b44ce0361527f46ee1067f2ca152aea765",
+      "user": "0x0c6367b4e0022ca702ad6f33cd2cf504b2cc3cbb",
+      "taker": "0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e",
+      "tx_hash": "0xf7d09a5f24609e8209298d7be35fa33ba8a3749ebb51f8a13d10d547467d104d",
+      "side": "BUY",
+      "price": 0.59,
+      "shares": 33898304,
+      "shares_normalized": 33.898304,
+      "token_id": "111868385514416639450414573730782830447093166389406898626712932606174471659926",
+      "token_label": "Astralis",
+      "condition_id": "0xd546a1f7ff24a008a90bf80a06a7f7aa034abb33311d6727d325f9b848e93940",
+      "market_slug": "cs2-ast10-eye-2026-04-09-game1",
+      "title": "Counter-Strike: Astralis vs EYEBALLERS - Map 1 Winner",
+      "timestamp": 1775731431,
+      "block_number": null,
+      "log_index": null
+    }
+  }
+  ```
+
+  In this event, `user` is the wallet whose trade this is (`0x0c6367b4...`), and `taker` is the CTF Exchange contract (`0x4bfb41d5...`) — that pattern means this is the user's own fill, not a counterparty fill. The user bought Astralis at 0.59 for 33.9 shares.
+
+  The same transaction also produces a separate event for the counterparty (with `user = counterparty_wallet, taker = real_taker_wallet`). To track only the wallet you care about, filter by `event.data.user === your_wallet` and ignore everything else.
 </ResponseField>
 
 <ResponseField name="blocks" type="string">
