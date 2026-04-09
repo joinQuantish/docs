@@ -7,6 +7,22 @@ icon: "arrow-right-arrow-left"
 
 A confirmed on-chain trade from Polymarket's exchange contracts.
 
+<Warning>
+**Don't confuse `trade` events with the `trades[]` array inside `settlement` events.** They are related but not the same thing.
+
+A `trade` event is one of three ways polynode exposes the same fill data, depending on what you need:
+
+| Shape | When it fires | Source | Format |
+|---|---|---|---|
+| `settlement.trades[]` | Pre-confirmation (3-5s before the block) | Calldata (estimated for multi-maker) | Array inside one event |
+| `trade` events (this page) | At block confirmation | Receipt logs (exact) | One separate WS message per fill |
+| `status_update.confirmed_fills[]` | At block confirmation | Receipt logs (exact) | Array inside one event |
+
+`trade` events and `confirmed_fills[]` contain the **same exact data** — they're both decoded from the on-chain `OrderFilled` logs, just packaged differently. If you already subscribe to `settlement` events, you can read `confirmed_fills[]` from the `status_update` instead of also subscribing to `trade` events. If you only want the post-confirmation per-fill stream, subscribe to `trade` events directly.
+
+`settlement.trades[]` is the **pre-confirmation equivalent** — it has the same shape but the per-maker prices are estimated from the calldata's aggregate amounts. Use it for speed (3-5 second lead), use `trade` events or `confirmed_fills[]` for exactness.
+</Warning>
+
 <Info>
 **V2 compatible.** Trade events work identically for both V1 and V2 Polymarket exchanges. The `fee` field is decoded the same way for V2 trades. No changes to your subscription or parsing logic are needed.
 </Info>
