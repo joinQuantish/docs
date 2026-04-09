@@ -1,0 +1,337 @@
+---
+title: "Trade History"
+description: "Query every trade ever executed on Polymarket. Filter by wallet, market, time range, or minimum size. Full history with cursor pagination."
+openapi: "GET /v2/onchain/trades"
+---
+
+Search and filter the complete history of Polymarket trades. Every CLOB fill is indexed and enriched with market metadata. Supports filtering by wallet, market (via slug, condition ID, or token ID), time range, and minimum trade size.
+
+When no filters are provided, returns the most recent trades from the last 24 hours. Add any filter to query the full history.
+
+## Request
+
+```
+GET /v2/onchain/trades
+```
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | No | Filter by wallet address (matches both maker and taker sides) |
+| `market_slug` | string | No | Filter by market slug (e.g. `will-zohran-mamdani-win-the-2025-nyc-mayoral-election`) |
+| `condition_id` | string | No | Filter by condition ID (0x-prefixed, 64 hex chars) |
+| `token_id` | string | No | Filter by outcome token ID |
+| `start_time` | integer | No | Unix timestamp — only return trades after this time |
+| `end_time` | integer | No | Unix timestamp — only return trades before this time |
+| `min_total` | number | No | Minimum trade size in USD |
+| `limit` | integer | No | Results per page (1-500, default 100) |
+| `order` | string | No | Sort direction: `desc` (default) or `asc`. Using `asc` without any filter returns an error. |
+| `pagination_key` | string | No | Cursor from a previous response to fetch the next page |
+
+### Identifying markets
+
+There are three ways to filter trades by market:
+
+- **`market_slug`** — the human-readable URL slug from Polymarket (e.g. `will-zohran-mamdani-win-the-2025-nyc-mayoral-election`). Easiest to use.
+- **`condition_id`** — the unique condition identifier for a market. Returns trades for all outcomes (Yes and No).
+- **`token_id`** — the specific outcome token. Returns trades for only that outcome.
+
+You can combine market filters with `wallet` to find a specific wallet's trades on a specific market.
+
+## Response
+
+```json
+{
+  "count": 2,
+  "pagination": {
+    "limit": 2,
+    "has_more": true,
+    "pagination_key": "0xfffff7ed9080f46d7975f905e7f9358c436a1b177c6e19e54510c3ba6dcfddc4_0x09c8f6c7a148a83dfc968b1d9aece6ddb43a7a0e1bc2b1cb4b38356bb32220f0"
+  },
+  "trades": [
+    {
+      "timestamp": 1775668111,
+      "tx_hash": "0xfffff7ed9080f46d7975f905e7f9358c436a1b177c6e19e54510c3ba6dcfddc4",
+      "order_hash": "0xd808640f8d06bd5d1fa6f86c149d2a66753a6c86a4580c616a9e170f57f96b02",
+      "maker": "0xa973ae12882a1c24a75da7a3b52cb01500b2f639",
+      "taker": "0xc5d563a36ae78145c45a50134d48a1215220f80a",
+      "token_id": "3486411672082301675645165272859578340300389072626261580506086464973862637410",
+      "price": 0.92,
+      "amount_usd": 1,
+      "fee_usd": 0.01,
+      "shares": 1.08695,
+      "market": "Will Goztepe SK win on 2026-04-08?",
+      "market_slug": "tur-goz-gal-2026-04-08-goz",
+      "outcome": "No",
+      "condition_id": "0x8c7ec1f6e3694c402bd204a25756d55b34bb294f28677b624e1068450f1dfb1a",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/tur.png"
+    },
+    {
+      "timestamp": 1775668111,
+      "tx_hash": "0xfffff7ed9080f46d7975f905e7f9358c436a1b177c6e19e54510c3ba6dcfddc4",
+      "order_hash": "0x09c8f6c7a148a83dfc968b1d9aece6ddb43a7a0e1bc2b1cb4b38356bb32220f0",
+      "maker": "0x84ad9c5c547a82ec9a08547b94bd922446e5bfb7",
+      "taker": "0xa973ae12882a1c24a75da7a3b52cb01500b2f639",
+      "token_id": "107137984184508009127443282317786484656951337636215782600474106740257845898368",
+      "price": 0.08,
+      "amount_usd": 0.09,
+      "fee_usd": 0.11,
+      "shares": 1.08695,
+      "market": "Will Goztepe SK win on 2026-04-08?",
+      "market_slug": "tur-goz-gal-2026-04-08-goz",
+      "outcome": "Yes",
+      "condition_id": "0x8c7ec1f6e3694c402bd204a25756d55b34bb294f28677b624e1068450f1dfb1a",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/tur.png"
+    }
+  ]
+}
+```
+
+### Trade fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | number | Unix timestamp of the fill |
+| `tx_hash` | string | Polygon transaction hash |
+| `order_hash` | string | CLOB order hash that was filled |
+| `maker` | string | Maker wallet address |
+| `taker` | string | Taker wallet address |
+| `token_id` | string | Outcome token ID |
+| `price` | number | Fill price (0 to 1) |
+| `amount_usd` | number | Trade size in USD |
+| `fee_usd` | number | Fee paid in USD |
+| `shares` | number | Number of outcome shares traded |
+| `side` | string | `"maker"` or `"taker"` — only present when filtering by `wallet` |
+| `market` | string | Market question text |
+| `market_slug` | string | Market URL slug |
+| `outcome` | string | Outcome label (e.g. "Yes", "No") |
+| `condition_id` | string | Market condition ID |
+| `image` | string | Market image URL |
+
+### Pagination fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `count` | number | Number of trades in this response |
+| `pagination.limit` | number | Requested page size |
+| `pagination.has_more` | boolean | `true` if more results exist beyond this page |
+| `pagination.pagination_key` | string | Pass this as `pagination_key` in the next request to get the next page |
+
+## Examples
+
+### Recent trades
+
+Returns the most recent trades from the last 24 hours.
+
+<CodeGroup>
+```bash cURL
+curl "https://api.polynode.dev/v2/onchain/trades?limit=2" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```javascript Node.js
+const resp = await fetch(
+  "https://api.polynode.dev/v2/onchain/trades?limit=2",
+  { headers: { "x-api-key": "YOUR_KEY" } }
+);
+const data = await resp.json();
+console.log(data.trades);
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://api.polynode.dev/v2/onchain/trades",
+    params={"limit": 2},
+    headers={"x-api-key": "YOUR_KEY"},
+)
+data = resp.json()
+print(data["trades"])
+```
+</CodeGroup>
+
+### Filter by wallet
+
+Returns all trades where the wallet was either maker or taker. The `side` field indicates which role the wallet played.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&limit=1" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "count": 1,
+  "pagination": {
+    "limit": 1,
+    "has_more": true,
+    "pagination_key": "0xfffff7ed...d808640f..."
+  },
+  "trades": [
+    {
+      "timestamp": 1775668111,
+      "tx_hash": "0xfffff7ed9080f46d7975f905e7f9358c436a1b177c6e19e54510c3ba6dcfddc4",
+      "order_hash": "0xd808640f8d06bd5d1fa6f86c149d2a66753a6c86a4580c616a9e170f57f96b02",
+      "maker": "0xa973ae12882a1c24a75da7a3b52cb01500b2f639",
+      "taker": "0xc5d563a36ae78145c45a50134d48a1215220f80a",
+      "token_id": "34864116720823016756451652728595783403003890726262615805060864649738626374410",
+      "price": 0.92,
+      "amount_usd": 1,
+      "fee_usd": 0.01,
+      "shares": 1.08695,
+      "side": "maker",
+      "market": "Will Goztepe SK win on 2026-04-08?",
+      "market_slug": "tur-goz-gal-2026-04-08-goz",
+      "outcome": "No",
+      "condition_id": "0x8c7ec1f6e3694c402bd204a25756d55b34bb294f28677b624e1068450f1dfb1a",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/tur.png"
+    }
+  ]
+}
+```
+
+### Filter by market
+
+Use `market_slug` to get all trades on a specific market across all wallets.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/trades?market_slug=will-zohran-mamdani-win-the-2025-nyc-mayoral-election&limit=1" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "count": 1,
+  "pagination": {
+    "limit": 1,
+    "has_more": true,
+    "pagination_key": "0xffffffeb...00063fc7..."
+  },
+  "trades": [
+    {
+      "timestamp": 1759503806,
+      "tx_hash": "0xffffffeb7983b64a9394a0485c897113ad17ffca0fde8f3fa16aa045396d0582",
+      "order_hash": "0x00063fc790381b8d017b868f153aeed48152c8c7012e33cb4793b3f5c8989b3a",
+      "maker": "0xe05d8c348aee0323cf115c18006a35db54ba2685",
+      "taker": "0xc5d563a36ae78145c45a50134d48a1215220f80a",
+      "token_id": "33945469250963963541781051637999677727672635213493648594066577298999471399137",
+      "price": 0.897,
+      "amount_usd": 100,
+      "fee_usd": 0,
+      "shares": 111.482719,
+      "market": "Will Zohran Mamdani win the 2025 NYC mayoral election?",
+      "market_slug": "will-zohran-mamdani-win-the-2025-nyc-mayoral-election",
+      "outcome": "Yes",
+      "condition_id": "0xebddfcf7b4401dade8b4031770a1ab942b01854f3bed453d5df9425cd9f211a9",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-zohran-mamdani-win-the-2025-nyc-mayoral-election-EscSJQTT6hWg.jpg"
+    }
+  ]
+}
+```
+
+You can also filter by `condition_id` to get both outcomes of a market:
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/trades?condition_id=0xebddfcf7b4401dade8b4031770a1ab942b01854f3bed453d5df9425cd9f211a9&limit=10" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Large trades
+
+Use `min_total` to find trades above a USD threshold.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/trades?min_total=100&limit=10" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "count": 1,
+  "pagination": {
+    "limit": 1,
+    "has_more": true,
+    "pagination_key": "0xffffffeb...a0017d41..."
+  },
+  "trades": [
+    {
+      "timestamp": 1759503806,
+      "tx_hash": "0xffffffeb7983b64a9394a0485c897113ad17ffca0fde8f3fa16aa045396d0582",
+      "order_hash": "0xa0017d41adb20f9cb729243b8d8464218d3f2a9e8d24c8e53f36c744c9f250a7",
+      "maker": "0x12d6cccfc7470a3f4bafc53599a4779cbf2cf2a8",
+      "taker": "0xe05d8c348aee0323cf115c18006a35db54ba2685",
+      "token_id": "33945469250963963541781051637999677727672635213493648594066577298999471399137",
+      "price": 0.897,
+      "amount_usd": 100,
+      "fee_usd": 0,
+      "shares": 111.482719,
+      "market": "Will Zohran Mamdani win the 2025 NYC mayoral election?",
+      "market_slug": "will-zohran-mamdani-win-the-2025-nyc-mayoral-election",
+      "outcome": "Yes",
+      "condition_id": "0xebddfcf7b4401dade8b4031770a1ab942b01854f3bed453d5df9425cd9f211a9",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-zohran-mamdani-win-the-2025-nyc-mayoral-election-EscSJQTT6hWg.jpg"
+    }
+  ]
+}
+```
+
+### Time range
+
+Use `start_time` and `end_time` (Unix timestamps) to query a specific window.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/trades?start_time=1775600000&end_time=1775700000&limit=10" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Combined filters
+
+Combine any filters. For example, a wallet's trades on a specific market:
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&market_slug=tur-goz-gal-2026-04-08-goz&limit=10" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Pagination
+
+Pass the `pagination_key` from the previous response to get the next page.
+
+```bash
+# First page
+curl "https://api.polynode.dev/v2/onchain/trades?limit=100" \
+  -H "x-api-key: YOUR_KEY"
+
+# Next page
+curl "https://api.polynode.dev/v2/onchain/trades?limit=100&pagination_key=CURSOR_FROM_PREVIOUS" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Oldest first
+
+Use `order=asc` to get trades in chronological order. Requires at least one filter.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&order=asc&limit=10" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+## Error responses
+
+| Status | Response | Condition |
+|--------|----------|-----------|
+| 400 | `{"error": "order=asc requires at least one filter (wallet, token_id, condition_id, market_slug, or start_time)."}` | `order=asc` without any filter |
+| 400 | `{"error": "market_slug not found"}` | Invalid or unknown `market_slug` |
+| 400 | `{"error": "condition_id not found"}` | Invalid or unknown `condition_id` |
+| 401 | `{"error": "API key required. Pass via ?key= or x-api-key header."}` | Missing API key |
+| 403 | `{"error": "V2 endpoints require a paid plan. See polynode.dev/pricing for details."}` | Free tier key |
+| 429 | `{"error": "Rate limited. N req/s for your tier.", "retryAfterMs": ...}` | Rate limited |
+
+## Notes
+
+- Without filters, defaults to the last 24 hours for performance. Add `start_time` to query further back.
+- The `side` field is only included when filtering by `wallet`. Without a wallet filter, there is no perspective to assign a side from.
+- Market metadata (`market`, `market_slug`, `outcome`, `condition_id`, `image`) is enriched from our index. Very old or delisted markets may not have metadata.
+- Results are sourced from onchain settlement data. Every fill that settled on Polygon is included.
