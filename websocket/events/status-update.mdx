@@ -1,51 +1,69 @@
 ---
 title: "Status Update Event"
 sidebarTitle: "status_update"
-description: "Notification when a pending settlement confirms on-chain."
+description: "Notification when a pending settlement confirms on-chain, with exact fill data from receipt logs."
 icon: "circle-check"
 ---
 
-Fired when a previously pending settlement is confirmed in a block. Links back to the original `settlement` event via `tx_hash` and includes the confirmation latency.
+Fired when a previously pending settlement is confirmed in a block. Links back to the original `settlement` event via `tx_hash`, includes the confirmation latency, and attaches **confirmed fill data** from on-chain `OrderFilled` receipt logs.
+
+The `confirmed_fills` array contains the exact execution prices and sizes from the blockchain — the same data source Polymarket's own activity API reads. This gives you both speed (pre-confirmation detection) and accuracy (on-chain execution data) in a single subscription.
 
 ```json
 {
   "data": {
-    "block_number": 84697578,
+    "block_number": 85296338,
     "condition_id": "0xcd1b782d94423552e19db1ca2bec7bcf5a445de8586638e41da75fae3d138ac4",
-    "confirmed_at": 1774515191000,
+    "confirmed_at": 1775713418000,
+    "confirmed_fills": [
+      {
+        "order_hash": "0x8238c0666c...",
+        "maker": "0x48ac40fc...",
+        "taker": "0xc51f90d3...",
+        "token_id": "97486603884638701907147078120258734284412618667021950609483989581295500093074",
+        "side": "BUY",
+        "price": 0.56,
+        "size": 2.25,
+        "maker_amount": "1260000",
+        "taker_amount": "2250000",
+        "fee": 0.176785
+      },
+      {
+        "order_hash": "0x3d388dd54a...",
+        "maker": "0x25f4707c...",
+        "taker": "0xc51f90d3...",
+        "token_id": "97486603884638701907147078120258734284412618667021950609483989581295500093074",
+        "side": "BUY",
+        "price": 0.56,
+        "size": 7.0,
+        "maker_amount": "3920000",
+        "taker_amount": "7000000",
+        "fee": 0.55
+      }
+    ],
     "event_title": "Augusta National Invitational - Winner ",
     "event_type": "status_update",
     "latency_ms": 3928,
     "maker_wallets": [
-      "0xc51f90d32c30f2f80bae8b0b7b8779b397a7650d",
-      "0x7f8d845693cf4a4242f3c72a78332667fc440002"
+      "0x48ac40fc...",
+      "0x25f4707c..."
     ],
-    "order_hashes": [
-      "0xafc3488df3505c4dbba8797b8b6c645630c8ee9decf811a0acc4d63fdecfdd36",
-      "0x9b5a06de7196bde87b4d8baa6cb80681151338d263fac0e643a2d53c4497e27f"
-    ],
-    "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-charl-schwartzel-win-the-2026-masters-tournament-aX4CJWWTY-MM.png",
     "market_slug": "will-charl-schwartzel-win-the-2026-masters-tournament",
     "market_title": "Will Charl Schwartzel win the 2026 Masters tournament?",
     "neg_risk": true,
+    "order_hashes": [
+      "0x8238c0666c...",
+      "0x3d388dd54a..."
+    ],
     "outcome": "No",
     "outcomes": ["Yes", "No"],
-    "pending_detected_at": 1774515187072,
-    "taker_base_fee": null,
-    "taker_wallet": "0xc51f90d32c30f2f80bae8b0b7b8779b397a7650d",
+    "pending_detected_at": 1775713414072,
+    "taker_wallet": "0xc51f90d3...",
     "tick_size": 0.001,
     "token_id": "97486603884638701907147078120258734284412618667021950609483989581295500093074",
-    "token_ids": [
-      "114433834256520234603606906611634484409025341085225894878418887707063366888909",
-      "97486603884638701907147078120258734284412618667021950609483989581295500093074"
-    ],
-    "tokens": {
-      "114433834256520234603606906611634484409025341085225894878418887707063366888909": "Yes",
-      "97486603884638701907147078120258734284412618667021950609483989581295500093074": "No"
-    },
-    "tx_hash": "0xdeb240ed175eec28895a6b4037f1e91c6fcdb2231c6814de9e1acb07b2ca3c5d"
+    "tx_hash": "0x7599f442e4..."
   },
-  "timestamp": 1774515191000,
+  "timestamp": 1775713418000,
   "type": "status_update"
 }
 ```
@@ -79,7 +97,7 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
     </ResponseField>
 
     <ResponseField name="pending_detected_at" type="number" required>
-      Unix milliseconds when the transaction was first detected by PolyNode.
+      Unix milliseconds when the transaction was first detected by polynode.
     </ResponseField>
 
     <ResponseField name="latency_ms" type="number" required>
@@ -95,7 +113,53 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
     </ResponseField>
 
     <ResponseField name="order_hashes" type="string[]">
-      EIP-712 order hashes from the original pending settlement. Each hash uniquely identifies a maker's limit order on Polymarket's order book. Persists across partial fills, letting you correlate confirmed settlements back to specific limit orders without storing state from the initial pending event.
+      EIP-712 order hashes from the original pending settlement. Each hash uniquely identifies a maker's limit order on Polymarket's order book.
+    </ResponseField>
+
+    <ResponseField name="confirmed_fills" type="object[]">
+      Exact fill data from on-chain `OrderFilled` receipt logs. Each entry represents one maker's fill with the precise execution price and size as settled by the contract. Present when receipt decoding succeeds (vast majority of blocks). `null` on the rare occasion receipt data is unavailable.
+
+      <Expandable title="confirmed fill fields">
+        <ResponseField name="order_hash" type="string">
+          EIP-712 order hash for this specific fill.
+        </ResponseField>
+
+        <ResponseField name="maker" type="string">
+          Maker wallet address.
+        </ResponseField>
+
+        <ResponseField name="taker" type="string">
+          Taker wallet address (or exchange contract address for the taker's own fill event).
+        </ResponseField>
+
+        <ResponseField name="token_id" type="string">
+          Conditional token ID for this specific fill.
+        </ResponseField>
+
+        <ResponseField name="side" type="string">
+          `"BUY"` or `"SELL"` from the maker's perspective.
+        </ResponseField>
+
+        <ResponseField name="price" type="number">
+          Exact execution price from the on-chain settlement. This is the canonical price — the same value Polymarket's own APIs report.
+        </ResponseField>
+
+        <ResponseField name="size" type="number">
+          Gross token amount filled (before fees). Polymarket's activity API reports net-of-fee sizes, so this value will be slightly larger than what Polymarket shows. Use the `fee` field to compute the net: `net_size = size - fee / price`.
+        </ResponseField>
+
+        <ResponseField name="maker_amount" type="string">
+          Raw maker amount from the OrderFilled event (integer string, 6 decimal precision for USDC).
+        </ResponseField>
+
+        <ResponseField name="taker_amount" type="string">
+          Raw taker amount from the OrderFilled event (integer string).
+        </ResponseField>
+
+        <ResponseField name="fee" type="number">
+          Fee charged on this fill in USDC. `null` if no fee.
+        </ResponseField>
+      </Expandable>
     </ResponseField>
 
     <ResponseField name="market_title" type="string">
@@ -143,7 +207,7 @@ Fired when a previously pending settlement is confirmed in a block. Links back t
     </ResponseField>
 
     <ResponseField name="tokens" type="object">
-      Map of token ID → outcome name for all outcomes in this market (e.g. `{"123...": "Yes", "456...": "No"}`). Enriched from metadata.
+      Map of token ID to outcome name for all outcomes in this market (e.g. `{"123...": "Yes", "456...": "No"}`). Enriched from metadata.
     </ResponseField>
   </Expandable>
 </ResponseField>
@@ -169,6 +233,14 @@ ws.onmessage = (event) => {
   if (msg.type === "status_update") {
     const original = pending.get(msg.data.tx_hash);
     console.log(`Confirmed in ${msg.data.latency_ms}ms`, original);
+
+    // Use confirmed_fills for exact on-chain prices
+    if (msg.data.confirmed_fills) {
+      for (const fill of msg.data.confirmed_fills) {
+        console.log(`  ${fill.side} ${fill.size} @ ${fill.price} (fee: ${fill.fee})`);
+      }
+    }
+
     pending.delete(msg.data.tx_hash);
   }
 };

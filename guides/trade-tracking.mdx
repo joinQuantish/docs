@@ -1,0 +1,144 @@
+---
+title: "Trade Tracking Guide"
+sidebarTitle: "Trade Tracking"
+description: "How to track Polymarket trades for copy trading, analytics, and bookkeeping."
+---
+
+polynode gives you two layers of trade data. Which one you use depends on what you're building.
+
+## Two data layers, one subscription
+
+When you subscribe to `settlements`, you get two events per trade:
+
+1. **`settlement`** (pending) — arrives 3–5 seconds before the block. Decoded from the transaction's calldata while it's still in the mempool.
+2. **`status_update`** (confirmed) — arrives when the block confirms. Includes `confirmed_fills` with exact execution data from on-chain `OrderFilled` receipt logs.
+
+Both come through the same subscription. No extra configuration needed.
+
+## How they differ
+
+The pending settlement and confirmed fills come from different data sources inside the same transaction:
+
+| | Pending settlement | Confirmed fills |
+|---|---|---|
+| **Source** | Transaction calldata (input) | OrderFilled receipt logs (output) |
+| **Speed** | 3–5 seconds before the block | At block confirmation |
+| **Price accuracy** | Exact for single-maker fills. Off by 0.01–0.04 on ~5% of multi-maker fills. | Exact. Always. This is the on-chain canonical record. |
+| **Size** | Gross token amount | Gross token amount (separate `fee` field) |
+| **Per-fill detail** | Per-maker breakdown from calldata | Per-maker breakdown from receipt logs |
+
+**Why the difference exists:** When a taker order sweeps multiple makers in one transaction, the calldata contains each maker's order and the total amounts being exchanged. But the total USDC is an aggregate across all makers. polynode estimates each maker's share proportionally. The contract does its own math internally and emits the exact per-maker amounts in the `OrderFilled` logs. For most fills, the estimate and the result are identical. For multi-maker sweeps, the contract's integer rounding can produce slightly different per-maker splits.
+
+**Size vs Polymarket:** Polymarket's activity API reports sizes net of fees. polynode's confirmed fills report the gross size from the OrderFilled event plus the fee as a separate field. To get the Polymarket-equivalent size: `net_size = size - (fee / price)`.
+
+## Use case 1: Copy trading
+
+For copy trading, use the **pending settlement**. Speed matters more than the 0.01 price difference on the occasional multi-maker fill.
+
+```javascript
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type !== "settlement" || msg.data.status !== "pending") return;
+
+  const { taker_wallet, taker_side, taker_price, trades } = msg.data;
+
+  if (taker_wallet === WALLET_IM_COPYING) {
+    // Act on the pending data immediately — you have 3-5 seconds of lead time
+    const token_id = trades[0]?.token_id;
+    placeTrade(token_id, taker_side, taker_price);
+  }
+};
+```
+
+The pending settlement tells you what someone is trading, which direction, and at roughly what price. That's all you need to mirror the trade before the block confirms.
+
+## Use case 2: Analytics and bookkeeping
+
+For trade logs, P&L tracking, portfolio analytics, or any scenario where you need exact prices, use `confirmed_fills` from the `status_update`.
+
+```javascript
+const tradeLog = [];
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type !== "status_update" || !msg.data.confirmed_fills) return;
+
+  for (const fill of msg.data.confirmed_fills) {
+    if (fill.maker === WALLET_IM_TRACKING) {
+      tradeLog.push({
+        tx_hash: msg.data.tx_hash,
+        block: msg.data.block_number,
+        timestamp: msg.data.confirmed_at,
+        market: msg.data.market_title,
+        token_id: fill.token_id,
+        side: fill.side,
+        price: fill.price,
+        size: fill.size,
+        fee: fill.fee,
+        order_hash: fill.order_hash,
+      });
+    }
+  }
+};
+```
+
+This is the same data Polymarket reads from the blockchain. Prices will match Polymarket's activity data exactly.
+
+## Use case 3: Full lifecycle tracking
+
+Track both layers to get the complete picture — early detection plus exact execution:
+
+```javascript
+const pending = new Map();
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.type === "settlement" && msg.data.status === "pending") {
+    pending.set(msg.data.tx_hash, {
+      detected_at: Date.now(),
+      taker_price: msg.data.taker_price,
+      taker_side: msg.data.taker_side,
+    });
+  }
+
+  if (msg.type === "status_update") {
+    const original = pending.get(msg.data.tx_hash);
+    const lead_time = original
+      ? msg.data.confirmed_at - original.detected_at
+      : null;
+
+    if (msg.data.confirmed_fills) {
+      for (const fill of msg.data.confirmed_fills) {
+        console.log({
+          market: msg.data.market_title,
+          side: fill.side,
+          pending_price: original?.taker_price,
+          confirmed_price: fill.price,
+          lead_time_ms: lead_time,
+          block: msg.data.block_number,
+        });
+      }
+    }
+
+    pending.delete(msg.data.tx_hash);
+  }
+};
+```
+
+## Confirmed fills field reference
+
+Each object in the `confirmed_fills` array:
+
+| Field | Type | Description |
+|---|---|---|
+| `order_hash` | string | EIP-712 order hash for this fill |
+| `maker` | string | Maker wallet address |
+| `taker` | string | Taker wallet or exchange contract |
+| `token_id` | string | Conditional token ID for this fill |
+| `side` | string | `"BUY"` or `"SELL"` (maker's perspective) |
+| `price` | number | Exact execution price |
+| `size` | number | Gross token amount (before fees) |
+| `maker_amount` | string | Raw maker amount (integer, 6 decimals for USDC) |
+| `taker_amount` | string | Raw taker amount (integer) |
+| `fee` | number | Fee in USDC, or `null` |

@@ -7,6 +7,44 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-09 — Confirmed Fills on Status Updates
+
+`status_update` events now include a `confirmed_fills` array with exact execution data from on-chain `OrderFilled` receipt logs. This is the same data source Polymarket's own APIs read.
+
+### What changed
+- `status_update` events now carry a `confirmed_fills` field — an array of per-fill objects with exact price, size, fee, order hash, maker, taker, and token ID
+- Each fill is decoded directly from `OrderFilled` receipt logs on the CTF Exchange and NegRisk CTF Exchange contracts
+- Prices match Polymarket's activity data exactly (verified across 1,300+ fills with zero price discrepancies)
+
+### Why this matters
+
+polynode detects settlements 3-5 seconds before on-chain confirmation by decoding transaction calldata from the mempool. For single-maker fills, calldata prices are exact. For multi-maker fills (~5% of trades), the calldata only has aggregate amounts, so per-maker prices are estimated within 0.01-0.04.
+
+With `confirmed_fills`, you now get both: the fast pre-confirmation signal AND the exact on-chain execution data in a single subscription. Use whichever fits your use case.
+
+### Use cases
+- **Copy trading**: Use the pending `settlement` event (speed matters, price difference is negligible)
+- **Analytics and bookkeeping**: Use `confirmed_fills` from the `status_update` (exact prices, fees, and sizes)
+- **Full lifecycle**: Track both to compare pre-confirmation estimates against final execution
+
+### Size difference vs Polymarket
+
+`confirmed_fills` reports gross token amounts from the OrderFilled event. Polymarket's activity API reports sizes net of fees. The `fee` field on each fill lets you compute the net amount if needed.
+
+### Subscribe
+
+No subscription changes needed. If you already subscribe to `settlements`, you're already receiving `status_update` events with `confirmed_fills`.
+
+```json
+{"action": "subscribe", "type": "settlements"}
+```
+
+### Documentation
+- [Status Update Event Reference](/websocket/events/status-update) — updated with `confirmed_fills` schema and examples
+- [Trade Tracking Guide](/guides/trade-tracking) — when to use pending settlements vs confirmed fills
+
+---
+
 ## 2026-04-08 — Redemption Event Streaming
 
 New `redemption` event type in the WebSocket stream. Every time a user redeems their outcome tokens after a market resolves, you get a real-time event with the redeemer address, payout amount, condition ID, and full market metadata enrichment.
