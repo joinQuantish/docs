@@ -207,3 +207,67 @@ A single settlement can contain multiple trades (one per matched maker order). I
 <Tip>
 **Tracking limit orders across fills:** Use `order_hash` to group partial fills of the same limit order. When a maker places a 1,000-share order and it fills in three separate transactions, all three trades share the same `order_hash`. This is the EIP-712 hash of the signed order struct — it's deterministic from the order parameters and identical to what Polymarket's CLOB uses internally.
 </Tip>
+
+## Tracking a specific wallet's trades
+
+This is the part that trips up most people. **One transaction produces multiple `trade` events**, and only one of them is the wallet's actual trade. The rest are the counterparties' fills, where the wallet appears as the `taker`.
+
+### How `OrderFilled` events work on-chain
+
+Every match on Polymarket emits one `OrderFilled` log per maker order. The `side`, `token_id`, and `price` on each event are recorded **from the maker's perspective**:
+
+- `maker` = whoever placed the limit order (was already on the book)
+- `taker` = whoever's order matched into it
+- `side` = whether the maker was buying or selling
+
+When a user places a market order (or any order that matches existing orders), the on-chain settlement records:
+
+1. **N events with the user as `taker`** — one per counterparty maker order they matched against. These show the **counterparties' tokens, prices, and sides**, not the user's.
+2. **One additional event with the user as `maker`** and the exchange contract (`0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e` or `0xc5d563a36ae78145c45a50134d48a1215220f80a` for neg-risk) as the `taker`. **This is the user's actual fill.**
+
+For complement merges and neg-risk crosses, the user's actual fill is on the OPPOSITE token from their counterparties' fills. If you filter by `taker == wallet`, you get the wrong token and the complement price.
+
+### Real example
+
+Live data from transaction `0x288f2c93984a54c2de5b04e29f6529092807e25c99ea24041155732b00d372dd`:
+
+```
+Wallet:  0x56660426a5afb3936c445a344d153081012e5bc0
+Market:  Map 2: Odd/Even Total Kills?
+
+Event 1: maker=0x9b4a3062 taker=0x56660426 side=BUY price=0.01 token=Odd
+Event 2: maker=0x56660426 taker=0xExchange side=BUY price=0.99 token=Even
+```
+
+The wallet's actual trade is **BUY Even at 0.99** (Event 2 — they appear as `maker`). Polymarket's activity API confirms: `side=BUY outcome=Even price=0.99 size=5.578`.
+
+If you filtered by `taker == wallet`, you would get Event 1 — `BUY Odd at 0.01`, the **counterparty's** trade. That trade has the opposite token and the complement price.
+
+### The right way to filter
+
+```javascript
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type !== "trade") return;
+  const t = msg.data;
+
+  // Match by maker — this is the user's actual fill
+  if (t.maker.toLowerCase() === MY_WALLET.toLowerCase()) {
+    console.log("My trade:", t.side, t.size, t.outcome, "@", t.price);
+  }
+};
+```
+
+Do **not** match by `taker == wallet`. That field reports the counterparty's perspective on each maker fill, and a single transaction can contain many such events.
+
+### Subscribing only to a specific wallet
+
+If you only want events involving a specific wallet, use the `wallets` filter on the subscription. The server-side filter matches on **both** `maker` and `taker` fields, so you receive every event the wallet appears in. Then apply the `maker == wallet` filter on the client side to get the wallet's actual trades:
+
+```javascript
+ws.send(JSON.stringify({
+  action: "subscribe",
+  type: "trades",
+  filters: { wallets: ["0xYourWallet"] }
+}));
+```
