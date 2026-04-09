@@ -349,10 +349,28 @@ ws.send(JSON.stringify({
 ### Track a wallet
 
 ```javascript
+const TRACKED_WALLET = "0xabcdef...";
+
 ws.send(JSON.stringify({
   action: "subscribe",
   type: "wallets",
-  filters: { wallets: ["0xabcdef..."] },
+  filters: { wallets: [TRACKED_WALLET] },
 }));
-// Receives: settlements, trades, position changes, deposits, status updates
+
+// To find the wallet's actual trades, iterate data.trades[] and match
+// by maker. NEVER match by taker — that's the counterparty.
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type !== "settlement") return;
+
+  for (const fill of msg.data.trades) {
+    if (fill.maker.toLowerCase() === TRACKED_WALLET.toLowerCase()) {
+      console.log(`Trade: ${fill.side} ${fill.size} ${fill.outcome} @ ${fill.price}`);
+    }
+  }
+};
 ```
+
+<Warning>
+Always match by `fill.maker`, never by `fill.taker`. The `taker` field is the counterparty — matching it returns the wrong wallet's perspective with the **opposite token** and the **complement price**. See the [Settlement Event reference](/websocket/events/settlement#tracking-a-specific-wallets-trades) for full details.
+</Warning>

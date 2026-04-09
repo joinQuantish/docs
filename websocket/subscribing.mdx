@@ -200,6 +200,16 @@ All filters are optional. Omit the `filters` object entirely to receive all even
   ```
 </ParamField>
 
+<Warning>
+**Tracking a specific wallet's trades?** Always match by `maker`, never by `taker`.
+
+For `settlement` events: iterate `data.trades[]` and find entries where `fill.maker === your_wallet`.
+
+For `trade` events: filter incoming events by `data.maker === your_wallet`.
+
+The `maker` field on each fill is the wallet that placed the order. The `taker` field is the counterparty — matching against it returns the wrong wallet's perspective with the **opposite token** and the **complement price** (e.g. shows `BUY Down 0.20` when the wallet actually bought `Up at 0.80`). This is how on-chain `OrderFilled` events are structured. See the [Settlement Event](/websocket/events/settlement#tracking-a-specific-wallets-trades) or [Trade Event](/websocket/events/trade#tracking-a-specific-wallets-trades) reference for full code examples.
+</Warning>
+
 ### Trade filtering
 
 <ParamField body="side" type="string">

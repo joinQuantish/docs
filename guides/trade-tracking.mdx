@@ -35,22 +35,27 @@ The pending settlement and confirmed fills come from different data sources insi
 
 For copy trading, use the **pending settlement**. Speed matters more than the 0.01 price difference on the occasional multi-maker fill.
 
+To find the wallet's actual trade in a settlement event, iterate `data.trades[]` and match by `maker`:
+
 ```javascript
 ws.onmessage = (event) => {
   const msg = JSON.parse(event.data);
   if (msg.type !== "settlement" || msg.data.status !== "pending") return;
 
-  const { taker_wallet, taker_side, taker_price, trades } = msg.data;
-
-  if (taker_wallet === WALLET_IM_COPYING) {
-    // Act on the pending data immediately — you have 3-5 seconds of lead time
-    const token_id = trades[0]?.token_id;
-    placeTrade(token_id, taker_side, taker_price);
+  for (const fill of msg.data.trades) {
+    if (fill.maker.toLowerCase() === WALLET_IM_COPYING.toLowerCase()) {
+      // This is the wallet's actual trade — same side, same token, same price
+      placeTrade(fill.token_id, fill.side, fill.price);
+    }
   }
 };
 ```
 
-The pending settlement tells you what someone is trading, which direction, and at roughly what price. That's all you need to mirror the trade before the block confirms.
+<Warning>
+Always match by `fill.maker`, never by `fill.taker`. The `taker` field on each fill is the counterparty, not the wallet you're tracking. Matching by `taker` returns the wrong wallet's perspective with the **opposite token** and the **complement price** — copy trading from that data would mirror the inverse of every trade.
+</Warning>
+
+The pending settlement tells you what the wallet is trading, which direction, and at what price. That's all you need to mirror the trade before the block confirms.
 
 ## Use case 2: Analytics and bookkeeping
 
@@ -86,7 +91,7 @@ This is the same data Polymarket reads from the blockchain. Prices will match Po
 
 ## Use case 3: Full lifecycle tracking
 
-Track both layers to get the complete picture — early detection plus exact execution:
+Track both layers to get the complete picture — early detection plus exact execution. Match by `maker` in both the pending `trades[]` array and the confirmed `confirmed_fills[]` array:
 
 ```javascript
 const pending = new Map();
@@ -95,25 +100,30 @@ ws.onmessage = (event) => {
   const msg = JSON.parse(event.data);
 
   if (msg.type === "settlement" && msg.data.status === "pending") {
-    pending.set(msg.data.tx_hash, {
-      detected_at: Date.now(),
-      taker_price: msg.data.taker_price,
-      taker_side: msg.data.taker_side,
-    });
+    // Find the wallet's actual leg in the pending trades array
+    const myLeg = msg.data.trades.find(
+      t => t.maker.toLowerCase() === WALLET_IM_TRACKING.toLowerCase()
+    );
+    if (myLeg) {
+      pending.set(msg.data.tx_hash, {
+        detected_at: Date.now(),
+        pending_price: myLeg.price,
+        pending_side: myLeg.side,
+      });
+    }
   }
 
-  if (msg.type === "status_update") {
+  if (msg.type === "status_update" && msg.data.confirmed_fills) {
     const original = pending.get(msg.data.tx_hash);
-    const lead_time = original
-      ? msg.data.confirmed_at - original.detected_at
-      : null;
+    const lead_time = original ? msg.data.confirmed_at - original.detected_at : null;
 
-    if (msg.data.confirmed_fills) {
-      for (const fill of msg.data.confirmed_fills) {
+    // Match by maker in confirmed_fills too — same rule
+    for (const fill of msg.data.confirmed_fills) {
+      if (fill.maker.toLowerCase() === WALLET_IM_TRACKING.toLowerCase()) {
         console.log({
           market: msg.data.market_title,
           side: fill.side,
-          pending_price: original?.taker_price,
+          pending_price: original?.pending_price,
           confirmed_price: fill.price,
           lead_time_ms: lead_time,
           block: msg.data.block_number,
