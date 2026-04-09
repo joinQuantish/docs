@@ -212,6 +212,8 @@ A single settlement can contain multiple trades (one per matched maker order). I
 
 This is the part that trips up most people. **One transaction produces multiple `trade` events**, and only one of them is the wallet's actual trade. The rest are the counterparties' fills, where the wallet appears as the `taker`.
 
+This is identical to how Dome and Polymarket's own activity API report trades, and it directly mirrors the on-chain `OrderFilled` event structure. If you previously used Dome and the same `event.user === yourWallet` pattern worked there, the same logic applies here — just match by `maker` instead of `user`. See the [Dome migration guide](/dome-migration#order-perspective) for the equivalent explanation in Dome's terminology.
+
 ### How `OrderFilled` events work on-chain
 
 Every match on Polymarket emits one `OrderFilled` log per maker order. The `side`, `token_id`, and `price` on each event are recorded **from the maker's perspective**:
