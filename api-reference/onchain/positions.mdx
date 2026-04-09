@@ -23,7 +23,7 @@ GET /v2/onchain/positions
 | `status` | string | No | `open` (size > 0), `closed` (size = 0), or `all` (default) |
 | `min_size` | number | No | Minimum position size in shares |
 | `limit` | integer | No | Results per page (1-500, default 100) |
-| `order` | string | No | Sort direction: `desc` (default) or `asc` |
+| `order` | string | No | Sort direction: `desc` (default) or `asc`. Sorted by wallet address. |
 | `pagination_key` | string | No | Cursor from a previous response to fetch the next page |
 
 ### Identifying markets
@@ -90,7 +90,7 @@ GET /v2/onchain/positions
 | `market_slug` | string | Market URL slug |
 | `outcome` | string | Outcome label (e.g. "Yes", "No") |
 | `condition_id` | string | Market condition ID |
-| `image` | string | Market image URL |
+| `image` | string \| null | Market image URL. `null` for some delisted or niche markets. |
 
 ### Pagination fields
 

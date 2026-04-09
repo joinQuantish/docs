@@ -26,7 +26,7 @@ GET /v2/onchain/trades
 | `end_time` | integer | No | Unix timestamp — only return trades before this time |
 | `min_total` | number | No | Minimum trade size in USD |
 | `limit` | integer | No | Results per page (1-500, default 100) |
-| `order` | string | No | Sort direction: `desc` (default) or `asc`. Using `asc` without any filter returns an error. |
+| `order` | string | No | Sort by timestamp: `desc` (newest first, default) or `asc` (oldest first). Using `asc` without any filter returns an error. |
 | `pagination_key` | string | No | Cursor from a previous response to fetch the next page |
 
 ### Identifying markets
@@ -107,7 +107,7 @@ You can combine market filters with `wallet` to find a specific wallet's trades 
 | `market_slug` | string | Market URL slug |
 | `outcome` | string | Outcome label (e.g. "Yes", "No") |
 | `condition_id` | string | Market condition ID |
-| `image` | string | Market image URL |
+| `image` | string \| null | Market image URL. `null` for some delisted or niche markets. |
 
 ### Pagination fields
 
