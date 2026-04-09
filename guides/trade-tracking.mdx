@@ -142,3 +142,44 @@ Each object in the `confirmed_fills` array:
 | `maker_amount` | string | Raw maker amount (integer, 6 decimals for USDC) |
 | `taker_amount` | string | Raw taker amount (integer) |
 | `fee` | number | Fee in USDC, or `null` |
+
+## Ghost fills and the nonce exploit
+
+A small percentage of Polymarket settlements (~0.15–0.35%) fail on-chain. These are "ghost fills" — trades that appear to match off-chain but revert during on-chain settlement. The most common cause is the `incrementNonce()` exploit on Polymarket's V1 CTF Exchange, which allows users to invalidate their own orders after matching but before settlement.
+
+This is another reason to use `confirmed_fills` for any application where trade accuracy matters. A pending `settlement` event tells you a trade was matched. Only a `status_update` with `confirmed_fills` tells you it actually settled on-chain.
+
+To detect ghost fills, track pending settlements that never receive a `status_update`:
+
+```javascript
+const pending = new Map();
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.type === "settlement" && msg.data.status === "pending") {
+    pending.set(msg.data.tx_hash, {
+      ...msg.data,
+      detected_at: Date.now(),
+    });
+  }
+
+  if (msg.type === "status_update") {
+    // Trade confirmed on-chain — not a ghost fill
+    pending.delete(msg.data.tx_hash);
+  }
+};
+
+// Pending settlements older than 15 seconds without a status_update are ghost fills
+setInterval(() => {
+  const now = Date.now();
+  for (const [txHash, data] of pending) {
+    if (now - data.detected_at > 15000) {
+      console.log("Ghost fill detected:", txHash);
+      pending.delete(txHash);
+    }
+  }
+}, 5000);
+```
+
+For detailed research on the exploit, affected markets, and attacker identification, see the [Nonce Exploit Research](/guides/nonce-exploit) page.

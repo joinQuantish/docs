@@ -68,6 +68,7 @@
               "guides/v2-details",
               "guides/polyusd",
               "guides/trade-tracking",
+              "guides/nonce-exploit",
               "guides/best-practices",
               "guides/position-management",
               "guides/errors",
