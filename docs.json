@@ -120,6 +120,7 @@
             "group": "Onchain",
             "pages": [
               "api-reference/onchain/trades",
+              "api-reference/onchain/positions",
               "api-reference/wallets/onchain-positions",
               "api-reference/onchain/wallet-trades",
               "api-reference/onchain/wallet-redemptions",

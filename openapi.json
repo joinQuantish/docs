@@ -2899,6 +2899,119 @@
         }
       }
     },
+    "/v2/onchain/positions": {
+      "get": {
+        "tags": [
+          "Onchain"
+        ],
+        "summary": "Positions",
+        "description": "Query every position on Polymarket. Filter by wallet, market, status, or minimum size.",
+        "operationId": "onchain_positions",
+        "parameters": [
+          {
+            "name": "wallet",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by wallet address"
+          },
+          {
+            "name": "market_slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by market slug"
+          },
+          {
+            "name": "condition_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by condition ID"
+          },
+          {
+            "name": "token_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by outcome token ID"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["open", "closed", "all"],
+              "default": "all"
+            },
+            "description": "Filter by position status"
+          },
+          {
+            "name": "min_size",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Minimum position size in shares"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 500
+            },
+            "description": "Results per page (1-500, default 100)"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["desc", "asc"],
+              "default": "desc"
+            },
+            "description": "Sort direction"
+          },
+          {
+            "name": "pagination_key",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cursor from a previous response to fetch the next page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Position results with pagination"
+          },
+          "400": {
+            "description": "Invalid filter or market not found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Invalid API key or free tier"
+          },
+          "429": {
+            "description": "Rate limited"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
     "/v2/onchain/trades": {
       "get": {
         "tags": [

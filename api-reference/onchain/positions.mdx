@@ -1,0 +1,281 @@
+---
+title: "Positions (All)"
+description: "Query every position on Polymarket. Filter by wallet, market, status, or minimum size. Full history with cursor pagination."
+openapi: "GET /v2/onchain/positions"
+---
+
+Search and filter all Polymarket positions across every wallet. Each position is enriched with market metadata and includes realized P&L, average entry price, and current size. Sourced directly from onchain settlement data.
+
+## Request
+
+```
+GET /v2/onchain/positions
+```
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | No | Filter by wallet address |
+| `market_slug` | string | No | Filter by market slug (e.g. `will-zohran-mamdani-win-the-2025-nyc-mayoral-election`) |
+| `condition_id` | string | No | Filter by condition ID (0x-prefixed, 64 hex chars) |
+| `token_id` | string | No | Filter by outcome token ID |
+| `status` | string | No | `open` (size > 0), `closed` (size = 0), or `all` (default) |
+| `min_size` | number | No | Minimum position size in shares |
+| `limit` | integer | No | Results per page (1-500, default 100) |
+| `order` | string | No | Sort direction: `desc` (default) or `asc` |
+| `pagination_key` | string | No | Cursor from a previous response to fetch the next page |
+
+### Identifying markets
+
+- **`market_slug`** — human-readable URL slug from Polymarket. Returns positions for all outcomes.
+- **`condition_id`** — unique condition identifier. Returns positions for all outcomes.
+- **`token_id`** — specific outcome token. Returns positions for only that outcome.
+
+## Response
+
+```json
+{
+  "count": 2,
+  "pagination": {
+    "limit": 2,
+    "has_more": true,
+    "pagination_key": "0xa973ae12882a1c24a75da7a3b52cb01500b2f639-99881503238784655670984673100655147508393351942279611133016622634826369070119"
+  },
+  "positions": [
+    {
+      "wallet": "0xa973ae12882a1c24a75da7a3b52cb01500b2f639",
+      "token_id": "99949662063403569895321097192043694236016212986254553767097648841549016857591",
+      "size": 0.012785,
+      "avg_price": 0.859999,
+      "realized_pnl": 0.16,
+      "total_bought": 1.16,
+      "status": "open",
+      "market": "Will FC Bayern Munchen win on 2026-04-07?",
+      "market_slug": "ucl-rma1-bay1-2026-04-07-bay1",
+      "outcome": "Yes",
+      "condition_id": "0x5f5c8d8fa28d77b5552562f32393ac199fb6b92ed1c1e2239e29c09f7e4eb3f5",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/champions-league-pic-QIUFsL8vaDdq.png"
+    },
+    {
+      "wallet": "0xa973ae12882a1c24a75da7a3b52cb01500b2f639",
+      "token_id": "99881503238784655670984673100655147508393351942279611133016622634826369070119",
+      "size": 0,
+      "avg_price": 0.98,
+      "realized_pnl": 0.1,
+      "total_bought": 5,
+      "status": "closed",
+      "market": "Solana Up or Down - December 30, 10:30PM-10:45PM ET",
+      "market_slug": "sol-updown-15m-1767151800",
+      "outcome": "Down",
+      "condition_id": "0xa7f50f1bd65e8fd1790117b3b162dc03489df7b89cd35f4b1093792691b8a327",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/SOL+fullsize.png"
+    }
+  ]
+}
+```
+
+### Position fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallet` | string | Wallet address holding the position |
+| `token_id` | string | Outcome token ID |
+| `size` | number | Current position size in shares. `0` means the position is closed. |
+| `avg_price` | number | Average entry price (0 to 1) |
+| `realized_pnl` | number | Realized profit/loss in USD |
+| `total_bought` | number | Total amount bought in USD |
+| `status` | string | `"open"` (size > 0) or `"closed"` (size = 0) |
+| `market` | string | Market question text |
+| `market_slug` | string | Market URL slug |
+| `outcome` | string | Outcome label (e.g. "Yes", "No") |
+| `condition_id` | string | Market condition ID |
+| `image` | string | Market image URL |
+
+### Pagination fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `count` | number | Number of positions in this response |
+| `pagination.limit` | number | Requested page size |
+| `pagination.has_more` | boolean | `true` if more results exist beyond this page |
+| `pagination.pagination_key` | string | Pass this as `pagination_key` in the next request to get the next page |
+
+## Examples
+
+### All positions for a wallet
+
+<CodeGroup>
+```bash cURL
+curl "https://api.polynode.dev/v2/onchain/positions?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&limit=100" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```javascript Node.js
+const resp = await fetch(
+  "https://api.polynode.dev/v2/onchain/positions?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&limit=100",
+  { headers: { "x-api-key": "YOUR_KEY" } }
+);
+const data = await resp.json();
+console.log(data.positions);
+```
+
+```python Python
+import requests
+
+resp = requests.get(
+    "https://api.polynode.dev/v2/onchain/positions",
+    params={"wallet": "0xa973ae12882a1c24a75da7a3b52cb01500b2f639", "limit": 100},
+    headers={"x-api-key": "YOUR_KEY"},
+)
+data = resp.json()
+print(data["positions"])
+```
+</CodeGroup>
+
+### Open positions only
+
+Use `status=open` to get only positions with a non-zero size.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/positions?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&status=open&limit=100" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "count": 2,
+  "pagination": {
+    "limit": 2,
+    "has_more": true,
+    "pagination_key": "0xa973ae12882a1c24a75da7a3b52cb01500b2f639-99504617..."
+  },
+  "positions": [
+    {
+      "wallet": "0xa973ae12882a1c24a75da7a3b52cb01500b2f639",
+      "token_id": "99949662063403569895321097192043694236016212986254553767097648841549016857591",
+      "size": 0.012785,
+      "avg_price": 0.859999,
+      "realized_pnl": 0.16,
+      "total_bought": 1.16,
+      "status": "open",
+      "market": "Will FC Bayern Munchen win on 2026-04-07?",
+      "market_slug": "ucl-rma1-bay1-2026-04-07-bay1",
+      "outcome": "Yes",
+      "condition_id": "0x5f5c8d8fa28d77b5552562f32393ac199fb6b92ed1c1e2239e29c09f7e4eb3f5",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/champions-league-pic-QIUFsL8vaDdq.png"
+    }
+  ]
+}
+```
+
+### Who holds a market
+
+Use `market_slug` to see all wallets with positions on a specific market.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/positions?market_slug=will-zohran-mamdani-win-the-2025-nyc-mayoral-election&status=open&limit=50" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "count": 2,
+  "pagination": {
+    "limit": 2,
+    "has_more": true,
+    "pagination_key": "0xfffe254008792df0c325325a75a3c6e7aaed436a-10583236..."
+  },
+  "positions": [
+    {
+      "wallet": "0xffff3840fbf40fd2e193c01cc299cdf1262cffaf",
+      "token_id": "33945469250963963541781051637999677727672635213493648594066577298999471399137",
+      "size": 0.009534,
+      "avg_price": 0.947999,
+      "realized_pnl": -0.54,
+      "total_bought": 539.03,
+      "status": "open",
+      "market": "Will Zohran Mamdani win the 2025 NYC mayoral election?",
+      "market_slug": "will-zohran-mamdani-win-the-2025-nyc-mayoral-election",
+      "outcome": "Yes",
+      "condition_id": "0xebddfcf7b4401dade8b4031770a1ab942b01854f3bed453d5df9425cd9f211a9",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-zohran-mamdani-win-the-2025-nyc-mayoral-election-EscSJQTT6hWg.jpg"
+    }
+  ]
+}
+```
+
+### Large positions
+
+Use `min_size` to find positions above a threshold.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/positions?min_size=100&limit=20" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "count": 2,
+  "pagination": {
+    "limit": 2,
+    "has_more": true,
+    "pagination_key": "0xffffffe1e093aacd21e4e281e66d543fb0b23455-98495912..."
+  },
+  "positions": [
+    {
+      "wallet": "0xffffffe1e093aacd21e4e281e66d543fb0b23455",
+      "token_id": "98813479054803844837498343855179110721772056323529222930302029314504656450267",
+      "size": 1100,
+      "avg_price": 0.003636,
+      "realized_pnl": 0,
+      "total_bought": 1100,
+      "status": "open",
+      "market": "Bitcoin Up or Down - February 5, 9:45AM-10:00AM ET",
+      "market_slug": "btc-updown-15m-1770302700",
+      "outcome": "Up",
+      "condition_id": "0x3ec09263f6fb247e65635d52c2787dc0f46806f153124e138f42ad03411198b4",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png"
+    }
+  ]
+}
+```
+
+### Combined filters
+
+Filter by wallet, market, and status at once.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/positions?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&market_slug=ucl-rma1-bay1-2026-04-07-bay1&status=open&limit=10" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Pagination
+
+Use cursor-based pagination to iterate through large result sets.
+
+```bash
+# First page
+curl "https://api.polynode.dev/v2/onchain/positions?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&limit=100" \
+  -H "x-api-key: YOUR_KEY"
+
+# Next page
+curl "https://api.polynode.dev/v2/onchain/positions?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&limit=100&pagination_key=CURSOR_FROM_PREVIOUS" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+## Error responses
+
+| Status | Response | Condition |
+|--------|----------|-----------|
+| 400 | `{"error": "market_slug not found"}` | Invalid or unknown `market_slug` |
+| 400 | `{"error": "condition_id not found"}` | Invalid or unknown `condition_id` |
+| 401 | `{"error": "API key required. Pass via ?key= or x-api-key header."}` | Missing API key |
+| 403 | `{"error": "V2 endpoints require a paid plan. See polynode.dev/pricing for details."}` | Free tier key |
+| 429 | `{"error": "Rate limited. N req/s for your tier.", "retryAfterMs": ...}` | Rate limited |
+
+## Notes
+
+- Position data is sourced from onchain settlement records. Every position that was ever opened on Polymarket is included.
+- The `realized_pnl` field reflects actual profit/loss from closed portions of the position. For open positions, it reflects any partial closes.
+- Market metadata (`market`, `market_slug`, `outcome`, `condition_id`, `image`) is enriched from our index. Very old or delisted markets may not have metadata.
