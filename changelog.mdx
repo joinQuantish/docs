@@ -7,6 +7,56 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-11 — polynode-charts v0.1.0
+
+New npm package for interactive charting in the browser. Zero dependencies, Canvas 2D rendering at 60fps, purpose-built for prediction market data and live crypto price streams.
+
+### Install
+
+```bash
+npm install polynode-charts
+```
+
+### What's included
+
+- **Candlestick, line, area, and volume** series types with smooth animation
+- **Live streaming mode** with lerp animation, pulsing dots, and auto-scroll
+- **Orderbook visualization** with depth chart and spread display
+- **Short-form market overlays** — price-to-beat lines with live odds rotation for 5m/15m/1h crypto markets
+- **Multi-outcome support** for prediction markets (up to 20+ outcomes with auto-assigned colors)
+- **Built-in data providers** — `PolynodeProvider` (REST), `PolynodeOBProvider` (WebSocket orderbook), `ShortFormProvider` (market discovery + rotation)
+- **Interactive** pan, zoom, scroll, pinch-to-zoom on mobile
+- **Crosshair** with snap-to-candle and OHLC tooltip
+
+### Quick start
+
+```typescript
+import { createChart, PolynodeProvider } from 'polynode-charts'
+
+const provider = new PolynodeProvider({ apiKey: 'pn_...' })
+const chart = createChart('#chart', {
+  rightPriceScale: { mode: 'probability' },
+})
+
+const series = chart.addCandleSeries({
+  upColor: '#22c55e',
+  downColor: '#ef4444',
+})
+
+const data = await provider.candles(tokenId, '1h')
+series.setData(data)
+```
+
+### Documentation
+
+Full docs at [Charts SDK Overview](/charts/overview), including API reference, data providers, series types, examples, and configuration.
+
+<Note>
+  `polynode-charts` is the **browser visualization** companion to `polynode-sdk` (the Node.js data SDK). They are separate npm packages. Building a frontend? Install both.
+</Note>
+
+---
+
 ## 2026-04-09 — Confirmed Fills on Status Updates
 
 `status_update` events now include a `confirmed_fills` array with exact execution data from on-chain `OrderFilled` receipt logs. This is the same data source Polymarket's own APIs read.
