@@ -115,6 +115,12 @@ interface ClickParams {
 }
 ```
 
+### Utility
+
+```typescript
+chart.getContainer(): HTMLElement  // returns the chart's parent DOM element
+```
+
 ### Lifecycle
 
 ```typescript
@@ -308,3 +314,71 @@ interface PriceLevel {
 |--------|-------------|
 | `ob.update(data)` | Replace book data and re-render |
 | `ob.destroy()` | Remove DOM and stop rendering |
+
+---
+
+## createShortFormOverlay
+
+One-liner to add Polymarket short-form price-to-beat overlays to any live chart. Adds interval buttons, auto-discovers markets, draws a dashed price-to-beat line, and shows live odds with a countdown timer.
+
+```typescript
+import { createChart, createShortFormOverlay } from 'polynode-charts'
+
+const chart = createChart('#btc', { layout: { background: '#0c1220' } })
+const series = chart.addLineSeries({ color: '#f7931a', showDot: true })
+series.setLive(true)
+chart.timeScale().goLive()
+
+// One line: buttons + discovery + price line + odds + countdown
+const overlay = createShortFormOverlay(chart, series, { coin: 'btc' })
+```
+
+### ShortFormOverlayOptions
+
+```typescript
+interface ShortFormOverlayOptions {
+  coin: ShortFormCoin                   // 'btc' | 'eth' | 'sol' | 'xrp' | 'doge' | 'hype'
+  intervals?: ShortFormInterval[]       // default: ['5m', '15m', '1h']
+  defaultInterval?: ShortFormInterval   // if set, auto-starts on creation
+  onRotation?: (event: RotationEvent) => void  // callback on each poll/rotation
+}
+```
+
+### ShortFormOverlay (return type)
+
+| Method | Description |
+|--------|-------------|
+| `overlay.setInterval('15m')` | Switch to a different interval |
+| `overlay.stop()` | Stop polling, remove price line, clear display |
+| `overlay.destroy()` | Full cleanup: stop + remove DOM |
+| `overlay.getActiveInterval()` | Returns current interval or `null` |
+
+### What it renders
+
+- **Interval buttons** (5m, 15m, 1h) — click to toggle on/off
+- **Price-to-beat line** — horizontal dashed blue line on the chart
+- **Odds display** — "24% up · 77% down · 1m35s" with live countdown
+- **Auto-rotation** — discovers the next market window when the current one expires
+
+---
+
+## PolynodeProvider — MarketInfo
+
+The `outcome` field tells you which side of a binary market this token represents.
+
+```typescript
+interface MarketInfo {
+  token_id: string
+  question: string        // the market question (e.g. "US x Iran ceasefire by April 7?")
+  slug: string
+  image: string
+  last_price: number
+  volume_24h: number
+  outcomes: string[]      // e.g. ['Yes', 'No']
+  outcome: string         // which outcome THIS token is ('Yes' or 'No')
+  condition_id?: string
+  neg_risk?: boolean      // true for multi-outcome events (elections, championships)
+}
+```
+
+The `neg_risk` field indicates a multi-outcome event on Polymarket. When `provider.event()` searches for multi-outcome markets, it prioritizes `neg_risk: true` markets to find genuine events (elections, World Cup, NBA Finals) rather than binary matches.

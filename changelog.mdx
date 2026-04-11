@@ -7,6 +7,33 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-11 — polynode-charts v0.1.5
+
+### New: `createShortFormOverlay`
+
+One-liner to add price-to-beat overlays to any live chart. Renders interval buttons (5m/15m/1h), auto-discovers Polymarket short-form markets, draws a dashed price line, and shows live odds with a countdown timer.
+
+```typescript
+import { createChart, createShortFormOverlay } from 'polynode-charts'
+
+const chart = createChart('#btc')
+const series = chart.addLineSeries({ color: '#f7931a' })
+series.setLive(true)
+chart.timeScale().goLive()
+
+createShortFormOverlay(chart, series, { coin: 'btc' })
+```
+
+### Improvements
+
+- **Multi-outcome event discovery** now prioritizes genuine multi-outcome markets (`neg_risk: true`) over resolved binary matches
+- **`MarketInfo.outcome`** field identifies which side of a binary market each token represents ("Yes" or "No")
+- **Price-to-beat badge** renders correctly on the right axis for all price ranges
+- **Orderbook tooltip** no longer stays stuck after data refresh
+- **Tighter chart padding** for a denser, more professional look
+
+---
+
 ## 2026-04-11 — polynode-charts v0.1.0
 
 New npm package for interactive charting in the browser. Zero dependencies, Canvas 2D rendering at 60fps, purpose-built for prediction market data and live crypto price streams.
