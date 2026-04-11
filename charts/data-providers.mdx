@@ -1,5 +1,6 @@
 ---
 title: "Data Providers"
+sidebarTitle: "Data Providers"
 description: "Built-in providers for polynode REST API, orderbook streaming, and short-form market discovery"
 ---
 
@@ -16,72 +17,188 @@ import { PolynodeProvider } from 'polynode-charts'
 
 const provider = new PolynodeProvider({
   apiKey: 'pn_live_...',
-  apiBaseUrl: 'https://api.polynode.dev',  // default
+  baseUrl: 'https://api.polynode.dev',  // default
 })
+```
+
+### Top Markets
+
+```typescript
+const markets = await provider.markets(10)
+// Returns MarketInfo[] sorted by 24h volume
+```
+
+**Response:**
+```json
+[
+  {
+    "token_id": "82855088893985825781350...",
+    "question": "US x Iran ceasefire by April 7?",
+    "slug": "us-x-iran-ceasefire-by-april-7",
+    "image": "https://polymarket-upload.s3...",
+    "last_price": 0.999,
+    "volume_24h": 19542289.32,
+    "outcomes": ["Yes", "No"],
+    "condition_id": "0x4c5701bc..."
+  }
+]
+```
+
+### Search Markets
+
+```typescript
+const results = await provider.search('bitcoin', 5)
+// Returns MarketInfo[] matching query, sorted by volume
 ```
 
 ### Fetch Candles
 
 ```typescript
-const candles = await provider.getCandles(tokenId, '1h')
-// Returns OhlcData[] — ready to pass to series.setData()
+const candles = await provider.candles(tokenId, '1h')
+// Returns OhlcData[] — ready for series.setData()
 
 const series = chart.addCandleSeries()
 series.setData(candles)
 ```
 
-**Supported intervals:** `'1m'`, `'5m'`, `'15m'`, `'1h'`, `'4h'`, `'1d'`
+The first call fetches trades and caches them locally. After that, switching resolution is instant — the SDK rebuilds candles client-side from the cached trades.
 
-### Search Markets
+**Supported resolutions:** `'1m'`, `'5m'`, `'15m'`, `'1h'`, `'4h'`, `'1d'`
 
+**Options:**
 ```typescript
-const results = await provider.searchMarkets('bitcoin')
-// Returns: { slug, question, outcomes, volume24h, ... }[]
+// Fetch more history (default: 30 days)
+const candles = await provider.candles(tokenId, '1h', { days: 90 })
 ```
 
-### Get Event Details
-
-```typescript
-const event = await provider.getEvent(slug)
-// Returns full event with all outcomes, prices, condition IDs
+**Response shape (`OhlcData[]`):**
+```json
+[
+  { "time": 1775826000000, "open": 0.54, "high": 0.55, "low": 0.52, "close": 0.54, "volume": 1200 }
+]
 ```
 
-### Get Price History
+### Price History (Line/Area Charts)
+
+For simple `{time, value}` points (faster than candles — one HTTP call, no pagination):
 
 ```typescript
-const history = await provider.getPriceHistory(tokenId, '1h')
-// Returns LineData[] for area/line charts
+const history = await provider.priceHistory(tokenId, '7d')
+// Returns LineData[]
+
+const series = chart.addAreaSeries({ color: '#22c55e' })
+series.setData(history)
 ```
 
-### Poll for Updates
+**Supported ranges:** `'1h'`, `'6h'`, `'1d'`, `'7d'`, `'30d'`, `'all'`
 
-Start polling a market for live price updates:
+<Note>
+  `candles()` fetches trades and builds OHLCV locally. Best for candlestick charts where you need resolution switching.
+
+  `priceHistory()` hits the CLOB prices-history endpoint directly. Best for line/area charts where you just need price points over time.
+</Note>
+
+### Get Event (Multi-Outcome)
 
 ```typescript
-const stop = provider.startPolling(tokenId, '1m', (candles) => {
-  series.setData(candles)
+const event = await provider.event('presidential election')
+```
+
+Returns `EventInfo | null`. The method searches your loaded markets, groups by shared question pattern, and returns all outcomes with prices and colors.
+
+**Response:**
+```json
+{
+  "question": "the 2028 US Presidential Election",
+  "slug": "presidential-election-winner-2028",
+  "condition_id": "0x...",
+  "image": "https://...",
+  "volume_24h": 2847291,
+  "outcomes": [
+    { "name": "Gavin Newsom", "token_id": "98250...", "price": 0.159, "color": "#4378FF" },
+    { "name": "Kamala Harris", "token_id": "70663...", "price": 0.032, "color": "#22c55e" },
+    { "name": "Ron DeSantis", "token_id": "10448...", "price": 0.021, "color": "#FDC503" }
+  ]
+}
+```
+
+Colors are assigned automatically from `OUTCOME_COLORS` (a 20-color palette).
+
+### Multi-Outcome Price History (Batch)
+
+Fetch price history for all outcomes in parallel:
+
+```typescript
+const event = await provider.event('presidential election')
+const priceMap = await provider.outcomePrices(event.outcomes, '7d', { maxOutcomes: 5 })
+
+for (const outcome of event.outcomes) {
+  const data = priceMap.get(outcome.token_id)
+  if (!data) continue
+  const series = chart.addLineSeries({ color: outcome.color })
+  series.setData(data)
+}
+```
+
+`outcomePrices()` is much faster than fetching candles per outcome — one HTTP call each, no trade pagination.
+
+For candlestick data per outcome, use `outcomeCandles()` instead:
+
+```typescript
+const candleMap = await provider.outcomeCandles(event.outcomes, '4h', { days: 30, maxOutcomes: 5 })
+```
+
+### Orderbook Snapshot
+
+```typescript
+const book = await provider.book(tokenId)
+// Returns { bids: PriceLevel[], asks: PriceLevel[] }
+```
+
+### Poll for Live Updates
+
+```typescript
+const stop = provider.pollPrices(tokenId, (point) => {
+  series.update(point)  // { time, value }
 }, { intervalMs: 5000 })
 
-// Later:
+// Stop polling
 stop()
 ```
 
-### Get Orderbook Snapshot
+For multi-outcome polling:
 
 ```typescript
-const book = await provider.getBook(tokenId)
-// Returns BookData with bids and asks
+const stop = provider.pollOutcomePrices(event.outcomes, (tokenId, point) => {
+  seriesMap.get(tokenId)?.update(point)
+}, { intervalMs: 10000, maxOutcomes: 5 })
 ```
 
-### Multi-Outcome Events
+### Market Resolution
+
+All methods accept flexible market identifiers:
+- **token_id** — direct lookup (fastest)
+- **slug** — matched against loaded markets (e.g. `'bitcoin-above-64k'`)
+- **condition_id** — hex string starting with `0x`
+
+### Clear Cache
 
 ```typescript
-const event = await provider.getEvent('will-bitcoin-hit-100k')
+provider.clearCache()  // clears trade cache for all markets
+```
 
-for (const outcome of event.outcomes) {
-  const history = await provider.getPriceHistory(outcome.token_id, '1h')
-  const series = chart.addLineSeries({ color: outcome.color })
-  series.setData(history)
+### MarketInfo
+
+```typescript
+interface MarketInfo {
+  token_id: string
+  question: string
+  slug: string
+  image: string
+  last_price: number    // 0-1
+  volume_24h: number    // USD
+  outcomes: string[]    // ["Yes", "No"] or ["Up", "Down"]
+  condition_id?: string
 }
 ```
 
