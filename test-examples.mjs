@@ -126,7 +126,7 @@ function isRunnable(block) {
     (code.includes('function ') && code.includes('(') && /\w+\(\)/.test(code));
 
   // Fragments referencing external variables without setup
-  const EXTERNAL_VARS = ['pn.', 'sub.', 'trader.', 'watcher.', 'stream.', 'cache.', 'book.', 'wallet.', 'engine.', 'ob.'];
+  const EXTERNAL_VARS = ['pn.', 'sub.', 'trader.', 'watcher.', 'stream.', 'cache.', 'book.', 'wallet.', 'engine.', 'ob.', 'provider.', 'chart.', 'series.', 'sf.', 'orderbook.'];
   const refsExternal = EXTERNAL_VARS.some(v => code.includes(v));
 
   // ws.send / ws.on without creating ws
@@ -136,10 +136,10 @@ function isRunnable(block) {
   );
 
   // Top-level await on undefined vars (e.g. `await pn.foo()`, `await trader.order()`)
-  const awaitOnExternal = /await\s+(pn|trader|watcher|stream|cache|PolyNodeTrader)\b/.test(code);
+  const awaitOnExternal = /await\s+(pn|trader|watcher|stream|cache|PolyNodeTrader|provider|sf)\b/.test(code);
 
   // Result/const assignment using undefined vars
-  const assignFromExternal = /(?:const|let|var)\s+\w+\s*=\s*(?:await\s+)?(pn|trader|watcher|stream|sub|cache|engine|ob)\./.test(code);
+  const assignFromExternal = /(?:const|let|var)\s+\w+\s*=\s*(?:await\s+)?(pn|trader|watcher|stream|sub|cache|engine|ob|provider|chart|series|sf)\./.test(code);
 
   // `for await (... of X)` where X is undefined
   const forAwaitExternal = /for\s+await\s+\(.*\bof\s+(sub|watcher|stream|cache)\b/.test(code);
