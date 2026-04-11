@@ -107,7 +107,7 @@ function isRunnable(block) {
   if (/import\s+\*\s+as/.test(code)) return false;
 
   // Skip blocks that import unavailable third-party modules
-  const unavailableModules = ['@dome/sdk', 'ethers', '@privy-io', 'viem', '@safe-global'];
+  const unavailableModules = ['@dome/sdk', 'ethers', '@privy-io', 'viem', '@safe-global', '@polynode/charts'];
   for (const mod of unavailableModules) {
     if (code.includes(`'${mod}`) || code.includes(`"${mod}`)) return false;
   }
