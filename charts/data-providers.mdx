@@ -1,0 +1,232 @@
+---
+title: "Data Providers"
+description: "Built-in providers for polynode REST API, orderbook streaming, and short-form market discovery"
+---
+
+# Data Providers
+
+The Charts SDK includes three data providers that connect to polynode endpoints. All are optional. The chart itself works with any data source.
+
+## PolynodeProvider
+
+Full-featured REST provider for market data, candles, search, events, and multi-outcome charts.
+
+```typescript
+import { PolynodeProvider } from '@polynode/charts'
+
+const provider = new PolynodeProvider({
+  apiKey: 'pn_live_...',
+  apiBaseUrl: 'https://api.polynode.dev',  // default
+})
+```
+
+### Fetch Candles
+
+```typescript
+const candles = await provider.getCandles(tokenId, '1h')
+// Returns OhlcData[] — ready to pass to series.setData()
+
+const series = chart.addCandleSeries()
+series.setData(candles)
+```
+
+**Supported intervals:** `'1m'`, `'5m'`, `'15m'`, `'1h'`, `'4h'`, `'1d'`
+
+### Search Markets
+
+```typescript
+const results = await provider.searchMarkets('bitcoin')
+// Returns: { slug, question, outcomes, volume24h, ... }[]
+```
+
+### Get Event Details
+
+```typescript
+const event = await provider.getEvent(slug)
+// Returns full event with all outcomes, prices, condition IDs
+```
+
+### Get Price History
+
+```typescript
+const history = await provider.getPriceHistory(tokenId, '1h')
+// Returns LineData[] for area/line charts
+```
+
+### Poll for Updates
+
+Start polling a market for live price updates:
+
+```typescript
+const stop = provider.startPolling(tokenId, '1m', (candles) => {
+  series.setData(candles)
+}, { intervalMs: 5000 })
+
+// Later:
+stop()
+```
+
+### Get Orderbook Snapshot
+
+```typescript
+const book = await provider.getBook(tokenId)
+// Returns BookData with bids and asks
+```
+
+### Multi-Outcome Events
+
+```typescript
+const event = await provider.getEvent('will-bitcoin-hit-100k')
+
+for (const outcome of event.outcomes) {
+  const history = await provider.getPriceHistory(outcome.token_id, '1h')
+  const series = chart.addLineSeries({ color: outcome.color })
+  series.setData(history)
+}
+```
+
+---
+
+## PolynodeOBProvider
+
+WebSocket-based orderbook streaming with automatic zlib decompression (uses the native `DecompressionStream` API, no dependencies).
+
+```typescript
+import { PolynodeOBProvider } from '@polynode/charts'
+
+const ob = new PolynodeOBProvider({
+  wsUrl: 'wss://ob.polynode.dev/ws',  // default
+})
+
+ob.subscribe(tokenId, (book) => {
+  orderbook.update(book)  // pass to Orderbook renderer
+})
+```
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `subscribe(tokenId, callback)` | Subscribe to live book updates |
+| `unsubscribe(tokenId)` | Stop receiving updates for a token |
+| `connect()` | Manually connect (auto-connects on first subscribe) |
+| `disconnect()` | Close WebSocket and stop reconnecting |
+
+The provider handles reconnection automatically with exponential backoff (1s to 30s).
+
+### Message Types
+
+The provider processes three message types from the orderbook WebSocket:
+
+- `snapshot_batch` — initial full book for all subscribed tokens
+- `book_snapshot` — full book replacement for a single token
+- `book_update` — incremental update (add/remove/change levels)
+
+All are normalized to `BookData` before calling your callback.
+
+---
+
+## ShortFormProvider
+
+Discovers short-form crypto markets (5-minute, 15-minute, and hourly up/down markets) and provides live odds rotation. HTTP-only, no WebSocket required.
+
+```typescript
+import { ShortFormProvider } from '@polynode/charts'
+
+const sf = new ShortFormProvider()
+```
+
+### One-Shot Discovery
+
+```typescript
+const market = await sf.discover('btc', '15m')
+
+if (market) {
+  console.log(market.priceToBeat)  // 72822.50
+  console.log(market.upOdds)       // 0.62
+  console.log(market.downOdds)     // 0.38
+  console.log(market.windowEnd)    // unix timestamp
+}
+```
+
+### Auto-Rotation with Live Odds
+
+`startRotation()` discovers the current window, emits immediately, then polls for updated odds every second and re-discovers at each window boundary.
+
+```typescript
+const stop = sf.startRotation('btc', '15m', (event) => {
+  // Called on discovery + every odds update
+  series.setPriceLine(event.market.priceToBeat!, {
+    color: '#3b82f6',
+    label: 'PRICE TO BEAT',
+  })
+
+  console.log(`${(event.market.upOdds * 100).toFixed(0)}% up`)
+  console.log(`${event.timeRemaining}s remaining`)
+}, { pollMs: 1000 })
+
+// Stop rotation and polling
+stop()
+```
+
+### Supported Coins
+
+| Key | Coin |
+|-----|------|
+| `'btc'` | Bitcoin |
+| `'eth'` | Ethereum |
+| `'sol'` | Solana |
+| `'xrp'` | XRP |
+| `'doge'` | Dogecoin |
+| `'hype'` | Hype |
+| `'bnb'` | BNB |
+
+### Supported Intervals
+
+| Key | Window |
+|-----|--------|
+| `'5m'` | 5 minutes |
+| `'15m'` | 15 minutes |
+| `'1h'` | 1 hour |
+
+### ShortFormMarket
+
+```typescript
+interface ShortFormMarket {
+  coin: ShortFormCoin
+  slug: string
+  title: string
+  conditionId: string
+  windowStart: number     // unix seconds
+  windowEnd: number       // unix seconds
+  outcomes: string[]
+  outcomePrices: number[]
+  clobTokenIds: string[]
+  upOdds: number          // 0-1
+  downOdds: number        // 0-1
+  liquidity: number
+  volume24h: number
+  priceToBeat: number | null
+}
+```
+
+### RotationEvent
+
+```typescript
+interface RotationEvent {
+  interval: ShortFormInterval
+  market: ShortFormMarket
+  windowStart: number      // unix seconds
+  windowEnd: number        // unix seconds
+  timeRemaining: number    // seconds until window closes
+}
+```
+
+### Options
+
+```typescript
+const sf = new ShortFormProvider({
+  apiBaseUrl: 'https://api.polynode.dev',  // default
+  rotationBuffer: 3,  // seconds after window end before re-discovering (default: 3)
+})
+```

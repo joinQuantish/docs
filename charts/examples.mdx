@@ -1,0 +1,205 @@
+---
+title: "Examples"
+description: "Copy-paste examples for common chart setups"
+---
+
+# Examples
+
+## Prediction Market — Yes/No Outcome
+
+```typescript
+import { createChart, PolynodeProvider } from '@polynode/charts'
+
+const provider = new PolynodeProvider({ apiKey: 'pn_...' })
+const chart = createChart('#chart', {
+  rightPriceScale: { mode: 'probability' },
+})
+
+const series = chart.addAreaSeries({
+  color: '#22c55e',
+  topColor: '#22c55e22',
+  bottomColor: '#22c55e00',
+  smooth: true,
+})
+
+const history = await provider.getPriceHistory(tokenId, '1h')
+series.setData(history)
+```
+
+The `probability` price scale mode clamps the Y-axis to 0-100% with appropriate tick marks.
+
+## Multi-Outcome Event (e.g., Election)
+
+```typescript
+import { createChart, PolynodeProvider, OUTCOME_COLORS } from '@polynode/charts'
+
+const provider = new PolynodeProvider({ apiKey: 'pn_...' })
+const event = await provider.getEvent('2024-presidential-election')
+
+const chart = createChart('#chart', {
+  rightPriceScale: { mode: 'probability' },
+})
+
+const seriesMap = new Map()
+
+for (let i = 0; i < event.outcomes.length; i++) {
+  const outcome = event.outcomes[i]
+  const color = outcome.color || OUTCOME_COLORS[i % OUTCOME_COLORS.length]
+
+  const series = chart.addLineSeries({ color, lineWidth: 2, smooth: true })
+  const history = await provider.getPriceHistory(outcome.token_id, '1h')
+  series.setData(history)
+
+  seriesMap.set(outcome.token_id, { series, name: outcome.name })
+}
+```
+
+`OUTCOME_COLORS` provides a 20-color palette optimized for dark backgrounds.
+
+## Candlestick + Volume
+
+```typescript
+import { createChart, PolynodeProvider } from '@polynode/charts'
+
+const provider = new PolynodeProvider({ apiKey: 'pn_...' })
+const chart = createChart('#chart')
+
+const candles = chart.addCandleSeries({
+  upColor: '#22c55e',
+  downColor: '#ef4444',
+})
+
+const volume = chart.addVolumeSeries({
+  upColor: 'rgba(34, 197, 94, 0.3)',
+  downColor: 'rgba(239, 68, 68, 0.3)',
+})
+
+const data = await provider.getCandles(tokenId, '1h')
+candles.setData(data)
+
+// Volume is extracted from OHLC data automatically
+volume.setData(data.map(d => ({
+  time: d.time,
+  value: d.volume || 0,
+  color: d.close >= d.open ? '#22c55e66' : '#ef444466',
+})))
+```
+
+## Live Crypto with Short-Form Overlay
+
+```typescript
+import { createChart, ShortFormProvider } from '@polynode/charts'
+
+const chart = createChart('#chart', {
+  layout: { background: '#0c1220' },
+})
+
+const series = chart.addLineSeries({
+  color: '#f7931a',
+  lineWidth: 2,
+  smooth: true,
+  showDot: true,
+  dotColor: '#f7931a',
+})
+
+series.setLive(true)
+series.setMaxLength(600)
+chart.timeScale().goLive()
+
+// WebSocket price feed
+const ws = new WebSocket('wss://ws.polynode.dev/ws?key=pn_...')
+ws.onopen = () => ws.send(JSON.stringify({ action: 'subscribe', type: 'chainlink' }))
+ws.onmessage = (e) => {
+  const msg = JSON.parse(e.data)
+  if (msg.type === 'price_feed' && msg.feed === 'BTC/USD') {
+    series.update({ time: Date.now(), value: msg.data.price })
+  }
+}
+
+// Short-form price-to-beat overlay
+const sf = new ShortFormProvider()
+let stopRotation = null
+
+function setInterval(interval) {
+  if (stopRotation) stopRotation()
+
+  stopRotation = sf.startRotation('btc', interval, (event) => {
+    const m = event.market
+    if (m.priceToBeat !== null) {
+      series.setPriceLine(m.priceToBeat, {
+        color: '#3b82f6',
+        label: 'PRICE TO BEAT',
+      })
+    }
+
+    updateUI({
+      upPct: (m.upOdds * 100).toFixed(0),
+      downPct: (m.downOdds * 100).toFixed(0),
+      timeRemaining: event.timeRemaining,
+    })
+  }, { pollMs: 1000 })
+}
+
+// Start with 15m interval
+setInterval('15m')
+```
+
+## Interactive Crosshair
+
+```typescript
+const chart = createChart('#chart')
+const series = chart.addCandleSeries()
+series.setData(data)
+
+chart.subscribeCrosshairMove((params) => {
+  if (!params.time) {
+    tooltip.style.display = 'none'
+    return
+  }
+
+  tooltip.style.display = 'block'
+  tooltip.style.left = params.point.x + 'px'
+  tooltip.style.top = params.point.y + 'px'
+  tooltip.textContent = `Time: ${new Date(params.time).toLocaleString()}`
+})
+```
+
+## Orderbook with Depth Chart
+
+```typescript
+import { createOrderbook, PolynodeOBProvider } from '@polynode/charts'
+
+const ob = createOrderbook('#orderbook', {
+  colorBid: '#22c55e',
+  colorAsk: '#ef4444',
+  depthFillOpacity: 0.08,
+  labelCount: 8,
+})
+
+const provider = new PolynodeOBProvider()
+provider.subscribe(tokenId, (book) => {
+  ob.update(book)
+
+  // Calculate spread
+  const bestBid = book.bids[0]?.price || 0
+  const bestAsk = book.asks[0]?.price || 0
+  const spread = bestAsk - bestBid
+  document.getElementById('spread').textContent =
+    `Spread: ${(spread * 100).toFixed(1)}c`
+})
+```
+
+## Responsive Chart
+
+The chart auto-sizes to its container by default. Just give the container a CSS height:
+
+```html
+<div id="chart" style="width: 100%; height: 400px;"></div>
+```
+
+```typescript
+const chart = createChart('#chart')
+// Chart resizes automatically on window/container resize
+```
+
+For mobile, the chart handles touch events natively: single-finger drag to pan, pinch to zoom. No configuration needed.

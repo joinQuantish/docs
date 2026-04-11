@@ -1,0 +1,174 @@
+---
+title: "Live Streaming"
+description: "Real-time crypto price charts with price-to-beat overlays and live odds"
+---
+
+# Live Streaming
+
+This guide covers building a real-time crypto price chart with WebSocket streaming, live mode, and short-form market overlays.
+
+## Basic Live Chart
+
+Connect a WebSocket feed to a line series with live mode enabled:
+
+```typescript
+import { createChart } from '@polynode/charts'
+
+const chart = createChart('#chart', {
+  layout: { background: '#0c1220', textColor: '#556' },
+  grid: {
+    horzLines: { color: 'rgba(100, 120, 150, 0.06)' },
+    vertLines: { visible: false },
+  },
+})
+
+const series = chart.addLineSeries({
+  color: '#f7931a',
+  lineWidth: 2,
+  smooth: true,
+  showDot: true,
+  dotColor: '#f7931a',
+})
+
+// Live mode: smooth phantom point + auto-scroll
+series.setLive(true)
+series.setMaxLength(600)  // ~10 min at 1/sec
+chart.timeScale().goLive()
+
+// Connect to price feed
+const ws = new WebSocket('wss://ws.polynode.dev/ws?key=pn_...')
+ws.onopen = () => {
+  ws.send(JSON.stringify({ action: 'subscribe', type: 'chainlink' }))
+}
+
+ws.onmessage = (e) => {
+  const msg = JSON.parse(e.data)
+  if (msg.type === 'price_feed' && msg.feed === 'BTC/USD') {
+    series.update({ time: Date.now(), value: msg.data.price })
+  }
+}
+```
+
+## How Live Mode Works
+
+When `setLive(true)` is called:
+
+1. **Phantom point** — a virtual leading data point is appended at `Date.now()` that smoothly lerps toward the latest real value. This creates fluid animation even if ticks arrive only once per second.
+
+2. **Pulsing dot** — a glowing dot marks the current price at the phantom point, pulsing with a subtle sine-wave animation.
+
+3. **Auto-scroll** — `goLive()` on the time scale keeps the visible range pinned to the latest data. If the user pans away, the chart returns to live after 4 seconds of inactivity.
+
+4. **Continuous redraw** — the animation frame loop redraws the data layer every frame (for lerp + pulse), but background and overlay layers only redraw when dirty.
+
+## Price-to-Beat Overlay
+
+Overlay a horizontal dashed line showing the opening price for a short-form market window:
+
+```typescript
+import { ShortFormProvider } from '@polynode/charts'
+
+const sf = new ShortFormProvider()
+
+const stop = sf.startRotation('btc', '15m', (event) => {
+  const m = event.market
+
+  // Draw dashed price line
+  if (m.priceToBeat !== null) {
+    series.setPriceLine(m.priceToBeat, {
+      color: '#3b82f6',
+      label: 'PRICE TO BEAT',
+    })
+  }
+
+  // Display odds
+  const upPct = (m.upOdds * 100).toFixed(0)
+  const downPct = (m.downOdds * 100).toFixed(0)
+  document.getElementById('odds').textContent =
+    `${upPct}% up · ${downPct}% down · ${event.timeRemaining}s`
+}, { pollMs: 1000 })
+```
+
+The price line automatically stays visible. The Y-axis expands to include the price-to-beat value even if it's outside the current data range.
+
+### What Happens at Window Boundaries
+
+When a short-form window expires (e.g., the 15-minute window closes):
+
+1. `startRotation` waits a buffer period (default 3 seconds)
+2. Discovers the next window's market via the gamma proxy
+3. Fetches the new price-to-beat from the crypto-price endpoint
+4. Calls your `onRotation` callback with the new market
+5. Resumes polling odds every `pollMs` for the new window
+
+No manual intervention needed. The rotation handles the full lifecycle.
+
+## Multiple Coins
+
+Run independent charts for multiple coins, each with their own series and short-form rotation:
+
+```typescript
+const coins = [
+  { coin: 'btc', feed: 'BTC/USD', color: '#f7931a' },
+  { coin: 'eth', feed: 'ETH/USD', color: '#627eea' },
+  { coin: 'sol', feed: 'SOL/USD', color: '#14f195' },
+]
+
+for (const { coin, feed, color } of coins) {
+  const chart = createChart(`#chart-${coin}`, { /* ... */ })
+  const series = chart.addLineSeries({ color, smooth: true, showDot: true, dotColor: color })
+  series.setLive(true)
+  series.setMaxLength(600)
+  chart.timeScale().goLive()
+
+  // Price updates from WebSocket
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data)
+    if (msg.type === 'price_feed' && msg.feed === feed) {
+      series.update({ time: Date.now(), value: msg.data.price })
+    }
+  }
+
+  // Independent short-form rotation per coin
+  const sf = new ShortFormProvider()
+  sf.startRotation(coin, '15m', (event) => {
+    if (event.market.priceToBeat !== null) {
+      series.setPriceLine(event.market.priceToBeat, {
+        color: '#3b82f6',
+        label: 'PRICE TO BEAT',
+      })
+    }
+  })
+}
+```
+
+## Orderbook + Chart Side-by-Side
+
+Combine a candle chart with a live orderbook:
+
+```typescript
+import { createChart, createOrderbook, PolynodeProvider, PolynodeOBProvider } from '@polynode/charts'
+
+const provider = new PolynodeProvider({ apiKey: 'pn_...' })
+
+// Chart
+const chart = createChart('#chart')
+const series = chart.addCandleSeries()
+const candles = await provider.getCandles(tokenId, '1h')
+series.setData(candles)
+
+// Orderbook
+const ob = createOrderbook('#orderbook', {
+  colorBid: '#22c55e',
+  colorAsk: '#ef4444',
+})
+
+const obProvider = new PolynodeOBProvider()
+obProvider.subscribe(tokenId, (book) => ob.update(book))
+```
+
+## Reconnection
+
+Both the WebSocket feed and the OB provider handle reconnection automatically with exponential backoff (1s up to 30s). No special handling is needed in your code.
+
+For the `ShortFormProvider`, discovery retries 3 times with a 2-second delay between attempts before giving up on a window. The rotation timer then retries at the next buffer interval.

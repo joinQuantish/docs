@@ -298,6 +298,23 @@
         ]
       },
       {
+        "tab": "Charts SDK",
+        "badge": "New",
+        "groups": [
+          {
+            "group": "Charts SDK",
+            "pages": [
+              "charts/overview",
+              "charts/getting-started",
+              "charts/api-reference",
+              "charts/data-providers",
+              "charts/live-streaming",
+              "charts/examples"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Dome Migration",
         "badge": "New",
         "groups": [

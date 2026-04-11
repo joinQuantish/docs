@@ -1,0 +1,310 @@
+---
+title: "API Reference"
+description: "Complete API documentation for Chart, Series, TimeScale, PriceScale, and Orderbook"
+---
+
+# API Reference
+
+## createChart
+
+```typescript
+import { createChart } from '@polynode/charts'
+
+const chart = createChart(container, options?)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `container` | `HTMLElement \| string` | DOM element or CSS selector |
+| `options` | `ChartOptions` | Optional configuration |
+
+### ChartOptions
+
+```typescript
+interface ChartOptions {
+  width?: number            // fixed width (px)
+  height?: number           // fixed height (px)
+  autoSize?: boolean        // auto-resize to container (default: true)
+  layout?: LayoutOptions
+  grid?: GridOptions
+  crosshair?: CrosshairOptions
+  timeScale?: TimeScaleOptions
+  rightPriceScale?: PriceScaleOptions
+}
+```
+
+### LayoutOptions
+
+```typescript
+interface LayoutOptions {
+  background?: string    // default: '#080d16'
+  textColor?: string     // default: '#556'
+  fontFamily?: string    // default: '"SF Mono", "Fira Code", monospace'
+  fontSize?: number      // default: 10
+}
+```
+
+### GridOptions
+
+```typescript
+interface GridOptions {
+  vertLines?: { color?: string; visible?: boolean }
+  horzLines?: { color?: string; visible?: boolean }
+}
+```
+
+### PriceScaleOptions
+
+```typescript
+interface PriceScaleOptions {
+  mode?: 'normal' | 'probability'  // 'probability' clamps axis to 0-100%
+  autoScale?: boolean
+  scaleMargins?: { top?: number; bottom?: number }
+}
+```
+
+---
+
+## Chart
+
+### Series Methods
+
+```typescript
+chart.addCandleSeries(opts?: CandleSeriesOptions): CandleSeries
+chart.addLineSeries(opts?: LineSeriesOptions): LineSeries
+chart.addAreaSeries(opts?: AreaSeriesOptions): AreaSeries
+chart.addVolumeSeries(opts?: VolumeSeriesOptions): VolumeSeries
+chart.removeSeries(series): void
+```
+
+### Scale Access
+
+```typescript
+chart.timeScale(): TimeScale
+```
+
+### Events
+
+```typescript
+// Subscribe to crosshair movement — returns unsubscribe function
+const unsub = chart.subscribeCrosshairMove((params) => {
+  console.log(params.time, params.point)
+})
+unsub()  // stop listening
+
+// Subscribe to chart clicks
+const unsub = chart.subscribeClick((params) => {
+  console.log('Clicked at time:', params.time)
+})
+```
+
+**CrosshairMoveParams:**
+```typescript
+interface CrosshairMoveParams {
+  time: number | null
+  point: { x: number; y: number } | null
+  seriesData: Map<string, OhlcData | LineData>
+}
+```
+
+**ClickParams:**
+```typescript
+interface ClickParams {
+  time: number | null
+  point: { x: number; y: number }
+}
+```
+
+### Lifecycle
+
+```typescript
+chart.resize(width, height): void  // manual resize
+chart.remove(): void               // cleanup everything
+```
+
+---
+
+## Series
+
+All series share these common methods:
+
+```typescript
+series.setData(data[]): void      // replace all data
+series.update(item): void          // append or update last point
+series.setMaxLength(n): void       // cap buffer size (drops oldest)
+```
+
+### CandleSeries
+
+```typescript
+const series = chart.addCandleSeries({
+  upColor: '#22c55e',
+  downColor: '#ef4444',
+  wickUpColor: '#22c55e',    // optional, defaults to upColor
+  wickDownColor: '#ef4444',  // optional, defaults to downColor
+  borderVisible: true,
+})
+```
+
+**Data shape:**
+```typescript
+interface OhlcData {
+  time: number   // epoch milliseconds
+  open: number
+  high: number
+  low: number
+  close: number
+  volume?: number
+}
+```
+
+### LineSeries
+
+```typescript
+const series = chart.addLineSeries({
+  color: '#f7931a',
+  lineWidth: 2,
+  smooth: true,        // bezier curve interpolation
+  showDot: true,       // pulsing dot at last point
+  dotColor: '#f7931a',
+})
+```
+
+**Data shape:**
+```typescript
+interface LineData {
+  time: number   // epoch milliseconds
+  value: number
+}
+```
+
+**Live mode:**
+```typescript
+series.setLive(true)   // phantom point + smooth lerp
+series.isLive()        // check live state
+```
+
+**Price line overlay:**
+```typescript
+series.setPriceLine(72822.50, {
+  color: '#3b82f6',
+  dash: [6, 4],
+  label: 'PRICE TO BEAT',
+  labelColor: '#fff',
+})
+
+series.clearPriceLine()
+series.getPriceLine()  // returns PriceLineConfig | null
+```
+
+The price line renders as a dashed horizontal line across the chart with a label on the left and a price badge on the right axis. The Y-axis auto-expands to keep the price line visible.
+
+### AreaSeries
+
+Extends `LineSeries` with a gradient fill beneath the line.
+
+```typescript
+const series = chart.addAreaSeries({
+  color: '#6ea8fe',          // line color
+  topColor: '#6ea8fe33',     // gradient top
+  bottomColor: '#6ea8fe00',  // gradient bottom (transparent)
+  lineWidth: 2,
+  smooth: true,
+})
+```
+
+Uses the same `LineData` shape as LineSeries.
+
+### VolumeSeries
+
+Automatically creates a separate pane at 22% of chart height.
+
+```typescript
+const series = chart.addVolumeSeries({
+  upColor: 'rgba(34, 197, 94, 0.4)',
+  downColor: 'rgba(239, 68, 68, 0.4)',
+  opacity: 0.4,
+})
+```
+
+**Data shape:**
+```typescript
+interface VolumeData {
+  time: number
+  value: number
+  color?: string  // override per-bar color
+}
+```
+
+---
+
+## TimeScale
+
+```typescript
+const ts = chart.timeScale()
+```
+
+| Method | Description |
+|--------|-------------|
+| `goLive()` | Enable live mode. Auto-scrolls to newest data. Snaps back after 4s idle. |
+| `isLive()` | Returns `true` if in live mode |
+| `setVisibleRange(start, end)` | Set visible time range (epoch ms) |
+| `animateToRange(start, end)` | Animated zoom to range |
+| `zoomAt(factor, mouseXFrac)` | Zoom around a point (scroll wheel) |
+| `getVisibleStart()` | Left edge time (epoch ms) |
+| `getVisibleEnd()` | Right edge time (epoch ms) |
+| `getVisibleWindow()` | Duration of visible range (ms) |
+
+**Live mode behavior:** When live, the chart auto-scrolls to show the latest data. If the user pans or zooms away, the chart remembers and snaps back to live after 4 seconds of idle. This gives users freedom to explore history while keeping the default view current.
+
+---
+
+## Orderbook
+
+```typescript
+import { createOrderbook } from '@polynode/charts'
+
+const ob = createOrderbook('#orderbook', {
+  colorBid: '#22c55e',
+  colorAsk: '#ef4444',
+  depthFillOpacity: 0.08,
+  labelCount: 8,
+})
+
+ob.update({
+  bids: [{ price: 0.54, size: 1200 }, { price: 0.53, size: 800 }],
+  asks: [{ price: 0.55, size: 900 }, { price: 0.56, size: 1500 }],
+})
+```
+
+### OrderbookOptions
+
+```typescript
+interface OrderbookOptions {
+  colorBid?: string          // default: '#22c55e'
+  colorAsk?: string          // default: '#ef4444'
+  depthFillOpacity?: number  // default: 0.08
+  labelCount?: number        // price labels on axis
+  background?: string
+  textColor?: string
+}
+```
+
+### BookData
+
+```typescript
+interface BookData {
+  bids: PriceLevel[]
+  asks: PriceLevel[]
+}
+
+interface PriceLevel {
+  price: number
+  size: number
+}
+```
+
+| Method | Description |
+|--------|-------------|
+| `ob.update(data)` | Replace book data and re-render |
+| `ob.destroy()` | Remove DOM and stop rendering |

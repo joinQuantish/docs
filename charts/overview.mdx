@@ -1,0 +1,81 @@
+---
+title: "Charts SDK"
+description: "High-performance Canvas 2D charting library built for prediction markets and live crypto prices"
+---
+
+# @polynode/charts
+
+A zero-dependency charting library purpose-built for prediction market data and real-time crypto price streams. Renders on Canvas 2D with a 60fps animation loop, triple-layer dirty-flag rendering, and native touch/pinch support.
+
+## Features
+
+- **Candlestick, line, area, and volume** series types
+- **Live streaming mode** with smooth lerp animation between ticks
+- **Orderbook visualization** with depth chart and spread display
+- **Short-form market overlays** with price-to-beat lines and live odds
+- **Multi-outcome support** for prediction markets (up to 20+ outcomes)
+- **Auto-scaling** price axis with probability mode (0-100%)
+- **Interactive** pan, zoom, scroll, pinch-to-zoom on mobile
+- **Crosshair** with snap-to-candle and OHLC tooltip
+
+## Install
+
+```bash
+npm install @polynode/charts
+```
+
+## Quick Start
+
+```typescript
+import { createChart } from '@polynode/charts'
+
+const chart = createChart('#my-chart', {
+  layout: { background: '#0a0e17', textColor: '#556' },
+})
+
+const series = chart.addCandleSeries({
+  upColor: '#22c55e',
+  downColor: '#ef4444',
+})
+
+series.setData([
+  { time: 1710000000000, open: 0.52, high: 0.55, low: 0.50, close: 0.54 },
+  { time: 1710003600000, open: 0.54, high: 0.58, low: 0.53, close: 0.57 },
+  // ...
+])
+```
+
+## Architecture
+
+The chart uses a triple-layer canvas stack per pane:
+
+| Layer | Z-Index | Content |
+|-------|---------|---------|
+| Background | 1 | Grid lines, axis labels |
+| Data | 2 | Series (candles, lines, areas, volumes) |
+| Overlay | 3 | Crosshair, tooltips, interaction capture |
+
+Each layer only redraws when its dirty flag is set, keeping GPU load minimal even at 60fps. The animation loop runs continuously for live mode (smooth phantom points, pulsing dots) but skips unchanged layers.
+
+## Series Types
+
+| Type | Method | Data Shape | Use Case |
+|------|--------|-----------|----------|
+| Candle | `addCandleSeries()` | `OhlcData` | Market price history |
+| Line | `addLineSeries()` | `LineData` | Live crypto prices, single-outcome tracking |
+| Area | `addAreaSeries()` | `LineData` | Probability trends with gradient fill |
+| Volume | `addVolumeSeries()` | `VolumeData` | Trading volume bars (auto-paned at 22%) |
+
+## Data Providers
+
+The SDK includes three built-in data providers for polynode endpoints:
+
+- **PolynodeProvider** — REST + polling for market candles, search, events, multi-outcome charts
+- **PolynodeOBProvider** — WebSocket orderbook streaming with zlib decompression
+- **ShortFormProvider** — Short-form crypto market discovery with live odds rotation
+
+All providers are optional. The chart itself is provider-agnostic and works with any data source.
+
+## Live Demo
+
+See the full interactive demo at [pn-charts.pages.dev](https://pn-charts.pages.dev).
