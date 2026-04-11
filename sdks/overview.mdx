@@ -7,7 +7,7 @@ icon: "code"
 
 PolyNode provides official SDKs for TypeScript, Rust, and Python. All wrap the full REST API and WebSocket streaming interface with typed responses, auto-reconnection, and zlib compression support.
 
-<CardGroup cols={3}>
+<CardGroup cols={2}>
   <Card title="TypeScript / Node.js" icon="js" href="/sdks/typescript">
     `npm install polynode-sdk`
 
@@ -23,7 +23,20 @@ PolyNode provides official SDKs for TypeScript, Rust, and Python. All wrap the f
 
     Sync + async. Pydantic v2 types. Python 3.10+.
   </Card>
+  <Card title="Charts (Browser)" icon="chart-line" href="/charts/overview">
+    `npm install polynode-charts`
+
+    Zero-dependency Canvas 2D charting for prediction markets and live crypto prices. Browser only.
+  </Card>
 </CardGroup>
+
+<Note>
+  **`polynode-sdk`** is the data SDK (REST, WebSocket, trading, cache). It runs in Node.js.
+
+  **`polynode-charts`** is the visualization SDK (candlestick charts, orderbooks, live streaming UI). It runs in the browser.
+
+  Building a frontend? Install both: `npm install polynode-sdk polynode-charts`
+</Note>
 
 ## Features
 

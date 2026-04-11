@@ -12,7 +12,7 @@ This guide covers building a real-time crypto price chart with WebSocket streami
 Connect a WebSocket feed to a line series with live mode enabled:
 
 ```typescript
-import { createChart } from '@polynode/charts'
+import { createChart } from 'polynode-charts'
 
 const chart = createChart('#chart', {
   layout: { background: '#0c1220', textColor: '#556' },
@@ -66,7 +66,7 @@ When `setLive(true)` is called:
 Overlay a horizontal dashed line showing the opening price for a short-form market window:
 
 ```typescript
-import { ShortFormProvider } from '@polynode/charts'
+import { ShortFormProvider } from 'polynode-charts'
 
 const sf = new ShortFormProvider()
 
@@ -147,7 +147,7 @@ for (const { coin, feed, color } of coins) {
 Combine a candle chart with a live orderbook:
 
 ```typescript
-import { createChart, createOrderbook, PolynodeProvider, PolynodeOBProvider } from '@polynode/charts'
+import { createChart, createOrderbook, PolynodeProvider, PolynodeOBProvider } from 'polynode-charts'
 
 const provider = new PolynodeProvider({ apiKey: 'pn_...' })
 

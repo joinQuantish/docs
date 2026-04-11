@@ -1,11 +1,27 @@
 ---
 title: "Charts SDK"
+sidebarTitle: "Overview"
 description: "High-performance Canvas 2D charting library built for prediction markets and live crypto prices"
+icon: "chart-line"
 ---
 
-# @polynode/charts
+# polynode-charts
 
-A zero-dependency charting library purpose-built for prediction market data and real-time crypto price streams. Renders on Canvas 2D with a 60fps animation loop, triple-layer dirty-flag rendering, and native touch/pinch support.
+A zero-dependency **browser** charting library purpose-built for prediction market data and real-time crypto price streams. Renders on Canvas 2D with a 60fps animation loop, triple-layer dirty-flag rendering, and native touch/pinch support.
+
+<Note>
+  This is the **visualization** companion to `polynode-sdk`. The data SDK (`polynode-sdk`) handles REST API calls, WebSocket streaming, trading, and caching in Node.js. This package (`polynode-charts`) renders that data as interactive charts in the browser. They are separate npm packages.
+
+  ```bash
+  # Data layer (Node.js / server)
+  npm install polynode-sdk
+
+  # Visualization layer (browser)
+  npm install polynode-charts
+  ```
+
+  `polynode-charts` also includes its own built-in data providers (REST, WebSocket, short-form discovery) so you can use it standalone without `polynode-sdk` if you only need charts.
+</Note>
 
 ## Features
 
@@ -21,13 +37,13 @@ A zero-dependency charting library purpose-built for prediction market data and 
 ## Install
 
 ```bash
-npm install @polynode/charts
+npm install polynode-charts
 ```
 
 ## Quick Start
 
 ```typescript
-import { createChart } from '@polynode/charts'
+import { createChart } from 'polynode-charts'
 
 const chart = createChart('#my-chart', {
   layout: { background: '#0a0e17', textColor: '#556' },

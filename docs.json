@@ -294,15 +294,9 @@
               "sdks/rust",
               "sdks/python"
             ]
-          }
-        ]
-      },
-      {
-        "tab": "Charts SDK",
-        "badge": "New",
-        "groups": [
+          },
           {
-            "group": "Charts SDK",
+            "group": "Charts (Browser)",
             "pages": [
               "charts/overview",
               "charts/getting-started",

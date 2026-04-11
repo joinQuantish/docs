@@ -8,7 +8,7 @@ description: "Copy-paste examples for common chart setups"
 ## Prediction Market — Yes/No Outcome
 
 ```typescript
-import { createChart, PolynodeProvider } from '@polynode/charts'
+import { createChart, PolynodeProvider } from 'polynode-charts'
 
 const provider = new PolynodeProvider({ apiKey: 'pn_...' })
 const chart = createChart('#chart', {
@@ -31,7 +31,7 @@ The `probability` price scale mode clamps the Y-axis to 0-100% with appropriate 
 ## Multi-Outcome Event (e.g., Election)
 
 ```typescript
-import { createChart, PolynodeProvider, OUTCOME_COLORS } from '@polynode/charts'
+import { createChart, PolynodeProvider, OUTCOME_COLORS } from 'polynode-charts'
 
 const provider = new PolynodeProvider({ apiKey: 'pn_...' })
 const event = await provider.getEvent('2024-presidential-election')
@@ -59,7 +59,7 @@ for (let i = 0; i < event.outcomes.length; i++) {
 ## Candlestick + Volume
 
 ```typescript
-import { createChart, PolynodeProvider } from '@polynode/charts'
+import { createChart, PolynodeProvider } from 'polynode-charts'
 
 const provider = new PolynodeProvider({ apiKey: 'pn_...' })
 const chart = createChart('#chart')
@@ -88,7 +88,7 @@ volume.setData(data.map(d => ({
 ## Live Crypto with Short-Form Overlay
 
 ```typescript
-import { createChart, ShortFormProvider } from '@polynode/charts'
+import { createChart, ShortFormProvider } from 'polynode-charts'
 
 const chart = createChart('#chart', {
   layout: { background: '#0c1220' },
@@ -167,7 +167,7 @@ chart.subscribeCrosshairMove((params) => {
 ## Orderbook with Depth Chart
 
 ```typescript
-import { createOrderbook, PolynodeOBProvider } from '@polynode/charts'
+import { createOrderbook, PolynodeOBProvider } from 'polynode-charts'
 
 const ob = createOrderbook('#orderbook', {
   colorBid: '#22c55e',

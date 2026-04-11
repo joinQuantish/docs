@@ -12,7 +12,7 @@ The Charts SDK includes three data providers that connect to polynode endpoints.
 Full-featured REST provider for market data, candles, search, events, and multi-outcome charts.
 
 ```typescript
-import { PolynodeProvider } from '@polynode/charts'
+import { PolynodeProvider } from 'polynode-charts'
 
 const provider = new PolynodeProvider({
   apiKey: 'pn_live_...',
@@ -92,7 +92,7 @@ for (const outcome of event.outcomes) {
 WebSocket-based orderbook streaming with automatic zlib decompression (uses the native `DecompressionStream` API, no dependencies).
 
 ```typescript
-import { PolynodeOBProvider } from '@polynode/charts'
+import { PolynodeOBProvider } from 'polynode-charts'
 
 const ob = new PolynodeOBProvider({
   wsUrl: 'wss://ob.polynode.dev/ws',  // default
@@ -131,7 +131,7 @@ All are normalized to `BookData` before calling your callback.
 Discovers short-form crypto markets (5-minute, 15-minute, and hourly up/down markets) and provides live odds rotation. HTTP-only, no WebSocket required.
 
 ```typescript
-import { ShortFormProvider } from '@polynode/charts'
+import { ShortFormProvider } from 'polynode-charts'
 
 const sf = new ShortFormProvider()
 ```
