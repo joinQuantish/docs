@@ -23,7 +23,7 @@ Enable features in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-polynode = { version = "0.7.1", features = ["trading", "cache"] }
+polynode = { version = "0.7.3", features = ["trading", "cache"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 ```
 
@@ -628,7 +628,7 @@ let all = Coin::all(); // BTC, ETH, SOL, XRP, DOGE, HYPE, BNB
 
 ## Trading Module
 
-<Note>Requires the `trading` feature flag: `polynode = { version = "0.7.1", features = ["trading"] }`</Note>
+<Note>Requires the `trading` feature flag: `polynode = { version = "0.7.3", features = ["trading"] }`</Note>
 
 Place orders on Polymarket with local credential custody and builder attribution. All signing happens locally. Private keys never leave your machine. Supports both the current exchange and the [Polymarket V2 exchange](/guides/v2-migration). See also: [PolyUSD Guide](/guides/polyusd) for V2 collateral wrapping.
 
@@ -696,6 +696,7 @@ let result = trader.order(OrderParams {
     order_type: OrderType::GTC,
     expiration: None,
     post_only: false,
+    fee_config: None,
 }).await?;
 
 if result.success {
@@ -887,19 +888,21 @@ let mut trader = PolyNodeTrader::new(TraderConfig {
     polynode_key: "pn_live_...".into(),
     fee_config: Some(FeeConfig {
         fee_bps: 50,  // 0.5% fee on every order
-        affiliate: None,
-        affiliate_share_bps: None,
+        affiliate: Some("0xYourWallet...".into()),  // REQUIRED: your wallet receives the fee
+        affiliate_share_bps: None,  // default: you keep 100%
     }),
     ..Default::default()
 })?;
 
-let result = trader.order(&OrderParams {
+let result = trader.order(OrderParams {
     token_id: "...".into(),
     side: OrderSide::Buy,
     price: 0.55,
     size: 100.0,
-    order_type: OrderType::Gtc,
-    ..Default::default()
+    order_type: OrderType::GTC,
+    expiration: None,
+    post_only: false,
+    fee_config: None,  // uses global fee_config from TraderConfig
 }).await?;
 
 println!("Fee TX: {:?}", result.fee_escrow_tx_hash);
@@ -913,7 +916,7 @@ Set `fee_bps: 0` or omit `fee_config` to skip the escrow entirely. Per-order ove
 
 ### Privy Signer
 
-<Note>Requires the `privy` feature flag: `polynode = { version = "0.7.1", features = ["trading", "privy"] }`</Note>
+<Note>Requires the `privy` feature flag: `polynode = { version = "0.7.3", features = ["trading", "privy"] }`</Note>
 
 Sign orders with a Privy server-side wallet. No private key needed on your machine. All signing happens via Privy's HTTP API.
 
@@ -1017,7 +1020,7 @@ async fn main() -> polynode::Result<()> {
 
 ## Local Cache
 
-<Note>Requires the `cache` feature flag: `polynode = { version = "0.7.1", features = ["cache"] }`</Note>
+<Note>Requires the `cache` feature flag: `polynode = { version = "0.7.3", features = ["cache"] }`</Note>
 
 Local SQLite cache that backfills trade history on startup, streams live updates via WebSocket, and serves all queries locally with zero additional API calls after initialization. Driven by a JSON watchlist file that specifies which wallets, markets, and tokens to track.
 
