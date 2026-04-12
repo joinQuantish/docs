@@ -509,10 +509,52 @@ print(f"PolyUSD: {polyusd}, USDC.e: {usdce}")
 
 See the [V2 Migration Guide](/guides/v2-migration) for details on the Polymarket V2 exchange upgrade.
 
+### Fee Escrow
+
+Charge per-order fees with on-chain escrow. Fees are pulled before the order, distributed on fill, and refunded on cancel. See the [Fee Escrow Guide](/guides/fee-escrow) for the full architecture and security model.
+
+```python
+from polynode.trading import PolyNodeTrader, TraderConfig, FeeConfig
+
+trader = PolyNodeTrader(TraderConfig(
+    polynode_key="pn_live_...",
+    fee_config=FeeConfig(fee_bps=50),  # 0.5% fee on every order
+))
+
+result = await trader.order(OrderParams(
+    token_id="...",
+    side="BUY",
+    price=0.55,
+    size=100,
+))
+
+print(f"Fee TX: {result.fee_escrow_tx_hash}")  # on-chain pullFee TX
+print(f"Fee: {result.fee_amount} USDC")        # fee amount charged
+
+# Cancel → fee is automatically refunded
+await trader.cancel_order(result.order_id)
+```
+
+Set `fee_bps=0` or omit `fee_config` to skip the escrow entirely. Per-order overrides:
+
+```python
+result = await trader.order(OrderParams(
+    token_id="...",
+    side="BUY",
+    price=0.55,
+    size=100,
+    fee_config=FeeConfig(
+        fee_bps=100,                             # 1% for this order
+        affiliate="0xPartnerWallet...",           # partner address
+        affiliate_share_bps=5000,                 # 50/50 split
+    ),
+))
+```
+
 ### Configuration
 
 ```python
-from polynode.trading import TraderConfig, SignatureType, ExchangeVersion
+from polynode.trading import TraderConfig, SignatureType, ExchangeVersion, FeeConfig
 
 config = TraderConfig(
     polynode_key="pn_live_...",                          # for builder attribution
@@ -522,6 +564,7 @@ config = TraderConfig(
     default_signature_type=SignatureType.POLY_GNOSIS_SAFE,  # Safe (2), Proxy (1), or EOA (0)
     rpc_url="https://polygon-bor-rpc.publicnode.com",    # for on-chain reads
     exchange_version=ExchangeVersion.V1,                  # default; set to V2 for the Polymarket V2 exchange
+    fee_config=FeeConfig(fee_bps=50),                     # optional: 0.5% fee on every order
 )
 
 trader = PolyNodeTrader(config)
