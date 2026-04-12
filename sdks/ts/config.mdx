@@ -1,0 +1,17 @@
+---
+title: "TypeScript — Configuration"
+sidebarTitle: "Configuration"
+---
+
+## Configuration
+
+
+```typescript
+const pn = new PolyNode({
+  apiKey: 'pn_live_...',                    // required
+  baseUrl: 'https://api.polynode.dev',      // default
+  wsUrl: 'wss://ws.polynode.dev/ws',        // default
+  rpcUrl: 'https://rpc.polynode.dev',       // default
+  timeout: 10000,                            // ms, default 10s
+});
+```

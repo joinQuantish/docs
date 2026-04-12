@@ -1,0 +1,86 @@
+---
+title: "Python — REST API"
+sidebarTitle: "REST API"
+---
+
+## REST Methods
+
+
+Every REST endpoint has a typed method on the `PolyNode` client. All return Pydantic models with full IDE autocomplete.
+
+```python
+# System
+pn.healthz()                           # "ok"
+pn.status()                            # StatusResponse
+pn.create_key("my-bot")               # ApiKeyResponse
+
+# Markets
+pn.markets(count=10)                   # MarketsResponse
+pn.market(token_id)                    # dict
+pn.market_by_slug("bitcoin-100k")     # dict
+pn.market_by_condition(condition_id)   # dict
+pn.markets_list(count=20, sort="volume")  # MarketsListResponse
+pn.search("ethereum", limit=5)        # SearchResponse
+
+# Pricing
+pn.candles(token_id, resolution="1h", limit=100)  # CandlesResponse
+pn.stats(token_id)                     # dict
+
+# Settlements
+pn.recent_settlements(count=20)        # SettlementsResponse
+pn.token_settlements(token_id, count=10)
+pn.wallet_settlements(address, count=10)
+
+# Wallets
+pn.wallet(address)                     # WalletResponse
+pn.wallet_trades(address, limit=50)    # dict
+pn.wallet_positions(address, limit=50) # dict
+pn.wallet_onchain_positions(address)   # dict
+
+# Orderbook (REST)
+pn.orderbook_rest(token_id)           # OrderbookResponse
+pn.midpoint(token_id)                 # MidpointResponse
+pn.spread(token_id)                   # SpreadResponse
+
+# Enriched Data (1 req/sec rate limit)
+pn.leaderboard(period="weekly", sort="profit")  # LeaderboardResponse
+pn.trending()                          # TrendingResponse
+pn.activity()                          # ActivityResponse
+pn.movers()                           # MoversResponse
+pn.trader_profile("0xabc...")         # TraderProfile
+pn.trader_pnl("0xabc...", period="1W")  # TraderPnlResponse
+pn.event("how-many-fed-rate-cuts-2026")  # EventDetailResponse
+pn.search_events("recession", limit=5)  # EventSearchResponse
+pn.markets_by_category("crypto")      # MarketsListResponse
+
+# RPC (rpc.polynode.dev)
+pn.rpc("eth_blockNumber")
+pn.rpc("eth_getBlockByNumber", ["latest", False])
+```
+
+### Example: Market Data
+
+```python
+with PolyNode(api_key="pn_live_...") as pn:
+    # Top 3 markets by volume
+    markets = pn.markets(count=3)
+    for m in markets.markets:
+        print(f"{m.question} — ${m.volume_24h:,.0f} vol")
+
+    # OHLCV candles
+    candles = pn.candles(markets.markets[0].token_id, resolution="1h", limit=3)
+    for c in candles.candles:
+        print(f"  O={c.open} H={c.high} L={c.low} C={c.close} V={c.volume:.0f}")
+```
+
+### Example: Wallet Activity
+
+```python
+with PolyNode(api_key="pn_live_...") as pn:
+    wallet = pn.wallet("0xB27BC932bf8110D8F78e55da7d5f0497A18B5b82")
+    a = wallet.activity
+    print(f"Trades: {a.trade_count}, Volume: ${a.trade_volume_usd:,.0f}")
+
+    profile = pn.trader_profile(wallet.wallet)
+    print(f"{profile.pseudonym}: PnL ${profile.totalPnl:,.0f}")
+```

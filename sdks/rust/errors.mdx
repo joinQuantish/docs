@@ -1,0 +1,50 @@
+---
+title: "Rust — Error Handling"
+sidebarTitle: "Error Handling"
+---
+
+## Error Handling
+
+
+All SDK methods return `polynode::Result<T>`, which wraps `polynode::Error`:
+
+```rust,no_run
+use polynode::{PolyNodeClient, Error};
+
+# async fn example() -> polynode::Result<()> {
+let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+
+match client.market("invalid-token-id").await {
+    Ok(market) => println!("{:?}", market),
+    Err(Error::NotFound(msg)) => println!("not found: {}", msg),
+    Err(Error::Auth(msg)) => println!("auth failed: {}", msg),
+    Err(Error::RateLimited(msg)) => println!("rate limited: {}", msg),
+    Err(Error::Api { status, message }) => println!("API error {}: {}", status, message),
+    Err(Error::Http(e)) => println!("network error: {}", e),
+    Err(Error::Disconnected) => println!("WebSocket disconnected"),
+    Err(e) => println!("other: {}", e),
+}
+# Ok(())
+# }
+```
+
+### Error Variants
+
+| Variant | When it occurs |
+|---------|---------------|
+| `Http` | Network-level request failure |
+| `WebSocket` | WebSocket connection or protocol error |
+| `Json` | Response deserialization failure |
+| `Api { status, message }` | Server returned a non-success status |
+| `Auth` | 401 or 403 from the API |
+| `RateLimited` | 429 from the API |
+| `NotFound` | 404 from the API |
+| `Disconnected` | WebSocket connection lost |
+| `Decompression` | zlib decompression failure |
+| `ConnectionClosed` | Server closed the WebSocket |
+| `Url` | URL parse error |
+| `Trading` | Trading-specific error (feature: `trading`) |
+| `Signing` | EIP-712 signing failure (feature: `trading`) |
+| `Sqlite` | Local database error (feature: `cache` or `trading`) |
+| `Io` | File I/O error (feature: `cache` or `trading`) |
+| `Cache` | Cache-specific error (feature: `cache`) |

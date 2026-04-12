@@ -1,0 +1,28 @@
+---
+title: "Rust — Testing"
+sidebarTitle: "Testing"
+---
+
+## Testing Utilities
+
+
+Helpers for integration tests that need active wallet addresses:
+
+```rust,no_run
+use polynode::testing;
+
+#[tokio::main]
+async fn main() {
+    // Get a single active wallet (from leaderboard or fallback list)
+    let wallet = testing::get_active_test_wallet(true).await;
+    println!("test wallet: {}", wallet);
+
+    // Get multiple
+    let wallets = testing::get_active_test_wallets(3, true).await;
+    for w in &wallets {
+        println!("  {}", w);
+    }
+}
+```
+
+Set `fresh` to `true` to attempt fetching recently active wallets from the Polymarket leaderboard. Falls back to a hardcoded list of known-active addresses.

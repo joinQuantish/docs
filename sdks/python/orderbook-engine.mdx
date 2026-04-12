@@ -1,0 +1,57 @@
+---
+title: "Python — Orderbook Engine"
+sidebarTitle: "Orderbook Engine"
+---
+
+## OrderbookEngine
+
+
+Higher-level wrapper that manages one connection, maintains local state, and routes updates to filtered views.
+
+### Create and Subscribe
+
+```python
+from polynode import OrderbookEngine
+
+engine = OrderbookEngine(api_key="pn_live_...")
+await engine.subscribe([token_a, token_b, token_c])
+
+engine.on("ready", lambda: print(f"{engine.size} books loaded"))
+```
+
+### Query State
+
+```python
+engine.midpoint(token_id)    # float | None
+engine.spread(token_id)      # float | None
+engine.best_bid(token_id)    # OrderbookLevel | None
+engine.best_ask(token_id)    # OrderbookLevel | None
+engine.book(token_id)        # (bids, asks) | None
+```
+
+### Filtered Views
+
+Create lightweight views that only receive updates for specific tokens:
+
+```python
+trade_view = engine.view([token_a, token_b])
+portfolio_view = engine.view(my_position_tokens)
+
+trade_view.on("update", lambda u: print(f"{u.asset_id} changed"))
+trade_view.on("price", lambda c: print(f"price: {c.assets}"))
+
+trade_view.midpoint(token_a)
+trade_view.spread(token_a)
+
+# Swap to different tokens
+trade_view.set_tokens([new_token_x, new_token_y])
+
+# Or destroy entirely
+trade_view.destroy()
+```
+
+### Cleanup
+
+```python
+engine.close()  # disconnects WS, destroys all views, clears state
+```

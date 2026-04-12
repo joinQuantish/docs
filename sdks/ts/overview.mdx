@@ -1,0 +1,32 @@
+---
+title: "TypeScript — Overview"
+sidebarTitle: "Overview"
+---
+
+## Install
+
+
+```bash
+npm install polynode-sdk ws
+```
+
+Requires Node.js 18+. The `ws` package provides WebSocket support for Node.js.
+
+
+
+## Quick Start
+
+
+```typescript
+import { PolyNode } from 'polynode-sdk';
+
+const pn = new PolyNode({ apiKey: 'pn_live_...' });
+
+// Fetch top markets
+const markets = await pn.markets({ count: 10 });
+console.log(`${markets.count} markets, ${markets.total} total`);
+
+// Search
+const results = await pn.search('bitcoin');
+console.log(results.results[0].question);
+```

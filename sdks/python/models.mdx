@@ -1,0 +1,55 @@
+---
+title: "Python — Models"
+sidebarTitle: "Models"
+---
+
+## Pydantic Models
+
+
+All event types are Pydantic v2 models with full IDE support:
+
+```python
+from polynode.types.events import (
+    SettlementEvent,
+    TradeEvent,
+    StatusUpdateEvent,
+    BlockEvent,
+    PositionChangeEvent,
+    DepositEvent,
+    PositionSplitEvent,
+    PositionMergeEvent,
+    OracleEvent,
+    PriceFeedEvent,
+    PolyNodeEvent,          # discriminated union of all events
+)
+
+from polynode.types.orderbook import (
+    OrderbookLevel,
+    BookSnapshot,
+    BookUpdate,
+    PriceChange,
+)
+
+from polynode.types.rest import (
+    StatusResponse,
+    MarketsResponse,
+    MarketSummary,
+    CandlesResponse,
+    SettlementsResponse,
+    WalletResponse,
+    OrderbookResponse,
+    LeaderboardResponse,
+    TrendingResponse,
+    TraderProfile,
+)
+```
+
+The `PolyNodeEvent` union uses Pydantic's discriminated union on `event_type`:
+
+```python
+from pydantic import TypeAdapter
+
+adapter = TypeAdapter(PolyNodeEvent)
+event = adapter.validate_python({"event_type": "settlement", ...})
+# Returns a SettlementEvent instance
+```

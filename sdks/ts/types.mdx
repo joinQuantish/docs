@@ -1,0 +1,47 @@
+---
+title: "TypeScript — Types"
+sidebarTitle: "Types"
+---
+
+## TypeScript Types
+
+
+All event types are exported and fully typed:
+
+```typescript
+import type {
+  SettlementEvent,
+  TradeEvent,
+  StatusUpdateEvent,
+  BlockEvent,
+  PositionChangeEvent,
+  DepositEvent,
+  OracleEvent,
+  PriceFeedEvent,
+  PolyNodeEvent,     // union of all events
+
+  // Orderbook types
+  OrderbookLevel,
+  BookSnapshot,
+  BookUpdate,
+  PriceChange,
+  OrderbookUpdate,   // union of snapshot | update | price_change
+  OrderbookOptions,
+
+  // Enriched data types
+  LeaderboardResponse,
+  LeaderboardTrader,
+  TrendingResponse,
+  ActivityResponse,
+  ActivityTrade,
+  MoversResponse,
+  MoverMarket,
+  TraderProfile,
+  TraderPnlResponse,
+  EventDetailResponse,
+  EventSearchResponse,
+  EventSearchResult,
+  EventSearchMarket,
+  MarketsByCategoryResponse,
+} from 'polynode-sdk';
+```

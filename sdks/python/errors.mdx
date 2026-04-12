@@ -1,0 +1,19 @@
+---
+title: "Python — Error Handling"
+sidebarTitle: "Error Handling"
+---
+
+## Error Handling
+
+
+```python
+from polynode import PolyNode, ApiError, WsError, PolyNodeError
+
+try:
+    pn.market("invalid-id")
+except ApiError as e:
+    print(e.status)   # 404
+    print(e.message)  # "Market not found"
+except PolyNodeError as e:
+    print(e.message)  # base error class
+```

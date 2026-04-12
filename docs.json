@@ -289,11 +289,49 @@
             ]
           },
           {
-            "group": "Language Reference",
+            "group": "TypeScript",
             "pages": [
-              "sdks/typescript",
-              "sdks/rust",
-              "sdks/python"
+              "sdks/ts/overview",
+              "sdks/ts/rest-api",
+              "sdks/ts/websocket",
+              "sdks/ts/orderbook",
+              "sdks/ts/orderbook-engine",
+              "sdks/ts/trading",
+              "sdks/ts/config",
+              "sdks/ts/errors",
+              "sdks/ts/types",
+              "sdks/ts/source"
+            ]
+          },
+          {
+            "group": "Rust",
+            "pages": [
+              "sdks/rust/overview",
+              "sdks/rust/rest-api",
+              "sdks/rust/websocket",
+              "sdks/rust/orderbook",
+              "sdks/rust/short-form",
+              "sdks/rust/trading",
+              "sdks/rust/redemption",
+              "sdks/rust/cache",
+              "sdks/rust/testing",
+              "sdks/rust/errors",
+              "sdks/rust/source"
+            ]
+          },
+          {
+            "group": "Python",
+            "pages": [
+              "sdks/python/overview",
+              "sdks/python/rest-api",
+              "sdks/python/websocket",
+              "sdks/python/orderbook",
+              "sdks/python/orderbook-engine",
+              "sdks/python/trading",
+              "sdks/python/config",
+              "sdks/python/errors",
+              "sdks/python/models",
+              "sdks/python/source"
             ]
           },
           {

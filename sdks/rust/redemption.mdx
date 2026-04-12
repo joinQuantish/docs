@@ -1,0 +1,49 @@
+---
+title: "Rust — Redemption Watcher"
+sidebarTitle: "Redemption Watcher"
+---
+
+## Redemption Watcher
+
+
+Monitor wallets for redeemable positions after oracle resolution. The watcher fetches current positions via REST, then listens for real-time oracle events on the WebSocket and emits alerts when a watched wallet holds a position in a resolved market.
+
+```rust,no_run
+use polynode::{PolyNodeClient, RedemptionWatcher, RedemptionWatcherConfig};
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let client = Arc::new(PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?);
+
+    let mut watcher = RedemptionWatcher::new(client, RedemptionWatcherConfig {
+        track_position_changes: true,
+        refresh_interval_secs: 300,
+        compress: true,
+    });
+
+    // Start watching specific wallets
+    watcher.start(&[
+        "0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6",
+        "0xBB39C16C3fc54d3C9B1f9f9E8dF4a09Ee25AB7df",
+    ]).await?;
+
+    println!("tracking {} positions", watcher.size());
+
+    // Add more wallets at runtime
+    watcher.add_wallets(&["0x7a25dA10f8cA3b67D5fF55e87E2B0C076D3Dd0bD"]).await?;
+
+    // Listen for alerts
+    while let Some(alert) = watcher.next_alert().await {
+        if alert.is_winner {
+            println!("REDEEMABLE: {} holds {} on '{}' — payout: ${:.2}",
+                alert.wallet, alert.outcome, alert.market_title, alert.estimated_payout_usd);
+        } else {
+            println!("RESOLVED (loss): {} on '{}'", alert.wallet, alert.market_title);
+        }
+    }
+
+    watcher.close();
+    Ok(())
+}
+```

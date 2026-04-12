@@ -1,0 +1,20 @@
+---
+title: "TypeScript — Error Handling"
+sidebarTitle: "Error Handling"
+---
+
+## Error Handling
+
+
+```typescript
+import { PolyNode, ApiError, WsError } from 'polynode-sdk';
+
+try {
+  await pn.market('invalid-id');
+} catch (err) {
+  if (err instanceof ApiError) {
+    console.log(err.status);  // 404
+    console.log(err.message); // "Market not found"
+  }
+}
+```

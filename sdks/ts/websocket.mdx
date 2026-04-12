@@ -1,0 +1,128 @@
+---
+title: "TypeScript — WebSocket"
+sidebarTitle: "WebSocket"
+---
+
+## WebSocket Streaming
+
+
+Subscribe to real-time events with a builder pattern:
+
+```typescript
+const sub = await pn.ws.subscribe('settlements')
+  .minSize(100)
+  .status('pending')
+  .snapshotCount(20)
+  .send();
+```
+
+### Event Callbacks
+
+```typescript
+sub.on('settlement', (event) => {
+  console.log(`${event.taker_side} $${event.taker_size} on ${event.market_title}`);
+});
+
+sub.on('status_update', (event) => {
+  console.log(`Confirmed in ${event.latency_ms}ms`);
+});
+
+// Catch-all
+sub.on('*', (event) => {
+  console.log(event.event_type, event);
+});
+```
+
+### Async Iterator
+
+```typescript
+for await (const event of sub) {
+  if (event.event_type === 'settlement') {
+    console.log(event.taker_wallet, event.taker_size);
+  }
+}
+```
+
+### Subscription Filters
+
+All filters from the [Subscriptions & Filters](/websocket/subscribing) page are supported:
+
+```typescript
+pn.ws.subscribe('settlements')
+  .wallets(['0xabc...'])          // by wallet
+  .tokens(['21742633...'])        // by token ID
+  .slugs(['bitcoin-100k'])        // by market slug
+  .conditionIds(['0xabc...'])     // by condition ID
+  .side('BUY')                    // BUY or SELL
+  .status('pending')              // pending, confirmed, or all
+  .minSize(100)                   // min USD size
+  .maxSize(10000)                 // max USD size
+  .eventTypes(['settlement'])     // override event types
+  .snapshotCount(50)              // initial snapshot (max 200)
+  .feeds(['BTC/USD'])             // chainlink feeds
+  .send();
+```
+
+### Subscription Types
+
+```typescript
+pn.ws.subscribe('settlements')   // pending + confirmed settlements
+pn.ws.subscribe('trades')        // all trade activity
+pn.ws.subscribe('prices')        // price-moving events
+pn.ws.subscribe('blocks')        // new Polygon blocks
+pn.ws.subscribe('wallets')       // all wallet activity
+pn.ws.subscribe('markets')       // all market activity
+pn.ws.subscribe('large_trades')  // $1K+ trades
+pn.ws.subscribe('oracle')        // UMA resolution events
+pn.ws.subscribe('chainlink')     // real-time price feeds
+```
+
+### Multiple Subscriptions
+
+Subscriptions stack on the same connection:
+
+```typescript
+const whales = await pn.ws.subscribe('large_trades')
+  .minSize(5000).send();
+
+const myWallet = await pn.ws.subscribe('wallets')
+  .wallets(['0xabc...']).send();
+
+// Both active simultaneously, events deduplicated
+```
+
+### Compression
+
+Zlib compression is enabled by default for all WebSocket connections (~50% bandwidth savings). No configuration needed.
+
+To disable compression (not recommended):
+
+```typescript
+const ws = pn.configureWs({ compress: false });
+```
+
+### Auto-Reconnect
+
+Enabled by default. The SDK reconnects with exponential backoff and replays all active subscriptions:
+
+```typescript
+const ws = pn.configureWs({
+  autoReconnect: true,           // default: true
+  maxReconnectAttempts: Infinity, // default: unlimited
+  reconnectBaseDelay: 1000,      // default: 1s
+  reconnectMaxDelay: 30000,      // default: 30s
+});
+
+ws.onConnect(() => console.log('connected'));
+ws.onDisconnect((reason) => console.log('disconnected:', reason));
+ws.onReconnect((attempt) => console.log('reconnected, attempt', attempt));
+ws.onError((err) => console.error(err));
+```
+
+### Cleanup
+
+```typescript
+sub.unsubscribe();     // remove one subscription
+pn.ws.unsubscribeAll(); // remove all
+pn.ws.disconnect();     // close connection
+```

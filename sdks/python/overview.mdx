@@ -1,0 +1,63 @@
+---
+title: "Python — Overview"
+sidebarTitle: "Overview"
+---
+
+## Install
+
+
+```bash
+pip install polynode
+```
+
+Requires Python 3.10+. For trading support (order placement on Polymarket):
+
+```bash
+pip install polynode[trading]
+```
+
+
+
+## Quick Start
+
+
+```python
+from polynode import PolyNode
+
+pn = PolyNode(api_key="pn_live_...")
+
+# Fetch top markets
+markets = pn.markets(count=10)
+print(f"{markets.count} markets, {markets.total} total")
+
+# Search
+results = pn.search("bitcoin")
+print(results.results[0].question)
+
+pn.close()
+```
+
+### Context Manager
+
+```python
+with PolyNode(api_key="pn_live_...") as pn:
+    status = pn.status()
+    print(f"Tracking {status.state.market_count} markets")
+```
+
+### Async Client
+
+Every method is available in both sync and async variants:
+
+```python
+import asyncio
+from polynode import AsyncPolyNode
+
+async def main():
+    async with AsyncPolyNode(api_key="pn_live_...") as pn:
+        status = await pn.status()
+        markets = await pn.markets(count=3)
+        print(f"{status.state.market_count} markets, {status.ws_subscribers} ws subs")
+
+asyncio.run(main())
+```

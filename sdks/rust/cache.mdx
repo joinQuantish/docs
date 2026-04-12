@@ -1,0 +1,159 @@
+---
+title: "Rust — Local Cache"
+sidebarTitle: "Local Cache"
+---
+
+## Local Cache
+
+
+<Note>Requires the `cache` feature flag: `polynode = { version = "0.7.3", features = ["cache"] }`</Note>
+
+Local SQLite cache that backfills trade history on startup, streams live updates via WebSocket, and serves all queries locally with zero additional API calls after initialization. Driven by a JSON watchlist file that specifies which wallets, markets, and tokens to track.
+
+### Setup
+
+Create a `polynode.watch.json` file:
+
+```json
+{
+  "version": 1,
+  "wallets": [
+    { "address": "0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6", "label": "whale-1", "backfill": true },
+    { "address": "0xBB39C16C3fc54d3C9B1f9f9E8dF4a09Ee25AB7df", "label": "whale-2", "backfill": true }
+  ],
+  "markets": [
+    { "condition_id": "0xabc...", "label": "bitcoin-100k", "backfill": true }
+  ],
+  "tokens": [],
+  "settings": {
+    "ttl_days": 30,
+    "backfill_rate": 2.0,
+    "purge_on_remove": false
+  }
+}
+```
+
+### Start the Cache
+
+```rust,no_run
+use polynode::{PolyNodeClient, cache::PolyNodeCache};
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let client = Arc::new(PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?);
+
+    let mut cache = PolyNodeCache::builder(client)
+        .db_path("./polynode-cache.db")
+        .watchlist_path("./polynode.watch.json")
+        .ttl_seconds(30 * 86400)            // 30 days
+        .backfill_rate(2.0)                  // 2 requests/sec
+        .backfill_pages(3)                   // 3 pages per entity
+        .backfill_page_size(500)             // 500 trades per page
+        .purge_on_remove(false)              // keep data when removing from watchlist
+        .on_backfill_progress(|p| {
+            println!("[{}] {}: {} fetched ({})", p.entity_type, p.label, p.fetched, p.status);
+        })
+        .build()?;
+
+    cache.start().await?;
+
+    // All queries are local, instant, no API calls
+    let positions = cache.wallet_positions("0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6")?;
+    for p in &positions {
+        println!("{}: {} {} @ {:.4} (pnl: {:?})",
+            p.market_title, p.outcome, p.size, p.avg_price, p.cash_pnl);
+    }
+
+    cache.stop().await?;
+    Ok(())
+}
+```
+
+### Query Methods
+
+All queries are synchronous and read from local SQLite:
+
+```rust,no_run
+use polynode::cache::{QueryOptions, OrderBy};
+
+# fn example(cache: &polynode::cache::PolyNodeCache) -> polynode::Result<()> {
+// Wallet positions
+let positions = cache.wallet_positions("0xabc...")?;
+
+// Multi-wallet positions
+let multi = cache.multi_wallet_positions(&[
+    "0xabc...".into(),
+    "0xdef...".into(),
+])?;
+
+// Wallet trades with filters
+let trades = cache.wallet_trades("0xabc...", &QueryOptions {
+    limit: Some(100),
+    offset: None,
+    since: Some(1711843200.0),
+    until: None,
+    side: Some("BUY".into()),
+    order_by: Some(OrderBy::TimestampDesc),
+})?;
+
+// Market trades
+let market_trades = cache.market_trades("condition_id", &QueryOptions::default())?;
+
+// Market positions
+let market_pos = cache.market_positions("condition_id")?;
+
+// Token trades
+let token_trades = cache.token_trades("token_id", &QueryOptions::default())?;
+
+// Settlements
+let settlements = cache.wallet_settlements("0xabc...", &QueryOptions::default())?;
+
+// Lookup by tx hash
+let tx = cache.trade_by_tx_hash("0xdeadbeef...")?;
+
+// Realized P&L (weighted average cost basis)
+let pnl = cache.wallet_realized_pnl("0xabc...")?;
+println!("realized: ${:.2}, unrealized: ${:.2}, confidence: {}",
+    pnl.total_realized_pnl, pnl.total_unrealized_pnl, pnl.confidence);
+
+// Cache stats
+let stats = cache.stats()?;
+println!("{} trades, {} settlements, {:.1}MB",
+    stats.trade_count, stats.settlement_count, stats.db_size_bytes as f64 / 1_048_576.0);
+# Ok(())
+# }
+```
+
+### Runtime Watchlist Management
+
+Add or remove entities without restarting:
+
+```rust,no_run
+use polynode::cache::EntityType;
+
+# fn example(cache: &polynode::cache::PolyNodeCache) -> polynode::Result<()> {
+// Add a wallet at runtime (will backfill automatically)
+cache.add_to_watchlist(&[
+    (EntityType::Wallet, "0xnew...".into(), "new-whale".into(), true),
+])?;
+
+// Remove a wallet
+cache.remove_from_watchlist(&[
+    (EntityType::Wallet, "0xold...".into()),
+])?;
+# Ok(())
+# }
+```
+
+The cache also watches the `polynode.watch.json` file for changes. Edit the file and the cache picks up additions and removals automatically.
+
+### Manual Pruning
+
+```rust,no_run
+# fn example(cache: &polynode::cache::PolyNodeCache) -> polynode::Result<()> {
+let pruned = cache.prune()?;
+println!("pruned {} expired records", pruned);
+# Ok(())
+# }
+```

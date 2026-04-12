@@ -1,0 +1,226 @@
+---
+title: "Rust — REST API"
+sidebarTitle: "REST API"
+---
+
+## REST API
+
+
+Every REST endpoint has a typed async method on `PolyNodeClient`.
+
+### System
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+// Liveness probe (no auth required)
+let health = client.healthz().await?;
+
+// Readiness check (no auth required)
+let ready = client.readyz().await?;
+
+// System status with metrics
+let status = client.status().await?;
+println!("uptime: {}s, ws_subscribers: {}", status.uptime_seconds, status.ws_subscribers);
+
+// Generate a new API key (no auth required)
+let key = client.create_key(Some("my-bot")).await?;
+println!("key: {}", key.api_key);
+# Ok(())
+# }
+```
+
+### Markets
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+use polynode::rest::ListMarketsParams;
+
+// Top markets by 24h volume
+let markets = client.markets(Some(10)).await?;
+println!("{} markets, {} total", markets.count, markets.total);
+
+// Single market by token ID
+let market = client.market("51037625779056581606819614184446816710505006861008496087735536016411882582167").await?;
+
+// Single market by URL slug
+let market = client.market_by_slug("bitcoin-100k").await?;
+
+// Single market by condition ID
+let market = client.market_by_condition("0xabc...").await?;
+
+// Filtered, paginated listing
+let list = client.list_markets(&ListMarketsParams {
+    count: Some(20),
+    sort: Some("volume".into()),
+    category: Some("crypto".into()),
+    min_volume: Some(10000.0),
+    active_only: Some(true),
+    cursor: None,
+}).await?;
+
+// Full-text search
+let results = client.search("ethereum", Some(5), Some(false)).await?;
+
+// Search events
+let events = client.search_events("election", Some(5)).await?;
+
+// Event detail (includes all markets within the event)
+let event = client.event("presidential-election-2028").await?;
+
+// Markets by category
+let crypto = client.markets_by_category("crypto").await?;
+# Ok(())
+# }
+```
+
+<Tip>
+  Token IDs change as markets open and close. Use `client.markets(Some(1)).await?` to get a currently active token ID for testing.
+</Tip>
+
+### Pricing
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+use polynode::common::CandleResolution;
+
+let token_id = "51037625779056581606819614184446816710505006861008496087735536016411882582167";
+
+// OHLCV candles
+let candles = client.candles(token_id, Some(CandleResolution::OneHour), Some(100)).await?;
+for c in &candles.candles {
+    println!("{}: o={} h={} l={} c={} v={}", c.timestamp, c.open, c.high, c.low, c.close, c.volume);
+}
+
+// Market statistics
+let stats = client.stats(token_id).await?;
+# Ok(())
+# }
+```
+
+### Settlements
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+// Most recent settlements across all markets
+let recent = client.recent_settlements(Some(20)).await?;
+for s in &recent.settlements {
+    println!("{}: {} ${} on {}", s.status, s.taker_side, s.taker_size, s.market_title);
+}
+
+// Settlements for a specific token
+let token_settlements = client.token_settlements("21742633...", Some(10)).await?;
+
+// Settlements for a specific wallet
+let wallet_settlements = client.wallet_settlements("0xabc...", Some(10)).await?;
+# Ok(())
+# }
+```
+
+### Wallets
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+let address = "0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6";
+
+// Wallet activity summary
+let wallet = client.wallet(address).await?;
+
+// Wallet positions with P&L
+let positions = client.wallet_positions_data(address, Some(50), None).await?;
+for p in &positions.positions {
+    println!("{:?}", p);
+}
+
+// Onchain positions (all open + closed, accurate realized P&L)
+let onchain = client.wallet_onchain_positions(address).await?;
+
+// Wallet trade history
+let trades = client.wallet_trades(address, Some(100), None).await?;
+
+// Market trade history (by condition ID or slug)
+let market_trades = client.market_trades("0xabc...", Some(50), None, Some("BUY"), None).await?;
+# Ok(())
+# }
+```
+
+### Orderbook (REST)
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+let token_id = "51037625779056581606819614184446816710505006861008496087735536016411882582167";
+
+// Full orderbook snapshot
+let book = client.orderbook_rest(token_id).await?;
+println!("bids: {}, asks: {}", book.bids.len(), book.asks.len());
+
+// Midpoint price
+let mid = client.midpoint(token_id).await?;
+println!("midpoint: {}", mid.mid);
+
+// Bid-ask spread
+let spread = client.spread(token_id).await?;
+println!("spread: {}", spread.spread);
+# Ok(())
+# }
+```
+
+### Enriched Data
+
+```rust,no_run
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+// Top traders leaderboard
+let leaders = client.leaderboard(Some("daily"), Some("profit")).await?;
+
+// Trending markets (carousel, breaking, hot topics, featured, movers)
+let trending = client.trending().await?;
+
+// Recent global activity
+let activity = client.activity().await?;
+
+// Biggest 24h price movers
+let movers = client.movers().await?;
+
+// Trader profile
+let profile = client.trader_profile("0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6").await?;
+println!("trades: {}, pnl: {}", profile.trades, profile.total_pnl);
+
+// Trader P&L time series
+let pnl = client.trader_pnl("0x1a1A27de044faFFCCf68E28F03dCfCf5eB3d3cE6", Some("30d")).await?;
+# Ok(())
+# }
+```
+
+### RPC
+
+Send JSON-RPC requests through `rpc.polynode.dev`. Transaction submission is optimized for speed. Standard read methods are supported for `latest` state.
+
+```rust,no_run
+# use polynode::serde_json;
+# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
+// Get current block number
+let block = client.rpc_call("eth_blockNumber", serde_json::json!([])).await?;
+println!("block: {}", block);
+
+// Get a block
+let block_data = client.rpc_call(
+    "eth_getBlockByNumber",
+    serde_json::json!(["latest", false]),
+).await?;
+
+// Send a raw transaction (optimized delivery)
+let tx_hash = client.rpc_call(
+    "eth_sendRawTransaction",
+    serde_json::json!(["0xf86c..."]),
+).await?;
+
+// Gas price (recommended for fast inclusion)
+let gas = client.rpc_call("eth_gasPrice", serde_json::json!([])).await?;
+
+// Standard reads (latest state only)
+let balance = client.rpc_call(
+    "eth_getBalance",
+    serde_json::json!(["0xabc...", "latest"]),
+).await?;
+# Ok(())
+# }
+```

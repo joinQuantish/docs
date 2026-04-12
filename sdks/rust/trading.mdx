@@ -1,0 +1,353 @@
+---
+title: "Rust — Trading"
+sidebarTitle: "Trading"
+---
+
+## Trading Module
+
+
+<Note>Requires the `trading` feature flag: `polynode = { version = "0.7.3", features = ["trading"] }`</Note>
+
+Place orders on Polymarket with local credential custody and builder attribution. All signing happens locally. Private keys never leave your machine. Supports both the current exchange and the [Polymarket V2 exchange](/guides/v2-migration). See also: [PolyUSD Guide](/guides/polyusd) for V2 collateral wrapping.
+
+### Generate a Wallet
+
+```rust,no_run
+use polynode::trading::PolyNodeTrader;
+
+# fn example() {
+let (private_key, address) = PolyNodeTrader::generate_wallet();
+println!("address: {}", address);
+println!("key: {}", private_key);
+// Fund this address with USDC and POL on Polygon before trading
+# }
+```
+
+### Onboarding
+
+`ensure_ready()` handles the full onboarding flow in one call: derives addresses, checks Safe deployment and approvals, creates or loads CLOB credentials, and stores everything in a local SQLite database.
+
+```rust,no_run
+use polynode::trading::{PolyNodeTrader, TraderConfig, PrivateKeySigner};
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let mut trader = PolyNodeTrader::new(TraderConfig {
+        polynode_key: "pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d".into(),
+        db_path: "./my-trading.db".into(),
+        ..Default::default()
+    })?;
+
+    let signer = PrivateKeySigner::from_hex("0xdeadbeef...")?;
+    let status = trader.ensure_ready(Box::new(signer), None).await?;
+
+    println!("wallet: {}", status.wallet);
+    println!("funder: {}", status.funder_address);
+    println!("safe deployed: {}", status.safe_deployed);
+    println!("approvals set: {}", status.approvals_set);
+    println!("actions taken: {:?}", status.actions);
+
+    trader.close();
+    Ok(())
+}
+```
+
+### Place an Order
+
+```rust,no_run
+use polynode::trading::{PolyNodeTrader, TraderConfig, PrivateKeySigner, OrderParams, OrderSide, OrderType};
+
+# async fn example() -> polynode::Result<()> {
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: "pn_live_...".into(),
+    ..Default::default()
+})?;
+
+let signer = PrivateKeySigner::from_hex("0x...")?;
+trader.ensure_ready(Box::new(signer), None).await?;
+
+let result = trader.order(OrderParams {
+    token_id: "51037625779056581606819614184446816710505006861008496087735536016411882582167".into(),
+    side: OrderSide::Buy,
+    price: 0.55,
+    size: 100.0,
+    order_type: OrderType::GTC,
+    expiration: None,
+    post_only: false,
+    fee_config: None,
+}).await?;
+
+if result.success {
+    println!("order placed: {:?}", result.order_id);
+} else {
+    println!("order failed: {:?}", result.error);
+}
+
+trader.close();
+# Ok(())
+# }
+```
+
+### Order Types
+
+| Type | Behavior |
+|------|----------|
+| `GTC` | Good til canceled (default) |
+| `GTD` | Good til date (set `expiration` to a Unix timestamp) |
+| `FOK` | Fill or kill, entire order fills or nothing |
+| `FAK` | Fill and kill, partial fills allowed, remainder canceled |
+
+### Cancel Orders
+
+```rust,no_run
+# async fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
+// Cancel a specific order
+let result = trader.cancel_order("order_id_here").await?;
+println!("canceled: {:?}", result.canceled);
+
+// Cancel all orders
+let result = trader.cancel_all(None).await?;
+
+// Cancel all orders for a specific market
+let result = trader.cancel_all(Some("condition_id")).await?;
+# Ok(())
+# }
+```
+
+### Query Open Orders
+
+```rust,no_run
+# async fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
+// All open orders
+let orders = trader.get_open_orders(None).await?;
+for o in &orders {
+    println!("{}: {} {} @ {} (matched: {}/{})",
+        o.id, o.side, o.asset_id, o.price, o.size_matched, o.original_size);
+}
+
+// Open orders for a specific market
+let orders = trader.get_open_orders(Some("condition_id")).await?;
+# Ok(())
+# }
+```
+
+### Pre-Trade Checks
+
+```rust,no_run
+# async fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
+// Check token approvals
+let approvals = trader.check_approvals(None).await?;
+println!("all approved: {}", approvals.all_approved);
+
+// Check USDC and POL balances
+let balance = trader.check_balance(None).await?;
+println!("USDC: {}, POL: {}", balance.usdc, balance.matic);
+# Ok(())
+# }
+```
+
+### Local Order History
+
+All orders are logged locally in SQLite:
+
+```rust,no_run
+use polynode::trading::HistoryParams;
+
+# fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
+let history = trader.get_order_history(Some(HistoryParams {
+    limit: Some(50),
+    offset: None,
+    token_id: None,
+    side: None,
+}))?;
+for row in &history {
+    println!("{}: {} {} @ {} — {}", row.token_id, row.side, row.size, row.price, row.status);
+}
+# Ok(())
+# }
+```
+
+### Wallet Export and Import
+
+Back up and restore wallet credentials:
+
+```rust,no_run
+# fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
+// Export
+let exported = trader.export_wallet(None)?;
+if let Some(ref data) = exported {
+    let json = serde_json::to_string_pretty(data).unwrap();
+    std::fs::write("wallet-backup.json", json).unwrap();
+}
+
+// Import
+let json = std::fs::read_to_string("wallet-backup.json").unwrap();
+let data: polynode::trading::WalletExport = serde_json::from_str(&json).unwrap();
+trader.import_wallet(data)?;
+# Ok(())
+# }
+```
+
+### Polymarket V2 Exchange
+
+The SDK supports the Polymarket V2 exchange system. Set `exchange_version` in your config to target V2. Defaults to V1 — no existing code is affected.
+
+```rust,no_run
+use polynode::trading::{PolyNodeTrader, TraderConfig, ExchangeVersion};
+
+# async fn example() -> polynode::Result<()> {
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: "pn_live_...".into(),
+    exchange_version: ExchangeVersion::V2,
+    ..Default::default()
+})?;
+# Ok(())
+# }
+```
+
+V2 uses PolyUSD as collateral instead of USDC.e. The SDK provides helper methods for wrapping and balance checking:
+
+```rust,no_run
+# async fn example(trader: &mut polynode::trading::PolyNodeTrader) -> polynode::Result<()> {
+// Wrap USDC.e → PolyUSD (amount in raw units, 6 decimals)
+let tx_hash = trader.wrap_to_polyusd(1_000_000).await?; // 1 USDC
+
+// Unwrap PolyUSD → USDC.e
+let tx_hash = trader.unwrap_from_polyusd(1_000_000).await?;
+
+// Check balances
+let polyusd = trader.get_polyusd_balance().await?;
+let usdce = trader.get_usdce_balance().await?;
+# Ok(())
+# }
+```
+
+Order placement, cancellation, and all other trading methods work identically on V2. See the [V2 Migration Guide](/guides/v2-migration) and [PolyUSD Guide](/guides/polyusd) for full details.
+
+### Custom Signers
+
+Implement the `TradingSigner` trait for HSM, KMS, or other signing backends:
+
+```rust,no_run
+use polynode::trading::{TradingSigner, Address, async_trait};
+
+struct MyHsmSigner { /* ... */ }
+
+#[async_trait]
+impl TradingSigner for MyHsmSigner {
+    fn address(&self) -> Address {
+        // Return the EOA address
+        todo!()
+    }
+
+    async fn sign_typed_data(
+        &self,
+        payload: &polynode::trading::Eip712Payload,
+    ) -> polynode::Result<Vec<u8>> {
+        // Sign EIP-712 typed data, return 65-byte signature
+        todo!()
+    }
+
+    async fn sign_message(&self, message: &[u8]) -> polynode::Result<Vec<u8>> {
+        // Sign raw message (personal_sign), return 65-byte signature
+        todo!()
+    }
+}
+```
+
+### Fee Escrow
+
+Charge per-order fees with on-chain escrow. Fees are pulled before the order, distributed on fill, and refunded on cancel. See the [Fee Escrow Guide](/guides/fee-escrow) for the full architecture and security model.
+
+```rust
+use polynode::trading::{PolyNodeTrader, TraderConfig, FeeConfig, OrderParams, OrderSide, OrderType};
+
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: "pn_live_...".into(),
+    fee_config: Some(FeeConfig {
+        fee_bps: 50,  // 0.5% fee on every order
+        affiliate: Some("0xYourWallet...".into()),  // REQUIRED: your wallet receives the fee
+        affiliate_share_bps: None,  // default: you keep 100%
+    }),
+    ..Default::default()
+})?;
+
+let result = trader.order(OrderParams {
+    token_id: "...".into(),
+    side: OrderSide::Buy,
+    price: 0.55,
+    size: 100.0,
+    order_type: OrderType::GTC,
+    expiration: None,
+    post_only: false,
+    fee_config: None,  // uses global fee_config from TraderConfig
+}).await?;
+
+println!("Fee TX: {:?}", result.fee_escrow_tx_hash);
+println!("Fee: {:?} USDC", result.fee_amount);
+
+// Cancel → fee is automatically refunded
+trader.cancel_order("order-id").await?;
+```
+
+Set `fee_bps: 0` or omit `fee_config` to skip the escrow entirely. Per-order overrides via `OrderParams.fee_config`.
+
+### Privy Signer
+
+<Note>Requires the `privy` feature flag: `polynode = { version = "0.7.3", features = ["trading", "privy"] }`</Note>
+
+Sign orders with a Privy server-side wallet. No private key needed on your machine. All signing happens via Privy's HTTP API.
+
+```rust,no_run
+use polynode::trading::{PolyNodeTrader, TraderConfig};
+use polynode::trading::privy::{PrivyConfig, PrivySigner};
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let config = PrivyConfig {
+        app_id: "your-privy-app-id".into(),
+        app_secret: "your-privy-app-secret".into(),
+        authorization_key: "wallet-auth:your-authorization-key".into(),
+    };
+
+    // Or load from PRIVY_APP_ID, PRIVY_APP_SECRET, PRIVY_AUTHORIZATION_KEY env vars:
+    // let config = PrivyConfig::from_env()?;
+
+    let signer = PrivySigner::new(
+        config,
+        "privy-wallet-id".into(),
+        "0xYourWalletAddress".parse().unwrap(),
+    );
+
+    let mut trader = PolyNodeTrader::new(TraderConfig {
+        polynode_key: "pn_live_...".into(),
+        ..Default::default()
+    })?;
+
+    let status = trader.ensure_ready(Box::new(signer), None).await?;
+    println!("ready: {}", status.credentials_stored);
+
+    trader.close();
+    Ok(())
+}
+```
+
+The `PrivySigner` implements `TradingSigner`, so it works with `ensure_ready()`, `order()`, and all other trading methods. Get your Privy credentials from the [Privy Dashboard](https://dashboard.privy.io).
+
+### TraderConfig
+
+```rust,no_run
+use polynode::trading::{TraderConfig, SignatureType, ExchangeVersion};
+
+# fn example() {
+let config = TraderConfig {
+    polynode_key: "pn_live_...".into(),
+    db_path: "./my-trading.db".into(),          // local SQLite for credentials + history
+    cosigner_url: "https://trade.polynode.dev".into(), // default
+    fallback_direct: true,                       // submit directly if cosigner is down
+    default_signature_type: SignatureType::PolyGnosisSafe, // default
+    rpc_url: "https://polygon-bor-rpc.publicnode.com".into(),  // default; for on-chain reads
+    exchange_version: ExchangeVersion::V1,       // default; set to V2 for the Polymarket V2 exchange
+};
+# }
+```

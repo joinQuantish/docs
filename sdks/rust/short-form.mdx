@@ -1,0 +1,62 @@
+---
+title: "Rust — Short-Form"
+sidebarTitle: "Short-Form"
+---
+
+## Short-Form Markets
+
+
+Auto-rotating streams for Polymarket's short-form crypto markets (5m, 15m, 1h windows). The SDK discovers the current market window, subscribes to live events, and automatically rotates to the next window at expiry.
+
+```rust,no_run
+use polynode::{PolyNodeClient, ShortFormInterval, Coin, ShortFormMessage};
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+
+    let mut stream = client
+        .short_form(ShortFormInterval::FifteenMin)
+        .coins(&[Coin::Btc, Coin::Eth, Coin::Sol])
+        .rotation_buffer(3)
+        .start()
+        .await?;
+
+    while let Some(msg) = stream.next().await {
+        match msg {
+            ShortFormMessage::Event(event) => {
+                println!("event: {:?}", event);
+            }
+            ShortFormMessage::Rotation(info) => {
+                println!("--- window rotated ({}) ---", info.interval);
+                for m in &info.markets {
+                    println!("  {}: beat ${:?} | {:.0}% up | {}s left",
+                        m.coin.id(), m.price_to_beat,
+                        m.up_odds * 100.0, info.time_remaining);
+                }
+            }
+            ShortFormMessage::Error(e) => {
+                eprintln!("non-fatal: {}", e);
+            }
+        }
+    }
+
+    Ok(())
+}
+```
+
+### Intervals and Coins
+
+```rust,no_run
+use polynode::{ShortFormInterval, Coin};
+
+# fn example() {
+// Intervals
+let _ = ShortFormInterval::FiveMin;     // 5-minute windows
+let _ = ShortFormInterval::FifteenMin;  // 15-minute windows
+let _ = ShortFormInterval::Hourly;      // 1-hour windows
+
+// Supported coins
+let all = Coin::all(); // BTC, ETH, SOL, XRP, DOGE, HYPE, BNB
+# }
+```

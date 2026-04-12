@@ -1,0 +1,53 @@
+---
+title: "Python — Orderbook"
+sidebarTitle: "Orderbook"
+---
+
+## Orderbook Streaming
+
+
+The SDK includes a dedicated orderbook client for real-time book data from `ob.polynode.dev`. This is a separate WebSocket connection from the event stream.
+
+### Subscribe
+
+```python
+# Lazy-initialized, connects on first subscribe
+await pn.orderbook.subscribe(["token_id_1", "token_id_2"])
+```
+
+### Event Handlers
+
+```python
+pn.orderbook.on("snapshot", lambda snap: print(f"{snap.asset_id}: {len(snap.bids)} bids"))
+pn.orderbook.on("update", lambda delta: print(f"{delta.asset_id} updated"))
+pn.orderbook.on("price", lambda c: print(f"price: {c.assets[0].price}"))
+pn.orderbook.on("snapshots_done", lambda msg: print(f"All {msg.total} snapshots received"))
+pn.orderbook.on("*", lambda u: print(u.type))  # catch-all
+```
+
+### LocalOrderbook
+
+Maintain a sorted local copy of the book:
+
+```python
+from polynode import LocalOrderbook
+
+book = LocalOrderbook()
+
+# Wire to orderbook WS events
+pn.orderbook.on("snapshot", lambda snap: book.apply_snapshot(snap))
+pn.orderbook.on("update", lambda delta: book.apply_update(delta))
+
+# Query state
+full_book = book.get_book(token_id)    # (bids, asks) or None
+best_bid = book.get_best_bid(token_id)  # OrderbookLevel or None
+best_ask = book.get_best_ask(token_id)  # OrderbookLevel or None
+spread = book.get_spread(token_id)      # float or None
+```
+
+### Cleanup
+
+```python
+pn.orderbook.unsubscribe()    # unsubscribe from all markets
+pn.orderbook.disconnect()     # close connection
+```

@@ -1,0 +1,51 @@
+---
+title: "TypeScript — REST API"
+sidebarTitle: "REST API"
+---
+
+## REST Methods
+
+
+Every REST endpoint has a typed method on the `PolyNode` client:
+
+```typescript
+// System
+await pn.healthz();
+await pn.status();
+await pn.createKey('my-bot');
+
+// Markets
+await pn.markets({ count: 10 });
+await pn.market(tokenId);
+await pn.marketBySlug('bitcoin-100k');
+await pn.marketByCondition(conditionId);
+await pn.marketsList({ count: 20, sort: 'volume' });
+await pn.search('ethereum', { limit: 5 });
+
+// Pricing
+await pn.candles(tokenId, { resolution: '1h', limit: 100 });
+await pn.stats(tokenId);
+
+// Settlements
+await pn.recentSettlements({ count: 20 });
+await pn.tokenSettlements(tokenId, { count: 10 });
+await pn.walletSettlements(address, { count: 10 });
+
+// Wallets
+await pn.wallet(address);
+
+// Enriched Data (1 req/sec rate limit)
+await pn.leaderboard({ period: 'monthly', sort: 'profit' });
+await pn.trending();
+await pn.activity();
+await pn.movers();
+await pn.traderProfile('0xc2e7...');
+await pn.traderPnl('0xc2e7...', { period: '1W' });
+await pn.event('how-many-fed-rate-cuts-in-2026');
+await pn.searchEvents('recession', { limit: 5 });
+await pn.marketsByCategory('crypto');
+
+// RPC (rpc.polynode.dev)
+await pn.rpc('eth_blockNumber');
+await pn.rpc('eth_getBlockByNumber', ['latest', false]);
+```

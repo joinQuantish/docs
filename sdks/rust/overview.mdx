@@ -1,0 +1,78 @@
+---
+title: "Rust — Overview"
+sidebarTitle: "Overview"
+---
+
+## Install
+
+
+```bash
+cargo add polynode
+```
+
+The core crate has zero required feature flags. Optional features unlock additional capabilities:
+
+| Feature | What it adds |
+|---------|-------------|
+| `cache` | Local SQLite cache with watchlist, backfill, and P&L computation |
+| `trading` | Order placement, wallet management, credential custody |
+| `privy` | Privy-based signer (requires `trading`) |
+
+Enable features in your `Cargo.toml`:
+
+```toml
+[dependencies]
+polynode = { version = "0.7.3", features = ["trading", "cache"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+```
+
+
+
+## Quick Start
+
+
+```rust,no_run
+use polynode::PolyNodeClient;
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+
+    // Fetch top 5 markets by volume
+    let markets = client.markets(Some(5)).await?;
+    println!("{} markets returned", markets.count);
+
+    // Search for a market
+    let results = client.search("bitcoin", Some(3), None).await?;
+    for r in &results.results {
+        println!("{}", r.question.as_deref().unwrap_or("untitled"));
+    }
+
+    Ok(())
+}
+```
+
+
+
+## Client Configuration
+
+
+Use the builder for full control over endpoints and timeouts:
+
+```rust,no_run
+use polynode::PolyNodeClient;
+use std::time::Duration;
+
+# fn example() -> polynode::Result<()> {
+let client = PolyNodeClient::builder("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")
+    .base_url("https://api.polynode.dev")
+    .ws_url("wss://ws.polynode.dev/ws")
+    .ob_url("wss://ob.polynode.dev/ws")
+    .rpc_url("https://rpc.polynode.dev")
+    .timeout(Duration::from_secs(15))
+    .build()?;
+# Ok(())
+# }
+```
+
+All URLs default to the production endpoints shown above.
