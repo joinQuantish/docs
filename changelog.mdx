@@ -7,11 +7,15 @@ icon: "clock-rotate-left"
 
 ---
 
-## 2026-04-12 — Fee Escrow SDK Integration
+## 2026-04-12 — SDK v0.7.0: Fee Escrow + Order History
 
 ### New: Per-Order Fee Collection
 
 The trading SDK now supports optional per-order fee collection with on-chain escrow. Platforms can charge fees on trades with a single config option.
+
+```bash
+npm install polynode-sdk@0.7.0
+```
 
 ```typescript
 const trader = new PolyNodeTrader({
@@ -36,6 +40,16 @@ console.log(result.feeAmount);       // "0.0275" USDC
 - **72-hour safety net** -- if the operator doesn't settle, users can self-refund on-chain
 - **Zero overhead when disabled** -- `feeBps: 0` (default) skips the escrow entirely with no behavior change
 - **7th approval** -- added to `ensureReady()` batch, gasless for Safe wallets
+
+### Improved: Order History
+
+Local order history now persists fee escrow data (`feeAmountRaw`, `escrowOrderId`, `feeEscrowTxHash`). Existing databases auto-migrate on first open. No action required.
+
+### SDK Releases
+
+- **TypeScript** `polynode-sdk@0.7.0` on [npm](https://www.npmjs.com/package/polynode-sdk)
+- **Rust** `polynode@0.7.0` on [crates.io](https://crates.io/crates/polynode)
+- **Python** `polynode@0.7.0` on [PyPI](https://pypi.org/project/polynode/)
 
 See the [Fee Escrow Guide](/guides/fee-escrow) for the full architecture, security model, and code examples.
 
