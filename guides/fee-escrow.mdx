@@ -153,7 +153,7 @@ pullFee({
 
 | Split | Treasury | Affiliate |
 |-------|----------|-----------|
-| `affShareBps: 0` (default 30%) | $0.07 | $0.03 |
+| `affShareBps: 0` (default — all to treasury) | $0.10 | $0.00 |
 | `affShareBps: 5000` (50/50) | $0.05 | $0.05 |
 | `affShareBps: 9000` (partner 90%) | $0.01 | $0.09 |
 | `affShareBps: 10000` (partner 100%) | $0.00 | $0.10 |
@@ -212,7 +212,7 @@ const trader = new PolyNodeTrader({
   polynodeKey: 'pn_live_...',
   feeConfig: {
     feeBps: 50,            // 0.5% fee on every order
-    affiliate: '0xYourPartnerWallet...',  // optional
+    affiliate: '0x0000000000000000000000000000000000000000',  // optional — partner wallet
     affiliateShareBps: 3000,              // 30% to partner, 70% to treasury
   },
 });
@@ -241,6 +241,11 @@ floor(0.55 × 10 × 1e6 × 50 / 10000) = 27500 raw USDC = $0.0275
 ### Placing an Order with Fees
 
 ```typescript
+// Initialize wallet (one-time setup — handles Safe deploy + all 7 approvals including escrow)
+const status = await trader.ensureReady(privateKey);
+console.log('Wallet ready:', status.funderAddress);
+// Send USDC.e to status.funderAddress before placing orders
+
 // Find a market
 const results = await fetch('https://api.polynode.dev/v1/search?q=hungary', {
   headers: { 'x-api-key': 'pn_live_...' },
@@ -274,8 +279,10 @@ The response includes `feeEscrowTxHash` (the on-chain transaction that moved USD
 ### Cancelling (Auto-Refund)
 
 ```typescript
-const cancel = await trader.cancelOrder(result.orderId);
-console.log('Cancelled:', cancel.canceled);
+if (result.orderId) {
+  const cancel = await trader.cancelOrder(result.orderId);
+  console.log('Cancelled:', cancel.canceled);
+}
 // Fee is automatically refunded on-chain — no extra call needed
 ```
 
