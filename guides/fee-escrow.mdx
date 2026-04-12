@@ -1,0 +1,200 @@
+---
+title: "Fee Escrow"
+sidebarTitle: "Fee Escrow"
+description: "Optional per-order fee collection with on-chain escrow, refund on cancel, and affiliate revenue sharing."
+icon: "money-bill-transfer"
+---
+
+## Overview
+
+The Fee Escrow lets platforms charge a fee on trades placed through the polynode SDK. Fees are optional, per-order, and fully on-chain. The system uses an escrow model: fees are pulled before order placement and either distributed on fill or refunded on cancel. Users never lose fees on unfilled orders.
+
+**Key properties:**
+- Fees are opt-in. Set `feeBps: 0` to skip the escrow entirely.
+- Each order gets its own escrow entry with an independent affiliate and split.
+- If the operator doesn't settle within 72 hours, the user can self-refund on-chain.
+- All escrow operations are gasless via Polymarket's relayer.
+
+## How It Works
+
+```
+1. User signs EIP-712 fee authorization (off-chain, free)
+2. Operator calls pullFee → USDC moves from user's Safe to escrow
+3. Order goes to Polymarket CLOB (unchanged, builder creds preserved)
+4. On fill   → operator calls distribute → fee splits to treasury + affiliate
+   On cancel → operator calls refund    → USDC returns to user's Safe
+   On timeout (72h) → user calls claimRefund → USDC returns automatically
+```
+
+The fee escrow is completely independent from the Polymarket order flow. Builder credentials, order signing, and CLOB submission are unchanged. The fee is a separate USDC transfer that happens before the order.
+
+## Contract
+
+| Field | Value |
+|-------|-------|
+| **Address** | `0xa11D28433B79D0A88F3119b16A090075752258EA` |
+| **Chain** | Polygon (137) |
+| **USDC** | `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` (USDC.e) |
+| **Timeout** | 72 hours (user self-refund after this) |
+
+## Setup
+
+Users need one additional USDC approval for the escrow contract. This is added to the existing approval batch during wallet setup (7th approval, gasless, batched with the 6 Polymarket approvals).
+
+```typescript
+// Already handled by ensureReady() — no manual setup needed.
+// The SDK adds the escrow approval to the existing Safe setup batch.
+const status = await trader.ensureReady(privateKey);
+```
+
+## Fee Authorization (EIP-712)
+
+The user signs a typed message authorizing a specific fee amount for a specific order. This prevents anyone from pulling more than the user agreed to.
+
+```typescript
+// EIP-712 domain
+{
+  name: "PolyNodeFeeEscrow",
+  version: "1",
+  chainId: 137,
+  verifyingContract: "0xa11D28433B79D0A88F3119b16A090075752258EA"
+}
+
+// FeeAuth struct
+{
+  orderId: bytes32,   // unique order identifier
+  payer: address,     // user's Safe wallet (where USDC is pulled from)
+  signer: address,    // user's EOA (signs this message)
+  feeAmount: uint256, // fee in USDC (6 decimals)
+  deadline: uint256,  // unix timestamp — authorization expires after this
+  nonce: uint256      // signer's current nonce (prevents replay)
+}
+```
+
+## Order Types
+
+Every order type works with the escrow. The fee is pulled before submission and settled based on the order outcome.
+
+### Limit Buy (GTC, resting)
+
+Order rests on the book. If cancelled before fill, fee is refunded.
+
+```
+pullFee($0.005)  →  order BUY 5 @ $0.20  →  cancel  →  refund($0.005)
+                                                         ↳ user gets fee back
+```
+
+Verified on Polygon — order `0x39cb2d...` placed at 20c, cancelled, fee refunded. Safe net change: $0.00.
+
+### Market Buy (fills immediately)
+
+Order fills instantly. Fee is distributed to treasury.
+
+```
+pullFee($0.005)  →  order BUY 5 @ $0.36  →  fills  →  distribute($0.005)
+                                              ↳ 5 shares for $1.80    ↳ treasury receives fee
+```
+
+Verified on Polygon — matched, making=$1.80 taking=5 shares. Fee distributed to treasury.
+
+### Limit Sell (GTC, resting)
+
+Same flow as limit buy. Rests on book, refunded on cancel.
+
+```
+pullFee($0.005)  →  order SELL 5 @ $0.45  →  cancel  →  refund($0.005)
+```
+
+Verified on Polygon — order `0x71f943...` placed at 45c, cancelled, fee refunded.
+
+### Market Sell (fills immediately)
+
+```
+pullFee($0.005)  →  order SELL 5 @ $0.35  →  fills  →  distribute($0.005)
+```
+
+Verified on Polygon — matched, fee distributed.
+
+### Batch Cancel
+
+Multiple resting orders can be cancelled at once. Each gets its own refund.
+
+```
+pullFee(order_a)  →  place order A
+pullFee(order_b)  →  place order B
+                     cancelAll()
+                     refund(order_a)
+                     refund(order_b)
+```
+
+Verified on Polygon — 2 orders cancelled via `cancelAll()`, both fees refunded.
+
+### No Fee (Opt-Out)
+
+If `feeBps` is 0, the SDK skips the escrow entirely. The order goes straight to the CLOB with no fee interaction. Existing behavior is completely unchanged.
+
+## Affiliate Revenue Sharing
+
+Each order can specify an affiliate address and their share of the fee. The split is set per-order, so different partners can have different rates.
+
+```typescript
+// Example: partner keeps 90% of a $0.10 fee
+pullFee({
+  orderId: "0x...",
+  feeAmount: 100000,    // $0.10
+  affiliate: "0xPartnerWallet...",
+  affShareBps: 9000,    // 90% to partner
+})
+
+// On distribute:
+//   Partner receives: $0.090
+//   Treasury receives: $0.010
+```
+
+| Split | Treasury | Affiliate |
+|-------|----------|-----------|
+| `affShareBps: 0` (default 30%) | $0.07 | $0.03 |
+| `affShareBps: 5000` (50/50) | $0.05 | $0.05 |
+| `affShareBps: 9000` (partner 90%) | $0.01 | $0.09 |
+| `affShareBps: 10000` (partner 100%) | $0.00 | $0.10 |
+
+All splits verified on Polygon mainnet with real USDC transfers.
+
+## Partial Fills
+
+If an order partially fills, the fee is proportionally distributed. The remainder stays in escrow until the order fully fills or is cancelled.
+
+```
+pullFee($0.20)
+  → distribute(30%)  → $0.06 to treasury
+  → distribute(40%)  → $0.08 to treasury
+  → refund(rest)     → $0.06 back to user
+```
+
+Verified on Polygon — partial fills distribute proportionally, refund returns the exact remainder.
+
+## 72-Hour Safety Net
+
+If the operator hasn't settled an order within 72 hours, anyone can call `claimRefund(orderId)` to return the undistributed fee to the user. This is permissionless and requires no API key or operator involvement.
+
+```solidity
+// After 72 hours, anyone can call this
+escrow.claimRefund(orderId);
+// → undistributed USDC returns to the payer's Safe
+```
+
+This protects users if our backend goes down. Funds are never permanently locked.
+
+## Security
+
+The contract has been through three independent security audits:
+
+- **Signature malleability** — rejected (secp256k1 s-value upper bound check)
+- **Replay attacks** — prevented by per-signer sequential nonces
+- **Affiliate share overflow** — capped at 10000 bps (100%)
+- **Self-referential payer** — blocked (payer cannot be the escrow contract)
+- **ecrecover(0)** — rejected explicitly
+- **Operator compromise** — operator can be revoked by Safe owner instantly
+- **Stuck funds** — 72-hour user self-refund + owner emergency withdraw
+
+57 Foundry tests covering unit tests, fuzz tests, and adversarial attack scenarios.

@@ -72,7 +72,8 @@
               "guides/best-practices",
               "guides/position-management",
               "guides/errors",
-              "guides/rate-limits"
+              "guides/rate-limits",
+              "guides/fee-escrow"
             ]
           }
         ]
