@@ -172,6 +172,11 @@ const trader = new PolyNodeTrader({
     secret: process.env.POLY_BUILDER_SECRET!,
     passphrase: process.env.POLY_BUILDER_PASSPHRASE!,
   },
+  feeConfig: {                        // Optional: charge fees on orders
+    feeBps: 50,                       // 0.5% fee (0 = no fee, default)
+    affiliate: '0xPartner...',        // Partner wallet for revenue share
+    affiliateShareBps: 3000,          // 30% to partner, 70% to treasury
+  },
 });
 ```
 
@@ -229,6 +234,32 @@ All other trading methods (`order()`, `cancelOrder()`, `split()`, `merge()`, etc
 See the [V2 Migration Guide](/guides/v2-migration) for full details on the Polymarket V2 exchange upgrade, and the [PolyUSD Guide](/guides/polyusd) for wrapping and unwrapping mechanics.
 </Tip>
 
+## Fee Escrow
+
+Charge per-order fees with on-chain escrow. Fees are pulled before the order, distributed on fill, and refunded on cancel. See the [Fee Escrow Guide](/guides/fee-escrow) for the full architecture and security model.
+
+```typescript
+const trader = new PolyNodeTrader({
+  polynodeKey: 'pn_live_...',
+  feeConfig: { feeBps: 50 },  // 0.5% fee on every order
+});
+
+const result = await trader.order({
+  tokenId: '...',
+  side: 'BUY',
+  price: 0.55,
+  size: 100,
+});
+
+console.log(result.feeEscrowTxHash); // on-chain pullFee TX
+console.log(result.feeAmount);       // "0.0275" USDC
+
+// Cancel → fee is automatically refunded
+await trader.cancelOrder(result.orderId);
+```
+
+Set `feeBps: 0` or omit `feeConfig` to skip the escrow entirely. Zero overhead, zero behavior change.
+
 ## API Reference
 
 ### `PolyNodeTrader.generateWallet()`
@@ -269,6 +300,9 @@ const result = await trader.order({
 
 if (result.success) {
   console.log('Order placed:', result.orderId);
+  // When feeConfig is set:
+  console.log('Fee TX:', result.feeEscrowTxHash);  // on-chain escrow TX
+  console.log('Fee:', result.feeAmount);            // USDC charged
 } else {
   console.log('Failed:', result.error);
 }
@@ -321,7 +355,7 @@ Returns USDC.e and MATIC balance for the funder address.
 
 ### `checkApprovals(wallet?)`
 
-Check if all 6 required token approvals are set on-chain.
+Check if all required token approvals are set on-chain (6 Polymarket approvals + 1 fee escrow approval).
 
 ### `getOpenOrders(params?)`
 

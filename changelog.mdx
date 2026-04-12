@@ -7,6 +7,40 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-12 — Fee Escrow SDK Integration
+
+### New: Per-Order Fee Collection
+
+The trading SDK now supports optional per-order fee collection with on-chain escrow. Platforms can charge fees on trades with a single config option.
+
+```typescript
+const trader = new PolyNodeTrader({
+  polynodeKey: 'pn_live_...',
+  feeConfig: { feeBps: 50 },  // 0.5% fee
+});
+
+const result = await trader.order({
+  tokenId: '...',
+  side: 'BUY',
+  price: 0.55,
+  size: 100,
+});
+
+console.log(result.feeEscrowTxHash); // on-chain TX hash
+console.log(result.feeAmount);       // "0.0275" USDC
+```
+
+- **Automatic fee handling** -- fees are pulled into escrow before the order, distributed on fill, refunded on cancel
+- **Cancel auto-refund** -- cancelling an order automatically returns the fee to the user's wallet, inline in the same request
+- **Affiliate revenue sharing** -- split fees with partners on a per-order basis via `affiliate` and `affiliateShareBps`
+- **72-hour safety net** -- if the operator doesn't settle, users can self-refund on-chain
+- **Zero overhead when disabled** -- `feeBps: 0` (default) skips the escrow entirely with no behavior change
+- **7th approval** -- added to `ensureReady()` batch, gasless for Safe wallets
+
+See the [Fee Escrow Guide](/guides/fee-escrow) for the full architecture, security model, and code examples.
+
+---
+
 ## 2026-04-11 — polynode-charts v0.1.5
 
 ### New: `createShortFormOverlay`

@@ -198,3 +198,145 @@ The contract has been through three independent security audits:
 - **Stuck funds** — 72-hour user self-refund + owner emergency withdraw
 
 57 Foundry tests covering unit tests, fuzz tests, and adversarial attack scenarios.
+
+## SDK Integration
+
+Enable fee collection with a single config option. Everything else is automatic.
+
+### Basic Setup
+
+```typescript
+import { PolyNodeTrader } from 'polynode-sdk';
+
+const trader = new PolyNodeTrader({
+  polynodeKey: 'pn_live_...',
+  feeConfig: {
+    feeBps: 50,            // 0.5% fee on every order
+    affiliate: '0xYourPartnerWallet...',  // optional
+    affiliateShareBps: 3000,              // 30% to partner, 70% to treasury
+  },
+});
+```
+
+When `feeConfig` is set with `feeBps > 0`, every order automatically:
+1. Calculates the fee from the order's price and size
+2. Signs an EIP-712 authorization (free, off-chain)
+3. Pulls the fee into escrow before the order reaches the CLOB
+4. Refunds the fee automatically if the order is cancelled
+
+### Fee Calculation
+
+The fee is calculated as:
+
+```
+feeAmount = floor(price × size × 1e6 × feeBps / 10000)
+```
+
+For example, BUY 10 shares at $0.55 with `feeBps: 50`:
+
+```
+floor(0.55 × 10 × 1e6 × 50 / 10000) = 27500 raw USDC = $0.0275
+```
+
+### Placing an Order with Fees
+
+```typescript
+// Find a market
+const results = await fetch('https://api.polynode.dev/v1/search?q=hungary', {
+  headers: { 'x-api-key': 'pn_live_...' },
+}).then(r => r.json());
+
+const market = results.results[0];
+console.log(market.question, '→ token:', market.token_ids[0]);
+
+// Check the orderbook
+const book = await fetch(`https://api.polynode.dev/v1/orderbook/${market.token_ids[0]}`, {
+  headers: { 'x-api-key': 'pn_live_...' },
+}).then(r => r.json());
+
+console.log('Best bid:', book.bids[0]?.price, 'Best ask:', book.asks[0]?.price);
+
+// Place order — fee escrow happens automatically
+const result = await trader.order({
+  tokenId: market.token_ids[0],
+  side: 'BUY',
+  price: 0.02,    // well below best ask, will rest on book
+  size: 10,
+});
+
+console.log('Order ID:', result.orderId);
+console.log('Fee TX:', result.feeEscrowTxHash);   // on-chain pullFee transaction
+console.log('Fee:', result.feeAmount, 'USDC');     // fee amount charged
+```
+
+The response includes `feeEscrowTxHash` (the on-chain transaction that moved USDC into escrow) and `feeAmount` (how much was charged).
+
+### Cancelling (Auto-Refund)
+
+```typescript
+const cancel = await trader.cancelOrder(result.orderId);
+console.log('Cancelled:', cancel.canceled);
+// Fee is automatically refunded on-chain — no extra call needed
+```
+
+When you cancel an order that had a fee, the refund happens inline during the cancel. The USDC returns to your Safe wallet in the same request. No polling, no background jobs needed.
+
+`cancelAll()` also triggers refunds for every cancelled order that had a fee.
+
+### Per-Order Fee Override
+
+Override the global `feeConfig` on individual orders:
+
+```typescript
+// This order uses a different fee rate and affiliate
+const result = await trader.order({
+  tokenId: '...',
+  side: 'BUY',
+  price: 0.55,
+  size: 100,
+  feeConfig: {
+    feeBps: 100,                           // 1% for this order
+    affiliate: '0xSpecialPartner...',
+    affiliateShareBps: 5000,               // 50/50 split
+  },
+});
+```
+
+### Opting Out
+
+Set `feeBps: 0` or omit `feeConfig` entirely. The SDK skips the escrow and the order goes straight to the CLOB with zero overhead. Existing behavior is completely unchanged.
+
+```typescript
+// No fee — identical to pre-escrow behavior
+const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
+```
+
+### What the SDK Does Under the Hood
+
+When you call `trader.order()` with `feeBps > 0`:
+
+```
+SDK                          Cosigner                     FeeEscrow        CLOB
+ │                              │                            │               │
+ │  1. Calculate fee            │                            │               │
+ │  2. Generate escrowOrderId   │                            │               │
+ │  3. Sign EIP-712 FeeAuth     │                            │               │
+ │                              │                            │               │
+ │── POST /submit (w/ fee) ───>│                            │               │
+ │                              │── pullFee(feeAuth) ──────>│               │
+ │                              │<── tx confirmed ──────────│               │
+ │                              │── forward order ─────────────────────────>│
+ │                              │<── orderId ──────────────────────────────│
+ │<── { orderId, feeTxHash } ──│                            │               │
+ │                              │                            │               │
+ │── DELETE /submit (cancel) ─>│                            │               │
+ │                              │── forward cancel ────────────────────────>│
+ │                              │<── canceled ─────────────────────────────│
+ │                              │── refund() ──────────────>│               │
+ │                              │<── tx confirmed ──────────│               │
+ │<── { canceled } ────────────│                            │               │
+```
+
+### Approvals
+
+The escrow contract requires one USDC approval. This is automatically included in the approval batch during `ensureReady()` — the 7th approval alongside the 6 Polymarket approvals. For Safe wallets, it's batched into the same multicall transaction (no extra gas). For EOA wallets, it's one additional approval TX (~$0.001 MATIC).
