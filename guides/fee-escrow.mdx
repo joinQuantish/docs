@@ -153,10 +153,9 @@ pullFee({
 
 | Split | Treasury | Affiliate |
 |-------|----------|-----------|
-| `affShareBps: 10000` (default — all to builder) | $0.00 | $0.10 |
-| `affShareBps: 5000` (50/50) | $0.05 | $0.05 |
-| `affShareBps: 9000` (partner 90%) | $0.01 | $0.09 |
-| `affShareBps: 10000` (partner 100%) | $0.00 | $0.10 |
+| `affiliateShareBps: 10000` (default — you keep 100%) | $0.00 | $0.10 |
+| `affiliateShareBps: 7000` (share 30% with polynode) | $0.03 | $0.07 |
+| `affiliateShareBps: 5000` (50/50 split) | $0.05 | $0.05 |
 
 All splits verified on Polygon mainnet with real USDC transfers.
 
@@ -211,11 +210,20 @@ import { PolyNodeTrader } from 'polynode-sdk';
 const trader = new PolyNodeTrader({
   polynodeKey: 'pn_live_...',
   feeConfig: {
-    feeBps: 50,            // 0.5% fee on every order
-    affiliate: '0xYourWallet...',           // your wallet — receives 100% of fee by default
-    affiliateShareBps: 7000,              // optional: share 30% with polynode treasury
+    feeBps: 50,                          // 0.5% fee on every order
+    affiliate: '0xYourWallet...',        // REQUIRED: your wallet that receives the fee
   },
 });
+```
+
+The `affiliate` field is **required** when `feeBps > 0`. This is the wallet where your fees are sent. By default, you keep 100% of the fee. If you want to share a portion with the polynode treasury, set `affiliateShareBps` to less than 10000:
+
+```typescript
+feeConfig: {
+  feeBps: 50,
+  affiliate: '0xYourWallet...',
+  affiliateShareBps: 7000,              // optional: keep 70%, share 30% with polynode
+}
 ```
 
 When `feeConfig` is set with `feeBps > 0`, every order automatically:
