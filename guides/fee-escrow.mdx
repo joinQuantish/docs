@@ -153,7 +153,7 @@ pullFee({
 
 | Split | Treasury | Affiliate |
 |-------|----------|-----------|
-| `affShareBps: 0` (default — all to treasury) | $0.10 | $0.00 |
+| `affShareBps: 10000` (default — all to builder) | $0.00 | $0.10 |
 | `affShareBps: 5000` (50/50) | $0.05 | $0.05 |
 | `affShareBps: 9000` (partner 90%) | $0.01 | $0.09 |
 | `affShareBps: 10000` (partner 100%) | $0.00 | $0.10 |
@@ -212,8 +212,8 @@ const trader = new PolyNodeTrader({
   polynodeKey: 'pn_live_...',
   feeConfig: {
     feeBps: 50,            // 0.5% fee on every order
-    affiliate: '0x0000000000000000000000000000000000000000',  // optional — partner wallet
-    affiliateShareBps: 3000,              // 30% to partner, 70% to treasury
+    affiliate: '0xYourWallet...',           // your wallet — receives 100% of fee by default
+    affiliateShareBps: 7000,              // optional: share 30% with polynode treasury
   },
 });
 ```
