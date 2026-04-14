@@ -18,6 +18,15 @@
         "tab": "WebSocket",
         "groups": [
           {
+            "group": "Books (Sportsbook Odds)",
+            "pages": [
+              "websocket/books/overview",
+              "websocket/books/live",
+              "websocket/books/odds",
+              "websocket/books/events"
+            ]
+          },
+          {
             "group": "Real-time Streaming",
             "pages": [
               "websocket/overview",
@@ -40,6 +49,16 @@
               "websocket/events/positions-converted",
               "websocket/events/oracle",
               "websocket/events/redemption"
+            ]
+          },
+          {
+            "group": "Sports Scores",
+            "pages": [
+              "websocket/sports/overview",
+              "websocket/sports/subscribing",
+              "websocket/sports/event-format",
+              "websocket/sports/games-rest",
+              "websocket/sports/examples"
             ]
           },
           {
@@ -90,6 +109,24 @@
               "api-reference/markets/market-by-condition-id",
               "api-reference/markets/filtered-market-listing",
               "api-reference/markets/search-markets"
+            ]
+          },
+          {
+            "group": "Books",
+            "pages": [
+              "api-reference/books/overview",
+              "api-reference/books/sports",
+              "api-reference/books/leagues",
+              "api-reference/books/market-types",
+              "api-reference/books/books",
+              "api-reference/books/search",
+              "api-reference/books/games-live",
+              "api-reference/books/game-detail",
+              "api-reference/books/game-scores",
+              "api-reference/books/game-markets",
+              "api-reference/books/league-games",
+              "api-reference/books/league-scores",
+              "api-reference/books/health"
             ]
           },
           {

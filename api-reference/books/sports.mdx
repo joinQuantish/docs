@@ -1,0 +1,86 @@
+---
+title: "List Sports"
+description: "Every sport category we cover, with live game counts. Start here."
+---
+
+**This is the top of the discovery tree.** If you don't know a specific league code yet, start here — pick a sport, then drill down into its leagues with [List Leagues](/api-reference/books/leagues).
+
+```bash
+curl -s "https://books.polynode.dev/v1/sports?key=pn_live_YOUR_KEY"
+```
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+## Response
+
+```json
+{
+  "count": 12,
+  "sports": [
+    {
+      "sport_category": "baseball",
+      "league_count": 3,
+      "leagues": ["kbo", "mlb", "wbc"],
+      "total_games_cached": 4,
+      "live_games": 2
+    },
+    {
+      "sport_category": "basketball",
+      "league_count": 14,
+      "leagues": [
+        "bkcba", "bkcl", "bkfr1", "bkjpn", "bkkbl",
+        "bkligend", "bknbl", "bkseriea", "cbb", "cwbb",
+        "euroleague", "nba", "ncaab", "wnba"
+      ],
+      "total_games_cached": 17,
+      "live_games": 0
+    },
+    {
+      "sport_category": "cricket",
+      "league_count": 16,
+      "leagues": [
+        "cricbbl", "criccpl", "cricipl", "criclcl", "cricmlc",
+        "cricnt20c", "cricpakt20cup", "cricps", "crict20blast",
+        "crict20lpl", "crict20plw", "crictbcl", "crind", "crwpl20",
+        "ipl", "test"
+      ],
+      "total_games_cached": 4,
+      "live_games": 0
+    }
+  ]
+}
+```
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `count` | integer | Number of sport categories. |
+| `sports[].sport_category` | string | Category key you'll pass as `?sport=...` to other discovery endpoints. |
+| `sports[].league_count` | integer | How many leagues in this category. |
+| `sports[].leagues` | array | League codes belonging to this category (use these with [List League Games](/api-reference/books/league-games)). |
+| `sports[].total_games_cached` | integer | Number of games currently in the state store for this sport (live + upcoming + recently-final). |
+| `sports[].live_games` | integer | Subset of `total_games_cached` that are currently in-play. |
+
+## The 12 sport categories
+
+| Category | What's in it |
+|---|---|
+| `soccer` | All association football: EPL, La Liga, Bundesliga, MLS, South American, Asian, African leagues, UCL, UEL, World Cup |
+| `basketball` | NBA, WNBA, NCAA M/W, EuroLeague, LNB Pro A, Liga Endesa, KBL, Serie A (basketball), etc. |
+| `football` | NFL, NCAA Football (FBS) |
+| `hockey` | NHL, KHL, SHL, AHL, DEL, etc. |
+| `baseball` | MLB, KBO, WBC |
+| `tennis` | ATP, WTA (individual tournaments) |
+| `mma` | UFC, boxing events |
+| `cricket` | IPL, BBL, T20 Blast, The Hundred, international tests |
+| `esports` | League of Legends, CS2, Valorant, Dota 2, Call of Duty, etc. |
+| `rugby` | Rugby Union, Rugby League |
+| `table-tennis` | Professional table tennis circuits |
+| `golf` | Major tournaments (limited coverage) |
+
+## Next step
+
+Pick a `sport_category` value and call [List Leagues](/api-reference/books/leagues) with `?sport=...` to see every league in it with display names and current game counts.

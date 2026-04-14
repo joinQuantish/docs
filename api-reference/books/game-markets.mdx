@@ -1,0 +1,99 @@
+---
+title: "Game Markets"
+description: "Every market snapshot for a single game — odds only, no game envelope repeated."
+---
+
+Returns the complete set of market snapshots we have for one game. Same data as the `markets` array from [Game Detail](/api-reference/books/game-detail), but flattened to just the odds — useful when you already have the game metadata cached client-side.
+
+```bash
+curl -s "https://books.polynode.dev/v1/games/40664-16839-2026-04-14/markets?key=pn_live_YOUR_KEY"
+```
+
+<ParamField path="id" type="string" required>
+  Polynode slug or raw `game_id`.
+</ParamField>
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+## Response
+
+```json
+{
+  "game_id": "40664-16839-2026-04-14",
+  "pn_slug": "lib-gar-est-2026-04-14",
+  "count": 10,
+  "markets": [
+    {
+      "content_hash": "a82285aece07cbd8c37f8faa01a5489d2a0d76a4318147d997e46aff583c11af",
+      "updated_at": 1776208104714,
+      "market": {
+        "game_id": "40664-16839-2026-04-14",
+        "pn_market_type": "moneyline",
+        "outcomes": [
+          {
+            "book": "888sport",
+            "name": "Cusco FC",
+            "price": 6600.0,
+            "points": null,
+            "player_id": null
+          },
+          {
+            "book": "BetRivers",
+            "name": "Cusco FC",
+            "price": 5000.0,
+            "points": null,
+            "player_id": null
+          },
+          {
+            "book": "Betano",
+            "name": "Cusco FC",
+            "price": 5400.0,
+            "points": null,
+            "player_id": null
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+## Top-level shape
+
+| Field | Type | Description |
+|---|---|---|
+| `game_id` | string | Upstream canonical id. |
+| `pn_slug` | string \| null | Polynode slug if resolvable. |
+| `count` | integer | Number of market snapshots returned. |
+| `markets` | array | Market snapshot objects — same shape as in [Game Detail](/api-reference/books/game-detail#market-snapshot-object). |
+
+## Market types present in the live sample
+
+For the live Copa Libertadores game above, the 10 `pn_market_type` values currently being tracked are:
+
+| Market type | Outcomes | Unique books |
+|---|---|---|
+| `moneyline` | 83 | 28 |
+| `spreads` | 42 | 21 |
+| `totals` | 56 | 28 |
+| `total_goals` | 58 | 29 |
+| `total_corners` | 44 | 22 |
+| `correct_score` | 305 | 19 |
+| `double_chance` | 27 | 16 |
+| `both_teams_to_score` | 1 | 1 |
+| `soccer_anytime_goalscorer` | 166 | 12 |
+| `soccer_halftime_result` | 0 | 0 |
+
+The exact set varies by sport and whether the game is pre-match, live, or post-final. NBA games typically carry moneyline, spreads, totals, plus player_points, player_rebounds, player_assists, player_made_threes, player_double_double, and the 1st-half variants. Football carries player yard props and anytime TD. Soccer adds BTS, correct score, corners, anytime goalscorer, and halftime result. Baseball adds nrfi. Tennis uses set handicap and total games. UFC uses method of victory and go the distance.
+
+## Interpreting odds that move with the score
+
+In the example above, Cusco FC moneyline is priced at **+5000 to +6600** across multiple books. That's because they are losing **2-1** in the 50th minute of the Copa Libertadores game shown. Moneyline odds move sharply against the trailing team in live markets — which is exactly the sort of signal this endpoint surfaces in near-real-time.
+
+## Refresh semantics
+
+- Live games are re-polled every ~1 second, so in-play markets reflect upstream within 1-2 seconds.
+- Idle games (unplayed or final) are re-polled every ~10 seconds.
+- `content_hash` changes only when a price, point, or outcome set actually mutates — safe to use for client-side change detection to avoid re-rendering.

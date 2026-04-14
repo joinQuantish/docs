@@ -1,0 +1,31 @@
+---
+title: "Health Check"
+description: "Liveness probe for books.polynode.dev. Public (no auth)."
+---
+
+Simple plaintext health endpoint. Returns `200 OK` with a single line summarizing current load. Safe to use as a load-balancer probe — **this is the only endpoint that does not require an API key**.
+
+```bash
+curl -s https://books.polynode.dev/health
+```
+
+## Response
+
+Plaintext, not JSON.
+
+```
+ok total=0 live=0 odds=0 cap=20000
+```
+
+| Field | Meaning |
+|---|---|
+| `total` | Current total WebSocket subscribers (across both channels) |
+| `live` | Subscribers on `/ws/live` only |
+| `odds` | Subscribers on `/ws/odds` only |
+| `cap` | Hard ceiling on total subscribers before the service returns `503` on new WS upgrades |
+
+## Authentication
+
+None. `/health` is intentionally unauth'd so orchestration tooling can probe liveness without burning an API key.
+
+Every other endpoint under `/v1/*` and `/ws/*` requires a `pn_live_*` key.

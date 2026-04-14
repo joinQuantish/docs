@@ -1,0 +1,140 @@
+---
+title: "Game Detail"
+description: "Full game state plus every market snapshot we currently have for that game."
+---
+
+Returns a single game with its complete set of market snapshots — every market type being tracked, every book quoting each market, every outcome. This is the "everything about one game" endpoint.
+
+```bash
+curl -s "https://books.polynode.dev/v1/games/40664-16839-2026-04-14?key=pn_live_YOUR_KEY"
+```
+
+The path parameter accepts **either** a polynode slug (`lib-gar-est-2026-04-14`) **or** a raw `game_id` (`40664-16839-2026-04-14`). Both resolve to the same record.
+
+<ParamField path="id" type="string" required>
+  Polynode slug (e.g. `nba-mia-cha-2026-04-14`) or raw `game_id` (e.g. `40664-16839-2026-04-14`).
+</ParamField>
+
+<ParamField query="key" type="string" required>
+  Your API key. Accepted via query param or `Authorization: Bearer` header.
+</ParamField>
+
+## Response
+
+```json
+{
+  "game": {
+    "game_id": "40664-16839-2026-04-14",
+    "pn_slug": "lib-gar-est-2026-04-14",
+    "pn_league_code": "lib",
+    "sport_category": "soccer",
+    "start_date": "2026-04-14T22:00:00Z",
+    "status": "live",
+    "venue": "Estadio Jorge Luis Hirschi",
+    "broadcast": null,
+    "home_team": {
+      "name": "Club Estudiantes de La Plata",
+      "abbreviation_pn": "est",
+      "logo": "https://cdn.opticodds.com/team-logos/soccer/2857.png"
+    },
+    "away_team": {
+      "name": "Cusco FC",
+      "abbreviation_pn": "gar",
+      "logo": "https://cdn.opticodds.com/team-logos/soccer/12453.png"
+    },
+    "scores": {
+      "status": "Live",
+      "score_home": 1,
+      "score_away": 1,
+      "period": "2H",
+      "clock": "47",
+      "is_live": true
+    }
+  },
+  "markets": [
+    {
+      "content_hash": "28809c25d066947b50501b3c27f220600f3406b1f3ed024571b3e33a2b49995c",
+      "updated_at": 1776207962882,
+      "game": { "...": "same game object repeated for convenience" },
+      "market": {
+        "game_id": "40664-16839-2026-04-14",
+        "pn_market_type": "total_goals",
+        "outcomes": [
+          {
+            "book": "888sport",
+            "name": "Over 3.5",
+            "price": -133.0,
+            "points": 3.5,
+            "player_id": null
+          },
+          {
+            "book": "BetRivers",
+            "name": "Over 3.5",
+            "price": -132.0,
+            "points": 3.5,
+            "player_id": null
+          },
+          {
+            "book": "Betano",
+            "name": "Over 3.5",
+            "price": -125.0,
+            "points": 3.5,
+            "player_id": null
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+## Top-level shape
+
+| Field | Type | Description |
+|---|---|---|
+| `game` | object | The same Game shape documented in [List Live Games](/api-reference/books/games-live). Always present. |
+| `markets` | array | One entry per `pn_market_type` currently tracked for this game. Empty array if no markets have been ingested yet. |
+
+## Market snapshot object
+
+Each entry in `markets` is a self-contained snapshot:
+
+| Field | Type | Description |
+|---|---|---|
+| `content_hash` | string | SHA256 of the sorted outcomes list. Only changes when a price, point, or book actually moves. Useful for client-side dedup. |
+| `updated_at` | integer | Unix epoch milliseconds of the last update. |
+| `game` | object | Game object at the time of the snapshot (so you can reason about the market in the context of the then-current score/clock). |
+| `market.game_id` | string | Redundant with the outer game id. |
+| `market.pn_market_type` | string | Polynode market type code (see [Market Types](#market-types)). |
+| `market.outcomes` | array | One outcome per `(book, name, points)` tuple. |
+
+## Outcome object
+
+| Field | Type | Description |
+|---|---|---|
+| `book` | string | Sportsbook name exactly as upstream labels it (`"DraftKings"`, `"BetMGM"`, `"Polymarket"`, `"Polymarket (USA)"`, `"bet365"`, etc.). |
+| `name` | string | Outcome label. For moneylines this is a team name; for totals it is `"Over X.X"` / `"Under X.X"`; for player props it is the player name. |
+| `price` | number | American odds. Negative = favorite, positive = underdog. `-133.0` means you risk $133 to win $100. |
+| `points` | number \| null | Spread or total line when applicable (`2.5`, `-6.5`, `217.5`). `null` for moneyline markets. |
+| `player_id` | string \| null | Upstream player id when the outcome is a player prop. |
+
+## Market types seen in the response
+
+Actual market types present for the live Copa Libertadores game shown above:
+
+- `moneyline` — 99 outcomes across 33 books
+- `spreads` — 44 outcomes across 22 books (soccer spreads use Asian handicap under the hood)
+- `totals` — 62 outcomes across 31 books (mapped from polynode `totals`; soccer version hits upstream's `total_goals`)
+- `total_goals` — 62 outcomes across 31 books
+- `total_corners` — 46 outcomes across 23 books
+- `correct_score` — 325 outcomes across 19 books
+- `double_chance` — 52 outcomes across 20 books
+- `both_teams_to_score` — 1 outcome across 1 book (varies by game)
+- `soccer_anytime_goalscorer` — 271 outcomes across 19 books
+- `soccer_halftime_result` — populated only after halftime
+
+For a cleaner market type reference see [Markets by Game](/api-reference/books/game-markets), which returns only the markets array without the repeated game envelope.
+
+## How many books are quoting?
+
+A single moneyline market for a live soccer game above is carried by 33 different books. For NBA games the count typically exceeds 80. Mostly mainstream sportsbooks (DraftKings, FanDuel, BetMGM, Caesars, bet365), prediction market exchanges (Polymarket, Polymarket USA, Sporttrade, Novig, Prophet X), and international/offshore books.

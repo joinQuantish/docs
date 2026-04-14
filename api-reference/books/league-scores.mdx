@@ -1,0 +1,92 @@
+---
+title: "League Live Scores"
+description: "Compact live-scores view for a single polynode league."
+---
+
+Returns a scores-only projection of every in-play game in a league. Unlike [List League Games](/api-reference/books/league-games) with `?live=true`, this endpoint strips away team logos, venue, broadcast, etc. — leaving just the fields a scoreboard UI actually needs.
+
+```bash
+curl -s "https://books.polynode.dev/v1/leagues/lib/scores?key=pn_live_YOUR_KEY"
+```
+
+<ParamField path="code" type="string" required>
+  Polynode league code (`nba`, `nhl`, `epl`, `lib`, etc.).
+</ParamField>
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+## Response
+
+```json
+{
+  "league": "lib",
+  "count": 2,
+  "live": [
+    {
+      "game_id": "40664-16839-2026-04-14",
+      "pn_slug": "lib-gar-est-2026-04-14",
+      "home_team": "Club Estudiantes de La Plata",
+      "away_team": "Cusco FC",
+      "scores": {
+        "status": "Live",
+        "score_home": 2,
+        "score_away": 1,
+        "period": "2H",
+        "clock": "50",
+        "is_live": true,
+        "last_play": null,
+        "current_down_and_distance": null,
+        "weather": null,
+        "weather_temp": null,
+        "weather_temp_high": null,
+        "home_starter": null,
+        "away_starter": null
+      }
+    },
+    {
+      "game_id": "10035-20332-2026-04-14",
+      "pn_slug": null,
+      "home_team": "Club Nacional de Football",
+      "away_team": "Club Deportes Tolima SA",
+      "scores": {
+        "status": "Live",
+        "score_home": 1,
+        "score_away": 0,
+        "period": "2H",
+        "clock": "51",
+        "is_live": true
+      }
+    }
+  ]
+}
+```
+
+## Top-level shape
+
+| Field | Type | Description |
+|---|---|---|
+| `league` | string | Echo of the path parameter. |
+| `count` | integer | Number of live games in the league. |
+| `live` | array | Compact score records — see below. |
+
+## Compact score record
+
+Each entry in `live` is flatter than a full Game object:
+
+| Field | Type | Description |
+|---|---|---|
+| `game_id` | string | Upstream canonical id. |
+| `pn_slug` | string \| null | Polynode slug if resolvable. |
+| `home_team` / `away_team` | string | Flat string team names. |
+| `scores` | object | Full [Scores object](/api-reference/books/games-live#scores-object). |
+
+## When to use this vs other endpoints
+
+| You want | Use |
+|---|---|
+| All live games across every league | [`/v1/games/live`](/api-reference/books/games-live) |
+| Just one league's live scoreboard | **this endpoint** |
+| Full game metadata + all market snapshots | [`/v1/games/{id}`](/api-reference/books/game-detail) |
+| Real-time push instead of polling | [`/ws/live`](/websocket/books/live) |

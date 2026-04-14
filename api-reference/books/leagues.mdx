@@ -1,0 +1,98 @@
+---
+title: "List Leagues"
+description: "Every league we track with display names, live counts, and available market types."
+---
+
+Returns every polynode league we have mapped to upstream, annotated with a human-readable display name, how many games are currently cached for it, how many are live right now, and which market types are polled for that league's sport.
+
+Use this to discover the exact `pn_code` you need when you know the league name but not its code. Optional `?sport=...` filter narrows by sport category (use [List Sports](/api-reference/books/sports) for valid values).
+
+```bash
+# everything
+curl -s "https://books.polynode.dev/v1/leagues?key=pn_live_YOUR_KEY"
+
+# only basketball leagues
+curl -s "https://books.polynode.dev/v1/leagues?sport=basketball&key=pn_live_YOUR_KEY"
+```
+
+<ParamField query="sport" type="string">
+  Filter by `sport_category` from [List Sports](/api-reference/books/sports). Omit to get every mapped league (currently 107).
+</ParamField>
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+## Response
+
+```json
+{
+  "count": 14,
+  "leagues": [
+    {
+      "pn_code": "bkcba",
+      "display_name": "CBA (China)",
+      "sport_category": "basketball",
+      "total_games_cached": 2,
+      "live_games": 0,
+      "market_types": [
+        "assists",
+        "assists_points_rebounds",
+        "double_doubles",
+        "first_half_moneyline",
+        "first_half_spreads",
+        "first_half_totals",
+        "moneyline",
+        "points",
+        "rebounds",
+        "spreads",
+        "threes",
+        "totals"
+      ]
+    },
+    {
+      "pn_code": "nba",
+      "display_name": "NBA",
+      "sport_category": "basketball",
+      "total_games_cached": 8,
+      "live_games": 0,
+      "market_types": ["assists", "double_doubles", "first_half_moneyline", "moneyline", "points", "rebounds", "spreads", "threes", "totals"]
+    }
+  ]
+}
+```
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `count` | integer | Number of leagues returned after any filter. |
+| `leagues[].pn_code` | string | **The code you pass in every other endpoint's `{code}` path param** (e.g. `nba`, `epl`, `lib`). |
+| `leagues[].display_name` | string | Human-readable name (e.g. `"NBA"`, `"CBA (China)"`, `"English Premier League"`). |
+| `leagues[].sport_category` | string | `basketball`, `soccer`, etc. — use for filtering. |
+| `leagues[].total_games_cached` | integer | Games in state now (live + upcoming + recently-final). |
+| `leagues[].live_games` | integer | Currently in-play. |
+| `leagues[].market_types` | array | Every `pn_market_type` we poll for this league's sport category. Pass any of these to [Game Markets](/api-reference/books/game-markets) once you have a game. |
+
+## Full list of league codes currently mapped
+
+There are **107 leagues** in the current map. The top-level set by category:
+
+- **Soccer** — `epl` (English Premier League), `lal` (La Liga), `bun` (Bundesliga), `fl1` (Ligue 1), `mls`, `ere` (Eredivisie), `por` (Primeira Liga), `spl` (Scottish Premiership), `tur` (Süper Lig), `den` (Superliga), `nor` (Eliteserien), `ucl` (Champions League), `uel` (Europa League), `uwcl` (Women's Champions League), `fifwc` (FIFA World Cup), `acn` (Africa Cup of Nations), `lib` (Copa Libertadores), `sud` (Copa Sudamericana), `bra` / `bra2` (Brazilian Serie A/B), `arg` (Argentine Primera), `mex` (Liga MX), `jap` / `ja2` (Japan J1/J2), `kor` (K League), `chi` (China Super League), `ind` (India Super League), `ssc` (Saudi Pro League), `ruprem`, `ukr1`, `cze1`, `egy1`, `col1`, `chi1`, `per1`, `efa` (FA Cup), `efl` (EFL Cup), `elc` (Championship), `bl2` (Bundesliga 2), `fr2` (Ligue 2), `es2` (La Liga 2), `cdr` (Copa del Rey), and more.
+- **Basketball** — `nba`, `ncaab`, `wnba`, `cbb`, `cwbb`, `euroleague`, `bknbl` (Australian NBL), `bkcba` (China), `bkjpn`, `bkkbl` (Korea), `bkligend` (Liga Endesa), `bkseriea` (Italian Serie A), `bkfr1` (France LNB Pro A), `bkcl` (Basketball Champions League).
+- **Football** — `nfl`, `cfb` (NCAA Football FBS).
+- **Hockey** — `nhl`.
+- **Baseball** — `mlb`, `kbo`, `wbc`.
+- **Tennis** — `atp`, `wta`.
+- **MMA** — `ufc`.
+- **Cricket** — `ipl`, `cricipl`, plus 14 other cricket competitions.
+- **Esports** — `lol` (League of Legends), `cs2`, `val` (Valorant), `dota2`, `codmw` (Call of Duty).
+
+Call this endpoint for the live truth — the map is regenerated every 6 hours as new leagues appear upstream.
+
+## Next step
+
+Once you have a `pn_code`, go to one of:
+
+- [List League Games](/api-reference/books/league-games) — every game in the league, optional `?live=true` filter
+- [League Live Scores](/api-reference/books/league-scores) — compact scoreboard view

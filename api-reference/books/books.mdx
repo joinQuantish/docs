@@ -1,0 +1,103 @@
+---
+title: "List Sportsbooks"
+description: "Every sportsbook seen quoting a market in the last 24 hours."
+---
+
+Returns the full set of sportsbook names currently carried in our data. Any `book` value you see in an [Outcome object](/api-reference/books/game-markets) will be one of these — use this endpoint if you want to filter by a specific book client-side or render a book selector UI.
+
+```bash
+curl -s "https://books.polynode.dev/v1/books?key=pn_live_YOUR_KEY"
+```
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+## Response
+
+```json
+{
+  "count": 101,
+  "books": [
+    "4Cx",
+    "888sport",
+    "BET99",
+    "Bally Bet",
+    "Bet Right",
+    "BetDeluxe",
+    "BetMGM",
+    "BetNation",
+    "BetOpenly",
+    "BetRivers",
+    "Betano",
+    "Betfair Exchange (Australia)",
+    "Betr",
+    "Betr Picks",
+    "Betsafe",
+    "Betsson",
+    "Betway",
+    "Boomers",
+    "Borgata",
+    "Bracco",
+    "Caesars",
+    "Casumo",
+    "Coolbet",
+    "Desert Diamond",
+    "DraftKings",
+    "FanDuel",
+    "Fliff",
+    "Hard Rock",
+    "Novig",
+    "Polymarket",
+    "Polymarket (USA)",
+    "Sporttrade",
+    "bet365"
+  ]
+}
+```
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `count` | integer | Number of distinct book names in the last 24 hours. |
+| `books` | array | Sorted alphabetically. Each string is the exact label that will appear in the `book` field of an [Outcome object](/api-reference/books/game-markets#outcome-object). |
+
+## Notable books
+
+**Traditional US sportsbooks:** `DraftKings`, `FanDuel`, `BetMGM`, `Caesars`, `BetRivers`, `bet365`, `Fanatics`, `Borgata`, `Hard Rock`, `Fliff`, `BetMGM`, `PointsBet (Ontario)`.
+
+**Prediction market exchanges (highest sharp signal):**
+- `Polymarket` — the crypto prediction market
+- `Polymarket (USA)` — the US-compliant variant
+- `Sporttrade` — US-regulated sports exchange
+- `Novig` — commission-free peer-to-peer
+- `Prophet X` — peer-to-peer exchange
+- `Kalshi` — CFTC-regulated event contract exchange
+
+**International books:** `888sport`, `bwin`, `Unibet`, `Betway`, `Betano`, `Ladbrokes`, `Betsafe`, `Betsson`, `Coolbet`, `Betfair Exchange (Australia)`.
+
+**Australian/NZ:** `Ladbrokes (Australia)`, `PointsBet (Australia)`, `Sportsbet`, `TAB (New Zealand)`, `TABtouch`, `Neds`, `Picklebet`, `BetDeluxe`, `Boomers`, `Bet Right`, `BetDeluxe`.
+
+**Canada:** `BET99`, `Bet Right`, `NorthStar Bets`, `Proline`, `PlayNow`, `Play Alberta`, `Mise-o-jeu`, `theScore`, `TheScore CA`.
+
+## Why would I use this?
+
+The primary use case is filtering odds responses. If your product only cares about certain books, you can:
+
+1. Call this endpoint to see which books we track right now.
+2. Parse game market responses from [Game Detail](/api-reference/books/game-detail) or [Game Markets](/api-reference/books/game-markets).
+3. Filter the `outcomes[]` array client-side by `book` value.
+
+For instance, a Polymarket trader might only care about:
+- `Polymarket` + `Polymarket (USA)` to see PM's own prices
+- `Sporttrade`, `Novig`, `Prophet X` to compare PM against other exchange venues
+- `DraftKings`, `FanDuel`, `BetMGM`, `Caesars`, `bet365` as the "consensus of mainstream sportsbooks"
+
+A quick spread check: pull one game's `moneyline` market, find the Polymarket price, then compute the median price from the 4 mainstream books. The difference is your edge.
+
+## Notes
+
+- This set is derived from a Redis set that auto-populates whenever the poller sees a new book. The set has a rolling 24h TTL.
+- Book names are exactly as the upstream source labels them, including capitalization, parentheses, and language variants. No normalization — what you see is what's on the wire.
+- New books appear automatically as upstream starts carrying them. No code change required on our end.

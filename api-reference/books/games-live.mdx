@@ -1,0 +1,117 @@
+---
+title: "List Live Games"
+description: "Every currently in-play game across every mapped sport and league."
+---
+
+Returns the snapshot of every game whose `scores.is_live` is currently `true`. Useful as the entry point for "what's happening right now" dashboards — you get the complete live universe in one call.
+
+```bash
+curl -s "https://books.polynode.dev/v1/games/live?key=pn_live_YOUR_KEY"
+```
+
+<ParamField query="key" type="string" required>
+  Your API key. Accepted via query param or `Authorization: Bearer pn_live_YOUR_KEY` header.
+</ParamField>
+
+## Response
+
+```json
+{
+  "count": 8,
+  "games": [
+    {
+      "game_id": "40664-16839-2026-04-14",
+      "pn_slug": "lib-gar-est-2026-04-14",
+      "pn_league_code": "lib",
+      "sport_category": "soccer",
+      "start_date": "2026-04-14T22:00:00Z",
+      "status": "live",
+      "venue": "Estadio Jorge Luis Hirschi",
+      "broadcast": null,
+      "home_team": {
+        "name": "Club Estudiantes de La Plata",
+        "city": null,
+        "mascot": null,
+        "abbreviation_pn": "est",
+        "logo": "https://cdn.opticodds.com/team-logos/soccer/2857.png"
+      },
+      "away_team": {
+        "name": "Cusco FC",
+        "city": null,
+        "mascot": null,
+        "abbreviation_pn": "gar",
+        "logo": "https://cdn.opticodds.com/team-logos/soccer/12453.png"
+      },
+      "scores": {
+        "status": "Live",
+        "score_home": 1,
+        "score_away": 1,
+        "period": "2H",
+        "clock": "47",
+        "is_live": true,
+        "last_play": null,
+        "current_down_and_distance": null,
+        "weather": null,
+        "weather_temp": null,
+        "weather_temp_high": null,
+        "home_starter": null,
+        "away_starter": null
+      }
+    }
+  ]
+}
+```
+
+## Fields
+
+### Top level
+
+| Field | Type | Description |
+|---|---|---|
+| `count` | integer | Number of games currently in-play |
+| `games` | array | Full game objects, one per live game |
+
+### Game object
+
+| Field | Type | Description |
+|---|---|---|
+| `game_id` | string | Upstream canonical game id. Stable across reconnects. Use for `/v1/games/{id}` lookups. |
+| `pn_slug` | string \| null | Polynode canonical slug in the form `{league}-{away}-{home}-{date}`. `null` when the game's teams are not in polynode's team roster (common for non-polynode leagues like niche soccer or esports). |
+| `pn_league_code` | string | Polynode league code (`nba`, `nhl`, `epl`, `lib`, etc.). |
+| `sport_category` | string | Broad category: `soccer`, `basketball`, `hockey`, `baseball`, `football`, `tennis`, `mma`, `esports`, `cricket`, `rugby`, `table-tennis`, `golf`, `lacrosse`. |
+| `start_date` | string | ISO 8601 scheduled start time (UTC). |
+| `status` | string | `unplayed` / `live` / `final` (lowercase). Separate from `scores.status`, which is upstream's raw value. |
+| `venue` | string \| null | Stadium or venue name if available. |
+| `broadcast` | string \| null | Broadcast channel(s) or stream URL(s) when upstream exposes them. |
+| `home_team` / `away_team` | object | See Team object below. |
+| `scores` | object | See Scores object below. Always present; fields null for unplayed games. |
+
+### Team object
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | string | Full team name (`"Miami Heat"`, `"Club Estudiantes de La Plata"`). |
+| `city` | string \| null | City when upstream provides it separately. |
+| `mascot` | string \| null | Mascot when separate from city. |
+| `abbreviation_pn` | string \| null | Polynode canonical abbreviation (`mia`, `est`). `null` when the team is not in polynode's roster. |
+| `logo` | string \| null | Logo URL. |
+
+### Scores object
+
+| Field | Type | Description |
+|---|---|---|
+| `is_live` | boolean | Authoritative "is this game in-play right now" flag. |
+| `status` | string | Upstream status label: typically `"Unplayed"`, `"Live"`, or `"Completed"`. Different from the top-level `status`. |
+| `score_home` / `score_away` | integer | Current score for each side. `0` for unplayed games. |
+| `period` | string \| null | Current period/half/quarter/set/inning, e.g. `"2H"`, `"Q3"`, `"7"`, `"2"`. |
+| `clock` | string \| null | Clock within the current period. Format depends on sport: soccer is minutes (`"47"`), NBA is `"MM:SS"`, NFL similar. |
+| `last_play` | string \| null | Most recent play description. Only populated for sports where upstream ships play-by-play (NBA, NFL sometimes, NHL). |
+| `current_down_and_distance` | string \| null | NFL/CFB only. |
+| `weather`, `weather_temp`, `weather_temp_high` | string \| float \| null | Outdoor sports only. |
+| `home_starter` / `away_starter` | string \| null | MLB starting pitcher, tennis player, UFC fighter, etc. |
+
+## Notes
+
+- Games without a polynode slug still flow through in full (`pn_slug: null`). You get every live game upstream knows about, not just the polynode-mapped subset.
+- `count` reflects only games currently in-play. To see upcoming or past games for a specific league, use [List League Games](/api-reference/books/league-games).
+- Response freshness is bounded by the adaptive poller: live games are re-fetched every ~1 second, so `scores.clock` typically lags real time by at most 1-2 seconds plus upstream delay.

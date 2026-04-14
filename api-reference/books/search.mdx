@@ -1,0 +1,125 @@
+---
+title: "Search Games"
+description: "Find games by team name, polynode slug, league code, or upstream id."
+---
+
+Fuzzy substring search across every game in our state. Matches on:
+
+- Home team name (`"Miami Heat"`)
+- Away team name
+- Polynode slug (`"mia-cha"`, `"nba-mia-cha-2026-04-14"`)
+- Polynode league code (`"nba"`)
+
+Case-insensitive, substring match, capped at 50 results. This is the "I know the team I want to bet on but not its slug" entry point.
+
+```bash
+# search by team name
+curl -s "https://books.polynode.dev/v1/games/search?q=miami+heat&key=pn_live_YOUR_KEY"
+
+# search by slug substring
+curl -s "https://books.polynode.dev/v1/games/search?q=mia-cha&key=pn_live_YOUR_KEY"
+
+# only return currently-live games
+curl -s "https://books.polynode.dev/v1/games/search?q=nba&live=true&key=pn_live_YOUR_KEY"
+```
+
+<ParamField query="q" type="string" required>
+  Search term. Case-insensitive. Matches substrings in home team, away team, `pn_slug`, and `pn_league_code`.
+</ParamField>
+
+<ParamField query="live" type="boolean" default="false">
+  Only return games where `is_live = true`.
+</ParamField>
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+## Response
+
+```json
+{
+  "query": "miami heat",
+  "count": 1,
+  "games": [
+    {
+      "game_id": "35142-19370-2026-04-14",
+      "pn_slug": "nba-mia-cha-2026-04-14",
+      "pn_league_code": "nba",
+      "sport_category": "basketball",
+      "home_team": "Charlotte Hornets",
+      "away_team": "Miami Heat",
+      "start_date": "2026-04-14T23:30:00Z",
+      "status": "unplayed",
+      "is_live": false,
+      "score": "0-0",
+      "period": null,
+      "clock": null
+    }
+  ]
+}
+```
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `query` | string | Echo of your `?q=` input. |
+| `count` | integer | Number of games returned (max 50). |
+| `games[].game_id` | string | Upstream canonical id — pass to `/v1/games/{id}` for the full record. |
+| `games[].pn_slug` | string \| null | Polynode slug — also works in `/v1/games/{id}`. `null` for unmapped-team leagues. |
+| `games[].pn_league_code` | string | League code (pass to `/v1/leagues/{code}/games` for related games). |
+| `games[].sport_category` | string | `basketball` / `soccer` / etc. |
+| `games[].home_team` / `away_team` | string | Team names. |
+| `games[].start_date` | string | ISO 8601 UTC. |
+| `games[].status` | string | `unplayed` / `live` / `final`. |
+| `games[].is_live` | boolean | Currently in-play flag. |
+| `games[].score` | string | `"home-away"` convenience format (e.g. `"3-1"`). |
+| `games[].period` / `clock` | string \| null | Populated for live games. |
+
+## Worked examples
+
+### "I have a Polymarket URL, how do I get our data?"
+
+Polymarket sports URLs look like `polymarket.com/event/nba-mia-cha-2026-04-14`. The path component after `/event/` **is already our polynode slug**. Two options:
+
+1. Go directly to [Game Detail](/api-reference/books/game-detail):
+   ```
+   GET /v1/games/nba-mia-cha-2026-04-14
+   ```
+2. Or search by the slug substring if you're not 100% sure:
+   ```
+   GET /v1/games/search?q=mia-cha
+   ```
+
+Both resolve to the same game.
+
+### "I want every live NBA game"
+
+```
+GET /v1/games/search?q=nba&live=true
+```
+
+Returns every game whose `pn_league_code` is `nba` and `is_live = true`.
+
+### "Find me any live soccer game with 'Madrid' in a team name"
+
+```
+GET /v1/games/search?q=madrid&live=true
+```
+
+Returns Real Madrid, Atlético Madrid, or any other team with "Madrid" in the name, filtered to currently in-play.
+
+### "I have a raw upstream game_id from another feed"
+
+Just pass it to [Game Detail](/api-reference/books/game-detail):
+
+```
+GET /v1/games/35142-19370-2026-04-14
+```
+
+You don't need the search endpoint at all for direct lookups — but if you only have a partial id, search will substring-match on the slug field.
+
+## Performance
+
+Search scans the full in-memory set of games (~1000-2000 entries during active hours) and filters client-side. Sub-10 ms p99 at current scale. The cap of 50 results is to protect against someone querying `q=a` and getting everything.

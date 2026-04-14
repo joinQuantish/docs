@@ -1,0 +1,132 @@
+---
+title: "Books API Overview"
+sidebarTitle: "Overview"
+description: "Real-time sports odds from 100+ sportsbooks, live scores, and Polymarket prices unified under polynode's canonical game identifiers."
+---
+
+The **Books API** gives you live sports data three ways:
+
+- **Live scores, clocks, periods, and play state** for every currently in-play game
+- **Real-time odds from 100+ sportsbooks** — DraftKings, FanDuel, BetMGM, Caesars, bet365, Polymarket, Sporttrade, Novig, and dozens more
+- **Polynode canonical slugs** so the same game is identified the same way here as it is on polynode's sports catalog
+
+```
+https://books.polynode.dev
+wss://books.polynode.dev
+```
+
+## How a typical user lands here
+
+You arrive knowing one of these things. Start with whichever applies:
+
+<CardGroup cols={2}>
+  <Card title="I know a SPORT" icon="basketball" href="/api-reference/books/sports">
+    Start with [List Sports](/api-reference/books/sports), pick a category, drill into leagues.
+  </Card>
+  <Card title="I know a LEAGUE NAME" icon="trophy" href="/api-reference/books/leagues">
+    Use [List Leagues](/api-reference/books/leagues) to find the `pn_code` by display name.
+  </Card>
+  <Card title="I know a TEAM" icon="users" href="/api-reference/books/search">
+    Use [Search Games](/api-reference/books/search) to fuzzy-match on team names.
+  </Card>
+  <Card title="I have a Polymarket URL" icon="link" href="/api-reference/books/game-detail">
+    Extract the slug from the URL, hit [Game Detail](/api-reference/books/game-detail) directly.
+  </Card>
+</CardGroup>
+
+## Authentication
+
+Every endpoint under `/v1/*` and `/ws/*` requires a `pn_live_*` API key — the same key you use for the rest of polynode. Only `/health` is public.
+
+Two ways to pass the key:
+
+```bash
+# 1. Query parameter
+curl "https://books.polynode.dev/v1/games/live?key=pn_live_YOUR_KEY"
+
+# 2. Authorization header (preferred — avoids key in logs)
+curl -H "Authorization: Bearer pn_live_YOUR_KEY" \
+     "https://books.polynode.dev/v1/games/live"
+```
+
+For WebSocket connections, the query parameter is usually easier because browsers and WS libraries handle it uniformly:
+
+```
+wss://books.polynode.dev/ws/live?key=pn_live_YOUR_KEY
+```
+
+A missing or invalid key returns `HTTP 401` before the WebSocket upgrade completes.
+
+## Three key identifiers you'll see
+
+Every game has multiple ways to identify it. Understanding them upfront will make the rest of the docs make sense.
+
+### `game_id`
+Upstream's canonical game id. Looks like `40664-16839-2026-04-14`. **Always present**, stable, unique. Pass this to any `/v1/games/{id}` endpoint when you don't have a polynode slug.
+
+### `pn_slug`
+Polynode's canonical game slug. Looks like `lib-gar-est-2026-04-14` — `{league}-{away}-{home}-{date}`. **Present for games where team resolution succeeded** (~95% of major league games), `null` otherwise. Same slug that polynode's own sports catalog uses. Pass this to any `/v1/games/{id}` endpoint interchangeably with `game_id`.
+
+### `pn_league_code`
+Short league identifier. `nba`, `nhl`, `epl`, `lib` (Copa Libertadores), `ipl` (Indian Premier League), `lol` (League of Legends). Use [List Leagues](/api-reference/books/leagues) to discover the code for any league by its display name.
+
+## The 4 most important endpoints
+
+| Endpoint | Purpose | Payload size |
+|---|---|---|
+| [`GET /v1/games/live`](/api-reference/books/games-live) | Everything currently in-play | ~5-50 KB |
+| [`GET /v1/games/{id}`](/api-reference/books/game-detail) | Full game + all market snapshots | ~50-200 KB |
+| [`GET /v1/games/{id}/scores`](/api-reference/books/game-scores) | Just the scores for one game (cheap) | <1 KB |
+| [`wss://.../ws/live`](/websocket/books/live) | Push live score updates | streaming |
+
+## Discovery endpoints
+
+When you don't know what to query yet:
+
+| Endpoint | Answers |
+|---|---|
+| [`GET /v1/sports`](/api-reference/books/sports) | What sports do you cover? |
+| [`GET /v1/leagues`](/api-reference/books/leagues) | What leagues, and how many live games in each? |
+| [`GET /v1/market-types`](/api-reference/books/market-types) | What betting markets do you track? |
+| [`GET /v1/books`](/api-reference/books/books) | Which sportsbooks do you carry? |
+| [`GET /v1/games/search?q=...`](/api-reference/books/search) | Find a game by team name / slug / league |
+
+## Sample end-to-end flow
+
+Say you want to find real-time NBA player points props for a specific game:
+
+```bash
+# 1. Discover sports (you know "basketball" exists)
+curl "https://books.polynode.dev/v1/sports?key=pn_live_YOUR_KEY"
+
+# 2. Drill into basketball leagues
+curl "https://books.polynode.dev/v1/leagues?sport=basketball&key=pn_live_YOUR_KEY"
+# → finds pn_code: "nba"
+
+# 3. Pull current NBA games
+curl "https://books.polynode.dev/v1/leagues/nba/games?key=pn_live_YOUR_KEY"
+# → pick a game by its pn_slug, e.g. "nba-mia-cha-2026-04-14"
+
+# 4. Get full markets for that game
+curl "https://books.polynode.dev/v1/games/nba-mia-cha-2026-04-14/markets?key=pn_live_YOUR_KEY"
+# → 10 market types, one is "points" (player points)
+
+# 5. For real-time updates, subscribe via WebSocket
+wscat -c "wss://books.polynode.dev/ws/odds?key=pn_live_YOUR_KEY"
+# → filter client-side for pn_market_type=points and pn_slug=nba-mia-cha-2026-04-14
+```
+
+## What's NOT in this API yet
+
+Honest scope for v1:
+
+- **Server-side subscription filters** on the WebSocket channels — in v1 every subscriber receives every event on their channel and filters client-side. Subscription filters are on the roadmap for v1.1.
+- **Per-tier rate limits** — all valid keys get unlimited access for now.
+- **Historical data** — only currently-cached games (last 24 hours).
+- **Polymarket condition_id cross-reference** — Polymarket prices flow through as just another `book` named `"Polymarket"` or `"Polymarket (USA)"`. A richer merge with polynode's native PM orderbook data is a planned follow-up.
+
+## See also
+
+- [Live Games](/api-reference/books/games-live) — every in-play game at a glance
+- [WebSocket Overview](/websocket/books/overview) — push-based real-time stream
+- [Event Reference](/websocket/books/events) — full schema for every WS event type

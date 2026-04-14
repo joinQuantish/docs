@@ -1,0 +1,106 @@
+---
+title: "Odds Channel (/ws/odds)"
+description: "Full firehose: every price change from every book, plus all live-state events."
+---
+
+The `/ws/odds` channel is the raw firehose. It emits every `price_change` from every book we track, **plus** everything the `/ws/live` channel emits (`score_change`, `status_change`, `game_final`, `new_game`). This is the channel for arbitrage, alerting, and real-time market analysis.
+
+```
+wss://books.polynode.dev/ws/odds?key=pn_live_YOUR_KEY
+```
+
+## Event types on this channel
+
+| Event `type` | When it fires |
+|---|---|
+| `welcome` | Once, on connect |
+| `price_change` | **Any** outcome's price moves on **any** book |
+| `score_change` | Same as `/ws/live` |
+| `status_change` | Same as `/ws/live` |
+| `game_final` | Same as `/ws/live` |
+| `new_game` | Same as `/ws/live` |
+
+## Real captured sample
+
+This is the actual wire content from `wss://books.polynode.dev/ws/odds` during a live match where Estudiantes went up 2-1 (Copa Libertadores, 2H 64'):
+
+```
+{"type":"welcome","channel":"odds","conn_id":2,"message":"connected to books-relayer odds channel"}
+{"type":"score_change","game_id":"10035-20332-2026-04-14","pn_slug":null,"pn_league_code":"lib","score_home":1,"score_away":0,"period":"2H","clock":"64","ts":1776208974186}
+{"type":"score_change","game_id":"40664-16839-2026-04-14","pn_slug":"lib-gar-est-2026-04-14","pn_league_code":"lib","score_home":2,"score_away":1,"period":"2H","clock":"64","ts":1776208974186}
+{"type":"price_change","game_id":"40664-16839-2026-04-14","pn_slug":"lib-gar-est-2026-04-14","pn_league_code":"lib","pn_market_type":"correct_score","book":"888sport","outcome":"Club Estudiantes de La Plata 2:1","old_price":275.0,"new_price":230.0,"points":null,"ts":1776208974186}
+{"type":"price_change","game_id":"40664-16839-2026-04-14","pn_slug":"lib-gar-est-2026-04-14","pn_league_code":"lib","pn_market_type":"correct_score","book":"BetRivers","outcome":"Club Estudiantes de La Plata 2:1","old_price":275.0,"new_price":240.0,"points":null,"ts":1776208974186}
+{"type":"price_change","game_id":"40664-16839-2026-04-14","pn_slug":"lib-gar-est-2026-04-14","pn_league_code":"lib","pn_market_type":"correct_score","book":"Betano","outcome":"Club Estudiantes de La Plata 2:1","old_price":260.0,"new_price":235.0,"points":null,"ts":1776208974186}
+```
+
+Notice the pattern: Estudiantes scores, their `2-1` correct-score outcome is now more likely, and we see `888sport`, `BetRivers`, and `Betano` all shortening the price simultaneously (from +275/+260 to +230-240). That's the sort of signal this channel exists to surface.
+
+## Volume expectations
+
+During a mid-afternoon window with 5-10 games live, sustained rate is typically **100-500 price_change events per second**, with bursts over 1,000/s immediately after goals or scoring plays. Plan your client-side processing accordingly.
+
+- Memory: each event is ~400 bytes JSON, so 500/s = ~200 KB/s ≈ **1.6 Mbit/s** per subscriber.
+- CPU: JSON parsing + any per-event logic. On a modern laptop, ~5,000 events/sec is easy; beyond that you want to batch or pre-filter.
+- Storage: 500 events/sec × 86,400 seconds/day × 400 bytes ≈ **17 GB/day** if you log everything. Filter aggressively or sample.
+
+## Filtering
+
+Server-side filtering is **not yet implemented** in v1. Filter client-side on whichever of these fields you care about:
+
+- `pn_league_code` (e.g., only NBA → keep `nba`)
+- `pn_market_type` (e.g., only moneyline → keep `moneyline`)
+- `book` (e.g., only Polymarket vs DraftKings → keep `["Polymarket", "DraftKings"]`)
+- `pn_slug` or `game_id` (e.g., only a single game)
+
+A proper subscription-filter layer is on the roadmap for v1.1.
+
+## Example: arbitrage detector
+
+```python
+import asyncio, json, websockets
+from collections import defaultdict
+
+KEY = "pn_live_YOUR_KEY"
+WATCH_BOOKS = {"Polymarket", "DraftKings", "FanDuel", "BetMGM", "bet365"}
+
+# (game_id, market_type, outcome_name) -> {book: price}
+book_prices = defaultdict(dict)
+
+def american_to_decimal(odds):
+    return 1 + (odds / 100 if odds > 0 else 100 / -odds)
+
+async def main():
+    uri = f"wss://books.polynode.dev/ws/odds?key={KEY}"
+    async with websockets.connect(uri) as ws:
+        async for raw in ws:
+            e = json.loads(raw)
+            if e.get("type") != "price_change":
+                continue
+            if e["book"] not in WATCH_BOOKS:
+                continue
+            key = (e["game_id"], e["pn_market_type"], e["outcome"])
+            book_prices[key][e["book"]] = e["new_price"]
+
+            # Simple arb check: best decimal odds across books
+            prices = book_prices[key]
+            if len(prices) >= 2:
+                best = max(prices.items(), key=lambda x: american_to_decimal(x[1]))
+                worst = min(prices.items(), key=lambda x: american_to_decimal(x[1]))
+                spread = american_to_decimal(best[1]) - american_to_decimal(worst[1])
+                if spread > 0.10:
+                    print(f"SPREAD {e['pn_slug'] or e['game_id']} {e['pn_market_type']} {e['outcome']}: "
+                          f"{best[0]}@{best[1]} vs {worst[0]}@{worst[1]} (Δ={spread:.3f})")
+
+asyncio.run(main())
+```
+
+## Ordering guarantees
+
+- Within a single poll cycle, `score_change` events are emitted **before** `price_change` events for the same game. Clients can rely on seeing the new score before seeing the price movements that respond to it.
+- Across poll cycles, events are delivered in emission order per connection.
+- If your consumer drops (channel full, 256 events queued), **events are silently dropped**, not buffered indefinitely. Detect gaps by tracking the `ts` field.
+
+## See also
+
+- [Event Reference](/websocket/books/events) — full schema for `price_change` and all other event types
+- [Live Channel](/websocket/books/live) — if you only need game state without the odds firehose

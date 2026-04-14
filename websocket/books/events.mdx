@@ -1,0 +1,216 @@
+---
+title: "Event Reference"
+description: "Complete schema for every event type emitted by /ws/live and /ws/odds."
+---
+
+Every event on both WebSocket channels is a JSON object with a top-level `type` field that disambiguates the payload shape. This page documents all five event types plus the `welcome` handshake message.
+
+## `welcome`
+
+Sent exactly once, immediately after a successful WebSocket upgrade.
+
+**Real captured:**
+
+```json
+{
+  "type": "welcome",
+  "channel": "live",
+  "conn_id": 1,
+  "message": "connected to books-relayer live channel"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | string | Always `"welcome"`. |
+| `channel` | string | `"live"` or `"odds"` — which channel you're subscribed to. |
+| `conn_id` | integer | Server-assigned unique connection id. Useful for tracing in server logs. |
+| `message` | string | Human-readable handshake message. |
+
+---
+
+## `score_change`
+
+Emitted whenever `score_home`, `score_away`, `period`, or `clock` changes on any polled game.
+
+**Real captured** (Estudiantes 2-1 Cusco, Copa Libertadores, 64th minute):
+
+```json
+{
+  "type": "score_change",
+  "game_id": "40664-16839-2026-04-14",
+  "pn_slug": "lib-gar-est-2026-04-14",
+  "pn_league_code": "lib",
+  "score_home": 2,
+  "score_away": 1,
+  "period": "2H",
+  "clock": "64",
+  "ts": 1776208972203
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | string | Always `"score_change"`. |
+| `game_id` | string | Upstream canonical game id. |
+| `pn_slug` | string \| null | Polynode slug. `null` for games without a resolvable slug. |
+| `pn_league_code` | string | League code (`nba`, `epl`, `lib`, etc.). |
+| `score_home` | integer | Current home score. |
+| `score_away` | integer | Current away score. |
+| `period` | string \| null | Current period (e.g. `"2H"`, `"Q3"`, `"7"`). |
+| `clock` | string \| null | Clock within the period (sport-specific format). |
+| `ts` | integer | Unix epoch milliseconds when the change was detected. |
+
+**Channels:** `/ws/live`, `/ws/odds`
+
+---
+
+## `status_change`
+
+Emitted when a game transitions between `unplayed → live → final`. Fires alongside `score_change` when the transition happens at a boundary.
+
+**Schema:**
+
+```json
+{
+  "type": "status_change",
+  "game_id": "40664-16839-2026-04-14",
+  "pn_slug": "lib-gar-est-2026-04-14",
+  "pn_league_code": "lib",
+  "old_status": "unplayed",
+  "new_status": "live",
+  "ts": 1776208972203
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | string | Always `"status_change"`. |
+| `game_id`, `pn_slug`, `pn_league_code` | — | See `score_change` above. |
+| `old_status` | string | Previous status. Typically `"unplayed"` or `"live"`. |
+| `new_status` | string | New status. Typically `"live"` or `"final"`. |
+| `ts` | integer | Unix epoch milliseconds. |
+
+**Channels:** `/ws/live`, `/ws/odds`
+
+---
+
+## `game_final`
+
+Fires immediately after a `status_change` into `final` or `ended`. Provides the final score as a convenience so you don't have to join `status_change` + the last `score_change`.
+
+**Schema:**
+
+```json
+{
+  "type": "game_final",
+  "game_id": "40664-16839-2026-04-14",
+  "pn_slug": "lib-gar-est-2026-04-14",
+  "pn_league_code": "lib",
+  "score_home": 2,
+  "score_away": 1,
+  "ts": 1776210000000
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | string | Always `"game_final"`. |
+| `game_id`, `pn_slug`, `pn_league_code` | — | See `score_change` above. |
+| `score_home`, `score_away` | integer | Final score. |
+| `ts` | integer | Unix epoch milliseconds of the transition. |
+
+**Channels:** `/ws/live`, `/ws/odds`
+
+---
+
+## `new_game`
+
+Emitted the first time the poller sees a particular `game_id`. Typically fires when a game first appears on upstream's schedule (days before start), not when it kicks off. For kickoff, watch `status_change` from `unplayed → live`.
+
+**Schema:**
+
+```json
+{
+  "type": "new_game",
+  "game_id": "40664-16839-2026-04-14",
+  "pn_slug": "lib-gar-est-2026-04-14",
+  "pn_league_code": "lib",
+  "ts": 1776200000000
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | string | Always `"new_game"`. |
+| `game_id`, `pn_slug`, `pn_league_code` | — | See `score_change` above. |
+| `ts` | integer | Unix epoch milliseconds when we first ingested the game. |
+
+**Channels:** `/ws/live`, `/ws/odds`
+
+---
+
+## `price_change`
+
+The core odds-movement event. Fires whenever any book's price on any outcome changes.
+
+**Real captured** (888sport shortening their "Estudiantes 2:1" correct-score price from +275 to +230 as Estudiantes went up 2-1):
+
+```json
+{
+  "type": "price_change",
+  "game_id": "40664-16839-2026-04-14",
+  "pn_slug": "lib-gar-est-2026-04-14",
+  "pn_league_code": "lib",
+  "pn_market_type": "correct_score",
+  "book": "888sport",
+  "outcome": "Club Estudiantes de La Plata 2:1",
+  "old_price": 275.0,
+  "new_price": 230.0,
+  "points": null,
+  "ts": 1776208974186
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | string | Always `"price_change"`. |
+| `game_id`, `pn_slug`, `pn_league_code` | — | See `score_change` above. |
+| `pn_market_type` | string | Polynode market type code (`moneyline`, `spreads`, `totals`, `points`, `correct_score`, etc.). See [List Market Types](/api-reference/books/market-types) for the complete set. |
+| `book` | string | Sportsbook name. See [List Sportsbooks](/api-reference/books/books). |
+| `outcome` | string | Outcome label. Sport-specific: team name for moneyline (`"Miami Heat"`), `"Over 2.5"` / `"Under 2.5"` for totals, player name for player props, score string like `"Club Estudiantes de La Plata 2:1"` for correct score. |
+| `old_price` | number \| null | Previous American odds. `null` for a brand-new outcome we hadn't seen before. |
+| `new_price` | number | Current American odds. Negative = favorite (`-150` = risk $150 to win $100), positive = underdog (`+200` = risk $100 to win $200). |
+| `points` | number \| null | Spread or total line when applicable (`-6.5`, `2.5`, `217.5`). `null` for moneyline and most player props. |
+| `ts` | integer | Unix epoch milliseconds. |
+
+**Channels:** `/ws/odds` only. (This event is **not** delivered on `/ws/live`.)
+
+---
+
+## `pong`
+
+Response to a client-sent `{"action":"ping"}` JSON message. Used for application-level keepalive when WebSocket protocol Pings are stripped by intermediate proxies.
+
+**Client sends:**
+
+```json
+{"action": "ping"}
+```
+
+**Server replies:**
+
+```json
+{"type": "pong", "ts": 1776208974186}
+```
+
+## Putting it together — correlating events after a goal
+
+The real wire sequence after a goal in a soccer game:
+
+1. Poll cycle runs, detects `is_live=true` + new score.
+2. **`score_change`** fires on both channels with the new score.
+3. **Multiple `price_change` events** fire on `/ws/odds` as each book reprices the relevant outcomes (moneyline, correct score, totals, next goal, anytime goalscorer, etc.).
+4. Clients see the score **before** the price movements because the diff engine always emits state changes first.
+
+This ordering means you can reliably implement "when a goal is scored, wait N ms and see which books moved fastest" logic without race conditions.

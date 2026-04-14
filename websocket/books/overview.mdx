@@ -1,0 +1,90 @@
+---
+title: "Books WebSocket Overview"
+sidebarTitle: "Overview"
+description: "Real-time stream of live game state and odds movements across 100+ sportsbooks."
+---
+
+The books-relayer WebSocket gives you live game state (scores, clocks, period changes) and market movements (every price change from every sportsbook we track) in real time.
+
+There are **two separate channels**. Pick one or both:
+
+<CardGroup cols={2}>
+  <Card title="/ws/live" icon="heart-pulse">
+    Live game state only. Scores, clock, period, status changes. **Quiet by design** — only emits when something actually happens. Low bandwidth.
+  </Card>
+  <Card title="/ws/odds" icon="bolt">
+    Everything on `/ws/live` plus every `price_change` event. High volume (100-500 events/sec during peak). Full firehose.
+  </Card>
+</CardGroup>
+
+## Endpoints
+
+```
+wss://books.polynode.dev/ws/live?key=pn_live_YOUR_KEY
+wss://books.polynode.dev/ws/odds?key=pn_live_YOUR_KEY
+```
+
+Both channels accept the API key as either a query parameter or an `Authorization: Bearer pn_live_YOUR_KEY` header.
+
+## Which channel do I use?
+
+| If you want to... | Use |
+|---|---|
+| Build a live scoreboard UI | `/ws/live` |
+| Send push notifications on score changes | `/ws/live` |
+| Track real-time odds movements for arbitrage / alerts | `/ws/odds` |
+| Monitor a specific book's price action | `/ws/odds` |
+| Both scoreboard + odds | `/ws/odds` (it includes everything `/ws/live` has) |
+
+`/ws/live` is the correct default for 90% of consumers. Subscribe to `/ws/odds` only if you actually need the raw price firehose.
+
+## Connection lifecycle
+
+1. **Open connection** with your API key. Bad/missing key → HTTP 401 before the upgrade.
+2. **Receive welcome frame** (JSON). Contains your `conn_id` and the channel name.
+3. **Receive events** (JSON) as they happen. No client subscription message needed — each channel has a fixed event set.
+4. **Server sends `Ping` every 30 seconds** to keep the TCP connection alive through NATs and middleboxes. Your client library auto-responds with `Pong`.
+5. **Close the socket** cleanly when done.
+
+## Welcome frame
+
+First message received after a successful connection:
+
+```json
+{
+  "type": "welcome",
+  "channel": "live",
+  "conn_id": 1,
+  "message": "connected to books-relayer live channel"
+}
+```
+
+## Keepalive & client-side pings
+
+The server sends protocol-level `Ping` frames every 30 seconds. Your WebSocket library should auto-respond with `Pong` — every mainstream client (`websockets` in Python, `ws` in Node, `tokio-tungstenite` in Rust, browser `WebSocket`) does this by default.
+
+Some proxies strip WebSocket control frames. If you are behind one, send an **application-level** JSON ping periodically:
+
+```json
+{"action": "ping"}
+```
+
+The server will reply immediately with:
+
+```json
+{"type": "pong", "ts": 1776208974186}
+```
+
+This round-trip confirms the connection is alive end-to-end, not just at the TCP layer.
+
+## Scale and limits
+
+- Hard cap: **20,000** total concurrent subscribers across both channels. New connections past the cap get `HTTP 503`.
+- Per-subscriber bounded channel: 256 events. If your consumer stalls, events are dropped on the server (not buffered indefinitely).
+- Server-side fan-out is **serialize-once, refcount-cloned**. Each event is encoded to JSON exactly once per broadcast, then distributed to all matching subscribers via `Arc<String>` — so scaling to thousands of subscribers is cheap on CPU.
+
+## See also
+
+- [Live Channel](/websocket/books/live) — event set for `/ws/live`
+- [Odds Channel](/websocket/books/odds) — event set for `/ws/odds`
+- [Event Reference](/websocket/books/events) — schema for every event type

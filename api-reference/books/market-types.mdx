@@ -1,0 +1,119 @@
+---
+title: "List Market Types"
+description: "Every market type we poll, with display names and sport applicability."
+---
+
+Returns every `pn_market_type` code the books-relayer currently polls, annotated with human-readable display name, category (moneyline/spread/total/player-prop/etc.), and the sports each market applies to.
+
+Use this to find the exact `pn_market_type` string to pass to [Game Markets](/api-reference/books/game-markets), or filter by sport to see only markets relevant to a category you care about.
+
+```bash
+# everything
+curl -s "https://books.polynode.dev/v1/market-types?key=pn_live_YOUR_KEY"
+
+# only basketball markets
+curl -s "https://books.polynode.dev/v1/market-types?sport=basketball&key=pn_live_YOUR_KEY"
+```
+
+<ParamField query="sport" type="string">
+  Filter by `sport_category`. Only returns markets tagged for the given sport (plus universal markets marked `*`).
+</ParamField>
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+## Response
+
+```json
+{
+  "count": 12,
+  "market_types": [
+    {
+      "pn_code": "moneyline",
+      "display_name": "Moneyline",
+      "pn_category": "moneyline",
+      "applicable_sports": ["*"],
+      "sport_category_in_upstream_map": "*"
+    },
+    {
+      "pn_code": "spreads",
+      "display_name": "Point Spread",
+      "pn_category": "spread",
+      "applicable_sports": ["nba", "wnba", "nfl", "cfb", "cbb", "ncaab"],
+      "sport_category_in_upstream_map": "basketball"
+    },
+    {
+      "pn_code": "totals",
+      "display_name": "Total (Over/Under)",
+      "pn_category": "total",
+      "applicable_sports": ["*"],
+      "sport_category_in_upstream_map": "basketball"
+    },
+    {
+      "pn_code": "points",
+      "display_name": "Player Points",
+      "pn_category": "player-prop",
+      "applicable_sports": ["nba", "wnba", "cbb", "cwbb", "ncaab"],
+      "sport_category_in_upstream_map": "basketball"
+    }
+  ]
+}
+```
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `count` | integer | Number of market types returned. |
+| `market_types[].pn_code` | string | **The code you pass as the market identifier everywhere.** Use this exact string when matching [Game Markets](/api-reference/books/game-markets) responses. |
+| `market_types[].display_name` | string | Human label (e.g. `"Player Points"`, `"Moneyline"`, `"Anytime Touchdown Scorer"`). |
+| `market_types[].pn_category` | string | Broad bucket: `moneyline`, `spread`, `total`, `player-prop`, `team-prop`, `half-period`, `esports-special`, `three-way`, `exact-score`, `parlay`, `prop`, `unknown`. |
+| `market_types[].applicable_sports` | array | Polynode's own list of sports this market applies to. `["*"]` means universal. |
+| `market_types[].sport_category_in_upstream_map` | string | The `sport_category` key used internally by the books mapping layer (basketball / soccer / football / etc., or `*` for universal). |
+
+## Current market types
+
+The books-relayer polls **27 of the 39 mapped** market types. The core set:
+
+### Universal
+- `moneyline` — who wins the game
+
+### Basketball player props
+- `points` (Player Points) — NBA/WNBA/NCAA
+- `rebounds` (Player Rebounds)
+- `assists` (Player Assists)
+- `threes` (Player Made Threes)
+- `double_doubles` (Player Double Double)
+- `assists_points_rebounds` (Pts+Reb+Ast Combined)
+
+### Team totals + spreads (sport-aware)
+- `spreads` → point spread (NBA/NFL), Asian handicap (soccer), puck line (NHL), run line (MLB)
+- `totals` → total points (NBA/NFL), total goals (soccer/NHL), total runs (MLB), total games (tennis)
+
+### First-half markets
+- `first_half_moneyline`
+- `first_half_spreads`
+- `first_half_totals`
+
+### Soccer-specific
+- `double_chance`, `both_teams_to_score`, `correct_score`, `soccer_anytime_goalscorer`, `soccer_halftime_result`, `total_goals`, `total_corners`
+
+### Football player yards + TDs
+- `passing_yards`, `rushing_yards`, `receiving_yards`, `anytime_touchdowns`
+
+### Baseball
+- `nrfi` (No Run First Inning)
+
+### Tennis
+- `tennis_set_handicap`, `tennis_match_totals`
+
+### MMA/UFC
+- `ufc_method_of_victory`, `ufc_go_the_distance`
+
+## Next step
+
+Once you know which market type you want, see what games have it via:
+
+- [Game Markets](/api-reference/books/game-markets) for a specific `game_id` or `pn_slug`
+- [Game Detail](/api-reference/books/game-detail) for the full game + all markets in one call

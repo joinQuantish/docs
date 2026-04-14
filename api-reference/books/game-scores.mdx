@@ -1,0 +1,71 @@
+---
+title: "Game Scores"
+description: "Scores-only subset of a single game. Cheap polling endpoint."
+---
+
+Minimal projection of a single game's current state — teams, status, scores, clock. Served from the same in-memory snapshot as the full Game Detail endpoint, just trimmed. Use this when you only need to display a live score and want the smallest possible payload.
+
+```bash
+curl -s "https://books.polynode.dev/v1/games/40664-16839-2026-04-14/scores?key=pn_live_YOUR_KEY"
+```
+
+<ParamField path="id" type="string" required>
+  Polynode slug or raw `game_id`. Both work.
+</ParamField>
+
+<ParamField query="key" type="string" required>
+  Your API key.
+</ParamField>
+
+## Response
+
+```json
+{
+  "game_id": "40664-16839-2026-04-14",
+  "pn_slug": "lib-gar-est-2026-04-14",
+  "pn_league_code": "lib",
+  "home_team": "Club Estudiantes de La Plata",
+  "away_team": "Cusco FC",
+  "status": "live",
+  "scores": {
+    "status": "Live",
+    "score_home": 2,
+    "score_away": 1,
+    "period": "2H",
+    "clock": "50",
+    "is_live": true,
+    "last_play": null,
+    "current_down_and_distance": null,
+    "weather": null,
+    "weather_temp": null,
+    "weather_temp_high": null,
+    "home_starter": null,
+    "away_starter": null
+  }
+}
+```
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `game_id` | string | Upstream canonical id. |
+| `pn_slug` | string \| null | Polynode slug if resolvable. `null` for non-mapped leagues. |
+| `pn_league_code` | string | Polynode league code. |
+| `home_team` / `away_team` | string | Team names, flattened for convenience. |
+| `status` | string | `unplayed` / `live` / `final`. |
+| `scores` | object | Same Scores shape documented in [List Live Games](/api-reference/books/games-live#scores-object). |
+
+## Why use this instead of `/v1/games/{id}`?
+
+The full game detail endpoint returns the game envelope **plus every market snapshot**, which can be 100+ KB for a major sport. `/scores` returns ~400 bytes regardless of how many markets are tracked. Prefer it when:
+
+- You only need to display the live score.
+- You are polling frequently and want to minimize bandwidth.
+- You are driving a scoreboard UI that doesn't care about odds.
+
+For live score updates via push instead of polling, use [`/ws/live`](/websocket/books/live).
+
+## Latency
+
+Scores for live games are refreshed every ~1 second by the adaptive poller. The round-trip latency from S3 is typically 2-5 ms over the wire.
