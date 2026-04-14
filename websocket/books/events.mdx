@@ -7,7 +7,7 @@ Every event on both WebSocket channels is a JSON object with a top-level `type` 
 
 ## `welcome`
 
-Sent exactly once, immediately after a successful WebSocket upgrade.
+Sent exactly once, immediately after a successful WebSocket upgrade. **Always the first frame.**
 
 **Real captured:**
 
@@ -26,6 +26,79 @@ Sent exactly once, immediately after a successful WebSocket upgrade.
 | `channel` | string | `"live"` or `"odds"` — which channel you're subscribed to. |
 | `conn_id` | integer | Server-assigned unique connection id. Useful for tracing in server logs. |
 | `message` | string | Human-readable handshake message. |
+
+---
+
+## `snapshot`
+
+**The second frame every subscriber receives**, immediately after `welcome` and before any delta events. Contains the complete list of currently-live games with their full state. Use this as your baseline — apply all subsequent `score_change` / `status_change` / `game_final` / `price_change` events on top of this snapshot to maintain a correct live view.
+
+**Emitted once, per-subscriber.** Not broadcast. Not repeated. Each new connection gets its own fresh snapshot.
+
+**Real captured** (from the public endpoint during a Copa Libertadores match):
+
+```json
+{
+  "type": "snapshot",
+  "channel": "live",
+  "ts": 1776210900000,
+  "count": 11,
+  "games": [
+    {
+      "game_id": "40664-16839-2026-04-14",
+      "pn_slug": "lib-gar-est-2026-04-14",
+      "pn_league_code": "lib",
+      "sport_category": "soccer",
+      "start_date": "2026-04-14T22:00:00Z",
+      "status": "live",
+      "venue": "Estadio Jorge Luis Hirschi",
+      "home_team": {
+        "name": "Club Estudiantes de La Plata",
+        "abbreviation_pn": "est",
+        "logo": "https://cdn.opticodds.com/team-logos/soccer/2857.png"
+      },
+      "away_team": {
+        "name": "Cusco FC",
+        "abbreviation_pn": "gar",
+        "logo": "https://cdn.opticodds.com/team-logos/soccer/12453.png"
+      },
+      "scores": {
+        "status": "Live",
+        "score_home": 2,
+        "score_away": 1,
+        "period": "2H",
+        "clock": "94",
+        "is_live": true
+      }
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | string | Always `"snapshot"`. |
+| `channel` | string | `"live"` or `"odds"` — matches the channel you subscribed to. |
+| `ts` | integer | Unix epoch milliseconds when the snapshot was built server-side. |
+| `count` | integer | Number of live games in `games[]`. May be `0` during quiet periods. |
+| `games` | array | Full Game objects for every game where `scores.is_live = true` at snapshot time. Same shape as [List Live Games](/api-reference/books/games-live#game-object). |
+
+### Why snapshot-on-connect?
+
+Before this existed, a new subscriber on `/ws/live` would see nothing until the next score change fired — which could be seconds or minutes depending on the match. With the snapshot, you know the complete live state from the moment you connect, and can start rendering a scoreboard immediately.
+
+Apply events in order:
+1. Receive `snapshot` — initialize your in-memory view of every live game.
+2. Receive `score_change` / `status_change` / `game_final` events — update the matching entry in your view.
+3. On disconnect + reconnect — discard your state, wait for the new snapshot, restart from step 2.
+
+This is the **standard pattern** for any polynode WebSocket that serves stateful data (scores, orderbooks, position books). Ephemeral event streams (mempool, trade prints) don't need a snapshot because there's no persistent state to baseline.
+
+### What `snapshot` does NOT contain
+
+- **Market snapshots are not included** even on `/ws/odds`. For initial market state, call the REST endpoint [`GET /v1/games/{id}/markets`](/api-reference/books/game-markets) once per game you care about, then stream `price_change` deltas from there. Blasting full market state for every live game × every book × every outcome on connect would be tens of MB and pointless for most consumers.
+- **Unplayed games are not included.** Only games where `scores.is_live = true` at snapshot build time appear.
+- **Final games are not included.** Once a game transitions to `final`, it drops out of the live set immediately.
 
 ---
 

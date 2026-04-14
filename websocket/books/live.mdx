@@ -13,7 +13,8 @@ wss://books.polynode.dev/ws/live?key=pn_live_YOUR_KEY
 
 | Event `type` | When it fires |
 |---|---|
-| `welcome` | Once, on connect |
+| `welcome` | Once, on connect. First frame. |
+| `snapshot` | Once, right after welcome. Full state of every live game as a baseline. |
 | `new_game` | First time we see a given `game_id` (e.g., matchday starts) |
 | `score_change` | Score, period, or clock changes |
 | `status_change` | Game transitions `unplayed → live → final` |
@@ -23,13 +24,16 @@ No `price_change` events are delivered on this channel.
 
 ## Real captured sample
 
-This is the exact wire content from `wss://books.polynode.dev/ws/live` during a live Copa Libertadores match:
+This is the exact wire content from `wss://books.polynode.dev/ws/live` during a live Copa Libertadores match (Estudiantes 2-1 Cusco, 94' stoppage):
 
 ```
 {"type":"welcome","channel":"live","conn_id":1,"message":"connected to books-relayer live channel"}
+{"type":"snapshot","channel":"live","ts":1776210900000,"count":11,"games":[{"game_id":"40664-16839-2026-04-14","pn_slug":"lib-gar-est-2026-04-14","pn_league_code":"lib","home_team":{"name":"Club Estudiantes de La Plata",...},"away_team":{"name":"Cusco FC",...},"scores":{"score_home":2,"score_away":1,"period":"2H","clock":"94","is_live":true,...},...}, ... 10 more games ...]}
 {"type":"score_change","game_id":"10035-20332-2026-04-14","pn_slug":null,"pn_league_code":"lib","score_home":1,"score_away":0,"period":"2H","clock":"64","ts":1776208972203}
 {"type":"score_change","game_id":"40664-16839-2026-04-14","pn_slug":"lib-gar-est-2026-04-14","pn_league_code":"lib","score_home":2,"score_away":1,"period":"2H","clock":"64","ts":1776208972203}
 ```
+
+Notice the sequence: **welcome → snapshot → deltas**. The snapshot gives you the baseline state of all 11 currently-live games, then deltas flow from that point forward.
 
 The first game (`10035-20332-2026-04-14`) is polynode-unmapped (`pn_slug: null`) — a Nacional @ Tolima fixture whose teams aren't in polynode's roster. The second is `lib-gar-est-2026-04-14` (Estudiantes vs Cusco FC, currently 2-1).
 

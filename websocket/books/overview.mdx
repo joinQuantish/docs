@@ -42,9 +42,10 @@ Both channels accept the API key as either a query parameter or an `Authorizatio
 
 1. **Open connection** with your API key. Bad/missing key → HTTP 401 before the upgrade.
 2. **Receive welcome frame** (JSON). Contains your `conn_id` and the channel name.
-3. **Receive events** (JSON) as they happen. No client subscription message needed — each channel has a fixed event set.
-4. **Server sends `Ping` every 30 seconds** to keep the TCP connection alive through NATs and middleboxes. Your client library auto-responds with `Pong`.
-5. **Close the socket** cleanly when done.
+3. **Receive snapshot frame** (JSON). Full state of every currently-live game. **This is your baseline** — initialize your in-memory view from this before processing any delta events. See [snapshot event](/websocket/books/events#snapshot).
+4. **Receive delta events** (JSON) as they happen. Apply each event on top of the snapshot baseline.
+5. **Server sends `Ping` every 30 seconds** to keep the TCP connection alive through NATs and middleboxes. Your client library auto-responds with `Pong`.
+6. **Close the socket** cleanly when done. On reconnect, discard your state and wait for the next snapshot — do NOT try to resume.
 
 ## Welcome frame
 
@@ -58,6 +59,33 @@ First message received after a successful connection:
   "message": "connected to books-relayer live channel"
 }
 ```
+
+## Snapshot frame
+
+**Second message, immediately after welcome.** Contains every currently-live game. Use this as your baseline before applying any subsequent delta events.
+
+```json
+{
+  "type": "snapshot",
+  "channel": "live",
+  "ts": 1776210900000,
+  "count": 11,
+  "games": [
+    {
+      "game_id": "40664-16839-2026-04-14",
+      "pn_slug": "lib-gar-est-2026-04-14",
+      "pn_league_code": "lib",
+      "scores": { "score_home": 2, "score_away": 1, "period": "2H", "clock": "94", "is_live": true },
+      "home_team": { "name": "Club Estudiantes de La Plata" },
+      "away_team": { "name": "Cusco FC" }
+    }
+  ]
+}
+```
+
+See [snapshot event reference](/websocket/books/events#snapshot) for the full schema.
+
+This is the **standard pattern for all polynode WebSockets that carry stateful data** (scores, orderbooks, position books): always emit a snapshot on connect before streaming deltas. Ephemeral streams (mempool transactions, trade prints) skip this step because there is no persistent state.
 
 ## Keepalive & client-side pings
 

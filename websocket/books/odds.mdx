@@ -13,12 +13,15 @@ wss://books.polynode.dev/ws/odds?key=pn_live_YOUR_KEY
 
 | Event `type` | When it fires |
 |---|---|
-| `welcome` | Once, on connect |
+| `welcome` | Once, on connect. First frame. |
+| `snapshot` | Once, right after welcome. Game-state baseline only — **no market snapshots**. |
 | `price_change` | **Any** outcome's price moves on **any** book |
 | `score_change` | Same as `/ws/live` |
 | `status_change` | Same as `/ws/live` |
 | `game_final` | Same as `/ws/live` |
 | `new_game` | Same as `/ws/live` |
+
+The `snapshot` frame on `/ws/odds` contains the same game-state baseline as `/ws/live` — the currently-live games and their scores/clocks. It does **not** contain market snapshots. For initial market state, call the REST endpoint [`GET /v1/games/{id}/markets`](/api-reference/books/game-markets) for each game you care about, then stream `price_change` deltas from there.
 
 ## Real captured sample
 
