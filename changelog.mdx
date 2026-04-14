@@ -7,6 +7,78 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-14 — Positions sort fix + `last_activity` field
+
+### Fixed: `/v2/onchain/positions` wallet queries now sort by recency
+
+When querying positions for a specific `wallet`, results are now ordered by the most recent on-chain activity for each position. Previously the `order=desc` parameter did not reflect recency, causing newer positions to appear below older ones.
+
+The most recently traded positions now appear at the top. Positions with no fill history (rare — acquired purely via split, merge, or redemption) are placed at the end.
+
+### New: `last_activity` response field
+
+Wallet queries now include a `last_activity` field on each position, containing the unix timestamp of the most recent fill for that position. Use it to display "last traded" times in your UI.
+
+```json
+{
+  "wallet": "0x4aefd329896464da0ffb16c4ebcd083a4360c181",
+  "token_id": "99969794444523158222638792918531145371262906249733117976401662588024805483979",
+  "size": 0,
+  "status": "closed",
+  "market": "Suns vs. Lakers",
+  "market_slug": "nba-phx-lal-2026-04-10",
+  "outcome": "Lakers",
+  "last_activity": 1776232830
+}
+```
+
+### Pagination behavior
+
+Wallet queries return every position for the wallet in a single response (up to 500), ordered by recency. `has_more` is always `false` and no cursor is returned — request `limit=500` once and read all results. Wallets with more than 500 lifetime positions are capped.
+
+Non-wallet queries (filtering by `market_slug`, `condition_id`, `token_id`, or `min_size` alone) continue to use cursor-based pagination.
+
+---
+
+## 2026-04-14 — Sports Scores WebSocket
+
+### New: Real-time Sports & Esports Scores
+
+A dedicated WebSocket endpoint for live game state across every sport polynode covers — tennis, basketball, soccer, hockey, baseball, football, MMA, cricket, esports, and more. One connection, all sports, server-side filtering.
+
+```javascript
+const ws = new WebSocket("wss://sports.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+ws.on("open", () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "sports_scores",
+    filters: { sport: ["tennis", "basketball"], status: ["inprogress"] }
+  }));
+});
+
+ws.on("message", (raw) => {
+  const msg = JSON.parse(raw.toString());
+  if (msg.type === "score_update") {
+    const g = msg.data;
+    console.log(`${g.awayTeam} ${g.score} @ ${g.homeTeam} (${g.period})`);
+  }
+});
+```
+
+**Highlights:**
+- **One unified stream** — all sports on a single connection
+- **Server-side filtering** — by sport, league, game ID, status, or tournament
+- **Snapshot on connect** — receive the current state of every live game immediately
+- **Multiple subscriptions per connection** — open one socket, register many filtered views
+- **Auto-reconnect friendly** — snapshot replay catches you up automatically after a disconnect
+- **REST snapshot helper** — `GET https://sports.polynode.dev/games` returns the current cache for browsing before you subscribe
+- **Available on Starter tier and above**
+
+[See WebSocket → Sports Scores → Overview](/websocket/sports/overview)
+
+---
+
 ## 2026-04-12 — SDK v0.7.0: Fee Escrow + Order History
 
 ### New: Per-Order Fee Collection

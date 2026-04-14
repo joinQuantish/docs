@@ -23,8 +23,8 @@ GET /v2/onchain/positions
 | `status` | string | No | `open` (size > 0), `closed` (size = 0), or `all` (default) |
 | `min_size` | number | No | Minimum position size in shares |
 | `limit` | integer | No | Results per page (1-500, default 100) |
-| `order` | string | No | Sort direction: `desc` (default) or `asc`. Sorted by wallet address. |
-| `pagination_key` | string | No | Cursor from a previous response to fetch the next page |
+| `order` | string | No | Sort direction: `desc` (default, most recent first) or `asc`. When `wallet` is set, results are ordered by the wallet's most recent on-chain activity per position. Otherwise, ordered by position ID. |
+| `pagination_key` | string | No | Cursor from a previous response to fetch the next page. Not used for wallet queries (see Pagination). |
 
 ### Identifying markets
 
@@ -91,6 +91,7 @@ GET /v2/onchain/positions
 | `outcome` | string | Outcome label (e.g. "Yes", "No") |
 | `condition_id` | string | Market condition ID |
 | `image` | string \| null | Market image URL. `null` for some delisted or niche markets. |
+| `last_activity` | number \| undefined | Unix timestamp of the wallet's most recent fill on this position. Present only when querying by `wallet`. Positions with no fill history (e.g. acquired purely via split/merge/redemption) omit this field and sort to the end. |
 
 ### Pagination fields
 
@@ -252,15 +253,17 @@ curl "https://api.polynode.dev/v2/onchain/positions?wallet=0xa973ae12882a1c24a75
 
 ### Pagination
 
-Use cursor-based pagination to iterate through large result sets.
+**Wallet queries** return every position for the wallet in a single response (up to 500), sorted by most recent on-chain activity. No pagination needed — request `limit=500` and read all results. `has_more` is always `false` and no cursor is returned. Wallets with more than 500 lifetime positions are capped at 500.
+
+**Non-wallet queries** (filtering by `market_slug`, `condition_id`, `token_id`, or `min_size` alone) use cursor-based pagination for iterating through large result sets.
 
 ```bash
 # First page
-curl "https://api.polynode.dev/v2/onchain/positions?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&limit=100" \
+curl "https://api.polynode.dev/v2/onchain/positions?min_size=100&limit=100" \
   -H "x-api-key: YOUR_KEY"
 
 # Next page
-curl "https://api.polynode.dev/v2/onchain/positions?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&limit=100&pagination_key=CURSOR_FROM_PREVIOUS" \
+curl "https://api.polynode.dev/v2/onchain/positions?min_size=100&limit=100&pagination_key=CURSOR_FROM_PREVIOUS" \
   -H "x-api-key: YOUR_KEY"
 ```
 
@@ -279,3 +282,4 @@ curl "https://api.polynode.dev/v2/onchain/positions?wallet=0xa973ae12882a1c24a75
 - Position data is sourced from onchain settlement records. Every position that was ever opened on Polymarket is included.
 - The `realized_pnl` field reflects actual profit/loss from closed portions of the position. For open positions, it reflects any partial closes.
 - Market metadata (`market`, `market_slug`, `outcome`, `condition_id`, `image`) is enriched from our index. Very old or delisted markets may not have metadata.
+- When querying by `wallet`, the sort key is the timestamp of the most recent fill for each position, not the position's close date. A position bought months ago and held to resolution (closed only via redemption) will sort by its original buy date.
