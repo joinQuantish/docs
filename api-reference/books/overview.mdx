@@ -6,14 +6,35 @@ description: "Real-time sports odds from 100+ sportsbooks, live scores, and Poly
 
 The **Books API** gives you live sports data three ways:
 
-- **Live scores, clocks, periods, and play state** for every currently in-play game
-- **Real-time odds from 100+ sportsbooks** — DraftKings, FanDuel, BetMGM, Caesars, bet365, Polymarket, Sporttrade, Novig, and dozens more
-- **Polynode canonical slugs** so the same game is identified the same way here as it is on polynode's sports catalog
+- Live scores, clocks, periods, and play state for every currently in-play game
+- Real-time odds from 100+ sportsbooks including DraftKings, FanDuel, BetMGM, bet365, Polymarket, Novig, Sporttrade, Polymarket (USA), and more
+- Polynode canonical slugs so the same game is identified the same way here as it is on polynode's sports catalog
 
 ```
 https://books.polynode.dev
 wss://books.polynode.dev
 ```
+
+## 60-second quickstart
+
+```bash
+# Authenticate with your API key (query param or Authorization header)
+KEY=pn_live_YOUR_KEY
+
+# 1. What sports are in-play right now?
+curl "https://books.polynode.dev/v1/sports?key=$KEY"
+
+# 2. Get every live game across every sport
+curl "https://books.polynode.dev/v1/games/live?key=$KEY"
+
+# 3. Get every market for one game, filtered to moneyline on DraftKings and Polymarket
+curl "https://books.polynode.dev/v1/games/nba-por-phx-2026-04-15/markets?market=moneyline&book=DraftKings,Polymarket&key=$KEY"
+
+# 4. Subscribe to live score changes over WebSocket
+wscat -c "wss://books.polynode.dev/ws/live?key=$KEY"
+```
+
+That's the whole API. The rest of the docs are reference detail for each endpoint.
 
 ## How a typical user lands here
 

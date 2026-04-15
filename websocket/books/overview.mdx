@@ -13,7 +13,7 @@ There are **two separate channels**. Pick one or both:
     Live game state only. Scores, clock, period, status changes. **Quiet by design** — only emits when something actually happens. Low bandwidth.
   </Card>
   <Card title="/ws/odds" icon="bolt">
-    Everything on `/ws/live` plus every `price_change` event. High volume (100-500 events/sec during peak). Full firehose.
+    Every `price_change` event from every book, plus the full game-state stream. High volume — 100 to 500 events per second during peak.
   </Card>
 </CardGroup>
 
@@ -42,7 +42,7 @@ Both channels accept the API key as either a query parameter or an `Authorizatio
 
 1. **Open connection** with your API key. Bad/missing key → HTTP 401 before the upgrade.
 2. **Receive welcome frame** (JSON). Contains your `conn_id` and the channel name.
-3. **Receive snapshot frame** (JSON). Full state of every currently-live game. **This is your baseline** — initialize your in-memory view from this before processing any delta events. See [snapshot event](/websocket/books/events#snapshot).
+3. **Receive snapshot frame** (JSON). Contains every currently-live game and their full state. Initialize your in-memory view from this, then apply subsequent deltas. See [snapshot event](/websocket/books/events#snapshot).
 4. **Receive delta events** (JSON) as they happen. Apply each event on top of the snapshot baseline.
 5. **Server sends `Ping` every 30 seconds** to keep the TCP connection alive through NATs and middleboxes. Your client library auto-responds with `Pong`.
 6. **Close the socket** cleanly when done. On reconnect, discard your state and wait for the next snapshot — do NOT try to resume.
