@@ -130,3 +130,43 @@ Honest scope for v1:
 - [Live Games](/api-reference/books/games-live) — every in-play game at a glance
 - [WebSocket Overview](/websocket/books/overview) — push-based real-time stream
 - [Event Reference](/websocket/books/events) — full schema for every WS event type
+
+## Unmatched games: when `pn_slug` is null
+
+Some games don't have a polynode slug. This happens when upstream team names don't match any team in polynode's roster — for example:
+
+- **Esports** (cs2, dota2, val, lcs, lpl) — polynode doesn't carry esports team data, so nothing will match.
+- **Initialisms** — `Liga Deportiva Universitaria de Quito` vs polynode's `LDU de Quito`. Pure name matching can't bridge the initialism.
+- **Transliterations** — occasional Cyrillic/Arabic team names that don't line up.
+
+**In production, ~20% of live games are unmatched at any given moment, nearly all esports. For traditional sports (NBA, NFL, MLB, soccer, tennis), the miss rate is under 3%.**
+
+When `pn_slug` is null, everything still works — you just use `game_id` as the identifier instead:
+
+```bash
+# 1. Search finds unmatched games too (search indexes upstream team names)
+curl ".../v1/games/search?q=quito&key=..."
+
+# 2. Fetch by raw game_id instead of slug
+curl ".../v1/games/75615-16713-2026-04-14&key=..."
+
+# 3. Markets endpoint accepts game_id exactly like slug
+curl ".../v1/games/75615-16713-2026-04-14/markets?book=Polymarket&key=..."
+```
+
+On the WebSocket, unmatched games appear in the snapshot with `pn_slug: null`, and every subsequent `score_change` / `price_change` event on that game carries its `game_id`. Filter client-side on `game_id` if you're tracking a specific unmatched game:
+
+```js
+ws.on("message", (raw) => {
+  const e = JSON.parse(raw);
+  if (e.game_id === "75615-16713-2026-04-14") {
+    // handle this game's deltas — slug unnecessary
+  }
+});
+```
+
+**Rule of thumb:** `game_id` is the canonical identifier. `pn_slug` is a human-friendly alias. Build against `game_id` and you'll never hit a dead end.
+
+## Rate limits
+
+The REST API enforces **600 requests per minute per API key** with a burst allowance of **60 requests**. Requests over the limit return `429 Too Many Requests` with `retry-after: 60`. WebSocket connections are not counted — stream consumers don't need to poll.
