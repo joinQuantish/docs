@@ -62,21 +62,21 @@ The path parameter accepts **either** a polynode slug (`lib-gar-est-2026-04-14`)
         "outcomes": [
           {
             "book": "888sport",
-            "name": "Over 3.5",
+            "outcome": "Over 3.5",
             "price": -133.0,
             "points": 3.5,
             "player_id": null
           },
           {
             "book": "BetRivers",
-            "name": "Over 3.5",
+            "outcome": "Over 3.5",
             "price": -132.0,
             "points": 3.5,
             "player_id": null
           },
           {
             "book": "Betano",
-            "name": "Over 3.5",
+            "outcome": "Over 3.5",
             "price": -125.0,
             "points": 3.5,
             "player_id": null
@@ -113,7 +113,7 @@ Each entry in `markets` is a self-contained snapshot:
 | Field | Type | Description |
 |---|---|---|
 | `book` | string | Sportsbook name exactly as upstream labels it (`"DraftKings"`, `"BetMGM"`, `"Polymarket"`, `"Polymarket (USA)"`, `"bet365"`, etc.). |
-| `name` | string | Outcome label. For moneylines this is a team name; for totals it is `"Over X.X"` / `"Under X.X"`; for player props it is the player name. |
+| `outcome` | string | Outcome label. For moneylines this is a team name; for totals it is `"Over X.X"` / `"Under X.X"`; for player props it is the player name. **Same field name as the WS `price_change` event** so REST snapshots and WS deltas share vocabulary. |
 | `price` | number | American odds. Negative = favorite, positive = underdog. `-133.0` means you risk $133 to win $100. |
 | `points` | number \| null | Spread or total line when applicable (`2.5`, `-6.5`, `217.5`). `null` for moneyline markets. |
 | `player_id` | string \| null | Upstream player id when the outcome is a player prop. |
