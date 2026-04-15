@@ -77,7 +77,7 @@ Every order type works with the escrow. The fee is pulled before submission and 
 
 ### Limit Buy (GTC, resting)
 
-Order rests on the book. If cancelled before fill, fee is refunded.
+Order rests on the book. Fills at any point in the future distribute the fee normally. If cancelled before fill, the fee is refunded. Orders resting past 72 hours are covered explicitly in the [72-Hour Safety Net](#72-hour-safety-net) section below.
 
 ```
 pullFee($0.005)  →  order BUY 5 @ $0.20  →  cancel  →  refund($0.005)
@@ -174,15 +174,40 @@ Verified on Polygon — partial fills distribute proportionally, refund returns 
 
 ## 72-Hour Safety Net
 
-If the operator hasn't settled an order within 72 hours, anyone can call `claimRefund(orderId)` to return the undistributed fee to the user. This is permissionless and requires no API key or operator involvement.
+The escrow contract has a 72-hour timeout. After that window, the user can always get their undistributed fee back.
 
 ```solidity
 // After 72 hours, anyone can call this
 escrow.claimRefund(orderId);
-// → undistributed USDC returns to the payer's Safe
+// → undistributed USDC returns to the payer's Safe, always
 ```
 
-This protects users if our backend goes down. Funds are never permanently locked.
+Three things to know:
+
+1. **The transfer target is hardcoded.** `claimRefund` always sends funds back to the original payer, no matter who calls it. Nobody can steal anyone else's fee. The reason anyone can trigger it (not just the payer) is purely so a bot or a friend can help a user recover funds if the user is offline.
+2. **This is a fail-safe, not the expected path.** It exists so that if our backend goes down, gets paused, or disappears entirely, users are guaranteed to get their escrowed money back without needing us. Most users will never know the function exists, and most will never call it.
+3. **It does not fire automatically.** The timeout doesn't trigger anything on its own — it just unlocks the *option* for the user (or anyone acting on their behalf) to reclaim the fee. If nobody calls `claimRefund`, the escrow sits untouched and `distribute` / `refund` continue to work normally, forever.
+
+### What this means for limit orders resting on the book
+
+This is the scenario to understand clearly. A limit order can rest on the CLOB for as long as needed. The 72-hour timeout starts when the fee is pulled, not when the order fills. Here is exactly what happens at each boundary:
+
+| Situation | Behavior |
+| --- | --- |
+| Order fills within 72h | Operator calls `distribute` — funds flow to treasury and affiliate normally. Nothing unusual. |
+| Order cancelled within 72h | Operator calls `refund` — full fee returns to the user. Nothing unusual. |
+| Order still resting at hour 72, user does nothing | Escrow sits untouched. When the order eventually fills — minute 73, day 5, month 2 — operator calls `distribute` and funds flow normally. Everyone is paid. |
+| Order still resting at hour 72, user calls `claimRefund` | User gets their fee back. If the order then fills later, the fill is effectively fee-free. The builder gives up the fee on that one order; nothing else breaks. |
+
+In practice, virtually no user will invoke `claimRefund` while their own order is still trying to fill. They'd have no reason to — they placed the order because they wanted the trade. The timeout exists as a safety valve for the case where the operator is *unable* to settle (outage, pause, shutdown), not as a routine workflow step.
+
+### Practical guidance for builders
+
+- If you charge fees on orders expected to fill quickly (aggressive limits near midprice), the 72h window is a non-issue.
+- If you charge fees on long-dated limits that commonly rest for days, you can either accept that a fully-informed user has an escape hatch, or skip the fee on those specific orders by passing `feeBps: 0`.
+- If you really want to keep fee coverage alive on a long-resting order, the operator can proactively `refund` before hour 72 and re-pull a fresh signature from the user with a new nonce. This is a manual flow and most builders won't need it.
+
+Funds are never permanently locked, never routed to a third party, and never surprised away from either the user or the builder during the normal fill path.
 
 ## Security
 
