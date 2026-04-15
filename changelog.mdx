@@ -7,6 +7,23 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-15 — Trade-indexed candles endpoint
+
+### New: `GET /v2/onchain/candles/{token_id}`
+
+Server-built OHLCV candles from real onchain fills. Each candle includes open, high, low, close, total volume in USD and shares, separate buy and sell volume, trade count, and VWAP.
+
+Pagination is anchor-based: each request returns up to 1000 trades worth of candles, anchored at a timestamp, block number, or transaction hash. Walk older history by passing the cursor from the previous response. Same model used by major exchange APIs.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/candles/$TOKEN_ID?resolution=1h" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Resolutions: `1m`, `5m`, `15m`, `1h`, `4h`, `1d`. Optional `gap_fill=true` for charting libraries that expect a continuous time axis. Full reference at [/api-reference/onchain/candles](/api-reference/onchain/candles).
+
+---
+
 ## 2026-04-14 — Positions sort fix + `last_activity` field
 
 ### Fixed: `/v2/onchain/positions` wallet queries now sort by recency

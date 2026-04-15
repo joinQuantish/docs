@@ -2945,7 +2945,11 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["open", "closed", "all"],
+              "enum": [
+                "open",
+                "closed",
+                "all"
+              ],
               "default": "all"
             },
             "description": "Filter by position status"
@@ -2974,7 +2978,10 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["desc", "asc"],
+              "enum": [
+                "desc",
+                "asc"
+              ],
               "default": "desc"
             },
             "description": "Sort direction"
@@ -3059,7 +3066,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "Unix timestamp — only return trades after this time"
+            "description": "Unix timestamp \u2014 only return trades after this time"
           },
           {
             "name": "end_time",
@@ -3067,7 +3074,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "Unix timestamp — only return trades before this time"
+            "description": "Unix timestamp \u2014 only return trades before this time"
           },
           {
             "name": "min_total",
@@ -3093,7 +3100,10 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["desc", "asc"],
+              "enum": [
+                "desc",
+                "asc"
+              ],
               "default": "desc"
             },
             "description": "Sort direction. asc requires at least one filter."
@@ -3839,6 +3849,136 @@
         "security": [
           {
             "api_key": []
+          }
+        ]
+      }
+    },
+    "/v2/onchain/candles/{token_id}": {
+      "get": {
+        "tags": [
+          "Onchain"
+        ],
+        "summary": "Candles (trade-indexed OHLCV)",
+        "description": "Server-built OHLCV candles from real onchain trades. Anchor-based pagination with buy/sell volume split, VWAP, and trade counts.",
+        "operationId": "onchain_candles",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "CTF outcome token ID"
+          },
+          {
+            "name": "condition_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Alternative to token_id. Errors if multi-outcome."
+          },
+          {
+            "name": "market_slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Alternative to token_id. Errors if multi-outcome."
+          },
+          {
+            "name": "resolution",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1m",
+                "5m",
+                "15m",
+                "1h",
+                "4h",
+                "1d"
+              ],
+              "default": "1h"
+            },
+            "description": "Bucket size"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 500,
+              "minimum": 100,
+              "maximum": 1000
+            },
+            "description": "Trades per page (clamped 100-1000)"
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "before",
+                "after"
+              ],
+              "default": "before"
+            },
+            "description": "Walk direction from anchor"
+          },
+          {
+            "name": "anchor_ts",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Unix timestamp anchor (defaults to now)"
+          },
+          {
+            "name": "anchor_block",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Polygon block number anchor"
+          },
+          {
+            "name": "anchor_tx",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Polygon transaction hash anchor"
+          },
+          {
+            "name": "gap_fill",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Fill empty buckets with carry-forward candles"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OHLCV candles built from trade window"
+          },
+          "400": {
+            "description": "Invalid parameters"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Paid plan required"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
           }
         ]
       }

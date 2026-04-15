@@ -1,0 +1,230 @@
+---
+title: "Candles (Trade-Indexed OHLCV)"
+description: "Server-built OHLCV candles from real onchain trades. Anchor-based pagination with buy/sell volume split, VWAP, and trade counts. Resolutions from 1m to 1d."
+openapi: "GET /v2/onchain/candles/{token_id}"
+---
+
+Build OHLCV candles directly from settled CLOB fills. Each candle includes open, high, low, close, total volume in USD and shares, buy and sell volume split, trade count, and VWAP. Backed by the same trade source as `/v2/onchain/trades`, so candles and trades stay in lockstep.
+
+Pagination is **anchor-based** rather than range-based. Each request returns up to 1000 trades worth of candles, anchored at a timestamp, block, or transaction hash. Walk older history by passing the cursor from the previous response. This is the same model used by major exchange APIs (Binance, Kraken, Coinbase) and avoids open-ended range queries timing out on hot markets.
+
+The response includes a `window.duration_seconds` field so callers immediately see how dense the market is — a hot market may pack 500 trades into 10 seconds, while a sleepy market may span weeks.
+
+## Request
+
+```
+GET /v2/onchain/candles/{token_id}
+```
+
+You can also pass the market identifier as a query parameter instead of a path parameter:
+
+```
+GET /v2/onchain/candles?token_id=...
+```
+
+### Path parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `token_id` | string | One of these | Outcome token ID. Can also be passed as `?token_id=` query param. |
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `token_id` | string | — | Outcome token ID (alternative to path param) |
+| `condition_id` | string | — | Condition ID. Errors if the condition has multiple outcomes — pass `token_id` to disambiguate. |
+| `market_slug` | string | — | Market slug. Errors if the slug has multiple outcomes — pass `token_id` to disambiguate. |
+| `resolution` | string | `1h` | Bucket size: `1m`, `5m`, `15m`, `1h`, `4h`, `1d` |
+| `limit` | integer | `500` | Trades per page. Clamped to `[100, 1000]`. The candles are built from this trade window. |
+| `direction` | string | `before` | `before` returns the `limit` trades ending at the anchor (newest-first walk). `after` returns the `limit` trades starting at the anchor (oldest-first walk). |
+| `anchor_ts` | integer | now | Unix timestamp anchor |
+| `anchor_block` | integer | — | Polygon block number anchor. Resolved to its block timestamp. |
+| `anchor_tx` | string | — | Polygon transaction hash anchor. Resolved to its block timestamp. |
+| `gap_fill` | boolean | `false` | When `true`, empty buckets between active candles are filled with flat carry-forward candles (`O=H=L=C=prev_close`, `volume=0`). |
+
+Exactly one of `token_id`, `condition_id`, or `market_slug` is required. If multiple anchor params are passed, precedence is `anchor_tx > anchor_block > anchor_ts`.
+
+## Response
+
+```json
+{
+  "token_id": "85713379202339219190689591569895900631137520291992037720582155738835687752247",
+  "resolution": "1m",
+  "window": {
+    "start_ts": 1776276218,
+    "end_ts": 1776276228,
+    "trade_count": 500,
+    "duration_seconds": 10
+  },
+  "count": 1,
+  "candles": [
+    {
+      "time": 1776276180000,
+      "open": 0.78,
+      "high": 0.93,
+      "low": 0.77,
+      "close": 0.9,
+      "volume": 7941.87,
+      "volume_shares": 9094.21,
+      "volume_buy": 1569.20,
+      "volume_sell": 6372.67,
+      "trades": 500,
+      "vwap": 0.8733
+    }
+  ],
+  "pagination": {
+    "older_end_ts": 1776276217,
+    "newer_start_ts": 1776276229
+  },
+  "question": "Bitcoin Up or Down - April 15, 2:00PM-2:05PM ET",
+  "slug": "btc-updown-5m-1776276000",
+  "outcome": "Up",
+  "condition_id": "0x...",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png"
+}
+```
+
+### Candle fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `time` | number | Bucket start time in milliseconds since epoch (TradingView convention) |
+| `open` | number | First trade price in the bucket |
+| `high` | number | Highest trade price in the bucket |
+| `low` | number | Lowest trade price in the bucket |
+| `close` | number | Last trade price in the bucket |
+| `volume` | number | Total volume in USD |
+| `volume_shares` | number | Total volume in outcome shares |
+| `volume_buy` | number | USD volume where the taker was buying the outcome token (aggressor buys) |
+| `volume_sell` | number | USD volume where the taker was selling the outcome token (aggressor sells) |
+| `trades` | number | Count of fills in the bucket |
+| `vwap` | number | Volume-weighted average price for the bucket |
+
+### Window fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `window.start_ts` | number | Unix timestamp of the oldest trade in the window |
+| `window.end_ts` | number | Unix timestamp of the newest trade in the window |
+| `window.trade_count` | number | Number of trades that built these candles |
+| `window.duration_seconds` | number | Wall-clock span of the window. Use this to gauge market density. |
+
+### Pagination fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `pagination.older_end_ts` | number | Pass as `anchor_ts` with `direction=before` to fetch the next older window |
+| `pagination.newer_start_ts` | number | Pass as `anchor_ts` with `direction=after` to fetch the next newer window |
+
+### Market enrichment fields
+
+`question`, `slug`, `outcome`, `condition_id`, and `image` are pulled from our market index. Returned alongside the candles so a chart can render header metadata in one round trip.
+
+## Examples
+
+### Default — last 500 trades, 1h buckets
+
+<CodeGroup>
+```bash cURL
+curl "https://api.polynode.dev/v2/onchain/candles/85713379202339219190689591569895900631137520291992037720582155738835687752247?resolution=1h" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```javascript Node.js
+const tokenId = "85713379202339219190689591569895900631137520291992037720582155738835687752247";
+const resp = await fetch(
+  `https://api.polynode.dev/v2/onchain/candles/${tokenId}?resolution=1h`,
+  { headers: { "x-api-key": "YOUR_KEY" } }
+);
+const data = await resp.json();
+console.log(`${data.window.trade_count} trades over ${data.window.duration_seconds}s`);
+data.candles.forEach(c => console.log(c.time, c.open, c.high, c.low, c.close, c.volume));
+```
+
+```python Python
+import requests
+
+token_id = "85713379202339219190689591569895900631137520291992037720582155738835687752247"
+resp = requests.get(
+    f"https://api.polynode.dev/v2/onchain/candles/{token_id}",
+    params={"resolution": "1h"},
+    headers={"x-api-key": "YOUR_KEY"},
+)
+data = resp.json()
+print(f"{data['window']['trade_count']} trades over {data['window']['duration_seconds']}s")
+for c in data["candles"]:
+    print(c["time"], c["open"], c["high"], c["low"], c["close"], c["volume"])
+```
+</CodeGroup>
+
+### Walking backwards through history
+
+Each response includes `pagination.older_end_ts`. Pass that as `anchor_ts` to fetch the previous window.
+
+```bash
+# First page — most recent 500 trades
+curl "https://api.polynode.dev/v2/onchain/candles/$TOKEN_ID?resolution=15m&limit=500" \
+  -H "x-api-key: YOUR_KEY"
+
+# Next page — 500 trades older than the first
+curl "https://api.polynode.dev/v2/onchain/candles/$TOKEN_ID?resolution=15m&limit=500&anchor_ts=OLDER_END_TS_FROM_PREVIOUS" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Forward walk from a starting point
+
+Use `direction=after` to walk forward from a specific timestamp.
+
+```bash
+# Earliest 500 trades on this market
+curl "https://api.polynode.dev/v2/onchain/candles/$TOKEN_ID?resolution=1h&direction=after&anchor_ts=0" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Anchor by block number
+
+Useful when you want to align candles to a specific Polygon block — for example to compare against another onchain event.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/candles/$TOKEN_ID?resolution=5m&anchor_block=70000000" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Anchor by transaction hash
+
+Same idea, but resolved from a transaction hash. Useful for "show me what the chart looked like around this trade."
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/candles/$TOKEN_ID?resolution=1m&anchor_tx=0xfffff7ed9080f46d7975f905e7f9358c436a1b177c6e19e54510c3ba6dcfddc4" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Gap-filled candles
+
+By default, buckets with zero trades are simply absent from the response. Set `gap_fill=true` to fill them with flat carry-forward candles for charting libraries that expect a continuous time axis.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/candles/$TOKEN_ID?resolution=1m&gap_fill=true" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+## Error responses
+
+| Status | Response | Condition |
+|--------|----------|-----------|
+| 400 | `{"error": "token_id, condition_id, or market_slug required"}` | No market identifier passed |
+| 400 | `{"error": "Invalid resolution. Use one of: 1m, 5m, 15m, 1h, 4h, 1d"}` | Bad `resolution` value |
+| 400 | `{"error": "condition_id resolves to multiple outcomes — pass token_id to select one"}` | Multi-outcome `condition_id` |
+| 400 | `{"error": "market_slug resolves to multiple outcomes — pass token_id to select one"}` | Multi-outcome `market_slug` |
+| 401 | `{"error": "API key required. Pass via ?key= or x-api-key header."}` | Missing API key |
+| 403 | `{"error": "V2 endpoints require a paid plan. See polynode.dev/pricing for details."}` | Free tier key |
+| 429 | `{"error": "Rate limited. N req/s for your tier.", "retryAfterMs": ...}` | Rate limited |
+
+## Notes
+
+- Candles are built from real onchain fills, not midpoint snapshots. Sparse markets will show sparse candles.
+- `volume_buy` and `volume_sell` are taker-side attributions — i.e. the side that lifted/hit the book. Same convention as every major exchange API.
+- The trade window is fixed-page, not range-bound. To cover a long history, walk pages via `pagination.older_end_ts`. Use `window.duration_seconds` in each response to gauge market density up front.
+- Block and transaction anchors are resolved via Polygon RPC and cached for 24 hours — repeated queries against the same anchor are free after the first hit.
+- Responses are cached server-side for 5 minutes per unique anchor, direction, and limit.
