@@ -10,6 +10,111 @@ Pagination is **anchor-based** rather than range-based. Each request returns up 
 
 The response includes a `window.duration_seconds` field so callers immediately see how dense the market is — a hot market may pack 500 trades into 10 seconds, while a sleepy market may span weeks.
 
+## Which candles endpoint should I use?
+
+PolyNode exposes three candle-shaped endpoints. They cover different data sources and are not interchangeable.
+
+| Endpoint | Source | Best for |
+|---|---|---|
+| `GET /v2/onchain/candles/{token_id}` | Real settled CLOB fills on Polygon | Charting any Polymarket outcome token with full history, VWAP, and buy/sell split. **This is the endpoint you want for a price chart.** |
+| `GET /v1/candles/{token_id}` | Live rolling in-memory buffer | Short, live tail of recent activity. No historical depth, no pagination. Useful as a lightweight live poll but not for charts. |
+| `GET /v1/crypto/candles` | Chainlink oracle feed | 5-minute OHLC for crypto assets (BTC, ETH, SOL…). These are the same prices that resolve Polymarket's short-form crypto markets — not CLOB trade data. |
+
+If you're building a chart for a Polymarket market, use `/v2/onchain/candles`.
+
+## Build a chart in 2 calls
+
+The fastest way to go from "I have an API key" to "I have candles on screen." Every response below is a real capture — you can paste the curls and get back the same shape.
+
+### 1. Find a market and grab the token you want to chart
+
+`/v2/movers` returns the biggest daily movers with the full outcomes array already enriched — one REST call gives you the `token_id` for both the Yes and No outcome without any extra lookups.
+
+```bash
+curl "https://api.polynode.dev/v2/movers?limit=3" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "markets": [
+    {
+      "id": "1707841",
+      "slug": "israel-x-hezbollah-ceasefire-by-april-30-2026-989-656",
+      "question": "Israel x Hezbollah ceasefire by April 30, 2026?",
+      "condition_id": "0xc7140ddb5ae5dc94d4553fb05d4600816f33ff024844cebe8326f4c41c4a1a47",
+      "outcomes": [
+        { "name": "Yes", "token_id": "71076253073516159380702286801576688253388973161726933428722204989810362065275", "price": 0.674 },
+        { "name": "No",  "token_id": "38902668316823899581329108924389881286009857048696806385615295625967267371713", "price": 0.326 }
+      ],
+      "one_day_price_change": 0.3815
+    }
+  ]
+}
+```
+
+`outcomes[0].token_id` is the Yes side. That's the identifier you pass to the candles endpoint.
+
+`/v2/trending` has the exact same shape if you'd rather chart what's popular than what's moving.
+
+### 2. Pull candles for that token
+
+```bash
+TOKEN=71076253073516159380702286801576688253388973161726933428722204989810362065275
+curl "https://api.polynode.dev/v2/onchain/candles/$TOKEN?resolution=5m&limit=500" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "token_id": "71076253073516159380702286801576688253388973161726933428722204989810362065275",
+  "resolution": "5m",
+  "window": {
+    "start_ts": 1776274178,
+    "end_ts": 1776278436,
+    "trade_count": 500,
+    "duration_seconds": 4258
+  },
+  "count": 16,
+  "candles": [
+    { "time": 1776273900000, "open": 0.82,   "high": 0.8221, "low": 0.82,  "close": 0.82,  "volume": 1842.3, "trades": 16, "vwap": 0.8205 },
+    { "time": 1776274200000, "open": 0.831,  "high": 0.8349, "low": 0.765, "close": 0.781, "volume": 6194.1, "trades": 49, "vwap": 0.7912 },
+    { "time": 1776276600000, "open": 0.741,  "high": 0.766,  "low": 0.62,  "close": 0.62,  "volume": 9338.7, "trades": 68, "vwap": 0.6823 }
+  ],
+  "pagination": { "older_end_ts": 1776274177, "newer_start_ts": 1776278437 },
+  "question": "Israel x Hezbollah ceasefire by April 30, 2026?",
+  "outcome": "Yes",
+  "condition_id": "0xc7140ddb5ae5dc94d4553fb05d4600816f33ff024844cebe8326f4c41c4a1a47",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/israel+lebanon+dove+flags.png"
+}
+```
+
+The `window.duration_seconds` tells you the 500 trades covered ~71 minutes of wall time — a moderately active market. The header fields (`question`, `outcome`, `image`, `condition_id`) are included so a chart header can render in the same round trip.
+
+That's the full loop: discover → chart, two REST calls, everything you need.
+
+### 3. Walk older history
+
+Each response returns `pagination.older_end_ts`. Pass it back as `anchor_ts` on the next call to fetch the window immediately before it.
+
+```bash
+# Older page, using the anchor from the previous response
+curl "https://api.polynode.dev/v2/onchain/candles/$TOKEN?resolution=5m&limit=500&anchor_ts=1776274177" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Real response header from this exact call:
+
+```json
+{
+  "window": { "start_ts": 1776267442, "end_ts": 1776274174, "trade_count": 500, "duration_seconds": 6732 },
+  "count": 23,
+  "pagination": { "older_end_ts": 1776267441, "newer_start_ts": 1776274175 }
+}
+```
+
+Same token, 500 older trades, 23 candles over ~112 minutes. Keep walking by chaining `older_end_ts → anchor_ts` until you have the depth you need.
+
 ## Request
 
 ```

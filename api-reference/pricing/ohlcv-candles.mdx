@@ -1,4 +1,13 @@
 ---
-title: "OHLCV Candles"
+title: "OHLCV Candles (Rolling Buffer)"
 openapi: "GET /v1/candles/{token_id}"
+description: "Lightweight rolling in-memory buffer of recent candles. For historical charts, use /v2/onchain/candles instead."
 ---
+
+<Warning>
+**For charting, use [`GET /v2/onchain/candles/{token_id}`](/api-reference/onchain/candles) instead.**
+
+This endpoint returns a small rolling buffer of the most recent activity — no historical depth, no pagination, no VWAP, no buy/sell split. It's useful as a cheap live-tail poll, but every real charting use case wants the trade-indexed endpoint.
+</Warning>
+
+Returns a short live tail of OHLCV candles for the given outcome token, built from an in-memory rolling buffer. Intended for lightweight live polling only — if you need history, resolution control, anchor pagination, buy/sell volume split, or VWAP, use the [trade-indexed endpoint](/api-reference/onchain/candles).
