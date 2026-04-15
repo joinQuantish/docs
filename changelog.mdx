@@ -40,45 +40,6 @@ Non-wallet queries (filtering by `market_slug`, `condition_id`, `token_id`, or `
 
 ---
 
-## 2026-04-14 — Sports Scores WebSocket
-
-### New: Real-time Sports & Esports Scores
-
-A dedicated WebSocket endpoint for live game state across every sport polynode covers — tennis, basketball, soccer, hockey, baseball, football, MMA, cricket, esports, and more. One connection, all sports, server-side filtering.
-
-```javascript
-const ws = new WebSocket("wss://sports.polynode.dev/ws?key=pn_live_YOUR_KEY");
-
-ws.on("open", () => {
-  ws.send(JSON.stringify({
-    action: "subscribe",
-    type: "sports_scores",
-    filters: { sport: ["tennis", "basketball"], status: ["inprogress"] }
-  }));
-});
-
-ws.on("message", (raw) => {
-  const msg = JSON.parse(raw.toString());
-  if (msg.type === "score_update") {
-    const g = msg.data;
-    console.log(`${g.awayTeam} ${g.score} @ ${g.homeTeam} (${g.period})`);
-  }
-});
-```
-
-**Highlights:**
-- **One unified stream** — all sports on a single connection
-- **Server-side filtering** — by sport, league, game ID, status, or tournament
-- **Snapshot on connect** — receive the current state of every live game immediately
-- **Multiple subscriptions per connection** — open one socket, register many filtered views
-- **Auto-reconnect friendly** — snapshot replay catches you up automatically after a disconnect
-- **REST snapshot helper** — `GET https://sports.polynode.dev/games` returns the current cache for browsing before you subscribe
-- **Available on Starter tier and above**
-
-[See WebSocket → Sports Scores → Overview](/websocket/sports/overview)
-
----
-
 ## 2026-04-12 — SDK v0.7.0: Fee Escrow + Order History
 
 ### New: Per-Order Fee Collection
