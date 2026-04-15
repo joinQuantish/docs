@@ -1,15 +1,15 @@
 ---
 title: "Game Detail"
-description: "Full game state plus every market snapshot we currently have for that game."
+description: "Full game state plus every market for one game. Optionally filtered by book and market type."
 ---
 
-Returns a single game with its complete set of market snapshots — every market type being tracked, every book quoting each market, every outcome. This is the "everything about one game" endpoint.
+Returns a single game with its complete set of markets. Accepts optional `?book=` and `?market=` query filters so you can pull only the slices you care about in one round trip.
 
 ```bash
-curl -s "https://books.polynode.dev/v1/games/40664-16839-2026-04-14?key=pn_live_YOUR_KEY"
+curl -s "https://books.polynode.dev/v1/games/nba-por-phx-2026-04-15?key=pn_live_YOUR_KEY"
 ```
 
-The path parameter accepts **either** a polynode slug (`lib-gar-est-2026-04-14`) **or** a raw `game_id` (`40664-16839-2026-04-14`). Both resolve to the same record.
+The path parameter accepts either a polynode slug (`lib-gar-est-2026-04-14`) or a raw `game_id` (`40664-16839-2026-04-14`). Both resolve to the same record. Unmatched games where `pn_slug` is null still work — just use the `game_id`.
 
 <ParamField path="id" type="string" required>
   Polynode slug (e.g. `nba-mia-cha-2026-04-14`) or raw `game_id` (e.g. `40664-16839-2026-04-14`).
@@ -19,72 +19,66 @@ The path parameter accepts **either** a polynode slug (`lib-gar-est-2026-04-14`)
   Your API key. Accepted via query param or `Authorization: Bearer` header.
 </ParamField>
 
+<ParamField query="market" type="string">
+  Comma-separated list of `pn_market_type` values to include (e.g. `moneyline,spreads,totals`). Omit for all markets.
+</ParamField>
+
+<ParamField query="book" type="string">
+  Comma-separated list of book names to include (e.g. `DraftKings,Polymarket,BetMGM`). Omit for all books.
+</ParamField>
+
 ## Response
+
+This is a real response for a live NBA game (Portland @ Phoenix, Q3 03:42) filtered to `market=moneyline` on three books:
+
+```bash
+curl "https://books.polynode.dev/v1/games/nba-por-phx-2026-04-15?market=moneyline&book=FanDuel,Polymarket,BetMGM&key=pn_live_YOUR_KEY"
+```
 
 ```json
 {
   "game": {
-    "game_id": "40664-16839-2026-04-14",
-    "pn_slug": "lib-gar-est-2026-04-14",
-    "pn_league_code": "lib",
-    "sport_category": "soccer",
-    "start_date": "2026-04-14T22:00:00Z",
+    "game_id": "24860-38874-2026-04-14",
+    "pn_slug": "nba-por-phx-2026-04-15",
+    "pn_league_code": "nba",
+    "sport_category": "basketball",
+    "start_date": "2026-04-15T02:00:00Z",
     "status": "live",
-    "venue": "Estadio Jorge Luis Hirschi",
-    "broadcast": null,
+    "venue": "Mortgage Matchup Center",
+    "broadcast": "Amazon",
     "home_team": {
-      "name": "Club Estudiantes de La Plata",
-      "abbreviation_pn": "est",
-      "logo": "https://cdn.opticodds.com/team-logos/soccer/2857.png"
+      "name": "Phoenix Suns",
+      "city": "Phoenix",
+      "mascot": "Suns",
+      "abbreviation_pn": "phx"
     },
     "away_team": {
-      "name": "Cusco FC",
-      "abbreviation_pn": "gar",
-      "logo": "https://cdn.opticodds.com/team-logos/soccer/12453.png"
+      "name": "Portland Trail Blazers",
+      "city": "Portland",
+      "mascot": "Trail Blazers",
+      "abbreviation_pn": "por"
     },
     "scores": {
       "status": "Live",
-      "score_home": 1,
-      "score_away": 1,
-      "period": "2H",
-      "clock": "47",
+      "score_home": 73,
+      "score_away": 79,
+      "period": "3",
+      "clock": "03:42",
       "is_live": true
     }
   },
-  "markets": [
-    {
-      "content_hash": "28809c25d066947b50501b3c27f220600f3406b1f3ed024571b3e33a2b49995c",
-      "updated_at": 1776207962882,
-      "game": { "...": "same game object repeated for convenience" },
-      "market": {
-        "game_id": "40664-16839-2026-04-14",
-        "pn_market_type": "total_goals",
-        "outcomes": [
-          {
-            "book": "888sport",
-            "outcome": "Over 3.5",
-            "price": -133.0,
-            "points": 3.5,
-            "player_id": null
-          },
-          {
-            "book": "BetRivers",
-            "outcome": "Over 3.5",
-            "price": -132.0,
-            "points": 3.5,
-            "player_id": null
-          },
-          {
-            "book": "Betano",
-            "outcome": "Over 3.5",
-            "price": -125.0,
-            "points": 3.5,
-            "player_id": null
-          }
-        ]
-      }
-    }
-  ]
+  "market_count": 1,
+  "outcome_count": 6,
+  "markets": {
+    "moneyline": [
+      { "book": "BetMGM",     "outcome": "Portland Trail Blazers", "price": -225.0, "points": null, "player_id": null },
+      { "book": "FanDuel",    "outcome": "Portland Trail Blazers", "price": -205.0, "points": null, "player_id": null },
+      { "book": "Polymarket", "outcome": "Portland Trail Blazers", "price": -184.0, "points": null, "player_id": null },
+      { "book": "BetMGM",     "outcome": "Phoenix Suns",            "price":  175.0, "points": null, "player_id": null },
+      { "book": "FanDuel",    "outcome": "Phoenix Suns",            "price":  170.0, "points": null, "player_id": null },
+      { "book": "Polymarket", "outcome": "Phoenix Suns",            "price":  165.0, "points": null, "player_id": null }
+    ]
+  }
 }
 ```
 
@@ -92,49 +86,35 @@ The path parameter accepts **either** a polynode slug (`lib-gar-est-2026-04-14`)
 
 | Field | Type | Description |
 |---|---|---|
-| `game` | object | The same Game shape documented in [List Live Games](/api-reference/books/games-live). Always present. |
-| `markets` | array | One entry per `pn_market_type` currently tracked for this game. Empty array if no markets have been ingested yet. |
-
-## Market snapshot object
-
-Each entry in `markets` is a self-contained snapshot:
-
-| Field | Type | Description |
-|---|---|---|
-| `content_hash` | string | SHA256 of the sorted outcomes list. Only changes when a price, point, or book actually moves. Useful for client-side dedup. |
-| `updated_at` | integer | Unix epoch milliseconds of the last update. |
-| `game` | object | Game object at the time of the snapshot (so you can reason about the market in the context of the then-current score/clock). |
-| `market.game_id` | string | Redundant with the outer game id. |
-| `market.pn_market_type` | string | Polynode market type code (see [Market Types](#market-types)). |
-| `market.outcomes` | array | One outcome per `(book, name, points)` tuple. |
+| `game` | object | Full game envelope: teams, scores, venue, status, start_date, broadcast. Same shape returned by [List Live Games](/api-reference/books/games-live). |
+| `market_count` | integer | Number of distinct `pn_market_type` keys in `markets` after filtering. |
+| `outcome_count` | integer | Total number of outcomes across all markets after filtering. |
+| `markets` | object | Dict keyed by `pn_market_type`. Each value is a flat list of outcomes. Markets with zero outcomes after filtering are omitted. |
 
 ## Outcome object
 
 | Field | Type | Description |
 |---|---|---|
-| `book` | string | Sportsbook name exactly as upstream labels it (`"DraftKings"`, `"BetMGM"`, `"Polymarket"`, `"Polymarket (USA)"`, `"bet365"`, etc.). |
-| `outcome` | string | Outcome label. For moneylines this is a team name; for totals it is `"Over X.X"` / `"Under X.X"`; for player props it is the player name. **Same field name as the WS `price_change` event** so REST snapshots and WS deltas share vocabulary. |
-| `price` | number | American odds. Negative = favorite, positive = underdog. `-133.0` means you risk $133 to win $100. |
-| `points` | number \| null | Spread or total line when applicable (`2.5`, `-6.5`, `217.5`). `null` for moneyline markets. |
+| `book` | string | Sportsbook name exactly as upstream labels it (`"DraftKings"`, `"FanDuel"`, `"BetMGM"`, `"Polymarket"`, `"Polymarket (USA)"`, `"bet365"`). Pass into `?book=` to filter. |
+| `outcome` | string | Outcome label. Team name for moneyline, `"Over 4.5"` / `"Under 4.5"` for totals, player name with line for player props. Same field name as the WS `price_change` event. |
+| `price` | number | American odds. Negative = favorite (`-225` = risk $225 to win $100), positive = underdog (`+175` = risk $100 to win $175). Prediction-market books sometimes emit extreme values like `+9900` or `-99900` when a market is near-resolved — cap or convert to implied probability client-side if you're running arb math. |
+| `points` | number \| null | Spread or total line when applicable (`-6.5`, `2.5`, `217.5`). `null` for moneyline. |
 | `player_id` | string \| null | Upstream player id when the outcome is a player prop. |
 
-## Market types seen in the response
+## Same endpoint as `/markets`
 
-Actual market types present for the live Copa Libertadores game shown above:
+`/v1/games/{id}` and `/v1/games/{id}/markets` return identical shapes and accept identical filters. They are aliases. Use whichever URL reads better in your code.
 
-- `moneyline` — 99 outcomes across 33 books
-- `spreads` — 44 outcomes across 22 books (soccer spreads use Asian handicap under the hood)
-- `totals` — 62 outcomes across 31 books (mapped from polynode `totals`; soccer version hits upstream's `total_goals`)
-- `total_goals` — 62 outcomes across 31 books
-- `total_corners` — 46 outcomes across 23 books
-- `correct_score` — 325 outcomes across 19 books
-- `double_chance` — 52 outcomes across 20 books
-- `both_teams_to_score` — 1 outcome across 1 book (varies by game)
-- `soccer_anytime_goalscorer` — 271 outcomes across 19 books
-- `soccer_halftime_result` — populated only after halftime
+## Book coverage varies by league and market
 
-For a cleaner market type reference see [Markets by Game](/api-reference/books/game-markets), which returns only the markets array without the repeated game envelope.
+Not every book carries every market. A live NBA moneyline is carried by 60-90 books; a live AHL game might only have 5-10. DraftKings' mainline sportsbook does not currently publish NBA moneylines — their NBA odds ship under the `DraftKings Predictions` book name. If you filter to `?book=DraftKings` on an NBA game and get empty results, that's why. Use [List Books](/api-reference/books/books) to see which books are currently known to the system.
 
-## How many books are quoting?
+## Post-restart warmup window
 
-A single moneyline market for a live soccer game above is carried by 33 different books. For NBA games the count typically exceeds 80. Mostly mainstream sportsbooks (DraftKings, FanDuel, BetMGM, Caesars, bet365), prediction market exchanges (Polymarket, Polymarket USA, Sporttrade, Novig, Prophet X), and international/offshore books.
+For ~30 seconds after the service restarts, the market backfill runs one market type at a time across all sports. You may see fewer `pn_market_type` keys than the steady-state total. Retry a few seconds later or subscribe to [`/ws/odds`](/websocket/books/odds) to stream the fill as it happens.
+
+## Refresh semantics
+
+- Live games re-poll every ~1 second.
+- Idle (unplayed / final) games re-poll every ~10 seconds.
+- For real-time deltas, subscribe to [`/ws/odds`](/websocket/books/odds) and apply `price_change` events on top of this baseline.

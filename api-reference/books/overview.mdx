@@ -27,8 +27,8 @@ curl "https://books.polynode.dev/v1/sports?key=$KEY"
 # 2. Get every live game across every sport
 curl "https://books.polynode.dev/v1/games/live?key=$KEY"
 
-# 3. Get every market for one game, filtered to moneyline on DraftKings and Polymarket
-curl "https://books.polynode.dev/v1/games/nba-por-phx-2026-04-15/markets?market=moneyline&book=DraftKings,Polymarket&key=$KEY"
+# 3. Get moneyline for one live game, comparing FanDuel vs Polymarket prices
+curl "https://books.polynode.dev/v1/games/nba-por-phx-2026-04-15/markets?market=moneyline&book=FanDuel,Polymarket&key=$KEY"
 
 # 4. Subscribe to live score changes over WebSocket
 wscat -c "wss://books.polynode.dev/ws/live?key=$KEY"
