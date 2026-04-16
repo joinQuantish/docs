@@ -73,7 +73,8 @@
               "guides/position-management",
               "guides/errors",
               "guides/rate-limits",
-              "guides/fee-escrow"
+              "guides/fee-escrow",
+              "guides/trade-index"
             ]
           }
         ]
