@@ -1,0 +1,97 @@
+---
+title: "Serving ~1 Billion On-Chain Events at Sub-10ms"
+description: "How we built a purpose-built trade index that replaced our entire subgraph dependency and serves every Polymarket trade, position, and settlement event in single-digit milliseconds."
+---
+
+# Serving ~1 Billion On-Chain Events at Sub-10ms
+
+We replaced our entire subgraph infrastructure with a custom binary trade index that serves every Polymarket on-chain event — trades, positions, splits, merges, redemptions, and conversions — in under 10 milliseconds per query. Here's how.
+
+## The Problem
+
+Prediction market data is uniquely demanding. A single Polymarket wallet can have hundreds of thousands of trades across thousands of markets. Users want instant answers to questions like:
+
+- What are this wallet's current positions and P&L?
+- What's the full trade history for this market?
+- Show me OHLCV candles for any resolution, any time range.
+- What redemptions has this wallet claimed?
+
+We were dependent on third-party subgraph indexers for this data. They worked, but responses averaged 300-500ms, daily candles could take 10+ seconds, and we had no control over uptime, data freshness, or query performance.
+
+## The Numbers
+
+| Query | Response Time |
+|-------|:------------:|
+| Wallet trades | 9-30ms |
+| Market trades | 9ms |
+| Positions with P&L | 25ms |
+| Hourly candles | 14ms |
+| Daily candles | 98ms |
+| Market volume | 17ms |
+| Wallet activity | 8ms |
+
+**951 million rows. 0 seconds behind the chain tip. Every query under 100ms.**
+
+For comparison, the subgraph-based approach we replaced:
+
+| Query | Subgraph | polynode | Speedup |
+|-------|:--------:|:-------:|:-------:|
+| Wallet trades | 340ms | 30ms | **11x** |
+| Market trades | 500ms | 9ms | **55x** |
+| Positions | 1,330ms | 25ms | **53x** |
+| Daily candles | 10,300ms | 98ms | **105x** |
+
+## What We Index
+
+Every on-chain event that matters for trade history and position reconstruction:
+
+- **OrderFilled** — every CLOB trade across all exchange contracts (V1 + V2)
+- **PositionSplit** — USDC minted into YES + NO outcome tokens
+- **PositionsMerge** — YES + NO burned back to USDC
+- **PayoutRedemption** — winning position claimed after resolution
+- **PositionsConverted** — multi-outcome NegRisk swaps
+
+All decoded directly from on-chain logs. No intermediary, no third-party pipeline. The chain is the source of truth, and we read it directly.
+
+## The Architecture
+
+We built a custom binary key-value store, purpose-built for this access pattern.
+
+**Storage format:** Every trade is a fixed 128-byte struct laid out contiguously in a single file. The OS memory-maps this file directly onto NVMe storage. When a query comes in, we binary search an index table, get the byte offset, and read the rows straight from the memory-mapped region. No query parser, no SQL engine, no deserialization. The bytes on disk ARE the struct.
+
+**Indexes:** Pre-computed posting lists (the same data structure search engines use for inverted indexes) map each wallet, token, and market to sorted lists of row positions. A wallet lookup is a hash table hit followed by a sequential read of pre-sorted results. Sub-microsecond index lookup, then pure sequential memory reads for the actual data.
+
+**Live data:** New events stream in via WebSocket in real-time. The query layer merges the static on-disk index with the in-memory live segment transparently. Users always see the latest data without waiting for a rebuild.
+
+**Position computation:** P&L, average entry price, and realized gains are computed on-the-fly by walking a wallet's trades in chronological order. No pre-aggregated tables that can go stale. Every position query reflects the exact current state.
+
+## What This Enables
+
+With sub-10ms query times across ~1 billion events, we can serve use cases that were previously impractical:
+
+- **Real-time portfolio dashboards** that load instantly, even for wallets with hundreds of thousands of trades
+- **OHLCV candles at any resolution** computed directly from trade data, not cached snapshots
+- **Complete trade history** for any wallet or market in a single API call
+- **Live P&L tracking** with positions that update in real-time as new trades confirm
+
+Every polynode on-chain endpoint — trades, positions, candles, volume, redemptions, activity — is powered by this system. Zero external dependencies. Zero subgraph calls. Just raw on-chain data, indexed and served from NVMe.
+
+## Try It
+
+All of this is available through the polynode API today:
+
+```bash
+# Wallet trades
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0x...&key=YOUR_KEY"
+
+# Positions with P&L
+curl "https://api.polynode.dev/v2/onchain/positions?wallet=0x...&key=YOUR_KEY"
+
+# OHLCV candles
+curl "https://api.polynode.dev/v2/onchain/candles/{token_id}?resolution=1h&key=YOUR_KEY"
+
+# Market volume
+curl "https://api.polynode.dev/v2/onchain/markets/{token_id}/volume?key=YOUR_KEY"
+```
+
+Documentation: [docs.polynode.dev](https://docs.polynode.dev)
