@@ -74,7 +74,8 @@
               "guides/errors",
               "guides/rate-limits",
               "guides/fee-escrow",
-              "guides/trade-index"
+              "guides/trade-index",
+              "guides/copy-trading"
             ]
           }
         ]
