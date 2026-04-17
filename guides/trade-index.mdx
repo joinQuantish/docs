@@ -56,16 +56,6 @@ This isn't a one-time outage. Positions require computing VWAP across every trad
 
 polynode's trade index pre-computes positions for all 2.5 million wallets and maintains them in real-time as new trades confirm. There is no lag. When a trade confirms on-chain, positions update within seconds.
 
-The speed difference is just as stark:
-
-| Query (same wallet, same data) | polynode | Subgraph | Factor |
-|------|:--------:|:--------:|:------:|
-| Trades (50 results) | 25ms | 306ms | **12x** |
-| Trades (heavy wallet) | 25ms | 427ms | **17x** |
-| Positions | 38ms | 259ms | **7x** |
-
-These aren't cherry-picked benchmarks. Every query is faster because the data lives on NVMe with purpose-built indexes, not in a general-purpose GraphQL indexer running on shared infrastructure.
-
 ## Complete On-Chain Coverage
 
 The index covers every event type that matters for trade history and position reconstruction on Polymarket:
