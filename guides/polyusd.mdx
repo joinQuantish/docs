@@ -161,18 +161,22 @@ function wrap(address underlyingToken, address recipient, uint256 amount)
 
 ## Unwrapping: PolyUSD → USDC.e
 
-To withdraw from V2, unwrap your PolyUSD back to USDC.e through the Collateral Offramp.
+Users do not call the Offramp directly. `Offramp.unwrap()` is a protocol-internal function that reverts with `Unauthorized()` if the caller holds a non-zero pUSD balance. It is designed to be called only by the `CTFCollateralAdapter` as part of V2 settlement flow, where it runs as a pass-through (pUSD in, USDC.e out, zero balance at any instant).
 
-### Steps
+### How to actually get USDC.e back
 
-1. **Approve** the Offramp to spend your PolyUSD
-2. **Call** `unwrap(underlyingToken, recipient, amount)` on the Offramp
+- **Through the Polymarket UI (recommended):** the frontend uses a Safe-wallet flow that triggers the adapter-mediated unwrap on your behalf. This is the supported user-facing path.
+- **By trading:** on V2, buying an outcome token burns pUSD and gives you position tokens. Redeeming a winning position at resolution pays out USDC.e directly from the ConditionalTokens contract (bypasses the Offramp entirely). This is the on-chain exit path.
 
-The function signature is identical to wrapping:
+Direct EOA unwrap is not a supported user action. If you build an integration that expects to call `Offramp.unwrap()` from a user wallet, it will revert.
+
+### Function signature (for reference only)
 
 ```
 function unwrap(address underlyingToken, address recipient, uint256 amount)
 ```
+
+Only authorized callers (currently the `CTFCollateralAdapter`) can successfully invoke this.
 
 ## How It Works Under the Hood
 
