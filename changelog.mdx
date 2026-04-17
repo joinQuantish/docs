@@ -7,6 +7,21 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-17 — Unrealized P&L + redemption fix
+
+### New: `unrealized_pnl` field on positions
+
+Every position returned by `/v2/onchain/positions` now includes an `unrealized_pnl` field showing the paper profit or loss on remaining open shares.
+
+- **Resolved markets**: uses the final settlement price ($1 for winners, $0 for losers)
+- **Active markets**: uses the current market price, refreshed every 15 minutes
+
+### Fixed: realized P&L for redeemed positions
+
+Positions that were closed via onchain payout redemption (rather than selling on the orderbook) now correctly reflect their realized P&L. Previously, these showed `realized_pnl: 0` even when the position had a gain or loss.
+
+---
+
 ## 2026-04-15 — Trade-indexed candles endpoint
 
 ### New: `GET /v2/onchain/candles/{token_id}`

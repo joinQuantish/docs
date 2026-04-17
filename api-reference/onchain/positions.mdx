@@ -49,6 +49,7 @@ GET /v2/onchain/positions
       "size": 0.012785,
       "avg_price": 0.859999,
       "realized_pnl": 0.16,
+      "unrealized_pnl": 0.02,
       "total_bought": 1.16,
       "status": "open",
       "market": "Will FC Bayern Munchen win on 2026-04-07?",
@@ -63,6 +64,7 @@ GET /v2/onchain/positions
       "size": 0,
       "avg_price": 0.98,
       "realized_pnl": 0.1,
+      "unrealized_pnl": 0,
       "total_bought": 5,
       "status": "closed",
       "market": "Solana Up or Down - December 30, 10:30PM-10:45PM ET",
@@ -83,7 +85,8 @@ GET /v2/onchain/positions
 | `token_id` | string | Outcome token ID |
 | `size` | number | Current position size in shares. `0` means the position is closed. |
 | `avg_price` | number | Average entry price (0 to 1) |
-| `realized_pnl` | number | Realized profit/loss in USD |
+| `realized_pnl` | number | Realized profit/loss in USD. Includes profits from onchain redemptions of resolved markets. |
+| `unrealized_pnl` | number | Unrealized profit/loss in USD. For resolved markets, calculated using the final outcome price ($1 for winners, $0 for losers). For open markets, based on the current market price (refreshed every 15 minutes). Returns `0` for closed positions. |
 | `total_bought` | number | Total amount bought in USD |
 | `status` | string | `"open"` (size > 0) or `"closed"` (size = 0) |
 | `market` | string | Market question text |
@@ -158,6 +161,7 @@ curl "https://api.polynode.dev/v2/onchain/positions?wallet=0xa973ae12882a1c24a75
       "size": 0.012785,
       "avg_price": 0.859999,
       "realized_pnl": 0.16,
+      "unrealized_pnl": 0.02,
       "total_bought": 1.16,
       "status": "open",
       "market": "Will FC Bayern Munchen win on 2026-04-07?",
@@ -194,6 +198,7 @@ curl "https://api.polynode.dev/v2/onchain/positions?market_slug=will-zohran-mamd
       "size": 0.009534,
       "avg_price": 0.947999,
       "realized_pnl": -0.54,
+      "unrealized_pnl": -5.07,
       "total_bought": 539.03,
       "status": "open",
       "market": "Will Zohran Mamdani win the 2025 NYC mayoral election?",
@@ -230,6 +235,7 @@ curl "https://api.polynode.dev/v2/onchain/positions?min_size=100&limit=20" \
       "size": 1100,
       "avg_price": 0.003636,
       "realized_pnl": 0,
+      "unrealized_pnl": -3.96,
       "total_bought": 1100,
       "status": "open",
       "market": "Bitcoin Up or Down - February 5, 9:45AM-10:00AM ET",
@@ -280,6 +286,7 @@ curl "https://api.polynode.dev/v2/onchain/positions?min_size=100&limit=100&pagin
 ## Notes
 
 - Position data is sourced from onchain settlement records. Every position that was ever opened on Polymarket is included.
-- The `realized_pnl` field reflects actual profit/loss from closed portions of the position. For open positions, it reflects any partial closes.
+- The `realized_pnl` field reflects actual profit/loss from closed portions of the position, including onchain redemptions of resolved markets. For open positions, it reflects any partial closes.
+- The `unrealized_pnl` field shows the paper profit/loss on the remaining open shares. For resolved markets, this uses the final settlement price ($1 for winners, $0 for losers). For active markets, the current market price is used (refreshed every 15 minutes).
 - Market metadata (`market`, `market_slug`, `outcome`, `condition_id`, `image`) is enriched from our index. Very old or delisted markets may not have metadata.
 - When querying by `wallet`, the sort key is the timestamp of the most recent fill for each position, not the position's close date. A position bought months ago and held to resolution (closed only via redemption) will sort by its original buy date.
