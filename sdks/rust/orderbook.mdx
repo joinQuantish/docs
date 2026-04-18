@@ -167,6 +167,45 @@ pub struct EngineOptions {
 
 `EngineOptions::default()` is the right call for almost every use case. Override only if you need to disable compression for a CPU-constrained client or cap reconnect attempts in a one-shot script.
 
+#### `subscribe()` returns immediately — snapshots are async
+
+`engine.subscribe(...)` sends the subscribe command to the background WS task and returns as soon as the command is queued. **Snapshots arrive asynchronously** over the WS and populate local state some time later (typically 1–5 seconds, longer for many tokens). Calling `engine.midpoint(id)` the moment `subscribe()` returns will return `None` because the snapshot hasn't landed yet.
+
+Two patterns work:
+
+```rust,no_run
+# use std::time::Duration;
+# use polynode::OrderbookEngine;
+# async fn example(engine: &OrderbookEngine) -> polynode::Result<()> {
+// (1) coarse wait — simplest, fine for scripts and examples
+engine.subscribe(vec!["token_a".into()]).await?;
+tokio::time::sleep(Duration::from_secs(3)).await;
+let mid = engine.midpoint("token_a").await; // now returns Some(..) once snapshot applied
+
+// (2) event-driven — read updates from a view (production pattern)
+let mut view = engine.view(vec!["token_a".into()]);
+engine.subscribe(vec!["token_a".into()]).await?;
+while let Some(_update) = view.next().await {
+    if let Some(mid) = view.midpoint("token_a").await {
+        println!("ready: midpoint={mid:.4}");
+        break;
+    }
+}
+# Ok(())
+# }
+```
+
+#### Errors `connect()` can return
+
+`OrderbookEngine::connect` returns `polynode::Result<Self>` which unwraps to one of:
+
+- `Error::Auth(...)` — API key is invalid, revoked, or not recognized
+- `Error::RateLimited(...)` — too many concurrent connections for your tier
+- `Error::WebSocket(...)` — TLS/handshake failure (network, DNS, TLS cert)
+- `Error::Url(...)` — internal URL parse error (shouldn't happen; file a bug)
+
+In long-running programs, the engine's internal task uses `EngineOptions::auto_reconnect` (default true) to recover from mid-session drops, so you generally only need to handle errors at initial `connect()` time.
+
 ### Batch Queries
 
 Query many tokens in a single call. Each batch method takes a slice of token IDs and returns a `HashMap<String, T>` keyed by `asset_id`. Tokens that aren't in local state are silently omitted, so callers can pass mixed lists without pre-filtering.
@@ -195,6 +234,27 @@ async fn main() -> polynode::Result<()> {
 }
 ```
 
+Sample response shape (actual values from a live run):
+
+```text
+midpoints(&ids)   -> { "77893140…19989216": 0.2350,
+                       "22139576…97751695": 0.0085,
+                       "10905153…10914081": 0.3050 }
+
+spreads(&ids)     -> { "58343456…67891911": 0.0010,
+                       "22139576…97751695": 0.0010 }
+
+best_bids(&ids)   -> { "72100993…76306968": OrderbookLevel { price: "0.999", size: "154844.11" },
+                       "10905153…10914081": OrderbookLevel { price: "0.3",   size: "473238.67" } }
+
+books(&ids)       -> { "84387820…19854548": (
+                         vec![],                                                // bids (empty — one-sided)
+                         vec![OrderbookLevel { price: "0.001", size: "687883.2" }, /* +113 more */]
+                       ) }
+```
+
+Only two of the three tokens have midpoints because the third is a one-sided binary book (see `EngineOptions` → `None` semantics above).
+
 ### All Tracked Tokens
 
 Skip the ID list and get every token currently in local state. Useful when you want a global snapshot of everything you're subscribed to.
@@ -214,22 +274,49 @@ let books  = engine.books_all().await;           // full L2 for everything
 
 The same `_all` methods exist on `EngineView`.
 
+### EngineView — filtered handle over shared state
+
+`engine.view(token_ids)` returns an `EngineView` — a filtered receiver that only sees updates for the token IDs you pass in. All views share the engine's single WebSocket and single local state; they're cheap to create and you can have many in one process (e.g. one per consumer task).
+
+```rust,no_run
+# use polynode::OrderbookEngine;
+# async fn example(engine: &OrderbookEngine) {
+let mut view = engine.view(vec!["token_a".into(), "token_b".into()]);
+
+// Stream updates scoped to this view's tokens. next() returns the next
+// OrderbookUpdate for token_a or token_b, and None only if the engine closes.
+while let Some(update) = view.next().await {
+    // update is an OrderbookUpdate::Snapshot | ::Update | ::PriceChange
+    // query freshest state (same read lock as the engine):
+    if let Some(mid) = view.midpoint("token_a").await {
+        println!("token_a mid: {mid:.4}");
+    }
+}
+
+// Change the filter at runtime — takes effect on the next incoming message:
+view.set_tokens(vec!["token_c".into()]).await;
+# }
+```
+
+Every batch + `_all()` method that exists on `OrderbookEngine` also exists on `EngineView`. `engine.state()` is engine-only (views are filtered; use the engine for the full state handle).
+
 ### Detecting Inactive Markets
 
 Each token tracks the moment its local copy was last touched (snapshot or delta). Use this to detect markets that have stopped moving.
 
 ```rust,no_run
-use std::time::Duration;
+use std::time::{Duration, Instant};
 # use polynode::OrderbookEngine;
 
 # async fn example(engine: &OrderbookEngine) -> polynode::Result<()> {
-// When did this token last change?
-if let Some(ts) = engine.last_change("token_a").await {
+// Return type: Option<std::time::Instant>. Call .elapsed() for Duration since.
+let ts: Option<Instant> = engine.last_change("token_a").await;
+if let Some(ts) = ts {
     println!("last update was {:?} ago", ts.elapsed());
 }
 
-// All tokens with no update in the last 60 seconds
-let stale = engine.inactive_since(Duration::from_secs(60)).await;
+// Return type: Vec<String> — every tracked token whose last update is older than threshold.
+let stale: Vec<String> = engine.inactive_since(Duration::from_secs(60)).await;
 for token in stale {
     println!("inactive: {}", token);
 }
@@ -237,7 +324,15 @@ for token in stale {
 # }
 ```
 
-The timestamp is stamped client-side at the moment your SDK applies the update, which is typically tens of milliseconds behind the actual exchange event — accurate enough for inactive-market detection.
+Sample response (a tracked token and a stale filter):
+
+```text
+last_change("77893140…")     -> Some(Instant { .. })    // .elapsed() => 3.910s
+inactive_since(60s)          -> []                      // nothing stale right after subscribe
+inactive_since(1ms)          -> ["77893140…", "22139576…", "10905153…"]
+```
+
+The timestamp is stamped client-side at the moment your SDK applies the update, which is typically tens of milliseconds behind the actual exchange event — accurate enough for inactive-market detection, not for sub-second cross-market correlation.
 
 ### Direct State Access
 
