@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = Arc::new(PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?);
+    let client = Arc::new(PolyNodeClient::new("pn_live_YOUR_KEY")?);
 
     let mut watcher = RedemptionWatcher::new(client, RedemptionWatcherConfig {
         track_position_changes: true,

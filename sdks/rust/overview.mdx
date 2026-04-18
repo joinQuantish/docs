@@ -36,7 +36,7 @@ use polynode::PolyNodeClient;
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+    let client = PolyNodeClient::new("pn_live_YOUR_KEY")?;
 
     // Fetch top 5 markets by volume
     let markets = client.markets(Some(5)).await?;
@@ -64,7 +64,7 @@ use polynode::PolyNodeClient;
 use std::time::Duration;
 
 # fn example() -> polynode::Result<()> {
-let client = PolyNodeClient::builder("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")
+let client = PolyNodeClient::builder("pn_live_YOUR_KEY")
     .base_url("https://api.polynode.dev")
     .ws_url("wss://ws.polynode.dev/ws")
     .ob_url("wss://ob.polynode.dev/ws")

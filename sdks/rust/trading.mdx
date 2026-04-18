@@ -33,7 +33,7 @@ use polynode::trading::{PolyNodeTrader, TraderConfig, PrivateKeySigner};
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
     let mut trader = PolyNodeTrader::new(TraderConfig {
-        polynode_key: "pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d".into(),
+        polynode_key: "pn_live_YOUR_KEY".into(),
         db_path: "./my-trading.db".into(),
         ..Default::default()
     })?;

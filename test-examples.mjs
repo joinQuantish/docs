@@ -14,7 +14,11 @@ import { join, relative } from 'path';
 import { execSync, execFileSync } from 'child_process';
 import { tmpdir } from 'os';
 
-const TEST_KEY = 'pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d';
+const TEST_KEY = process.env.POLYNODE_TEST_KEY;
+if (!TEST_KEY) {
+  console.error('Set POLYNODE_TEST_KEY env var before running this script.');
+  process.exit(1);
+}
 const TIMEOUT_MS = 8000;
 const WS_AUTO_CLOSE_MS = 5000;
 const NODE_PATH = '/home/polygon/node_modules';

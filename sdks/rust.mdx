@@ -34,7 +34,7 @@ use polynode::PolyNodeClient;
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+    let client = PolyNodeClient::new("pn_live_YOUR_KEY")?;
 
     // Fetch top 5 markets by volume
     let markets = client.markets(Some(5)).await?;
@@ -59,7 +59,7 @@ use polynode::PolyNodeClient;
 use std::time::Duration;
 
 # fn example() -> polynode::Result<()> {
-let client = PolyNodeClient::builder("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")
+let client = PolyNodeClient::builder("pn_live_YOUR_KEY")
     .base_url("https://api.polynode.dev")
     .ws_url("wss://ws.polynode.dev/ws")
     .ob_url("wss://ob.polynode.dev/ws")
@@ -305,7 +305,7 @@ use polynode::ws_messages::WsMessage;
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+    let client = PolyNodeClient::new("pn_live_YOUR_KEY")?;
 
     let mut stream = client.stream(StreamOptions {
         compress: true,
@@ -461,7 +461,7 @@ use polynode::types::orderbook::ObMessage;
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+    let client = PolyNodeClient::new("pn_live_YOUR_KEY")?;
 
     let mut stream = client.orderbook_stream(ObStreamOptions::default()).await?;
 
@@ -535,7 +535,7 @@ use polynode::{OrderbookEngine, EngineOptions};
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
     let engine = OrderbookEngine::connect(
-        "pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d",
+        "pn_live_YOUR_KEY",
         EngineOptions::default(),
     ).await?;
 
@@ -578,7 +578,7 @@ use polynode::{PolyNodeClient, ShortFormInterval, Coin, ShortFormMessage};
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+    let client = PolyNodeClient::new("pn_live_YOUR_KEY")?;
 
     let mut stream = client
         .short_form(ShortFormInterval::FifteenMin)
@@ -655,7 +655,7 @@ use polynode::trading::{PolyNodeTrader, TraderConfig, PrivateKeySigner};
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
     let mut trader = PolyNodeTrader::new(TraderConfig {
-        polynode_key: "pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d".into(),
+        polynode_key: "pn_live_YOUR_KEY".into(),
         db_path: "./my-trading.db".into(),
         ..Default::default()
     })?;
@@ -984,7 +984,7 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = Arc::new(PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?);
+    let client = Arc::new(PolyNodeClient::new("pn_live_YOUR_KEY")?);
 
     let mut watcher = RedemptionWatcher::new(client, RedemptionWatcherConfig {
         track_position_changes: true,
@@ -1055,7 +1055,7 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = Arc::new(PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?);
+    let client = Arc::new(PolyNodeClient::new("pn_live_YOUR_KEY")?);
 
     let mut cache = PolyNodeCache::builder(client)
         .db_path("./polynode-cache.db")
@@ -1203,7 +1203,7 @@ All SDK methods return `polynode::Result<T>`, which wraps `polynode::Error`:
 use polynode::{PolyNodeClient, Error};
 
 # async fn example() -> polynode::Result<()> {
-let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+let client = PolyNodeClient::new("pn_live_YOUR_KEY")?;
 
 match client.market("invalid-token-id").await {
     Ok(market) => println!("{:?}", market),

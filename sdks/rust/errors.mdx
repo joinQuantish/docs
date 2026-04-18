@@ -12,7 +12,7 @@ All SDK methods return `polynode::Result<T>`, which wraps `polynode::Error`:
 use polynode::{PolyNodeClient, Error};
 
 # async fn example() -> polynode::Result<()> {
-let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+let client = PolyNodeClient::new("pn_live_YOUR_KEY")?;
 
 match client.market("invalid-token-id").await {
     Ok(market) => println!("{:?}", market),

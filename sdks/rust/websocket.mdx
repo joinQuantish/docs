@@ -16,7 +16,7 @@ use polynode::ws_messages::WsMessage;
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = PolyNodeClient::new("pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d")?;
+    let client = PolyNodeClient::new("pn_live_YOUR_KEY")?;
 
     let mut stream = client.stream(StreamOptions {
         compress: true,
