@@ -161,22 +161,38 @@ function wrap(address underlyingToken, address recipient, uint256 amount)
 
 ## Unwrapping: PolyUSD → USDC.e
 
-Users do not call the Offramp directly. `Offramp.unwrap()` is a protocol-internal function that reverts with `Unauthorized()` if the caller holds a non-zero pUSD balance. It is designed to be called only by the `CTFCollateralAdapter` as part of V2 settlement flow, where it runs as a pass-through (pUSD in, USDC.e out, zero balance at any instant).
-
-### How to actually get USDC.e back
-
-- **Through the Polymarket UI (recommended):** the frontend uses a Safe-wallet flow that triggers the adapter-mediated unwrap on your behalf. This is the supported user-facing path.
-- **By trading:** on V2, buying an outcome token burns pUSD and gives you position tokens. Redeeming a winning position at resolution pays out USDC.e directly from the ConditionalTokens contract (bypasses the Offramp entirely). This is the on-chain exit path.
-
-Direct EOA unwrap is not a supported user action. If you build an integration that expects to call `Offramp.unwrap()` from a user wallet, it will revert.
-
-### Function signature (for reference only)
+Unwrapping is designed to be **permissionless** — any EOA can call `CollateralOfframp.unwrap(asset, to, amount)` and burn their pUSD in exchange for USDC.e. The function signature mirrors wrap:
 
 ```
 function unwrap(address underlyingToken, address recipient, uint256 amount)
 ```
 
-Only authorized callers (currently the `CTFCollateralAdapter`) can successfully invoke this.
+<Warning>
+**Pre-cutover (before April 22):** The Offramp contract is deployed on Polygon mainnet but has not yet been granted `WRAPPER_ROLE` on the pUSD token. Calling `unwrap()` directly today reverts with `Unauthorized()` from pUSD's `onlyRoles(WRAPPER_ROLE)` check. Polymarket is expected to grant the role to the Offramp at or around the V2 cutover on April 22.
+
+Until then, the only live pUSD → USDC.e paths are:
+- **Polymarket's withdraw UI** at `bridge.polymarket.com/withdraw` — routes through a Uniswap v3 pool for small amounts or an off-chain witness flow for larger amounts.
+- **Settlement through the V2 exchange** — the `CTFCollateralAdapter` already holds `WRAPPER_ROLE` and unwraps internally during `matchOrders` settlements.
+- **Redeeming resolved positions** — ConditionalTokens pays out USDC.e directly; bypasses the Offramp entirely.
+
+You can watch for the role grant on-chain by monitoring `RolesUpdated(0x2957922eb93258b93368531d39facca3b4dc5854, 2)` emitted by the pUSD proxy at `0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb`.
+</Warning>
+
+### Steps (post-cutover)
+
+1. **Approve** the Offramp to spend your pUSD
+2. **Call** `unwrap(USDC.e, recipient, amount)` on the Offramp
+
+Both steps are EOA-callable once the role is granted.
+
+### Related contracts
+
+| Contract | Address | Role on pUSD (today) |
+|----------|---------|----------------------|
+| Collateral Onramp (wrap) | `0x93070a847efef7f70739046a929d47a521f5b8ee` | WRAPPER_ROLE ✓ |
+| Collateral Offramp (unwrap) | `0x2957922eb93258b93368531d39facca3b4dc5854` | none (pending) |
+| PermissionedRamp (witness-signed) | `0xebc2459ec962869ca4c0bd1e06368272732bcb08` | WRAPPER_ROLE ✓ |
+| CtfCollateralAdapter (internal) | `0xada100874d00e3331d00f2007a9c336a65009718` | WRAPPER_ROLE ✓ |
 
 ## How It Works Under the Hood
 
