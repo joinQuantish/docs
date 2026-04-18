@@ -7,6 +7,57 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-18 — Rust SDK 0.8.0: batch orderbook API
+
+### New: batch + all-tracked queries
+
+Every per-token orderbook method on `OrderbookEngine` and `EngineView` now has a batch and an all-tracked variant. One read lock, one round-trip, results returned as a `HashMap<String, T>` keyed by token ID.
+
+```rust
+let mids   = engine.midpoints(&ids).await;       // requested tokens
+let mids   = engine.midpoints_all().await;        // every tracked token
+
+// Same shape for: spreads / best_bids / best_asks / books
+let books  = engine.books_all().await;            // full L2 for everything
+```
+
+Tokens not in local state are silently skipped, so callers can pass mixed lists without pre-filtering.
+
+### New: detect inactive markets
+
+Each tracked token now records when its local copy was last touched. Use it to find markets that have stopped moving.
+
+```rust
+use std::time::Duration;
+
+if let Some(ts) = engine.last_change("token_a").await {
+    println!("last update {:?} ago", ts.elapsed());
+}
+
+let stale = engine.inactive_since(Duration::from_secs(60)).await;
+```
+
+### New: direct state access
+
+`engine.state()` returns the underlying `Arc<RwLock<LocalOrderbook>>` so callers can hold the lock and walk the full state themselves — useful for snapshotting all tokens at one consistent moment or building custom views.
+
+```rust
+let state = engine.state();
+let guard = state.read().await;
+let mids  = guard.midpoints_all();
+let books = guard.books_all();
+```
+
+### Install
+
+```bash
+cargo add polynode@0.8.0
+```
+
+All existing per-token methods (`engine.midpoint(id)`, `engine.book(id)`, etc.) are unchanged. This release is purely additive.
+
+---
+
 ## 2026-04-17 — Unrealized P&L + redemption fix
 
 ### New: `unrealized_pnl` field on positions

@@ -125,3 +125,101 @@ async fn main() -> polynode::Result<()> {
     Ok(())
 }
 ```
+
+### Batch Queries
+
+Query many tokens in a single call. Each batch method takes a slice of token IDs and returns a `HashMap<String, T>` keyed by `asset_id`. Tokens that aren't in local state are silently omitted, so callers can pass mixed lists without pre-filtering.
+
+```rust,no_run
+use polynode::{OrderbookEngine, EngineOptions};
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let engine = OrderbookEngine::connect("pn_live_...", EngineOptions::default()).await?;
+    engine.subscribe(vec!["token_a".into(), "token_b".into(), "token_c".into()]).await?;
+
+    let ids = vec!["token_a".to_string(), "token_b".to_string(), "token_c".to_string()];
+
+    // One read lock, one round-trip — every value at once.
+    let mids    = engine.midpoints(&ids).await;
+    let spreads = engine.spreads(&ids).await;
+    let bids    = engine.best_bids(&ids).await;
+    let asks    = engine.best_asks(&ids).await;
+    let books   = engine.books(&ids).await;
+
+    for (id, m) in &mids {
+        println!("{}  mid={:.4}", id, m);
+    }
+    Ok(())
+}
+```
+
+### All Tracked Tokens
+
+Skip the ID list and get every token currently in local state. Useful when you want a global snapshot of everything you're subscribed to.
+
+```rust,no_run
+# use polynode::OrderbookEngine;
+# async fn example(engine: &OrderbookEngine) -> polynode::Result<()> {
+let tokens = engine.tracked_tokens().await;     // Vec<String>
+let mids   = engine.midpoints_all().await;       // every midpoint
+let spreads = engine.spreads_all().await;
+let bids   = engine.best_bids_all().await;
+let asks   = engine.best_asks_all().await;
+let books  = engine.books_all().await;           // full L2 for everything
+# Ok(())
+# }
+```
+
+The same `_all` methods exist on `EngineView`.
+
+### Detecting Inactive Markets
+
+Each token tracks the moment its local copy was last touched (snapshot or delta). Use this to detect markets that have stopped moving.
+
+```rust,no_run
+use std::time::Duration;
+# use polynode::OrderbookEngine;
+
+# async fn example(engine: &OrderbookEngine) -> polynode::Result<()> {
+// When did this token last change?
+if let Some(ts) = engine.last_change("token_a").await {
+    println!("last update was {:?} ago", ts.elapsed());
+}
+
+// All tokens with no update in the last 60 seconds
+let stale = engine.inactive_since(Duration::from_secs(60)).await;
+for token in stale {
+    println!("inactive: {}", token);
+}
+# Ok(())
+# }
+```
+
+The timestamp is stamped client-side at the moment your SDK applies the update, which is typically tens of milliseconds behind the actual exchange event — accurate enough for inactive-market detection.
+
+### Direct State Access
+
+For callers who want to hold the lock and walk the full state themselves, `engine.state()` returns the underlying `Arc<RwLock<LocalOrderbook>>`. Useful for custom batch logic, snapshotting all tokens at a single consistent moment, or building your own view.
+
+```rust,no_run
+# use polynode::OrderbookEngine;
+# async fn example(engine: &OrderbookEngine) -> polynode::Result<()> {
+let state = engine.state();
+let guard = state.read().await;
+
+// Everything in one consistent view
+let total = guard.len();
+let mids  = guard.midpoints_all();
+let books = guard.books_all();
+
+for token in guard.tracked_tokens() {
+    if let Some(ts) = guard.last_change(&token) {
+        println!("{}: last change {:?} ago", token, ts.elapsed());
+    }
+}
+# Ok(())
+# }
+```
+
+The same methods are available on `LocalOrderbook` directly when used outside the engine.
