@@ -82,6 +82,19 @@ while let Some(msg) = stream.next().await {
 # }
 ```
 
+#### Types
+
+`best_bid` and `best_ask` return `Option<&OrderbookLevel>`. `book.get_book(token)` returns `Option<(&[OrderbookLevel], &[OrderbookLevel])>` — bids first (sorted descending), asks second (sorted ascending).
+
+```rust,no_run
+pub struct OrderbookLevel {
+    pub price: String,  // string-typed — parse to f64 for math
+    pub size: String,
+}
+```
+
+Prices and sizes are strings to preserve full Polymarket precision. Parse with `level.price.parse::<f64>()?` when you need numeric values.
+
 ### Orderbook Engine
 
 The highest-level abstraction. One shared WebSocket, automatic state management, and filtered views for different consumers:
@@ -125,6 +138,34 @@ async fn main() -> polynode::Result<()> {
     Ok(())
 }
 ```
+
+#### Method signatures
+
+```rust,no_run
+# use polynode::OrderbookEngine;
+# use polynode::types::orderbook::OrderbookLevel;
+# async fn sigs(engine: &OrderbookEngine) {
+let _: Option<f64>            = engine.midpoint("token").await;
+let _: Option<f64>            = engine.spread("token").await;
+let _: Option<OrderbookLevel> = engine.best_bid("token").await;
+let _: Option<OrderbookLevel> = engine.best_ask("token").await;
+let _: Option<(Vec<OrderbookLevel>, Vec<OrderbookLevel>)> = engine.book("token").await;
+# }
+```
+
+`midpoint` and `spread` return `None` when either the bid OR ask side is empty — a one-sided book has no defined mid or spread. `best_bid` / `best_ask` only require their own side to be present. `book` returns whatever's there even if one side is empty.
+
+#### EngineOptions
+
+```rust,no_run
+pub struct EngineOptions {
+    pub compress: bool,                       // default: true  — gzip on the wire
+    pub auto_reconnect: bool,                 // default: true
+    pub max_reconnect_attempts: Option<u32>,  // default: None  — reconnect forever
+}
+```
+
+`EngineOptions::default()` is the right call for almost every use case. Override only if you need to disable compression for a CPU-constrained client or cap reconnect attempts in a one-shot script.
 
 ### Batch Queries
 
