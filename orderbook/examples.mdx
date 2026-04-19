@@ -60,7 +60,8 @@ ws.onmessage = (event) => {
     for (const update of msg.updates) {
       if (update.type === "price_change") {
         for (const asset of update.assets) {
-          console.log(`  ${update.slug} [${asset.outcome}]: ${asset.price}`);
+          // size="0" removes the level; otherwise it's the new absolute size at that level.
+          console.log(`  ${update.slug} [${asset.outcome}] ${asset.side} ${asset.price} -> ${asset.size}  (bbo ${asset.best_bid}/${asset.best_ask})`);
         }
       }
     }
@@ -107,7 +108,13 @@ ws.onmessage = (event) => {
       for (const update of msg.updates) {
         if (update.type === "price_change") {
           for (const asset of update.assets) {
-            console.log(`${update.slug} [${asset.outcome}]: ${asset.price}`);
+            // Apply directly to local books — price_change carries size + side so you
+            // can maintain a tick-accurate book without polling REST.
+            const book = books[asset.asset_id];
+            if (book) {
+              const levels = asset.side === "BUY" ? book.bids : book.asks;
+              applyDelta(levels, [{ price: asset.price, size: asset.size }]);
+            }
           }
         } else if (update.type === "book_update") {
           const book = books[update.asset_id];
@@ -164,7 +171,8 @@ async def stream_firehose():
                 for update in data["updates"]:
                     if update["type"] == "price_change":
                         for asset in update["assets"]:
-                            print(f"  {update['slug']} [{asset['outcome']}]: {asset['price']}")
+                            # size="0" removes the level; otherwise it's the new absolute size.
+                            print(f"  {update['slug']} [{asset['outcome']}] {asset['side']} {asset['price']} -> {asset['size']}  (bbo {asset['best_bid']}/{asset['best_ask']})")
 
 asyncio.run(stream_firehose())
 ```
@@ -210,7 +218,7 @@ async def stream_orderbook():
                 for update in data["updates"]:
                     if update["type"] == "price_change":
                         for asset in update["assets"]:
-                            print(f"  {update['slug']} [{asset['outcome']}]: {asset['price']}")
+                            print(f"  {update['slug']} [{asset['outcome']}] {asset['side']} {asset['price']} -> {asset['size']}  (bbo {asset['best_bid']}/{asset['best_ask']})")
 
                     elif update["type"] == "book_update":
                         bids = len(update.get("bids", []))

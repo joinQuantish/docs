@@ -49,7 +49,7 @@ async fn main() -> polynode::Result<()> {
 
 ### Local Orderbook State
 
-Apply snapshots and deltas to maintain a sorted local copy of the book:
+Apply snapshots, deltas, and price changes to maintain a sorted, tick-accurate local copy of the book:
 
 ```rust,no_run
 use polynode::LocalOrderbook;
@@ -61,9 +61,10 @@ let mut book = LocalOrderbook::new();
 while let Some(msg) = stream.next().await {
     if let Ok(ObMessage::Update(update)) = msg {
         match &update {
-            OrderbookUpdate::Snapshot(snap) => book.apply_snapshot(snap),
-            OrderbookUpdate::Update(delta) => book.apply_update(delta),
-            OrderbookUpdate::PriceChange(_) => {}
+            OrderbookUpdate::Snapshot(snap)       => book.apply_snapshot(snap),
+            OrderbookUpdate::Update(delta)        => book.apply_update(delta),
+            OrderbookUpdate::PriceChange(pc)      => book.apply_price_change(pc),
+            OrderbookUpdate::LastTradePrice(_)    => {}
         }
     }
 
@@ -81,6 +82,10 @@ while let Some(msg) = stream.next().await {
 # Ok(())
 # }
 ```
+
+<Tip>
+  Requires polynode **v0.11.0+**. Earlier versions dropped `price_change` events before they reached your handler — upgrade if your local book drifts from the server.
+</Tip>
 
 #### Types
 
@@ -286,7 +291,7 @@ let mut view = engine.view(vec!["token_a".into(), "token_b".into()]);
 // Stream updates scoped to this view's tokens. next() returns the next
 // OrderbookUpdate for token_a or token_b, and None only if the engine closes.
 while let Some(update) = view.next().await {
-    // update is an OrderbookUpdate::Snapshot | ::Update | ::PriceChange
+    // update is an OrderbookUpdate::Snapshot | ::Update | ::PriceChange | ::LastTradePrice
     // query freshest state (same read lock as the engine):
     if let Some(mid) = view.midpoint("token_a").await {
         println!("token_a mid: {mid:.4}");

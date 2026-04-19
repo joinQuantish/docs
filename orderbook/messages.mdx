@@ -247,12 +247,20 @@ Batched updates delivered every 250ms. Contains all changes for your subscribed 
         {
           "asset_id": "66255671088804707681511323064315150986307471908131081808279119719218775249892",
           "outcome": "No",
-          "price": "0.55"
+          "price": "0.55",
+          "size": "2500",
+          "side": "BUY",
+          "best_bid": "0.55",
+          "best_ask": "0.56"
         },
         {
           "asset_id": "114694726451307654528948558967898493662917070661203465131156925998487819889437",
           "outcome": "Yes",
-          "price": "0.45"
+          "price": "0.45",
+          "size": "0",
+          "side": "SELL",
+          "best_bid": "0.44",
+          "best_ask": "0.46"
         }
       ]
     },
@@ -281,14 +289,30 @@ Each update in the `updates` array is one of:
 
 #### `price_change`
 
-A market's price moved due to an order placement or cancellation.
+A market's price level changed due to an order placement, cancellation, or fill. Each entry in `assets` describes a single level change. `size` is the absolute new size at that level — `"0"` means the level was removed. You can apply `price_change` events directly to your local book to maintain tick-accurate state without polling.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `type` | string | `"price_change"` |
 | `market` | string | Condition ID |
 | `slug` | string | Event slug |
-| `assets` | object[] | Array of `{asset_id, outcome, price}` for each side |
+| `assets` | object[] | Array of per-level changes (see below) |
+
+Each entry in `assets`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `asset_id` | string | Token ID |
+| `outcome` | string | Outcome label (`"Yes"`, `"No"`, etc.) |
+| `price` | string | The level that changed |
+| `size` | string | Absolute size at that level after the change. `"0"` means removed. |
+| `side` | string | `"BUY"` (affects bids) or `"SELL"` (affects asks) |
+| `best_bid` | string | Best bid on this asset after the change |
+| `best_ask` | string | Best ask on this asset after the change |
+
+<Tip>
+  Multiple levels on the same `asset_id` may appear in one batch — each represents a distinct level change. The 250ms coalescer merges repeat hits on the same `(asset_id, price, side)` to last-write-wins, so you always get the most recent size for each level.
+</Tip>
 
 #### `book_update`
 

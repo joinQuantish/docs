@@ -58,7 +58,8 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
         for (const update of msg.updates) {
           if (update.type === "price_change") {
             for (const asset of update.assets) {
-              console.log(`${update.slug} [${asset.outcome}]: ${asset.price}`);
+              // size="0" means the level was removed; otherwise it's the new absolute size at that level.
+              console.log(`${update.slug} [${asset.outcome}] ${asset.side} @ ${asset.price} -> size ${asset.size}  (bbo: ${asset.best_bid}/${asset.best_ask})`);
             }
           }
         }
@@ -84,7 +85,8 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
                     for update in data["updates"]:
                         if update["type"] == "price_change":
                             for asset in update["assets"]:
-                                print(f"{update['slug']} [{asset['outcome']}]: {asset['price']}")
+                                # size="0" removes the level; otherwise it's the new absolute size.
+                                print(f"{update['slug']} [{asset['outcome']}] {asset['side']} @ {asset['price']} -> size {asset['size']}  (bbo: {asset['best_bid']}/{asset['best_ask']})")
 
     asyncio.run(stream_orderbook())
     ```

@@ -7,6 +7,39 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-19 — Tick-accurate orderbook + Rust SDK 0.11.0
+
+The orderbook WebSocket now delivers PM's full per-level wire payload so you can maintain a tick-accurate local book without REST polling. Accuracy against upstream measured at **100% best-bid / 100% best-ask** across 50 concurrent markets (previously 92–95%).
+
+**What's new in the `price_change` message**
+
+Every entry in the `assets` array now includes four extra fields:
+
+- `size` — the absolute size at that level after the change. `"0"` means the level was removed.
+- `side` — `"BUY"` (affects bids) or `"SELL"` (affects asks)
+- `best_bid`, `best_ask` — best bid/ask on the asset after the change
+
+Old clients parsing only `{asset_id, price}` are unaffected — the new fields are additive. Multiple distinct levels on the same asset may now appear in one batch; repeat hits on the same `(asset_id, price, side)` within the 250ms coalesce window still merge to last-write-wins.
+
+See the [orderbook message reference](/orderbook/messages) for the full field list.
+
+**Rust SDK 0.11.0**
+
+- `PriceChangeAsset` now carries `size`, `side`, `best_bid`, `best_ask`
+- New `LocalOrderbook::apply_price_change(&PriceChange)` — apply incremental updates directly to your local book
+- `OrderbookEngine` automatically applies `price_change` events to its shared state so every `EngineView` stays tick-accurate
+- `OrderbookUpdate::LastTradePrice(BookTrade)` — executed-trade events now deserialize cleanly (previously dropped)
+
+**Install:**
+
+```bash
+cargo add polynode@0.11.0
+```
+
+**Breaking:** none. Enum variants added are additive under existing serde routing. Explicit exhaustive matches on `OrderbookUpdate` will need to handle the new `LastTradePrice` variant — add a `_ => {}` arm or match it explicitly.
+
+---
+
 ## 2026-04-19 — V2-ready SDKs released (Rust 0.9.0, TypeScript 0.8.0, Python 0.8.0)
 
 All three polynode trading SDKs are now wire-compatible with the Polymarket V2 exchange ahead of the **April 28, 2026 cutover**. Upgrade before then. V1 orders submitted after cutover will be rejected with `order_version_mismatch`.
