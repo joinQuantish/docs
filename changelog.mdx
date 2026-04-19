@@ -7,6 +7,30 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-19 — V2-ready SDKs released (Rust 0.9.0, TypeScript 0.8.0, Python 0.8.0)
+
+All three polynode trading SDKs are now wire-compatible with the Polymarket V2 exchange ahead of the **April 28, 2026 cutover**. Upgrade before then. V1 orders submitted after cutover will be rejected with `order_version_mismatch`.
+
+**What changed (all three SDKs):**
+
+- V2 CLOB POST body now includes `"expiration": "0"` to match `@polymarket/clob-client-v2`'s wire format
+- `OrderParams` now exposes a `builder` field (bytes32). Pass your builder code on each order to attribute trades on-chain. Defaults to zero (no attribution). Mint your V2 builder code at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder)
+- All V2 order placement paths live-verified against `clob-v2.polymarket.com`
+
+**Install:**
+
+```bash
+cargo add polynode@0.9.0          # Rust
+npm install polynode-sdk@^0.8.0   # TypeScript
+pip install "polynode>=0.8.0"     # Python
+```
+
+**Breaking (Rust only):** `OrderParams` added a required struct field. If you construct `OrderParams { ... }` explicitly without `..Default::default()`, add `builder: None` to your literal. No code change required if you use struct update syntax.
+
+See the [V2 Migration Guide](/guides/v2-migration) for the full cutover checklist, the single-line switch, and a troubleshooting reference for common V2 errors.
+
+---
+
 ## 2026-04-18 — Rust SDK 0.8.1: batch orderbook API
 
 ### New: batch + all-tracked queries
