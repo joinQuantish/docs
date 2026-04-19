@@ -7,9 +7,9 @@ icon: "clock-rotate-left"
 
 ---
 
-## 2026-04-19 — Tick-accurate orderbook + Rust SDK 0.11.0
+## 2026-04-19 — Expanded orderbook wire format + Rust SDK 0.11.0
 
-The orderbook WebSocket now delivers PM's full per-level wire payload so you can maintain a tick-accurate local book without REST polling. Accuracy against upstream measured at **100% best-bid / 100% best-ask** across 50 concurrent markets (previously 92–95%).
+The orderbook WebSocket now delivers PM's full per-level payload so you can maintain a tick-accurate local book without REST polling. Verified at **100% best-bid / 100% best-ask** across 50 concurrent markets.
 
 **What's new in the `price_change` message**
 
