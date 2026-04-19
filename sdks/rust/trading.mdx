@@ -5,6 +5,9 @@ sidebarTitle: "Trading"
 
 ## Trading Module
 
+<Warning>
+**Polymarket V2 cutover: April 28, 2026 at ~11am UTC.** Set `exchange_version: ExchangeVersion::V2` in your `TraderConfig` before cutover. V1 orders submitted after April 28 will be rejected with `order_version_mismatch`. Pass your V2 builder code (mint at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder)) via `OrderParams.builder`. See the [V2 Migration Guide](/guides/v2-migration).
+</Warning>
 
 <Note>Requires the `trading` feature flag: `polynode = { version = "0.7.3", features = ["trading"] }`</Note>
 

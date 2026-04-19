@@ -5,6 +5,9 @@ sidebarTitle: "Trading"
 
 ## Trading
 
+<Warning>
+**Polymarket V2 cutover: April 28, 2026 at ~11am UTC.** Set `exchangeVersion: "v2"` in your `TraderConfig` before cutover. V1 orders submitted after April 28 will be rejected with `order_version_mismatch`. Pass your V2 builder code (mint at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder)) via the `builder` field on each order. See the [V2 Migration Guide](/guides/v2-migration).
+</Warning>
 
 Order placement is available through the `PolyNodeTrader` class, which supports the Polymarket V2 exchange. See the [Trading reference](/sdks/trading) for full documentation, including wallet setup, order placement, and V2 PolyUSD wrapping.
 

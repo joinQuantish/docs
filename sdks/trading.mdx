@@ -5,6 +5,10 @@ description: "Place orders on Polymarket through the polynode SDK with local cre
 icon: "arrow-right-arrow-left"
 ---
 
+<Warning>
+**Polymarket V2 cutover: April 28, 2026 at ~11am UTC.** Set `exchangeVersion: "v2"` (TypeScript) / `ExchangeVersion::V2` (Rust) / `ExchangeVersion.V2` (Python) in your `TraderConfig` before cutover. V1 orders submitted after April 28 will be rejected with `order_version_mismatch`. Pass your V2 builder code (mint at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder)) via the `builder` field on each order. See the [V2 Migration Guide](/guides/v2-migration) for the full rundown.
+</Warning>
+
 ## Overview
 
 The trading module lets you place and manage orders on Polymarket. One function call handles wallet setup, credential creation, approvals, and order placement. You don't need to understand Polymarket's wallet types, contract addresses, or signing protocols.
