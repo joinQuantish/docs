@@ -1,0 +1,143 @@
+---
+title: "CLOB v2 API"
+description: "Paid REST endpoints for Polymarket CLOB v2 data — fills, positions, candles, builder leaderboard, neg-risk events. Enriched with market metadata. Backed by polynode's own indexer, not Goldsky."
+---
+
+REST endpoints for Polymarket CLOB v2 data, indexed and served by polynode. Every endpoint returns JSON enriched with market metadata (question, slug, outcome label, image, condition_id) baked in — you never need to look up a market name separately.
+
+This is the **v2-only** surface. The existing [`/v2/onchain/*`](/api-reference/onchain/trades) endpoints cover v1 Polymarket (and will eventually unify onto the same indexer). Until then, use `/clobv2/*` for anything that needs v2 fills, positions, builder attribution, or neg-risk events.
+
+## Base URL
+
+```
+https://api.polynode.dev/clobv2/
+```
+
+## Authentication
+
+Every endpoint requires a paid-tier API key (starter and up). Free-tier keys receive `402 Payment Required`.
+
+Pass your key by any of three methods:
+
+<CodeGroup>
+
+```bash x-api-key header (recommended)
+curl "https://api.polynode.dev/clobv2/trades?limit=10" \
+  -H "x-api-key: pn_live_..."
+```
+
+```bash Authorization: Bearer
+curl "https://api.polynode.dev/clobv2/trades?limit=10" \
+  -H "Authorization: Bearer pn_live_..."
+```
+
+```bash Query parameter
+curl "https://api.polynode.dev/clobv2/trades?limit=10&key=pn_live_..."
+```
+
+</CodeGroup>
+
+Never pass the key in a URL you'd share publicly — the query-param form is fine for local scripts but logs it to server access logs.
+
+## Endpoints
+
+### Fills
+
+| Endpoint | Purpose |
+|---|---|
+| [`GET /clobv2/trades`](/api-reference/clobv2/trades) | Global v2 fills feed, filterable by wallet, market, builder, time, size. |
+| [`GET /clobv2/wallets/{address}/trades`](/api-reference/clobv2/wallet-trades) | Per-wallet fill history with `side` always present. |
+| [`GET /clobv2/markets/{token_id}/trades`](/api-reference/clobv2/market-trades) | Per-outcome-token fill history. |
+
+### Positions
+
+| Endpoint | Purpose |
+|---|---|
+| [`GET /clobv2/positions`](/api-reference/clobv2/positions) | Every open/closed v2 position across all wallets, filterable by wallet, market, token, size. |
+
+### Market aggregates
+
+| Endpoint | Purpose |
+|---|---|
+| [`GET /clobv2/markets/{token_id}/volume`](/api-reference/clobv2/market-volume) | Lifetime buy/sell counters from per-fill aggregation. |
+| [`GET /clobv2/markets/{token_id}/orderbook`](/api-reference/clobv2/market-orderbook) | Lifetime counters from the subgraph's orderbook rollup entity. |
+| [`GET /clobv2/candles/{token_id}`](/api-reference/clobv2/candles) | OHLCV candles at 1m/5m/15m/1h/4h/1d resolutions, with VWAP and buy/sell split. |
+| [`GET /clobv2/volume/hourly`](/api-reference/clobv2/volume-hourly) | Platform-wide hourly volume buckets. |
+
+### Builders (v2-exclusive)
+
+| Endpoint | Purpose |
+|---|---|
+| [`GET /clobv2/builders`](/api-reference/clobv2/builders) | Leaderboard of every builder that has attributed a v2 fill, ranked by notional. |
+
+### Neg-risk events (v2-exclusive)
+
+| Endpoint | Purpose |
+|---|---|
+| [`GET /clobv2/neg-risk/events`](/api-reference/clobv2/neg-risk-events) | Parent events (PGA winners, NBA MVP, elections) with full outcome lists. |
+| [`GET /clobv2/neg-risk/events/{parent_id}/children`](/api-reference/clobv2/neg-risk-children) | Every child market inside one event, ranked by volume. |
+
+## Numeric precision
+
+All USDC / share / price fields in list responses are returned as **JSON strings** (e.g. `"1.3440000000000000"`, not `1.344`) to preserve full database precision. Parse to `Decimal` / `BigNumber` / `bignumber.js` before arithmetic. Integer counts (trade counts, market counts) remain JSON numbers.
+
+Single-object market-volume + market-orderbook responses return numbers for convenience.
+
+## Response envelope
+
+Every list endpoint wraps results the same way:
+
+```json
+{
+  "count": 25,
+  "source": "onchain-v2",
+  "pagination": {
+    "limit": 100,
+    "offset": 0,
+    "has_more": false
+  },
+  "<collection_name>": [ ... ]
+}
+```
+
+- `count`: the number of rows in this response.
+- `source`: always `"onchain-v2"` for clobv2 endpoints — identifies this as v2 exchange data.
+- `pagination`: standard offset-based. `has_more: true` means you can fetch `offset += count` to get the next page.
+- The array field name matches the endpoint (`trades`, `positions`, `events`, etc.).
+
+Single-object endpoints (e.g. volume, orderbook-rollup) skip the pagination object and include a `found` boolean.
+
+## Rate limits
+
+Every response carries:
+
+```
+x-ratelimit-limit: 100000
+x-ratelimit-remaining: 99997
+x-ratelimit-reset: 1776665478
+```
+
+Limits are per-API-key over a rolling 60-second window. When exceeded you get `429 Too Many Requests` with `{"error": "rate limit exceeded", "reset_at": <unix>}`.
+
+## Error shape
+
+| Status | Meaning |
+|---|---|
+| `400` | Parameter validation failed (bad hex format, bad enum, out-of-range integer). Body: `{"error": "..."}`. |
+| `401` | No API key or bad/revoked key. |
+| `402` | Free-tier key — paid plan required. |
+| `429` | Rate limit exceeded. |
+| `5xx` | Transient upstream issue. Clients should retry with backoff. |
+
+All error bodies follow `{"error": "<human readable>"}`. `402` also includes `tier` and `upgrade_url` fields.
+
+## Known stubs
+
+These endpoints exist on the server but are not yet documented because their backing data isn't indexed:
+
+- `/clobv2/wallets/{address}/redemptions`
+- `/clobv2/wallets/{address}/activity`
+- `/clobv2/markets/{condition_id}/oi`
+- `/clobv2/oi`
+
+They currently return the empty-shape response (count/volume fields zeroed). When the supporting subgraphs catch up on s4, they'll light up with real data and get their own doc pages — no API contract change.

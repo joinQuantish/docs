@@ -1,0 +1,145 @@
+---
+title: "Neg-Risk Events"
+description: "Parent neg-risk events on Polymarket (multi-outcome winner markets like PGA tournaments, elections, NBA MVP). Each event collects N child markets under one title."
+openapi: "GET /clobv2/neg-risk/events"
+---
+
+Polymarket's negative-risk markets group a large set of competing outcomes (e.g. "who wins this PGA tournament?" with 147 golfers) under a single event. Each candidate is its own child market with its own `condition_id`. This endpoint lists the **parents** — one row per event — with the full candidate list and the set of child condition_ids so you can drill down.
+
+Backed by `v2.neg_risk_event`. Sorted by `question_count DESC` (biggest fields first).
+
+## Request
+
+```
+GET /clobv2/neg-risk/events
+```
+
+### Authentication
+
+Paid tier required. See [`/clobv2/trades`](/api-reference/clobv2/trades) for auth formats.
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `limit` | integer | No | Results per page (1-500, default 50). |
+| `offset` | integer | No | Skip this many results (0-10000000, default 0). |
+
+### Parameter validation
+
+- `limit`: 1-500. `offset`: 0-10000000.
+
+Bad input → `400 Bad Request`.
+
+## Response
+
+```json
+{
+  "count": 1,
+  "source": "onchain-v2",
+  "pagination": {
+    "limit": 1,
+    "offset": 0,
+    "has_more": true
+  },
+  "events": [
+    {
+      "id": "0x3124c2b2cc076379db07e928b48a4c8c82b4508bc6b87730c7e664a4b711e300",
+      "event_title": "PGA TOUR Wyndham Championship – Winner",
+      "event_slug": "pga-tour-wyndham-championship-winner",
+      "question_count": 147,
+      "child_market_count": 147,
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/fedex-cup-winner-uXTWFOWO-0w7.png",
+      "end_date": "2025-08-04T00:00:00+00:00",
+      "outcomes": [
+        "Matt Fitzpatrick",
+        "Robert MacIntyre",
+        "Ben Griffin",
+        "Keegan Bradley",
+        "...147 candidates total"
+      ],
+      "child_condition_ids": [
+        "0x0230dd23a8ee2f8cd1f79b6ef6baae2d035245cb3697d57c92b731732d630602",
+        "0x057d2315840a370fcc5535921294febea4b81c5cba4407347bbe91f84fd842ab",
+        "...147 child condition_ids total"
+      ]
+    }
+  ]
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `count` | integer | Number of events in this page. |
+| `source` | string | Always `"onchain-v2"`. |
+| `pagination.limit` / `offset` / `has_more` | | Standard offset-based pagination. |
+| `events[].id` | string | 32-byte parent ID — this is the `neg_risk_market_id`. Use it with [`/clobv2/neg-risk/events/{parent_id}/children`](/api-reference/clobv2/neg-risk-children) to enumerate individual child markets. |
+| `events[].event_title` | string | Human-readable event name (e.g. `"PGA TOUR Wyndham Championship – Winner"`). |
+| `events[].event_slug` | string | URL slug of the event. |
+| `events[].question_count` | integer | Number of outcomes in the event — matches `child_market_count` for well-formed events. |
+| `events[].child_market_count` | integer | Number of child markets indexed. Each child market is a `"Will {outcome} win?"` binary. |
+| `events[].outcomes` | array of strings | Candidate names in outcome-index order. For PGA this is players, for elections this is candidates, etc. |
+| `events[].child_condition_ids` | array of strings | 32-byte condition_ids — one per child market, same order as `outcomes`. Use these to pull fills/positions for a specific outcome. |
+| `events[].image` | string \| null | CDN URL of the event image. |
+| `events[].end_date` | string \| null | ISO-8601 UTC resolution date. |
+
+### Rate-limit headers
+
+Standard: `x-ratelimit-limit`, `x-ratelimit-remaining`, `x-ratelimit-reset`.
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+# 5 biggest neg-risk events
+curl "https://api.polynode.dev/clobv2/neg-risk/events?limit=5" \
+  -H "x-api-key: pn_live_..."
+
+# Next page
+curl "https://api.polynode.dev/clobv2/neg-risk/events?limit=50&offset=50" \
+  -H "x-api-key: pn_live_..."
+```
+
+```javascript Node.js
+const KEY = process.env.POLYNODE_KEY;
+const resp = await fetch('https://api.polynode.dev/clobv2/neg-risk/events?limit=20',
+  { headers: { 'x-api-key': KEY } });
+const d = await resp.json();
+for (const ev of d.events) {
+  console.log(`${ev.event_title}  (${ev.question_count} outcomes, ends ${ev.end_date})`);
+  console.log(`  first 3: ${ev.outcomes.slice(0, 3).join(', ')}, ...`);
+}
+```
+
+```python Python
+import requests, os
+KEY = os.environ["POLYNODE_KEY"]
+r = requests.get("https://api.polynode.dev/clobv2/neg-risk/events",
+                 params={"limit": 5}, headers={"x-api-key": KEY})
+r.raise_for_status()
+for ev in r.json()["events"]:
+    print(f"{ev['event_title']}  ({ev['question_count']} outcomes)")
+```
+
+</CodeGroup>
+
+## Error responses
+
+| Status | Body | When |
+|--------|------|------|
+| `400` | `{"error": "invalid integer limit ..."}` | Bad limit or offset. |
+| `401` | `{"error": "missing API key ..."}` | No key or bad key. |
+| `402` | `{"error": "paid plan required ..."}` | Free tier. |
+| `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
+| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+
+## Notes
+
+- `outcomes` and `child_condition_ids` are parallel arrays — the Nth outcome corresponds to the Nth condition_id.
+- `question_count` can differ slightly from `child_market_count` if the metadata layer hasn't picked up every child yet. The two are equal for every well-formed event.
+- Events where the metadata layer hasn't identified a title yet are filtered out of this response (so `events[].event_title` is always non-null here).
+- Sorted newest by `question_count DESC` — biggest fields first (PGA, elections, NBA MVP, etc.).
+- To pull all fills on a single candidate, grab that candidate's `child_condition_ids[i]` and pass it to [`/clobv2/trades?condition_id=...`](/api-reference/clobv2/trades).

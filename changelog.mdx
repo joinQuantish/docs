@@ -7,6 +7,29 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-20 — CLOB v2 API launched
+
+New paid REST namespace `/clobv2/*` exposing every Polymarket CLOB v2 fill, position, builder, and neg-risk event. Backed by polynode's own indexer on s4 — no external dependencies.
+
+**11 endpoints, all enriched with market metadata (question, slug, outcome, image, condition_id) inline:**
+
+- `GET /clobv2/trades` — global fills, filterable by wallet/builder/market/time/size
+- `GET /clobv2/positions` — every open/closed v2 position
+- `GET /clobv2/candles/{token_id}` — OHLCV at 1m/5m/15m/1h/4h/1d with VWAP + buy/sell split
+- `GET /clobv2/wallets/{address}/trades` — per-wallet fill history with `side`
+- `GET /clobv2/markets/{token_id}/{trades,volume,orderbook}` — per-outcome aggregates
+- `GET /clobv2/builders` — v2 builder leaderboard (v2-exclusive)
+- `GET /clobv2/neg-risk/events{,/{parent_id}/children}` — multi-outcome event drilldown
+- `GET /clobv2/volume/hourly` — platform-wide hourly volume buckets
+
+Every list response includes `count`, `pagination.{limit,offset,has_more}`, and rate-limit headers. Paid tier required; free-tier keys receive `402`. See the [overview](/api-reference/clobv2/overview) for auth + numeric-precision conventions.
+
+**`/v2/onchain/*` enrichment restored**
+
+Trades / wallet-trades / market-trades / market-volume / candles on the legacy `/v2/onchain/*` endpoints now carry `market`, `market_slug`, `outcome`, `image`, and `condition_id` inline again. These fields had been quietly lost during a backend refactor.
+
+---
+
 ## 2026-04-19 — Expanded orderbook wire format + Rust SDK 0.11.0
 
 The orderbook WebSocket now delivers PM's full per-level payload so you can maintain a tick-accurate local book without REST polling. Verified at **100% best-bid / 100% best-ask** across 50 concurrent markets.

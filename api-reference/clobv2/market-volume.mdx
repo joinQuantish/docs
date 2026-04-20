@@ -1,0 +1,127 @@
+---
+title: "Market Volume"
+description: "Lifetime volume stats for a single Polymarket CLOB v2 outcome token — total trades, buy/sell split in USDC, share volume — with market metadata."
+openapi: "GET /clobv2/markets/{token_id}/volume"
+---
+
+Aggregated lifetime stats for a single outcome token: total trades, buy/sell split in USDC, total share volume. Enriched with market question, slug, outcome label, image, and condition_id.
+
+Computed from `v2.fill`, bucketing each fill into `buy` (someone paid USDC to get the token) or `sell` (someone paid the token to get USDC).
+
+## Request
+
+```
+GET /clobv2/markets/{token_id}/volume
+```
+
+### Authentication
+
+Paid tier required. See [`/clobv2/trades`](/api-reference/clobv2/trades) for auth formats.
+
+### Path parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `token_id` | string | **Yes** | Outcome token ID (uint256 as decimal string). |
+
+No query parameters.
+
+### Parameter validation
+
+- `token_id`: 1-78 digits, `^[0-9]+$`.
+
+## Response
+
+```json
+{
+  "token_id": "32530407925029104312458780580530294728135746429755854137976885977399961033740",
+  "source": "onchain-v2",
+  "found": true,
+
+  "total_trades": 1,
+  "buys": 1,
+  "sells": 0,
+  "volume_usdc": 1.344,
+  "buy_volume_usdc": 1.344,
+  "sell_volume_usdc": 0.0,
+  "volume_shares": 5.6,
+
+  "market": "Solana Up or Down - April 20, 2:10AM-2:15AM ET",
+  "slug": "sol-updown-5m-1776665400",
+  "outcome": "Up",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/SOL+fullsize.png",
+  "condition_id": "0x1ee2fb3f919aa7c307565db03241926252666691aca6d7185af4654df603efdc"
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `token_id` | string | Echoes the path parameter. |
+| `source` | string | Always `"onchain-v2"`. |
+| `found` | boolean | `true` if this token has at least one fill on v2, `false` otherwise (all volume fields will be zero). |
+| `total_trades` | integer | Total number of fills that touched this token. |
+| `buys` / `sells` | integer | Count of buy and sell fills. A "buy" = someone paid USDC to receive this token; a "sell" = someone paid this token to receive USDC. |
+| `volume_usdc` | number | Total USDC that changed hands on this token (buy + sell). |
+| `buy_volume_usdc` | number | USDC spent buying the token. |
+| `sell_volume_usdc` | number | USDC received from selling the token. |
+| `volume_shares` | number | Total outcome shares that changed hands. |
+| `market` | string \| null | Market question. |
+| `slug` | string \| null | Polymarket URL slug. |
+| `outcome` | string \| null | Outcome label. |
+| `image` | string \| null | CDN URL of the market icon. |
+| `condition_id` | string \| null | Parent market condition_id. |
+
+Unlike the trade endpoints, numeric fields here are returned as JSON numbers (not strings). Precision is still preserved for amounts ≤ 2^53.
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api.polynode.dev/clobv2/markets/32530407925029104312458780580530294728135746429755854137976885977399961033740/volume" \
+  -H "x-api-key: pn_live_..."
+```
+
+```javascript Node.js
+const KEY = process.env.POLYNODE_KEY;
+const resp = await fetch(
+  `https://api.polynode.dev/clobv2/markets/${tokenId}/volume`,
+  { headers: { 'x-api-key': KEY } },
+);
+const d = await resp.json();
+console.log(`${d.market} ${d.outcome}: $${d.volume_usdc.toFixed(2)} total (${d.buys} buys, ${d.sells} sells)`);
+```
+
+```python Python
+import requests, os
+KEY = os.environ["POLYNODE_KEY"]
+r = requests.get(f"https://api.polynode.dev/clobv2/markets/{token_id}/volume",
+                 headers={"x-api-key": KEY})
+r.raise_for_status()
+d = r.json()
+if d["found"]:
+    print(f"{d['market']} — {d['outcome']}")
+    print(f"  Total: ${d['volume_usdc']:.2f} over {d['total_trades']} trades")
+    print(f"  Buys:  ${d['buy_volume_usdc']:.2f}  ({d['buys']} trades)")
+    print(f"  Sells: ${d['sell_volume_usdc']:.2f}  ({d['sells']} trades)")
+```
+
+</CodeGroup>
+
+## Error responses
+
+| Status | Body | When |
+|--------|------|------|
+| `400` | `{"error": "invalid token_id ..."}` | Path param isn't a positive integer string. |
+| `401` | `{"error": "missing API key ..."}` | No key or bad key. |
+| `402` | `{"error": "paid plan required ..."}` | Free tier. |
+| `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
+| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+
+## Notes
+
+- Returns `found: false` (not a 404) when the token_id has no v2 fills yet — all counts/volume fields are zero, metadata fields are `null`.
+- Volume is cumulative lifetime — not time-windowed. Use [`/clobv2/volume/hourly`](/api-reference/clobv2/volume-hourly) for time-sliced aggregates or [`/clobv2/candles/{token_id}`](/api-reference/clobv2/candles) for per-token time series.
+- `total_trades = buys + sells` always.

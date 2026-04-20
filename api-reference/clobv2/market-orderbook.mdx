@@ -1,0 +1,138 @@
+---
+title: "Market Orderbook Rollup"
+description: "Lifetime aggregate counters for a Polymarket CLOB v2 outcome token from the orderbook subgraph — trades, buys/sells, notional USDC with both raw and scaled variants."
+openapi: "GET /clobv2/markets/{token_id}/orderbook"
+---
+
+Per-token aggregate from the v2 orderbook-validator subgraph (`sgd9.orderbook` → `v2.orderbook`). Returns lifetime counters maintained by the subgraph itself rather than re-aggregated from individual fills — a separate, cheaper path than [`/clobv2/markets/{token_id}/volume`](/api-reference/clobv2/market-volume), which does the GROUP BY on fills.
+
+v2-exclusive: the subgraph maintains this rollup only for v2 markets.
+
+## Request
+
+```
+GET /clobv2/markets/{token_id}/orderbook
+```
+
+### Authentication
+
+Paid tier required. See [`/clobv2/trades`](/api-reference/clobv2/trades) for auth formats.
+
+### Path parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `token_id` | string | **Yes** | Outcome token ID (uint256 as decimal string). |
+
+No query parameters.
+
+### Parameter validation
+
+- `token_id`: 1-78 digits, `^[0-9]+$`.
+
+## Response
+
+When the token has a v2 orderbook row (found):
+
+```json
+{
+  "token_id": "32530407925029104312458780580530294728135746429755854137976885977399961033740",
+  "source": "onchain-v2",
+  "found": true,
+  "trades": "1",
+  "buys": "1",
+  "sells": "0",
+  "notional_usdc": "1.3440000000000000",
+  "buy_usdc": "1.3440000000000000",
+  "sell_usdc": "0.000000000000000000000000",
+  "scaled_notional_usdc": "0.000001344000000000000000",
+  "question": "Solana Up or Down - April 20, 2:10AM-2:15AM ET",
+  "slug": "sol-updown-5m-1776665400",
+  "event_title": "Solana Up or Down - April 20, 2:10AM-2:15AM ET",
+  "outcome": "Up",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/SOL+fullsize.png",
+  "condition_id": "0x1ee2fb3f919aa7c307565db03241926252666691aca6d7185af4654df603efdc"
+}
+```
+
+When the token has no v2 orderbook row (never traded on v2):
+
+```json
+{
+  "token_id": "99999...",
+  "source": "onchain-v2",
+  "found": false
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `token_id` | string | Echoes the path parameter. |
+| `source` | string | Always `"onchain-v2"`. |
+| `found` | boolean | `true` if the subgraph has a rollup row for this token; `false` otherwise (all other fields absent). |
+| `trades` | string (numeric) | Total fills counted by the subgraph. |
+| `buys` / `sells` | string (numeric) | Buy and sell counters. |
+| `notional_usdc` | string (numeric) | Total USDC that changed hands (buy + sell). |
+| `buy_usdc` / `sell_usdc` | string (numeric) | USDC split by side. |
+| `scaled_notional_usdc` | string (numeric) | The subgraph also emits a scaled variant — this is the raw on-chain amount divided by an extra 1e6. Prefer `notional_usdc` for dollar-denominated analytics. |
+| `question` / `slug` / `event_title` / `outcome` / `image` / `condition_id` | string \| null | Enriched from the metadata layer. |
+
+Numeric counters come back as strings to preserve exactness from the subgraph's `BigInt` type.
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl "https://api.polynode.dev/clobv2/markets/32530407925029104312458780580530294728135746429755854137976885977399961033740/orderbook" \
+  -H "x-api-key: pn_live_..."
+```
+
+```javascript Node.js
+const resp = await fetch(
+  `https://api.polynode.dev/clobv2/markets/${tokenId}/orderbook`,
+  { headers: { 'x-api-key': process.env.POLYNODE_KEY } },
+);
+const d = await resp.json();
+if (d.found) {
+  console.log(`${d.question} (${d.outcome})`);
+  console.log(`  trades=${d.trades}  buy=${d.buy_usdc} USDC  sell=${d.sell_usdc} USDC`);
+} else {
+  console.log(`No orderbook rollup yet for ${tokenId}`);
+}
+```
+
+```python Python
+import requests, os
+from decimal import Decimal
+KEY = os.environ["POLYNODE_KEY"]
+r = requests.get(f"https://api.polynode.dev/clobv2/markets/{token_id}/orderbook",
+                 headers={"x-api-key": KEY})
+r.raise_for_status()
+d = r.json()
+if d["found"]:
+    notional = Decimal(d["notional_usdc"])
+    ratio = Decimal(d["buy_usdc"]) / notional if notional > 0 else None
+    print(f"{d['question']} ({d['outcome']}): ${notional:.2f} notional, "
+          f"{ratio:.1%} buys" if ratio is not None else "")
+```
+
+</CodeGroup>
+
+## Error responses
+
+| Status | Body | When |
+|--------|------|------|
+| `400` | `{"error": "invalid token_id ..."}` | Path param isn't a positive integer string. |
+| `401` | `{"error": "missing API key ..."}` | No key or bad key. |
+| `402` | `{"error": "paid plan required ..."}` | Free tier. |
+| `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
+| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+
+## Notes
+
+- Values may be slightly behind the per-fill aggregation at [`/clobv2/markets/{token_id}/volume`](/api-reference/clobv2/market-volume) because the subgraph has a small processing lag after a new fill; for most tokens they reconcile within a second or two.
+- `scaled_notional_usdc` is the subgraph's own parallel counter and is divided by an extra 1e6 compared to `notional_usdc`. It's present for feature parity with the raw subgraph; most integrators should ignore it.
+- `found: false` is a valid response (not a 404). It means the v2 subgraph hasn't observed any fills touching this token yet.

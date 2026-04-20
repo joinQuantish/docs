@@ -184,6 +184,53 @@
         ]
       },
       {
+        "tab": "CLOB v2 API",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/clobv2/overview"
+            ]
+          },
+          {
+            "group": "Fills",
+            "pages": [
+              "api-reference/clobv2/trades",
+              "api-reference/clobv2/wallet-trades",
+              "api-reference/clobv2/market-trades"
+            ]
+          },
+          {
+            "group": "Positions",
+            "pages": [
+              "api-reference/clobv2/positions"
+            ]
+          },
+          {
+            "group": "Market aggregates",
+            "pages": [
+              "api-reference/clobv2/market-volume",
+              "api-reference/clobv2/market-orderbook",
+              "api-reference/clobv2/candles",
+              "api-reference/clobv2/volume-hourly"
+            ]
+          },
+          {
+            "group": "Builders",
+            "pages": [
+              "api-reference/clobv2/builders"
+            ]
+          },
+          {
+            "group": "Neg-risk events",
+            "pages": [
+              "api-reference/clobv2/neg-risk-events",
+              "api-reference/clobv2/neg-risk-children"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Crypto Prices",
         "badge": "New",
         "groups": [

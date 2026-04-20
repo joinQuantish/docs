@@ -1,0 +1,151 @@
+---
+title: "Builder Leaderboard"
+description: "Every wallet that has attributed a Polymarket CLOB v2 fill, ranked by notional volume. v2-exclusive."
+openapi: "GET /clobv2/builders"
+---
+
+Every distinct builder that has tagged at least one v2 fill, ranked by cumulative notional USDC. This is **v2-exclusive** — v2 is the first Polymarket exchange to carry a builder field on every order.
+
+For each builder you get the total fills, notional traded, fees collected on attributed fills, and average fill size.
+
+## Request
+
+```
+GET /clobv2/builders
+```
+
+### Authentication
+
+Paid tier required. See [`/clobv2/trades`](/api-reference/clobv2/trades) for auth formats.
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `start` / `start_time` | integer | No | Unix seconds — only count fills at or after this time. |
+| `end` / `end_time` | integer | No | Unix seconds — only count fills at or before this time. |
+| `limit` | integer | No | Max builders returned (1-500, default 50). |
+
+### Parameter validation
+
+- Timestamps: non-negative i64.
+- `limit`: 1-500.
+
+Bad input → `400 Bad Request`.
+
+## Response
+
+```json
+{
+  "count": 3,
+  "source": "onchain-v2",
+  "builders": [
+    {
+      "builder": "0x950f0672f032daa0ae4e0f94920cf6fa567cc597685622a609d97c872190d6d4",
+      "fills": 34,
+      "notional_usdc": "4751.20043600000000000000",
+      "fee_collected_usdc": "2.603250000000000000000000",
+      "avg_fill_usdc": "139.74118929411764705882"
+    },
+    {
+      "builder": "0xa08e0a8aa56078aae802c7c5e0832b9f56c697603ac8e68e0c1acc895746c569",
+      "fills": 6,
+      "notional_usdc": "45.0000000000000000",
+      "fee_collected_usdc": "0.000000000000000000000000",
+      "avg_fill_usdc": "7.5000000000000000"
+    }
+  ]
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `count` | integer | Number of builders returned. |
+| `source` | string | Always `"onchain-v2"`. |
+| `builders[].builder` | string | 32-byte builder tag. Always non-zero — the zero sentinel (`0x000…000`) is filtered out because it means "no builder". |
+| `builders[].fills` | integer | Number of fills attributed to this builder. |
+| `builders[].notional_usdc` | string (numeric) | Cumulative USDC notional of attributed fills (from the maker side of each fill). |
+| `builders[].fee_collected_usdc` | string (numeric) | Total protocol fees paid on the attributed fills. **This is NOT the builder's rev share** — builder rev share is paid off-chain weekly, not per-fill, and is a separate number. |
+| `builders[].avg_fill_usdc` | string (numeric) | `notional_usdc / fills`. |
+
+### Rate-limit headers
+
+Standard: `x-ratelimit-limit`, `x-ratelimit-remaining`, `x-ratelimit-reset`.
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+# Top 50 builders all-time
+curl "https://api.polynode.dev/clobv2/builders" \
+  -H "x-api-key: pn_live_..."
+
+# Last 24 hours
+curl "https://api.polynode.dev/clobv2/builders?start=$(( $(date +%s) - 86400 ))&end=$(date +%s)" \
+  -H "x-api-key: pn_live_..."
+
+# Top 5
+curl "https://api.polynode.dev/clobv2/builders?limit=5" \
+  -H "x-api-key: pn_live_..."
+```
+
+```javascript Node.js
+const KEY = process.env.POLYNODE_KEY;
+
+async function topBuilders(windowSeconds) {
+  const qs = windowSeconds
+    ? `start=${Math.floor(Date.now()/1000) - windowSeconds}`
+    : '';
+  const resp = await fetch(`https://api.polynode.dev/clobv2/builders?${qs}`,
+    { headers: { 'x-api-key': KEY } });
+  if (!resp.ok) throw new Error(`${resp.status} ${await resp.text()}`);
+  return resp.json();
+}
+
+const d = await topBuilders(7 * 24 * 3600); // last week
+for (const b of d.builders) {
+  console.log(`${b.builder.slice(0,14)}...  $${Number(b.notional_usdc).toFixed(2)} over ${b.fills} fills`);
+}
+```
+
+```python Python
+import requests, os, time
+from decimal import Decimal
+KEY = os.environ["POLYNODE_KEY"]
+
+def builders(start=None, end=None, limit=50):
+    params = {"limit": limit}
+    if start: params["start"] = start
+    if end:   params["end"]   = end
+    r = requests.get("https://api.polynode.dev/clobv2/builders",
+                     params=params, headers={"x-api-key": KEY})
+    r.raise_for_status()
+    return r.json()
+
+d = builders(start=int(time.time()) - 86400*7)  # last 7 days
+total = sum(Decimal(b["notional_usdc"]) for b in d["builders"])
+print(f"{d['count']} active builders, ${total:.2f} total v2 notional")
+```
+
+</CodeGroup>
+
+## Error responses
+
+| Status | Body | When |
+|--------|------|------|
+| `400` | `{"error": "invalid integer limit ..."}` or `{"error": "invalid timestamp ..."}` | Bad limit or timestamp. |
+| `401` | `{"error": "missing API key ..."}` | No key or bad key. |
+| `402` | `{"error": "paid plan required ..."}` | Free tier. |
+| `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
+| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+
+## Notes
+
+- Builders are 32-byte tags stored on every v2 order; pull specific builder values from this endpoint and then filter [`/clobv2/trades?builder=...`](/api-reference/clobv2/trades) to see their individual fills.
+- Sorted by `notional_usdc DESC`. `limit` applies after sort.
+- `fee_collected_usdc` is the **protocol** fee that the matched orders paid at settlement time — not the builder's rev share. Builder rev shares are paid off-chain on a weekly cadence and are not derivable from on-chain data alone.
+- The zero-address builder tag (`0x0000…0000`) means the order was submitted without a builder attribution, and is excluded from this leaderboard. Count it via [`/clobv2/trades?builder=0x0000…0000`](/api-reference/clobv2/trades) if you need to measure the unattributed share.
+- Time filtering is inclusive on both ends.

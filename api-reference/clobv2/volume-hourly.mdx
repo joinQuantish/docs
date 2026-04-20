@@ -1,0 +1,138 @@
+---
+title: "Hourly Volume (Global)"
+description: "Polymarket CLOB v2 fill volume bucketed into 1-hour windows across every market. Useful for platform-wide activity dashboards. v2-exclusive."
+openapi: "GET /clobv2/volume/hourly"
+---
+
+Global hourly volume aggregation across every v2 outcome token. Each bucket emits total fills, USDC notional traded, and USDC fees paid for that hour. Newest-first.
+
+Backed by `v2.fill` bucketed on `ts_unix - (ts_unix % 3600)`.
+
+## Request
+
+```
+GET /clobv2/volume/hourly
+```
+
+### Authentication
+
+Paid tier required. See [`/clobv2/trades`](/api-reference/clobv2/trades) for auth formats.
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `start` / `start_time` | integer | No | Unix seconds — only include fills at or after this time. |
+| `end` / `end_time` | integer | No | Unix seconds — only include fills at or before this time. |
+| `limit` | integer | No | Max buckets returned (1-1000, default 168 — one week of hours). |
+
+### Parameter validation
+
+- Timestamps: non-negative i64.
+- `limit`: 1-1000.
+
+Bad input → `400 Bad Request`.
+
+## Response
+
+```json
+{
+  "count": 3,
+  "source": "onchain-v2",
+  "buckets": [
+    {
+      "bucket": "2026-04-20T06:00:00+00:00",
+      "time_unix": 1776664800,
+      "trades": 2,
+      "volume_usdc": "5.6000000000000000",
+      "fee_usdc": "0.073540000000000000000000"
+    },
+    {
+      "bucket": "2026-04-20T05:00:00+00:00",
+      "time_unix": 1776661200,
+      "trades": 24,
+      "volume_usdc": "72.06666500000000000000",
+      "fee_usdc": "0.795730000000000000000000"
+    }
+  ]
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `count` | integer | Number of buckets returned. |
+| `source` | string | Always `"onchain-v2"`. |
+| `buckets[].bucket` | string | ISO-8601 UTC of the bucket's start (on-the-hour). |
+| `buckets[].time_unix` | integer | Unix seconds of the bucket's start. |
+| `buckets[].trades` | integer | Number of fills in the bucket. |
+| `buckets[].volume_usdc` | string (numeric) | USDC notional (from the maker side of each fill) summed over the bucket. |
+| `buckets[].fee_usdc` | string (numeric) | Total protocol fees paid on fills in the bucket. |
+
+Empty buckets (no fills) are **not** emitted. Callers that want a dense hourly series should fill gaps client-side.
+
+### Rate-limit headers
+
+Standard: `x-ratelimit-limit`, `x-ratelimit-remaining`, `x-ratelimit-reset`.
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+# Last 7 days (168 hours) of global v2 volume
+curl "https://api.polynode.dev/clobv2/volume/hourly?limit=168" \
+  -H "x-api-key: pn_live_..."
+
+# Last 24h only
+curl "https://api.polynode.dev/clobv2/volume/hourly?start=$(( $(date +%s) - 86400 ))&end=$(date +%s)" \
+  -H "x-api-key: pn_live_..."
+
+# Quarterly volume (last 2160 hours ≈ 90 days)
+curl "https://api.polynode.dev/clobv2/volume/hourly?limit=1000" \
+  -H "x-api-key: pn_live_..."
+```
+
+```javascript Node.js
+const KEY = process.env.POLYNODE_KEY;
+const resp = await fetch('https://api.polynode.dev/clobv2/volume/hourly?limit=24',
+  { headers: { 'x-api-key': KEY } });
+const d = await resp.json();
+
+let total = 0;
+for (const b of d.buckets) total += Number(b.volume_usdc);
+console.log(`24h v2 volume: $${total.toFixed(2)} across ${d.buckets.reduce((a, b) => a + b.trades, 0)} trades`);
+```
+
+```python Python
+import requests, os, time
+from decimal import Decimal
+KEY = os.environ["POLYNODE_KEY"]
+r = requests.get("https://api.polynode.dev/clobv2/volume/hourly",
+                 params={"start": int(time.time()) - 86400*7, "limit": 168},
+                 headers={"x-api-key": KEY})
+r.raise_for_status()
+total = sum(Decimal(b["volume_usdc"]) for b in r.json()["buckets"])
+print(f"Weekly v2 notional: ${total:,.2f}")
+```
+
+</CodeGroup>
+
+## Error responses
+
+| Status | Body | When |
+|--------|------|------|
+| `400` | `{"error": "invalid integer limit ..."}` or `{"error": "invalid timestamp ..."}` | Bad limit or timestamp. |
+| `401` | `{"error": "missing API key ..."}` | No key or bad key. |
+| `402` | `{"error": "paid plan required ..."}` | Free tier. |
+| `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
+| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+
+## Notes
+
+- Sorted by `bucket DESC` (newest first). Reverse client-side for left-to-right charting.
+- Empty hours (no v2 fills) are **omitted** from the response — if you need a dense hourly time series for charting, scaffold the expected hour slots yourself and overlay what this returns.
+- `volume_usdc` uses the maker-side USDC; in pair-mint fills both sides can be outcome tokens and no USDC is present — those fills are excluded from the bucket sum.
+- `fee_usdc` is the protocol fee paid at settlement, not the builder rev share (which is off-chain weekly). See [`/clobv2/builders`](/api-reference/clobv2/builders) for builder attribution.
+- The endpoint bucket size is fixed at 1 hour. For per-token OHLCV at arbitrary resolution use [`/clobv2/candles/{token_id}`](/api-reference/clobv2/candles).

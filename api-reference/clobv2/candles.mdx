@@ -1,0 +1,194 @@
+---
+title: "Candles (OHLCV)"
+description: "Time-bucketed OHLCV candles for a Polymarket v2 outcome token. Six resolutions, real on-chain fill data, VWAP and buy/sell volume split per bucket."
+openapi: "GET /clobv2/candles/{token_id}"
+---
+
+Time-bucketed OHLCV candles computed from every on-chain fill for one outcome token. Each bucket contains open/high/low/close prices, total USDC volume, share volume, per-side buy/sell volume split, trade count, and VWAP. Top-level response includes market metadata so you never have to look up the market name separately.
+
+Built on the `v2.fill` view — bucketing happens in SQL, not client-side.
+
+## Request
+
+```
+GET /clobv2/candles/{token_id}
+```
+
+### Authentication
+
+Paid tier required. Pass your API key via `x-api-key`, `Authorization: Bearer`, or `?key=`:
+
+```bash
+curl "https://api.polynode.dev/clobv2/candles/45763018441764333771124945243746174684578244015331389396782339063349542289693?resolution=1h" \
+  -H "x-api-key: pn_live_..."
+```
+
+### Path parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `token_id` | string | **Yes** | Outcome token ID (uint256 as decimal string). |
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `resolution` | string | No | Bucket size. One of `1m`, `5m`, `15m`, `1h` (default), `4h`, `1d`. |
+| `limit` | integer | No | Max buckets per response (1-1000, default 500). |
+| `start` / `start_time` | integer | No | Unix seconds — only return buckets whose fills land at or after this time. |
+| `end` / `end_time` | integer | No | Unix seconds — only return buckets whose fills land at or before this time. |
+
+### Parameter validation
+
+- `token_id`: 1-78 digits, `^[0-9]+$`.
+- `resolution`: whitelist `{1m, 5m, 15m, 1h, 4h, 1d}`.
+- `limit`: 1-1000. Timestamps: non-negative i64.
+
+Validation failures return **`400 Bad Request`** with `{"error": "..."}`.
+
+## Response
+
+```json
+{
+  "token_id": "45763018441764333771124945243746174684578244015331389396782339063349542289693",
+  "resolution": "1h",
+  "source": "onchain-v2",
+  "count": 2,
+  "pagination": {
+    "limit": 500,
+    "offset": 0,
+    "has_more": false
+  },
+  "question": "US-Iran nuclear deal before 2027?",
+  "outcome": "No",
+  "condition_id": "0x182390641d3b1b47cc64274b9da290efd04221c586651ba190880713da6347d9",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/us-x-iran-nuclear-deal-in-2025-3rpCC4Kl23Lc.jpg",
+  "candles": [
+    {
+      "time": "2026-04-20T05:00:00+00:00",
+      "time_unix": 1776661200,
+      "open": "0.48000000000000000000",
+      "high": "0.48000000000000000000",
+      "low":  "0.48000000000000000000",
+      "close": "0.48000000000000000000",
+      "volume": "0.96000000000000000000",
+      "volume_shares": "2.0000000000000000",
+      "volume_buy": "0.96000000000000000000",
+      "volume_sell": null,
+      "trades": 1,
+      "vwap": "0.4800000000000000000000000000"
+    }
+  ]
+}
+```
+
+### Response fields — candles
+
+Ordered newest-first. Each bucket:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `time` | string | ISO-8601 UTC of the bucket's start. |
+| `time_unix` | integer | Unix seconds of the bucket's start. |
+| `open` | string (numeric) | First fill's price in the bucket, 0.0–1.0. |
+| `high` | string (numeric) | Max price. |
+| `low` | string (numeric) | Min price. |
+| `close` | string (numeric) | Last fill's price in the bucket. |
+| `volume` | string (numeric) | Total USDC that changed hands in the bucket (buy + sell combined). |
+| `volume_shares` | string (numeric) | Total outcome shares that changed hands. |
+| `volume_buy` | string (numeric) \| null | USDC spent buying the token in the bucket. `null` if no buys. |
+| `volume_sell` | string (numeric) \| null | USDC received from selling the token. `null` if no sells. |
+| `trades` | integer | Number of fills in the bucket. |
+| `vwap` | string (numeric) | Volume-weighted average price. `Σ(price × volume_usdc) / Σ volume_usdc`. |
+
+### Response fields — envelope
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `token_id` | string | Echoes the path parameter. |
+| `resolution` | string | The resolution in effect. |
+| `source` | string | Always `"onchain-v2"`. |
+| `count` | integer | Number of candles returned. |
+| `pagination` | object | `limit`, `offset`, `has_more` — same semantics as other list endpoints. |
+| `question` | string \| null | Market question for this token. |
+| `outcome` | string \| null | Outcome label (`"Yes"`, `"No"`, `"Up"`, neg-risk candidate name, etc.). |
+| `condition_id` | string \| null | Parent market condition_id. |
+| `image` | string \| null | CDN URL of the market icon. |
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+# Last 24 hourly candles
+curl "https://api.polynode.dev/clobv2/candles/45763018...?resolution=1h&limit=24" \
+  -H "x-api-key: pn_live_..."
+
+# Minute-by-minute over the last hour
+NOW=$(date +%s); HOUR_AGO=$((NOW - 3600))
+curl "https://api.polynode.dev/clobv2/candles/45763018...?resolution=1m&start=$HOUR_AGO&end=$NOW" \
+  -H "x-api-key: pn_live_..."
+
+# Daily candles for charting
+curl "https://api.polynode.dev/clobv2/candles/45763018...?resolution=1d&limit=90" \
+  -H "x-api-key: pn_live_..."
+```
+
+```javascript Node.js
+const KEY = process.env.POLYNODE_KEY;
+
+async function candles(tokenId, resolution = '1h', limit = 500) {
+  const url = `https://api.polynode.dev/clobv2/candles/${tokenId}?resolution=${resolution}&limit=${limit}`;
+  const resp = await fetch(url, { headers: { 'x-api-key': KEY } });
+  if (!resp.ok) throw new Error(`${resp.status} ${await resp.text()}`);
+  return resp.json();
+}
+
+const data = await candles('45763018...', '5m', 12);
+for (const c of data.candles) {
+  console.log(`${c.time}  O:${c.open} H:${c.high} L:${c.low} C:${c.close}  vol:$${c.volume}  trades:${c.trades}`);
+}
+```
+
+```python Python
+import requests, os
+from decimal import Decimal
+
+KEY = os.environ["POLYNODE_KEY"]
+
+def candles(token_id, resolution="1h", limit=500, start=None, end=None):
+    params = {"resolution": resolution, "limit": limit}
+    if start: params["start"] = start
+    if end:   params["end"]   = end
+    r = requests.get(f"https://api.polynode.dev/clobv2/candles/{token_id}",
+                     params=params, headers={"x-api-key": KEY})
+    r.raise_for_status()
+    return r.json()
+
+d = candles("45763018441764333771124945243746174684578244015331389396782339063349542289693",
+            resolution="1d", limit=30)
+print(f"{d['question']} — {d['outcome']}")
+for c in d["candles"]:
+    print(f"  {c['time'][:10]}  close=${Decimal(c['close']):.3f}  vol=${Decimal(c['volume']):.2f}  trades={c['trades']}")
+```
+
+</CodeGroup>
+
+## Error responses
+
+| Status | Body | When |
+|--------|------|------|
+| `400` | `{"error": "resolution must be one of [1m, 5m, 15m, 1h, 4h, 1d]"}` | Bad resolution, bad `token_id`, or bad timestamp. |
+| `401` | `{"error": "missing API key ..."}` | No key or bad key. |
+| `402` | `{"error": "paid plan required ..."}` | Free tier. |
+| `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
+| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+
+## Notes
+
+- Candles are always returned newest-first (`time DESC`). If you need oldest-first for charting, reverse client-side.
+- Empty buckets (no trades) are **not** emitted — callers that want a dense time-series should fill gaps client-side.
+- Price = `USDC_amount / share_amount` from the fill. In pair-mint fills (rare; both sides outcome tokens), fills are excluded from the candles because there's no implied price.
+- `volume_buy` / `volume_sell` distinguish direction: a buy = someone paid USDC to receive the token, a sell = someone paid the token to receive USDC.
+- VWAP is computed per-bucket, not cumulative. Reconstruct a trailing VWAP client-side by weighting adjacent buckets.
+- If the `token_id` has never been filled on v2, you get `count: 0` with an empty `candles: []` — not a 404.

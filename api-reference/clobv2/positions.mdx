@@ -1,0 +1,206 @@
+---
+title: "Positions (Global)"
+description: "Current open and closed Polymarket CLOB v2 positions across every wallet. Filter by wallet, market, token, or size. Enriched with market metadata."
+openapi: "GET /clobv2/positions"
+---
+
+Current state of every v2 user position — `size`, `avg_price`, `realized_pnl`, and `total_bought` for every `(wallet, token)` pair the v2 exchange has ever touched. Joined to market metadata so every row carries `question`, `slug`, `outcome`, `image`, and `condition_id`.
+
+Backed by the `v2.position` view. A position is considered `closed` when `size = 0`; otherwise `open`.
+
+## Request
+
+```
+GET /clobv2/positions
+```
+
+### Authentication
+
+Paid tier required. Pass your API key via `x-api-key`, `Authorization: Bearer`, or `?key=`:
+
+```bash
+curl "https://api.polynode.dev/clobv2/positions?wallet=0x..." \
+  -H "x-api-key: pn_live_..."
+```
+
+Free-tier keys receive `402 Payment Required`.
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | No | Filter by wallet address (`0x` + 40 hex). |
+| `token_id` | string | No | Filter by outcome token ID (uint256 as decimal string). |
+| `condition_id` | string | No | Filter by market `condition_id` (`0x` + 64 hex) — returns positions on every outcome of that market. |
+| `status` | string | No | `open` (size > 0), `closed` (size = 0), or `all` (default). |
+| `min_size` | number | No | Minimum `size` (in outcome shares). |
+| `limit` | integer | No | Results per page (1-500, default 100). |
+| `offset` | integer | No | Skip this many results (0-10000000, default 0). |
+| `order` | string | No | `desc` (largest position first, default) or `asc` (smallest first). |
+
+All parameters are optional. Calling the endpoint with no filters returns the 100 largest positions globally.
+
+### Parameter validation
+
+- `wallet`: regex `^0x[a-f0-9]{40}$`.
+- `condition_id`: regex `^0x[a-f0-9]{64}$`.
+- `token_id`: 1-78 digits, `^[0-9]+$`.
+- `status`: whitelist `{open, closed, all}`.
+- `order`: whitelist `{asc, desc}`.
+
+Anything that fails validation returns **`400 Bad Request`** with `{"error": "..."}`.
+
+## Response
+
+```json
+{
+  "count": 1,
+  "source": "onchain-v2",
+  "pagination": {
+    "limit": 1,
+    "offset": 0,
+    "has_more": true
+  },
+  "positions": [
+    {
+      "wallet": "0xf5183756a0be58aa0b0960f1e2d2451894b631d5",
+      "token_id": "45763018441764333771124945243746174684578244015331389396782339063349542289693",
+      "condition_id": "0x182390641d3b1b47cc64274b9da290efd04221c586651ba190880713da6347d9",
+
+      "size": "5370.8300000000000000",
+      "avg_price": "0.40000000000000000000",
+      "total_bought_usdc": "5370.8300000000000000",
+      "realized_pnl_usdc": "0.000000000000000000000000",
+      "status": "open",
+
+      "question": "US-Iran nuclear deal before 2027?",
+      "event_title": "US-Iran nuclear deal before 2027?",
+      "slug": "us-iran-nuclear-deal-before-2027",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/us-x-iran-nuclear-deal-in-2025-3rpCC4Kl23Lc.jpg",
+      "outcome": "No"
+    }
+  ]
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `count` | integer | Number of positions in this page. |
+| `source` | string | Always `"onchain-v2"`. |
+| `pagination.limit` / `offset` / `has_more` | | Same as `/clobv2/trades`. |
+| `positions[].wallet` | string | 20-byte address holding the position. |
+| `positions[].token_id` | string | Outcome token ID (uint256 as decimal string). |
+| `positions[].condition_id` | string | 32-byte market condition_id. |
+| `positions[].size` | string (numeric) | Outcome tokens held, already scaled `/1e6`. Zero means the position is closed. |
+| `positions[].avg_price` | string (numeric) | Volume-weighted average entry price, 0.0–1.0. |
+| `positions[].total_bought_usdc` | string (numeric) | Cumulative USDC spent acquiring this position. |
+| `positions[].realized_pnl_usdc` | string (numeric) | Realized P&L in USDC from partial or full exits. Can be negative (losses). |
+| `positions[].status` | string | `"open"` if `size > 0`, else `"closed"`. |
+| `positions[].question` | string \| null | Market question. |
+| `positions[].event_title` | string \| null | Parent event title. |
+| `positions[].slug` | string \| null | Polymarket URL slug. |
+| `positions[].image` | string \| null | CDN URL of the market icon. |
+| `positions[].outcome` | string | Outcome label (`"Yes"`, `"No"`, `"Up"`, neg-risk candidate name, etc.). |
+
+### Rate-limit headers
+
+Every response includes:
+
+```
+x-ratelimit-limit: 100000
+x-ratelimit-remaining: 99996
+x-ratelimit-reset: 1776665478
+```
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+# Largest positions globally
+curl "https://api.polynode.dev/clobv2/positions?limit=10" \
+  -H "x-api-key: pn_live_..."
+
+# All positions held by one wallet
+curl "https://api.polynode.dev/clobv2/positions?wallet=0xd663f0f56e5c80d4716d46c776fabb4ec4c66abc" \
+  -H "x-api-key: pn_live_..."
+
+# Only open positions worth > 1000 shares
+curl "https://api.polynode.dev/clobv2/positions?status=open&min_size=1000&limit=50" \
+  -H "x-api-key: pn_live_..."
+
+# Both Yes and No positions on a single market
+curl "https://api.polynode.dev/clobv2/positions?condition_id=0x4191712a536c3d7f87690f934b2b5493a5459f4676dd2b328db4cf58626f1de6" \
+  -H "x-api-key: pn_live_..."
+
+# Closed positions (with realized P&L) for a wallet
+curl "https://api.polynode.dev/clobv2/positions?wallet=0xd663f0...&status=closed&limit=100" \
+  -H "x-api-key: pn_live_..."
+```
+
+```javascript Node.js
+const KEY = process.env.POLYNODE_KEY;
+
+async function walletPositions(wallet, status = 'all') {
+  const out = [];
+  let offset = 0;
+  while (true) {
+    const url = `https://api.polynode.dev/clobv2/positions?wallet=${wallet}&status=${status}&limit=500&offset=${offset}`;
+    const resp = await fetch(url, { headers: { 'x-api-key': KEY } });
+    if (!resp.ok) throw new Error(`${resp.status} ${await resp.text()}`);
+    const data = await resp.json();
+    out.push(...data.positions);
+    if (!data.pagination.has_more) break;
+    offset += data.positions.length;
+  }
+  return out;
+}
+
+const positions = await walletPositions('0xd663f0f56e5c80d4716d46c776fabb4ec4c66abc', 'open');
+const totalPnl = positions.reduce((acc, p) => acc + Number(p.realized_pnl_usdc), 0);
+console.log(`${positions.length} open positions, $${totalPnl.toFixed(2)} realized PnL`);
+```
+
+```python Python
+import requests, os
+from decimal import Decimal
+
+KEY = os.environ["POLYNODE_KEY"]
+
+def positions(**params):
+    r = requests.get("https://api.polynode.dev/clobv2/positions",
+                     params=params, headers={"x-api-key": KEY})
+    r.raise_for_status()
+    return r.json()
+
+# Find the wallet's biggest open position
+data = positions(wallet="0xd663...", status="open", limit=1, order="desc")
+if data["count"]:
+    p = data["positions"][0]
+    value = Decimal(p["size"]) * Decimal(p["avg_price"])
+    print(f"{p['question']} {p['outcome']}: "
+          f"{Decimal(p['size']):.2f} shares @ ${Decimal(p['avg_price']):.3f} "
+          f"(entry cost: ${value:.2f})")
+```
+
+</CodeGroup>
+
+## Error responses
+
+| Status | Body | When |
+|--------|------|------|
+| `400` | `{"error": "invalid wallet address ..."}` or `{"error": "status must be one of [open, closed, all]"}` | Parameter validation failed. |
+| `401` | `{"error": "missing API key ..."}` or `{"error": "invalid or revoked API key"}` | No key or bad key. |
+| `402` | `{"error": "paid plan required ..."}` | Free tier. |
+| `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
+| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream issue; retried once internally. |
+
+## Notes
+
+- A position exists as soon as a wallet has touched a token on v2, even after it's been closed (`size = 0`). Closed positions still carry their `realized_pnl_usdc` for historical accounting.
+- `total_bought_usdc` is cumulative USDC spent acquiring — it does NOT decrease on partial exits. Use it for true cost basis.
+- On neg-risk markets (multi-outcome events like PGA winners), a wallet can hold positions on many outcomes under the same `event_title`. Each outcome is its own `condition_id`.
+- Positions with `size = 0` and `realized_pnl = 0` and `total_bought = 0` exist when a wallet held a position and fully transferred it off-chain without realizing PnL.
+- Numeric fields are returned as strings — parse to `Decimal`/`BigNumber` before math.

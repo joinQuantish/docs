@@ -1,0 +1,256 @@
+---
+title: "Trades (Global)"
+description: "Every Polymarket CLOB v2 fill, live-indexed, joined to market metadata. Filter by wallet, market, token, builder, time range, or size."
+openapi: "GET /clobv2/trades"
+---
+
+Every v2 `OrderFilled` event as it lands on-chain, joined to the 860K-market metadata layer so every hex ID comes back with `question`, `slug`, `event_title`, `image`, and `outcome` inline. No cursor games — simple `limit` + `offset`.
+
+Backed by the `v2.fill` view on the polynode explorer gateway. Data appears within seconds of confirmation.
+
+## Request
+
+```
+GET /clobv2/trades
+```
+
+### Authentication
+
+Paid tier required. Pass your API key via `x-api-key`, `Authorization: Bearer`, or `?key=`:
+
+```bash
+curl "https://api.polynode.dev/clobv2/trades?limit=10" \
+  -H "x-api-key: pn_live_..."
+```
+
+Free-tier keys receive `402 Payment Required`.
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `wallet` | string | No | Filter by wallet address (`0x` + 40 hex). Matches both maker and taker sides. |
+| `builder` | string | No | Filter by builder (`0x` + 64 hex — builders are 32-byte values, not addresses). Pull real values from [`/clobv2/builders`](/api-reference/clobv2/builders). |
+| `token_id` | string | No | Filter by outcome token ID (uint256 as decimal string). Matches either side. |
+| `condition_id` | string | No | Filter by market `condition_id` (`0x` + 64 hex). |
+| `start` / `start_time` | integer | No | Unix seconds — only return fills at or after this time. |
+| `end` / `end_time` | integer | No | Unix seconds — only return fills at or before this time. |
+| `min_usd` / `min_total` | number | No | Minimum `maker_usdc` size in dollars. |
+| `limit` | integer | No | Results per page (1-500, default 100). |
+| `offset` | integer | No | Skip this many results (0-10000000, default 0). Use with `limit` for pagination. |
+| `order` | string | No | `desc` (newest first, default) or `asc` (oldest first). |
+
+All parameters are optional. Calling the endpoint with no filters returns the 100 newest fills.
+
+### Parameter validation
+
+- `wallet`: regex `^0x[a-f0-9]{40}$` (case-insensitive, normalized to lowercase).
+- `condition_id`, `builder`: regex `^0x[a-f0-9]{64}$`.
+- `token_id`: 1-78 digits, `^[0-9]+$`.
+- Timestamps: i64, must be ≥ 0.
+- `limit`: 1-500. `offset`: 0-10000000.
+
+Anything that fails a validator returns **`400 Bad Request`** with `{"error": "..."}` before the backend is touched.
+
+## Response
+
+```json
+{
+  "count": 1,
+  "source": "onchain-v2",
+  "pagination": {
+    "limit": 1,
+    "offset": 0,
+    "has_more": true
+  },
+  "trades": [
+    {
+      "ts": "2026-04-20T06:12:00+00:00",
+      "ts_unix": 1776665520,
+      "tx_hash": "0x7a78b781700f53136ca7a8ca62d31f7a11999e0c65a4d0a2c160cfc3315b170f",
+      "order_hash": "0x8d102e0044dd5651c28b48068e8bb29c8f7ae33b1c58b2f48a36a248ff966064",
+
+      "maker": "0xd663f0f56e5c80d4716d46c776fabb4ec4c66abc",
+      "taker": "0xf86178a8e4b9e7c6a00200bf1ee5679383de462f",
+      "side": "maker",
+
+      "token_id": "32530407925029104312458780580530294728135746429755854137976885977399961033740",
+      "amount_usd": "1.3440000000000000",
+      "shares": "5.6000000000000000",
+      "price": "0.24000000000000000000",
+      "fee_usd": "0.000000000000000000000000",
+
+      "maker_token_id": "0",
+      "taker_token_id": "32530407925029104312458780580530294728135746429755854137976885977399961033740",
+      "maker_usdc": "1.3440000000000000",
+      "taker_usdc": "5.6000000000000000",
+      "fee_usdc": "0.000000000000000000000000",
+
+      "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "question": "Solana Up or Down - April 20, 2:10AM-2:15AM ET",
+      "slug": "sol-updown-5m-1776665400",
+      "event_title": "Solana Up or Down - April 20, 2:10AM-2:15AM ET",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/SOL+fullsize.png",
+      "condition_id": "0x1ee2fb3f919aa7c307565db03241926252666691aca6d7185af4654df603efdc",
+      "outcome": "Up"
+    }
+  ]
+}
+```
+
+### Response fields — derived convenience (most users start here)
+
+One row per fill. These fields collapse the two-sided fill into a familiar "buy/sell" shape:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `token_id` | string | The outcome token ID traded on this fill (the non-USDC side). Decimal string. `null` only on pair-mint fills (both sides outcome tokens). |
+| `amount_usd` | string (numeric) | The USDC notional that changed hands. `null` on pair-mint fills. |
+| `shares` | string (numeric) | The outcome-token quantity that changed hands. `null` on pair-mint fills. |
+| `price` | string (numeric) | `amount_usd / shares` — the implied price of the outcome token, 0.0–1.0. `null` on pair-mint fills. |
+| `fee_usd` | string (numeric) | Fee in USDC. Alias of `fee_usdc`. |
+| `side` | string \| null | Only present when you pass `wallet=` — `"maker"` or `"taker"`, describing the queried wallet's role in this fill. Absent otherwise. |
+
+### Response fields — raw two-sided (full precision, for advanced users)
+
+Same fill, served raw so you can see exactly what's on-chain:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `maker` / `taker` | string | 20-byte addresses. |
+| `maker_token_id` / `taker_token_id` | string | uint256 token IDs as decimal strings. `"0"` means the USDC (collateral) side. |
+| `maker_usdc` / `taker_usdc` | string (numeric) | Both sides' amounts, already scaled `/1e6`. The name `usdc` is from the shared decimal convention — on the outcome-token side this is the share count (same 6-decimal scaling). |
+| `fee_usdc` | string (numeric) | Fee in USDC. |
+
+### Response fields — market metadata (all enriched via the 860K-market layer)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `question` | string \| null | Market question (e.g. `"Will Donald Trump win the 2024 US Presidential Election?"`). `null` only if metadata hasn't been indexed yet (rare; ingester catches up within 30s). |
+| `slug` | string \| null | Polymarket URL slug. |
+| `event_title` | string \| null | Parent event title (neg-risk markets share an event). |
+| `image` | string \| null | CDN URL of the market icon. |
+| `outcome` | string | Outcome label (e.g. `"Yes"`, `"No"`, `"Up"`, `"Matt Fitzpatrick"`). |
+| `condition_id` | string | 32-byte condition_id of the market for the outcome-token side. |
+| `builder` | string | 32-byte builder tag. Zero (`0x000…000`) means no builder attribution. |
+
+### Response fields — envelope
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `count` | integer | Number of trades in this page. |
+| `source` | string | Always `"onchain-v2"`. |
+| `pagination.limit` | integer | Limit in effect. |
+| `pagination.offset` | integer | Offset used. |
+| `pagination.has_more` | boolean | `true` if more results exist past this page. |
+| `trades[].ts` | string | ISO-8601 UTC timestamp. |
+| `trades[].ts_unix` | integer | Unix-seconds timestamp. |
+| `trades[].tx_hash` | string | Transaction hash on Polygon. |
+| `trades[].order_hash` | string | Unique order hash (same order can appear across multiple fills on partial fills). |
+
+### Rate-limit headers
+
+Every response includes:
+
+```
+x-ratelimit-limit: 100000
+x-ratelimit-remaining: 99997
+x-ratelimit-reset: 1776665478
+```
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+# Latest 5 fills globally
+curl "https://api.polynode.dev/clobv2/trades?limit=5" \
+  -H "x-api-key: pn_live_..."
+
+# A specific wallet's last 100 fills
+curl "https://api.polynode.dev/clobv2/trades?wallet=0xd663f0f56e5c80d4716d46c776fabb4ec4c66abc&limit=100" \
+  -H "x-api-key: pn_live_..."
+
+# Only fills ≥ $10 in a 24h window
+curl "https://api.polynode.dev/clobv2/trades?start=1776578000&end=1776664400&min_usd=10" \
+  -H "x-api-key: pn_live_..."
+
+# All fills for one market
+curl "https://api.polynode.dev/clobv2/trades?condition_id=0xacb78c48e74576d39862560c32c91db35d642f31b24fdf56a99aa0f57ed062b4" \
+  -H "x-api-key: pn_live_..."
+
+# Fills attributed to one builder
+curl "https://api.polynode.dev/clobv2/trades?builder=0x950f0672f032daa0ae4e0f94920cf6fa567cc597685622a609d97c872190d6d4" \
+  -H "x-api-key: pn_live_..."
+
+# Pagination: first page, then next page
+curl "https://api.polynode.dev/clobv2/trades?limit=100&offset=0"   -H "x-api-key: pn_live_..."
+curl "https://api.polynode.dev/clobv2/trades?limit=100&offset=100" -H "x-api-key: pn_live_..."
+```
+
+```javascript Node.js
+const KEY = process.env.POLYNODE_KEY;
+
+async function listTrades(params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  const resp = await fetch(`https://api.polynode.dev/clobv2/trades?${qs}`, {
+    headers: { 'x-api-key': KEY },
+  });
+  if (!resp.ok) throw new Error(`${resp.status} ${await resp.text()}`);
+  return resp.json();
+}
+
+// Latest fills for a wallet
+const page1 = await listTrades({
+  wallet: '0xd663f0f56e5c80d4716d46c776fabb4ec4c66abc',
+  limit: 100,
+});
+console.log(`${page1.count} trades, has_more=${page1.pagination.has_more}`);
+
+// Page through all fills for a market
+let offset = 0;
+while (true) {
+  const page = await listTrades({ condition_id: '0xacb78c48...', limit: 500, offset });
+  for (const t of page.trades) process(t);
+  if (!page.pagination.has_more) break;
+  offset += page.trades.length;
+}
+```
+
+```python Python
+import requests, os
+
+KEY = os.environ["POLYNODE_KEY"]
+BASE = "https://api.polynode.dev/clobv2"
+
+def list_trades(**params):
+    r = requests.get(f"{BASE}/trades", params=params, headers={"x-api-key": KEY})
+    r.raise_for_status()
+    return r.json()
+
+# Latest fills ≥ $5 for a wallet
+data = list_trades(wallet="0xd663...", min_usd=5, limit=200)
+print(f"{data['count']} trades")
+for trade in data["trades"]:
+    print(f"{trade['ts']}  {trade['outcome']} {trade['maker_usdc']} USDC  {trade['question']}")
+```
+
+</CodeGroup>
+
+## Error responses
+
+| Status | Body | When |
+|--------|------|------|
+| `400` | `{"error": "invalid wallet address ..."}` | Parameter validation failed (bad hex, bad enum, out-of-range int). |
+| `401` | `{"error": "missing API key ..."}` or `{"error": "invalid or revoked API key"}` | No key, malformed key, or revoked. |
+| `402` | `{"error": "paid plan required ...", "tier": "free", "upgrade_url": "https://polynode.dev"}` | Valid key but `tier = "free"`. |
+| `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Per-key sliding-window rate limit hit. |
+| `5xx` | `{"error": "upstream gateway error", "detail": "..."}` | Transient upstream issue; retried once internally. |
+
+## Notes
+
+- `maker_token_id = "0"` (or `taker_token_id = "0"`) means that side of the fill is USDC collateral. The non-zero side is the outcome token.
+- Numeric fields come back as strings (e.g. `"2.9500000000000000"`) to avoid float precision loss. Parse with `Decimal`/`BigNumber` before math.
+- `builder = "0x000...000"` means the order did not carry a builder tag.
+- `question`, `slug`, `image`, `event_title`, `outcome` may be `null` on fills for markets our metadata hasn't yet indexed (rare; the metadata ingester catches up within 30 seconds).
+- Pagination is offset-based. If new fills arrive between pages, the same fill may be seen twice or skipped — for historical dumps, filter by `end=<snapshot_ts>` to get a stable window.

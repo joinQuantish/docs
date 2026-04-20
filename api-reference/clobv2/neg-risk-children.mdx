@@ -1,0 +1,159 @@
+---
+title: "Neg-Risk Child Markets"
+description: "Every child market inside a Polymarket neg-risk event — one row per candidate with its own condition_id, question, slug, active/closed state, and volume."
+openapi: "GET /clobv2/neg-risk/events/{parent_id}/children"
+---
+
+Drill into a single [neg-risk event](/api-reference/clobv2/neg-risk-events) to get every child market (one per candidate) with its own `condition_id`, `question` (formatted `"Will {candidate} win?"`), `slug`, `active`/`closed` state, lifetime volume, and liquidity.
+
+Backed by `v2.neg_risk_child`. Sorted by `volume_all_time DESC` so the most-traded outcomes surface first.
+
+## Request
+
+```
+GET /clobv2/neg-risk/events/{parent_id}/children
+```
+
+### Authentication
+
+Paid tier required. See [`/clobv2/trades`](/api-reference/clobv2/trades) for auth formats.
+
+### Path parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `parent_id` | string | **Yes** | The neg-risk event's `id` (32-byte, `0x` + 64 hex). Get one from [`/clobv2/neg-risk/events`](/api-reference/clobv2/neg-risk-events). |
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `limit` | integer | No | Max children returned (1-1000, default 200). |
+
+### Parameter validation
+
+- `parent_id`: regex `^0x[a-f0-9]{64}$`.
+- `limit`: 1-1000.
+
+Bad input → `400 Bad Request`.
+
+## Response
+
+```json
+{
+  "parent_id": "0x3124c2b2cc076379db07e928b48a4c8c82b4508bc6b87730c7e664a4b711e300",
+  "source": "onchain-v2",
+  "count": 3,
+  "children": [
+    {
+      "parent_id": "0x3124c2b2cc076379db07e928b48a4c8c82b4508bc6b87730c7e664a4b711e300",
+      "child_condition_id": "0x4a81b2661bc43539adc883981071bc54dbb4bb69e3456c4e76365b9a56d907dc",
+      "outcome_title": "Cameron Young",
+      "question": "Will Cameron Young win the 2025 Wyndham Championship?",
+      "slug": "will-cameron-young-win-the-2025-wyndham-championship",
+      "event_title": "PGA TOUR Wyndham Championship – Winner",
+      "event_slug": "pga-tour-wyndham-championship-winner",
+      "active": true,
+      "closed": true,
+      "end_date": "2025-08-04T00:00:00+00:00",
+      "volume_all_time": "183122.12766699999338015913963",
+      "liquidity": "0",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/fedex-cup-winner-uXTWFOWO-0w7.png"
+    }
+  ]
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `parent_id` | string | Echoes the path parameter. |
+| `source` | string | Always `"onchain-v2"`. |
+| `count` | integer | Number of children returned. |
+| `children[].parent_id` | string | Same as top-level `parent_id`. |
+| `children[].child_condition_id` | string | 32-byte condition_id for this child market. Use with [`/clobv2/trades?condition_id=...`](/api-reference/clobv2/trades) to pull fills. |
+| `children[].outcome_title` | string | Candidate name (e.g. `"Cameron Young"`, `"Donald Trump"`). |
+| `children[].question` | string | Full question string (`"Will {candidate} win ..."`). |
+| `children[].slug` | string | Polymarket URL slug for the child market. |
+| `children[].event_title` | string | Same for every child — the parent event's title. |
+| `children[].event_slug` | string | Same for every child — the parent event's slug. |
+| `children[].active` | boolean | Market was enabled on Polymarket. |
+| `children[].closed` | boolean | Market has been resolved (event concluded). |
+| `children[].end_date` | string \| null | ISO-8601 UTC resolution date. |
+| `children[].volume_all_time` | string (numeric) | Cumulative USDC volume across v1 + v2 for this child (from the metadata layer). |
+| `children[].liquidity` | string (numeric) | Current AMM liquidity in USDC (relevant only for v1 FPMM-backed markets; `"0"` on pure v2 markets). |
+| `children[].image` | string \| null | CDN URL of the event image (shared across all children). |
+
+### Rate-limit headers
+
+Standard: `x-ratelimit-limit`, `x-ratelimit-remaining`, `x-ratelimit-reset`.
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+# All 147 children of the PGA Wyndham winner event
+curl "https://api.polynode.dev/clobv2/neg-risk/events/0x3124c2b2cc076379db07e928b48a4c8c82b4508bc6b87730c7e664a4b711e300/children?limit=500" \
+  -H "x-api-key: pn_live_..."
+```
+
+```javascript Node.js
+const KEY = process.env.POLYNODE_KEY;
+
+async function children(parentId) {
+  const resp = await fetch(
+    `https://api.polynode.dev/clobv2/neg-risk/events/${parentId}/children?limit=1000`,
+    { headers: { 'x-api-key': KEY } },
+  );
+  if (!resp.ok) throw new Error(`${resp.status} ${await resp.text()}`);
+  return resp.json();
+}
+
+// Top 5 candidates by volume in a neg-risk field
+const d = await children('0x3124c2b2cc076379db07e928b48a4c8c82b4508bc6b87730c7e664a4b711e300');
+for (const c of d.children.slice(0, 5)) {
+  console.log(`${c.outcome_title}  $${Number(c.volume_all_time).toLocaleString()}`);
+}
+```
+
+```python Python
+import requests, os
+from decimal import Decimal
+KEY = os.environ["POLYNODE_KEY"]
+
+def children(parent_id):
+    r = requests.get(
+        f"https://api.polynode.dev/clobv2/neg-risk/events/{parent_id}/children",
+        params={"limit": 1000},
+        headers={"x-api-key": KEY},
+    )
+    r.raise_for_status()
+    return r.json()
+
+d = children("0x3124c2b2cc076379db07e928b48a4c8c82b4508bc6b87730c7e664a4b711e300")
+for c in d["children"][:5]:
+    vol = Decimal(c["volume_all_time"])
+    print(f"{c['outcome_title']:30s}  ${vol:,.0f}")
+```
+
+</CodeGroup>
+
+## Error responses
+
+| Status | Body | When |
+|--------|------|------|
+| `400` | `{"error": "invalid condition_id ..."}` | `parent_id` isn't `0x` + 64 hex. |
+| `401` | `{"error": "missing API key ..."}` | No key or bad key. |
+| `402` | `{"error": "paid plan required ..."}` | Free tier. |
+| `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
+| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+
+## Notes
+
+- An unknown `parent_id` returns `count: 0` with `children: []` — not a 404.
+- `volume_all_time` is cumulative across v1 + v2 because a single condition_id can exist in both exchanges. Use [`/clobv2/markets/{token_id}/volume`](/api-reference/clobv2/market-volume) if you specifically want the v2-only subset for one outcome token.
+- The same event's children all share `image`, `event_title`, `event_slug`, and `end_date`. These are denormalized for convenience.
+- `active` and `closed` both being `true` is expected for a resolved event — `closed` means resolution happened, `active` means Polymarket enabled the market (and never disabled).
+- Sorted by `volume_all_time DESC NULLS LAST`.

@@ -1,0 +1,178 @@
+---
+title: "Wallet Trade History"
+description: "Every Polymarket CLOB v2 fill involving a specific wallet, with market enrichment and a `side` field indicating the wallet's role in each fill."
+openapi: "GET /clobv2/wallets/{address}/trades"
+---
+
+Every v2 fill where a wallet is either the maker or the taker, newest-first. Same per-trade shape as [`/clobv2/trades`](/api-reference/clobv2/trades) — raw two-sided fields, derived convenience fields, full market enrichment, and the `side` field always present (telling you whether this wallet was the maker or taker on each fill).
+
+Backed by the `v2.fill` view.
+
+## Request
+
+```
+GET /clobv2/wallets/{address}/trades
+```
+
+### Authentication
+
+Paid tier required. See [`/clobv2/trades`](/api-reference/clobv2/trades) for the auth header formats.
+
+### Path parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `address` | string | **Yes** | Wallet address (`0x` + 40 hex, case-insensitive — normalized lowercase in the response). |
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `limit` | integer | No | Results per page (1-1000, default 100). |
+| `offset` | integer | No | Skip this many results (0-10000000, default 0). |
+
+### Parameter validation
+
+- `address`: regex `^0x[a-f0-9]{40}$` (case-insensitive).
+- `limit`: 1-1000. `offset`: 0-10000000.
+
+Bad input → `400 Bad Request`.
+
+## Response
+
+```json
+{
+  "wallet": "0xd663f0f56e5c80d4716d46c776fabb4ec4c66abc",
+  "source": "onchain-v2",
+  "count": 1,
+  "offset": 0,
+  "trades": [
+    {
+      "ts": "2026-04-20T06:12:00+00:00",
+      "ts_unix": 1776665520,
+      "tx_hash": "0x7a78b781...",
+      "order_hash": "0x8d102e00...",
+
+      "maker": "0xd663f0f56e5c80d4716d46c776fabb4ec4c66abc",
+      "taker": "0xf86178a8e4b9e7c6a00200bf1ee5679383de462f",
+      "side": "maker",
+
+      "token_id": "32530407925029104312458780580530294728135746429755854137976885977399961033740",
+      "amount_usd": "1.3440000000000000",
+      "shares": "5.6000000000000000",
+      "price": "0.24000000000000000000",
+      "fee_usd": "0.000000000000000000000000",
+
+      "maker_token_id": "0",
+      "taker_token_id": "32530407925029104312458780580530294728135746429755854137976885977399961033740",
+      "maker_usdc": "1.3440000000000000",
+      "taker_usdc": "5.6000000000000000",
+      "fee_usdc": "0.000000000000000000000000",
+
+      "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "question": "Solana Up or Down - April 20, 2:10AM-2:15AM ET",
+      "slug": "sol-updown-5m-1776665400",
+      "event_title": "Solana Up or Down - April 20, 2:10AM-2:15AM ET",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/SOL+fullsize.png",
+      "condition_id": "0x1ee2fb3f919aa7c307565db03241926252666691aca6d7185af4654df603efdc",
+      "outcome": "Up"
+    }
+  ]
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallet` | string | Echoes the path parameter, normalized to lowercase. |
+| `source` | string | Always `"onchain-v2"`. |
+| `count` | integer | Number of trades in this page. |
+| `offset` | integer | The offset used. |
+| `trades[]` | array | One entry per fill. Shape is **identical** to [`/clobv2/trades`](/api-reference/clobv2/trades) trades, except `side` is **always present** (`"maker"` or `"taker"`) — see that page for full field descriptions. |
+
+### Rate-limit headers
+
+Same as every clobv2 endpoint: `x-ratelimit-limit`, `x-ratelimit-remaining`, `x-ratelimit-reset`.
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+# Last 20 fills for a wallet
+curl "https://api.polynode.dev/clobv2/wallets/0xd663f0f56e5c80d4716d46c776fabb4ec4c66abc/trades?limit=20" \
+  -H "x-api-key: pn_live_..."
+
+# Full history — page until has_more is false
+OFFSET=0
+while true; do
+  RESP=$(curl -sS "https://api.polynode.dev/clobv2/wallets/0xd663.../trades?limit=1000&offset=$OFFSET" -H "x-api-key: pn_live_...")
+  COUNT=$(echo "$RESP" | jq '.count')
+  echo "$RESP" | jq '.trades[]'
+  if [ "$COUNT" -lt 1000 ]; then break; fi
+  OFFSET=$((OFFSET + COUNT))
+done
+```
+
+```javascript Node.js
+const KEY = process.env.POLYNODE_KEY;
+
+async function walletTrades(wallet, limit = 100, offset = 0) {
+  const url = `https://api.polynode.dev/clobv2/wallets/${wallet}/trades?limit=${limit}&offset=${offset}`;
+  const resp = await fetch(url, { headers: { 'x-api-key': KEY } });
+  if (!resp.ok) throw new Error(`${resp.status} ${await resp.text()}`);
+  return resp.json();
+}
+
+// Total USDC traded by wallet across all fills
+const all = [];
+for (let offset = 0; ; offset += 1000) {
+  const page = await walletTrades('0xd663f0f56e5c80d4716d46c776fabb4ec4c66abc', 1000, offset);
+  all.push(...page.trades);
+  if (page.trades.length < 1000) break;
+}
+const totalUsd = all.reduce((acc, t) => acc + Number(t.amount_usd || 0), 0);
+console.log(`${all.length} trades, $${totalUsd.toFixed(2)} total notional`);
+```
+
+```python Python
+import requests, os
+from decimal import Decimal
+
+KEY = os.environ["POLYNODE_KEY"]
+
+def wallet_trades(wallet, limit=100, offset=0):
+    r = requests.get(f"https://api.polynode.dev/clobv2/wallets/{wallet}/trades",
+                     params={"limit": limit, "offset": offset},
+                     headers={"x-api-key": KEY})
+    r.raise_for_status()
+    return r.json()
+
+d = wallet_trades("0xd663f0f56e5c80d4716d46c776fabb4ec4c66abc", limit=20)
+for t in d["trades"]:
+    p = Decimal(t["price"]) if t["price"] else None
+    amt = Decimal(t["amount_usd"]) if t["amount_usd"] else None
+    print(f"{t['ts']}  {t['side']:6s}  {t['outcome']:12s}  "
+          f"price={p} amt=${amt}  {t['question'][:50] if t['question'] else ''}")
+```
+
+</CodeGroup>
+
+## Error responses
+
+| Status | Body | When |
+|--------|------|------|
+| `400` | `{"error": "invalid wallet address ..."}` | Bad path param. |
+| `401` | `{"error": "missing API key ..."}` | No key or bad key. |
+| `402` | `{"error": "paid plan required ..."}` | Free tier. |
+| `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
+| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+
+## Notes
+
+- The wallet in the path is case-insensitive — `0xD663F0...` works the same as `0xd663f0...`. The response always echoes the normalized lowercase form.
+- Results are always sorted by `ts_unix DESC` (newest first).
+- `side` is always `"maker"` or `"taker"` here, unlike [`/clobv2/trades`](/api-reference/clobv2/trades) where it only appears when you supply `wallet=`.
+- A wallet that has never traded on v2 returns `count: 0` with an empty `trades: []` — not a 404.
+- The same trade appears in both participants' wallet-trade lists — if you need deduplication across both sides, use `tx_hash + order_hash` as the key.

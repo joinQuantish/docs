@@ -1,0 +1,146 @@
+---
+title: "Market Trade History"
+description: "Every Polymarket CLOB v2 fill for a specific outcome token, with market metadata promoted to top-level and full per-trade enrichment."
+openapi: "GET /clobv2/markets/{token_id}/trades"
+---
+
+Every v2 fill that touched a specific outcome token, newest-first. Same per-trade shape as [`/clobv2/trades`](/api-reference/clobv2/trades), plus top-level `market` / `slug` / `outcome` / `image` / `condition_id` so you don't have to look inside the first row to name the market.
+
+Backed by the `v2.fill` view.
+
+## Request
+
+```
+GET /clobv2/markets/{token_id}/trades
+```
+
+### Authentication
+
+Paid tier required. See [`/clobv2/trades`](/api-reference/clobv2/trades) for auth formats.
+
+### Path parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `token_id` | string | **Yes** | Outcome token ID (uint256 as decimal string). |
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `limit` | integer | No | Results per page (1-1000, default 100). |
+| `offset` | integer | No | Skip this many results (0-10000000, default 0). |
+
+### Parameter validation
+
+- `token_id`: 1-78 digits, `^[0-9]+$`.
+- `limit`: 1-1000. `offset`: 0-10000000.
+
+## Response
+
+```json
+{
+  "token_id": "32530407925029104312458780580530294728135746429755854137976885977399961033740",
+  "source": "onchain-v2",
+  "count": 1,
+  "offset": 0,
+  "market": "Solana Up or Down - April 20, 2:10AM-2:15AM ET",
+  "slug": "sol-updown-5m-1776665400",
+  "outcome": "Up",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/SOL+fullsize.png",
+  "condition_id": "0x1ee2fb3f919aa7c307565db03241926252666691aca6d7185af4654df603efdc",
+  "trades": [
+    {
+      "ts": "2026-04-20T06:12:00+00:00",
+      "ts_unix": 1776665520,
+      "tx_hash": "0x7a78b781...",
+      "order_hash": "0x8d102e00...",
+      "maker": "0xd663f0f5...",
+      "taker": "0xf86178a8...",
+      "token_id": "32530407925029104312458780580530294728135746429755854137976885977399961033740",
+      "amount_usd": "1.3440000000000000",
+      "shares": "5.6000000000000000",
+      "price": "0.24000000000000000000",
+      "fee_usd": "0.000000000000000000000000",
+      "maker_token_id": "0",
+      "taker_token_id": "32530407925029104312458780580530294728135746429755854137976885977399961033740",
+      "maker_usdc": "1.3440000000000000",
+      "taker_usdc": "5.6000000000000000",
+      "fee_usdc": "0.000000000000000000000000",
+      "builder": "0x0000...000",
+      "question": "Solana Up or Down - April 20, 2:10AM-2:15AM ET",
+      "slug": "sol-updown-5m-1776665400",
+      "event_title": "Solana Up or Down - April 20, 2:10AM-2:15AM ET",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/SOL+fullsize.png",
+      "condition_id": "0x1ee2fb3f919aa7c307565db03241926252666691aca6d7185af4654df603efdc",
+      "outcome": "Up"
+    }
+  ]
+}
+```
+
+### Response fields — envelope
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `token_id` | string | Echoes the path parameter. |
+| `source` | string | Always `"onchain-v2"`. |
+| `count` | integer | Number of trades in this page. |
+| `offset` | integer | The offset used. |
+| `market` | string \| null | Market question (hoisted from the first matched trade — same value as `trades[].question`). |
+| `slug` | string \| null | Polymarket URL slug. |
+| `outcome` | string \| null | Outcome label. |
+| `image` | string \| null | CDN URL of the market icon. |
+| `condition_id` | string \| null | Parent market condition_id. |
+| `trades[]` | array | Same per-trade shape as [`/clobv2/trades`](/api-reference/clobv2/trades). `side` is **not** present here — there's no wallet context to assign one. |
+
+When the token has no fills yet, all top-level metadata fields are `null` and `trades: []`. Not a 404.
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+# Last 50 fills for one outcome
+curl "https://api.polynode.dev/clobv2/markets/32530407925029104312458780580530294728135746429755854137976885977399961033740/trades?limit=50" \
+  -H "x-api-key: pn_live_..."
+```
+
+```javascript Node.js
+const KEY = process.env.POLYNODE_KEY;
+const resp = await fetch(
+  `https://api.polynode.dev/clobv2/markets/${tokenId}/trades?limit=50`,
+  { headers: { 'x-api-key': KEY } },
+);
+const d = await resp.json();
+console.log(`${d.count} fills on ${d.market} (${d.outcome})`);
+```
+
+```python Python
+import requests, os
+KEY = os.environ["POLYNODE_KEY"]
+r = requests.get(f"https://api.polynode.dev/clobv2/markets/{token_id}/trades",
+                 params={"limit": 50},
+                 headers={"x-api-key": KEY})
+r.raise_for_status()
+d = r.json()
+print(f"{d['count']} fills on {d['market']} ({d['outcome']})")
+```
+
+</CodeGroup>
+
+## Error responses
+
+| Status | Body | When |
+|--------|------|------|
+| `400` | `{"error": "invalid token_id ..."}` | Path param isn't a positive integer string. |
+| `401` | `{"error": "missing API key ..."}` | No key or bad key. |
+| `402` | `{"error": "paid plan required ..."}` | Free tier. |
+| `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
+| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+
+## Notes
+
+- A market typically has two outcome tokens (Yes/No) and neg-risk markets can have many. This endpoint returns fills for ONE outcome token. To see all fills on a whole market, query [`/clobv2/trades?condition_id=...`](/api-reference/clobv2/trades).
+- Top-level `market` / `slug` / `outcome` / `image` / `condition_id` come from the first matched trade's metadata — if the very first fill's metadata hasn't been indexed yet (rare), these fields can be `null` even though enrichment on per-trade rows might populate a moment later.
+- Results always sorted by `ts_unix DESC`.
