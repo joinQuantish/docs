@@ -7,6 +7,17 @@ REST endpoints for Polymarket CLOB v2 data, indexed and served by polynode. Ever
 
 This is the **v2-only** surface. The existing [`/v2/onchain/*`](/api-reference/onchain/trades) endpoints cover v1 Polymarket (and will eventually unify onto the same indexer). Until then, use `/clobv2/*` for anything that needs v2 fills, positions, builder attribution, or neg-risk events.
 
+## Collateral token: pUSD
+
+v2 trades settle in **pUSD** (Polymarket USD), an ERC-20 on Polygon at `0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb`. Every pUSD is backed 1:1 by USDC.e and the backing is enforced on-chain by the contract, so dollar amounts are exact.
+
+Fields named `*_usdc` in the response schemas (`maker_usdc`, `taker_usdc`, `fee_usdc`, `notional_usdc`, etc.) are the **pUSD amounts of each fill**. The "usdc" suffix is a holdover from v1 and reflects the dollar value — it does NOT mean USDC.e was the token that moved. If you're verifying on-chain against Polygonscan, look for `Transfer` events on the pUSD contract above, not the USDC.e contract.
+
+Why you care:
+- **Integrators:** an API user wrapping USDC.e → pUSD via Polymarket's Collateral Onramp will see their `wallets/{address}/trades` results denominated in the same units their pUSD balance moved.
+- **Historical data:** early v2 fills (pre-mainnet-launch on April 28, 2026) may show mixed pUSD / USDC.e transfers on-chain as wallets migrated; the aggregated amounts our API returns remain dollar-correct because 1 pUSD = 1 USDC.e.
+- **v1 data:** the legacy [`/v2/onchain/*`](/api-reference/onchain/trades) endpoints are v1 Polymarket and genuinely denominated in USDC.e. Different exchange, different collateral.
+
 ## Base URL
 
 ```
