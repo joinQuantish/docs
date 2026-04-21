@@ -7,6 +7,35 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-21 (late) — Gasless Safe wrap/unwrap via the Polymarket relayer
+
+Patch release. `wrapToPolyUsd` / `unwrapFromPolyUsd` (and their Python/Rust equivalents) now route through the Polymarket relayer automatically when called on a Safe or Proxy wallet — the flow `ensureReady` already uses. Previously these helpers sent the transaction directly from the EOA, which failed for Safe wallets because the funds live in the Safe, not on the EOA, and the EOA has no MATIC for gas.
+
+**Install:**
+```bash
+npm install polynode-sdk@0.9.1       # TypeScript
+pip install "polynode>=0.9.1"        # Python
+cargo add polynode@0.12.1            # Rust
+```
+
+**Verified end-to-end with real Safe-via-relayer transactions:**
+- TS: wrap `0xde6c02c3...`, unwrap `0x006cd3dd...`
+- Python: wrap `0x7de53811...`, unwrap `0xccf9cf32...`
+- Rust: wrap `0xd80af0f4...`, unwrap `0xd21d6ad6...`
+
+All six txs mined on Polygon with `status: 0x1`, funded by third-party relayer EOAs — your EOA only signs the Safe `execTransaction` EIP-712 payload.
+
+**Requirements for Safe wrap/unwrap:** pass `builderCredentials` in `TraderConfig`. The SDK uses your Polymarket builder HMAC key to authenticate the relayer submit. Mint one at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder).
+
+**Tip — avoid stale-cache order rejection after wrap:** after `wrapToPolyUsd()`, the V2 CLOB's cached balance view is stale for a few seconds. If you place an order immediately, the CLOB can return a cryptic `"error parsing fee rate bps"` instead of the actual "balance not yet visible". Call `await trader.refreshBalanceAllowance()` before the order, or wait ~3 seconds. This is why we don't auto-refresh in wrap — not every wrap is followed by an immediate order.
+
+**Also in this patch:**
+- **Rust:** fixed `encode_unwrap` selector (was `0x39f47693`, correct value is `0x8cc7104f`). All Rust V2 unwraps prior to 0.12.1 hit the wrong contract function and reverted on-chain.
+- **Rust:** `get_polyusd_balance()` / `get_usdce_balance()` now read the funder address (Safe) instead of the EOA. Previously they always returned 0 for Safe-wallet users.
+- **Python:** `relayer.py` module added with a minimal Python port of `@polymarket/builder-relayer-client`. Implements EIP-712 Safe tx hashing, EIP-191 personal_sign via `eth_account`, builder HMAC headers, and `/submit` + `/transaction` polling.
+
+---
+
 ## 2026-04-21 — SDK V2 order flow hardening (all three SDKs)
 
 End-to-end V2 order placement verified live on `clob-v2.polymarket.com` across all three SDKs. Matched fills tagged with your builder code now appear in the V2 CLOB's `/builder/trades` attribution feed.

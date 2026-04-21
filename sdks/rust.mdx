@@ -674,6 +674,48 @@ async fn main() -> polynode::Result<()> {
 }
 ```
 
+### Linking an existing wallet (skip onboarding)
+
+If you already have CLOB credentials from somewhere else (exported from a previous session, another SDK, or Polymarket directly), use `link_credentials` + `link_wallet` to skip `ensure_ready` entirely. Nothing gets deployed or re-approved — you just import the creds and attach a signer for order signing.
+
+```rust,no_run
+use polynode::trading::{
+    LinkCredentialsOpts, LinkOpts, PolyNodeTrader, PrivateKeySigner, SignatureType, TraderConfig,
+};
+
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: "pn_live_...".into(),
+    ..Default::default()
+})?;
+
+// 1. Import existing CLOB creds (they're written to the local SQLite DB)
+trader.link_credentials(LinkCredentialsOpts {
+    wallet: "0xYOUR_EOA".into(),
+    api_key: "clob-api-key-uuid".into(),
+    api_secret: "clob-api-secret".into(),
+    api_passphrase: "clob-api-passphrase".into(),
+    signature_type: Some(SignatureType::PolyGnosisSafe),
+    funder_address: Some("0xYOUR_SAFE".into()),
+})?;
+
+// 2. Attach the signer (PrivateKeySigner, Privy, or your own TradingSigner impl)
+let signer = PrivateKeySigner::from_hex("0xYOUR_EOA_PRIVATE_KEY")?;
+trader.link_wallet(
+    Box::new(signer),
+    Some(LinkOpts { signature_type: Some(SignatureType::PolyGnosisSafe) }),
+).await?;
+
+// Now trader.order / trader.wrap_to_polyusd / etc. use the Safe+relayer path.
+```
+
+**`SignatureType` values:**
+
+- `SignatureType::Eoa` — sign as the EOA directly (pay gas in MATIC, tx from EOA address)
+- `SignatureType::PolyProxy` — legacy Polymarket proxy wallet (very rare)
+- `SignatureType::PolyGnosisSafe` — default; EOA signs Safe `execTransaction` payloads, Polymarket relayer submits gaslessly
+
+For multi-user backends, call `link_credentials` + `link_wallet` for each user, or keep a `PolyNodeTrader` per user with a separate `db_path`.
+
 ### Place an Order
 
 ```rust,no_run

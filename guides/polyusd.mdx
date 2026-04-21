@@ -251,6 +251,10 @@ let unwrap_tx = trader.unwrap_from_polyusd(5_000_000).await?;
 
 **Which wallet type am I using?** `ensureReady(privateKey)` defaults to `POLY_GNOSIS_SAFE` — your EOA controls a Safe at the derived funder address, and SDK methods route through the Polymarket relayer (gasless). If you pass `{ type: SignatureType.EOA }` explicitly, the SDK signs directly from the EOA and you pay MATIC for gas. For Safe mode, `builderCredentials` is required because the SDK uses your Polymarket builder HMAC to authenticate relayer requests — mint one at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder).
 
+<Warning>
+**Placing an order right after a wrap?** Call `await trader.refreshBalanceAllowance()` in between. The V2 CLOB caches its view of your balance + allowances per API key; for a few seconds after wrap, that view is stale. If you submit an order before the cache refreshes, the CLOB can return a cryptic `"error parsing fee rate bps"` instead of the real "balance not yet visible" message. A single `refreshBalanceAllowance()` call fixes it. `ensureReady` already does this for you on first setup — `wrapToPolyUsd` does not, because not every wrap is followed by an immediate order.
+</Warning>
+
 ### Related contracts
 
 | Contract | Address | Role on pUSD (today) |
