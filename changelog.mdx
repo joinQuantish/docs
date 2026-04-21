@@ -30,6 +30,18 @@ cargo add polynode@0.12.0            # Rust
 
 The full V2 wire format, required approvals, fee math, and common failure modes are documented in each SDK at `src/trading/V2_ORDER_FLOW.md` (TS, Rust) / `polynode/trading/V2_ORDER_FLOW.md` (Python).
 
+**End-to-end verification (from each public registry, fresh sandbox, real V2 orders against `clob-v2.polymarket.com`):**
+
+| SDK | Installed from | V2 order placed | Cancelled |
+|---|---|---|---|
+| `polynode-sdk@0.9.0` | `npm install polynode-sdk` | `0xb088a702...` LIVE | ✓ |
+| `polynode 0.9.0` | `pip install polynode[trading]` | `0x4906757c...` LIVE | ✓ |
+| `polynode 0.12.0` | `cargo add polynode@0.12` | `0x6d3623c6...` LIVE | ✓ |
+
+Each sandbox pulled from the public registry, imported the SDK, placed a real V2 GTC BUY with builder attribution, confirmed `status: "live"` from the V2 CLOB, then cancelled. No local source overrides, no pre-compiled artifacts — same install path a new user follows.
+
+**Docs fix also shipped today:** the V2 section of `/sdks/trading` now inlines `ensureReady` / `ensure_ready` so a V2-first reader who pastes only that block hits a copy-paste runnable flow. Previously the snippet silently assumed the reader had already gone through the Quick Start section.
+
 ---
 
 ## 2026-04-20 — CLOB v2 API launched
