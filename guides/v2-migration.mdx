@@ -223,7 +223,7 @@ const result = await trader.order({
 
 ```python Python
 # pip install polynode[trading]
-from polynode.trading import PolyNodeTrader, TraderConfig, ExchangeVersion
+from polynode.trading import PolyNodeTrader, TraderConfig, ExchangeVersion, OrderParams
 
 config = TraderConfig(
     polynode_key="pn_live_...",
@@ -231,15 +231,16 @@ config = TraderConfig(
 )
 
 trader = PolyNodeTrader(config)
-trader.ensure_ready("0xprivatekey...")
+await trader.ensure_ready("0xprivatekey...")
 
-# Order placement is identical to V1
-result = trader.order(
+# Order placement is identical to V1 — pass OrderParams, add builder for V2 attribution
+result = await trader.order(OrderParams(
     token_id="10293...",
     side="BUY",
     price=0.05,
     size=10,
-)
+    builder="0x5472fdd7...",  # optional; your V2 builder code
+))
 ```
 </CodeGroup>
 

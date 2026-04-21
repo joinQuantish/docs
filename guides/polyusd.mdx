@@ -141,11 +141,11 @@ const balance = await trader.getPolyUsdBalance();
 ```
 
 ```python Python
-# Wrap 1 USDC.e → PolyUSD
-tx_hash = trader.wrap_to_polyusd(1_000_000)
+# Wrap 1 USDC.e → PolyUSD (wrap_to_polyusd is async)
+tx_hash = await trader.wrap_to_polyusd(1_000_000)
 
-# Check balance
-balance = trader.get_polyusd_balance()
+# Balance getter is synchronous (returns raw int)
+balance_raw = trader.get_polyusd_balance()
 ```
 </CodeGroup>
 

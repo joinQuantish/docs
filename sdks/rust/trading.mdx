@@ -75,9 +75,9 @@ let result = trader.order(OrderParams {
     price: 0.55,
     size: 100.0,
     order_type: OrderType::GTC,
-    expiration: None,
-    post_only: false,
-    fee_config: None,
+    // For V2 orders, add builder attribution:
+    //   builder: Some("0x5472fdd7...".into()),
+    ..Default::default()
 }).await?;
 
 if result.success {
@@ -281,9 +281,8 @@ let result = trader.order(OrderParams {
     price: 0.55,
     size: 100.0,
     order_type: OrderType::GTC,
-    expiration: None,
-    post_only: false,
-    fee_config: None,  // uses global fee_config from TraderConfig
+    // fee_config: None uses the trader's global fee_config (via Default)
+    ..Default::default()
 }).await?;
 
 println!("Fee TX: {:?}", result.fee_escrow_tx_hash);
