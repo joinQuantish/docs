@@ -7,6 +7,31 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-21 — SDK V2 order flow hardening (all three SDKs)
+
+End-to-end V2 order placement verified live on `clob-v2.polymarket.com` across all three SDKs. Matched fills tagged with your builder code now appear in the V2 CLOB's `/builder/trades` attribution feed.
+
+**Install:**
+```bash
+npm install polynode-sdk@0.9.0       # TypeScript
+pip install "polynode>=0.9.0"        # Python
+cargo add polynode@0.12.0            # Rust
+```
+
+**What changed:**
+- **V2 approvals now include the V1 `NegRiskAdapter`** in the spender list. The V2 CLOB's balance-allowance check monitors this address alongside the two V2 exchanges — orders without this approval were rejected with `"not enough balance / allowance"`.
+- **New methods: `refreshBalanceAllowance()` / `getBalanceAllowance()`.** The V2 CLOB maintains a cached balance-allowance view per API key; `ensureReady()` now auto-refreshes it after setting V2 approvals so the first order after onboarding goes through.
+- **Amount math hardened against float-precision edge cases.** Raw-units now derived via string-based decimal conversion instead of `Math.trunc(x * 1e6)` (TS) / `(x * 1_000_000.0) as u64` (Rust), which could truncate to `N-1` for prices that round-trip badly through float.
+- **V2 order body now matches `@polymarket/clob-client-v2` exactly** — adds `taker`, `postOnly`, `deferExec` fields to the POST payload.
+- **`checkBalance()` is V2-aware** — reads pUSD on V2, USDC.e on V1. Previously always read USDC.e.
+- **Market neg-risk detection fix (TS).** The old check treated every market as neg-risk (truthiness of the response object rather than its `neg_risk` field), which signed orders against the wrong exchange on standard markets.
+
+**Migration:** drop-in. `trader.order(...)` signature is unchanged; if you're on V2 and your orders were going through before, they still will. If you had a custom `ensureReady`-equivalent flow, you may now drop the manual `/balance-allowance/update` call — `ensureReady()` handles it on fresh V2 approvals.
+
+The full V2 wire format, required approvals, fee math, and common failure modes are documented in each SDK at `src/trading/V2_ORDER_FLOW.md` (TS, Rust) / `polynode/trading/V2_ORDER_FLOW.md` (Python).
+
+---
+
 ## 2026-04-20 — CLOB v2 API launched
 
 New paid REST namespace `/clobv2/*` exposing every Polymarket CLOB v2 fill, position, builder, and neg-risk event. Backed by polynode's own indexer on s4 — no external dependencies.

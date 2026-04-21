@@ -221,16 +221,18 @@ const trader = new PolyNodeTrader({
 });
 ```
 
-Before placing orders on V2 markets, you need to wrap your USDC.e into PolyUSD:
+Before placing orders on V2 markets, you need to wrap your USDC.e into PolyUSD. Wrap amounts are in raw 6-decimal units (`1_000_000n` = $1):
 
 ```typescript
-// Wrap USDC.e → PolyUSD
-await trader.wrapToPolyUsd(100);
+// Wrap 100 USDC.e → PolyUSD
+await trader.wrapToPolyUsd(100_000_000n);
 
-// Check PolyUSD balance
-const balance = await trader.getPolyUsdBalance();
-console.log(`PolyUSD: $${balance}`);
+// Check PolyUSD balance (returns raw bigint, divide by 1e6 for dollars)
+const balanceRaw = await trader.getPolyUsdBalance();
+console.log(`PolyUSD: $${Number(balanceRaw) / 1e6}`);
 ```
+
+On V2, `ensureReady()` also refreshes the CLOB's cached balance-allowance view after setting approvals. If you change approvals outside of `ensureReady`, call `await trader.refreshBalanceAllowance()` before placing orders — otherwise the CLOB can reject with `"not enough balance / allowance"` until its cache catches up.
 
 All other trading methods (`order()`, `cancelOrder()`, `split()`, `merge()`, etc.) work the same on V2 markets.
 

@@ -18,14 +18,15 @@ Polymarket is deploying a V2 exchange system on Polygon mainnet. polynode has id
 If you place orders on Polymarket, here's exactly what to do before April 28:
 
 1. **Upgrade your SDK to the V2-ready version.** Older versions won't generate the correct V2 payload.
-   - Rust: `polynode >= 0.9.0`. Install with `cargo add polynode@0.9.0`.
-   - TypeScript: `polynode-sdk >= 0.8.0`. Install with `npm install polynode-sdk@^0.8.0`.
-   - Python: `polynode >= 0.8.0`. Install with `pip install "polynode>=0.8.0"`.
+   - Rust: `polynode >= 0.12.0`. Install with `cargo add polynode@0.12.0`.
+   - TypeScript: `polynode-sdk >= 0.9.0`. Install with `npm install polynode-sdk@^0.9.0`.
+   - Python: `polynode >= 0.9.0`. Install with `pip install "polynode>=0.9.0"`.
 2. **Flip the exchange version flag** in your `TraderConfig`. See [The Switch](#the-switch) below. This is the only code change required.
 3. **Mint a V2 builder code** at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder) if you want attribution on your orders. Optional, orders still work without one.
 4. **Cancel V1 resting orders** you don't want cleared at cutover. Open V1 orders get wiped when Polymarket flips the switch.
-5. **Test against V2 now.** Point your SDK at V2 (step 2) and place a small order against `clob-v2.polymarket.com`. The SDK's `ensure_ready` / `ensureReady` wraps any USDC.e into PolyUSD automatically on first use.
-6. **Verify V2 confirmation.** Your settlement stream tags V2 trades with `"exchange_version": "v2"` on every event.
+5. **Fund PolyUSD.** V2 orders settle in PolyUSD (pUSD), not USDC.e. If your Safe holds USDC.e, call `trader.wrap_to_polyusd(amount)` (Python) / `trader.wrapToPolyusd(amount)` (TS) / `trader.wrap_to_polyusd(amount)` (Rust) to convert it via the Collateral Onramp. Existing V1 pUSD balance carries over.
+6. **Test against V2 now.** Point your SDK at V2 (step 2) and place a small order against `clob-v2.polymarket.com`. `ensure_ready` / `ensureReady` sets the V2 approvals and refreshes the CLOB's cached balance/allowance view for you.
+7. **Verify V2 confirmation.** Your settlement stream tags V2 trades with `"exchange_version": "v2"` on every event.
 
 ## The Switch
 
