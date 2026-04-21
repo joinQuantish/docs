@@ -7,6 +7,23 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-21 (late) — Unrealized P&L and market status on positions
+
+The `/v2/onchain/positions` and `/v2/wallets/{address}/positions/onchain` endpoints now return unrealized P&L, the current market price, and a status flag per position — so you don't have to fetch prices separately or special-case resolved markets in client code.
+
+**New per-position fields:**
+- `unrealized_pnl` — paper P&L on the held size at the current price. For resolved markets, uses the settlement price (1.0 for winners, 0.0 for losers). For live markets, uses the current market price. Returns 0 when `size = 0`.
+- `current_price` — the price used to compute `unrealized_pnl`. `null` when `size = 0` or no price is available.
+- `market_status` — one of `live`, `resolved-win`, `resolved-loss`, or `closed`. Lets you tell apart a live-tradable holding from a resolved-but-never-redeemed position without looking up the market separately.
+
+**New portfolio totals** on `/v2/wallets/{address}/positions/onchain`:
+- `total_unrealized_pnl`
+- `total_pnl` — `total_realized_pnl + total_unrealized_pnl`. This is the number that matches the "Profit" value shown on a Polymarket profile page.
+
+Drop-in — every existing field keeps its name and type.
+
+---
+
 ## 2026-04-21 (late) — Gasless Safe wrap/unwrap via the Polymarket relayer
 
 Patch release. `wrapToPolyUsd` / `unwrapFromPolyUsd` (and their Python/Rust equivalents) now route through the Polymarket relayer automatically when called on a Safe or Proxy wallet — the flow `ensureReady` already uses. Previously these helpers sent the transaction directly from the EOA, which failed for Safe wallets because the funds live in the Safe, not on the EOA, and the EOA has no MATIC for gas.

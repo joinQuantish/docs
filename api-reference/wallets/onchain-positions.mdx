@@ -28,6 +28,8 @@ GET /v2/wallets/{address}/positions/onchain
   "open_count": 340,
   "closed_count": 288,
   "total_realized_pnl": 17183579.48,
+  "total_unrealized_pnl": -14346997.32,
+  "total_pnl": 2836582.16,
   "positions_with_pnl": 309,
   "positions": [
     {
@@ -35,6 +37,9 @@ GET /v2/wallets/{address}/positions/onchain
       "size": 0,
       "avg_price": 0.63,
       "realized_pnl": 147588.53019,
+      "unrealized_pnl": 0,
+      "current_price": null,
+      "market_status": "closed",
       "total_bought": 398887.919433,
       "market": "Will Fulham FC win on 2026-03-21?",
       "slug": "epl-ful-bur-2026-03-21-ful",
@@ -54,11 +59,16 @@ GET /v2/wallets/{address}/positions/onchain
 | `open_count` | number | Positions with `size > 0` |
 | `closed_count` | number | Positions with `size = 0` and nonzero `realized_pnl` |
 | `total_realized_pnl` | number | Sum of `realized_pnl` across all positions |
+| `total_unrealized_pnl` | number | Sum of `unrealized_pnl` across all positions. Reflects open-size paper P&L at current (or terminal) market prices. |
+| `total_pnl` | number | `total_realized_pnl + total_unrealized_pnl`. Matches the net portfolio PnL shown on a Polymarket profile page. |
 | `positions_with_pnl` | number | Positions where `realized_pnl != 0` |
 | `positions[].token_id` | string | CTF token ID (called `asset` on the [closed-positions](/api-reference/wallets/closed-positions) endpoint) |
 | `positions[].size` | number | Current token balance (0 = fully exited) |
 | `positions[].avg_price` | number | Volume-weighted average entry price |
 | `positions[].realized_pnl` | number | Realized profit/loss in USDC |
+| `positions[].unrealized_pnl` | number | Paper P&L on remaining open shares. For resolved markets, uses the terminal settlement price (1.0 winner / 0.0 loser). For live markets, uses the current market price. `0` when `size = 0`. |
+| `positions[].current_price` | number \| null | Price used for `unrealized_pnl`. `1.0` or `0.0` on resolved markets, live market price on active markets, `null` when `size = 0` or no price is available. |
+| `positions[].market_status` | string | `"live"` / `"resolved-win"` / `"resolved-loss"` / `"closed"`. See [positions feed](/api-reference/onchain/positions#position-fields) for full enum. |
 | `positions[].total_bought` | number | Total tokens acquired for this position |
 | `positions[].market` | string | Market question |
 | `positions[].slug` | string | Market slug |
@@ -80,27 +90,20 @@ The formula: `realized_pnl = total_bought × (1 - avg_price)` for positions that
 
 Per-position values (`realized_pnl`, `avg_price`, `total_bought`) come from the same onchain settlement data that Polymarket uses. Individual position P&L matches what Polymarket shows on its portfolio page.
 
-## `total_realized_pnl` vs Polymarket Profile PnL
+## Which total to use
 
-`total_realized_pnl` is the sum of all individual position `realized_pnl` values. This number will be **higher** than the PnL shown on a Polymarket profile page because they measure different things.
+The response returns three portfolio-level totals. Each answers a different question:
 
-**What `total_realized_pnl` measures:** Total profit taken off the table from closed and resolved positions. This is money the wallet has already extracted.
+| Total | Answers | Matches |
+|-------|---------|---------|
+| `total_realized_pnl` | How much profit has this wallet actually taken off the table from closed + resolved positions? | Not shown on Polymarket profile |
+| `total_unrealized_pnl` | What is the paper P&L on the wallet's currently-held shares at current (or terminal) prices? | Not shown directly |
+| `total_pnl` | What is the wallet's net portfolio P&L right now? | The "Profit" number on a Polymarket profile page |
 
-**What Polymarket's profile PnL measures:** Net portfolio performance, which accounts for capital still deployed in open positions.
-
-A wallet with $17M in realized gains but $14M in cost basis locked in open positions shows ~$3M on Polymarket's profile. Both numbers are correct:
-
-| Metric | Value | Source |
-|--------|-------|--------|
-| Realized gains from closed positions | $17,183,579 | `total_realized_pnl` from this endpoint |
-| Cost basis deployed in open positions | -$14,398,655 | `sum(size × avg_price)` for positions where `size > 0` |
-| Unrealized gains on open positions | +$51,653 | Current market prices vs entry prices |
-| **Net portfolio PnL** | **$2,834,935** | [Trader profile](/api-reference/enriched/trader-profile) `totalPnl` |
-
-To get the Polymarket-equivalent net PnL number, subtract the cost basis of open positions and add any unrealized gains. Or use the [trader profile](/api-reference/enriched/trader-profile) endpoint which returns Polymarket's own `totalPnl` directly.
+`total_pnl` is what most dashboards want — it's the single number users recognize from Polymarket. `total_realized_pnl` is useful for attribution (which markets made money vs which positions are still out). `total_unrealized_pnl` is useful for risk views (how much is still at stake).
 
 <Note>
-Use `total_realized_pnl` when you want to know how much profit a wallet has actually extracted. Use the [trader profile](/api-reference/enriched/trader-profile) `totalPnl` when you want the number that matches a Polymarket profile page.
+`total_pnl = total_realized_pnl + total_unrealized_pnl`. Reach for `total_pnl` when you want a number that matches a Polymarket profile page. Reach for `total_realized_pnl` when you want only closed-out gains.
 </Note>
 
 ## Performance
