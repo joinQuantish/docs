@@ -491,6 +491,57 @@ Close the SQLite connection. Call this when shutting down.
 
 If the relay is down and `fallbackDirect` is true, orders go directly to Polymarket. Your trading never stops.
 
+## Wallet Model & Signing
+
+Polymarket uses a **two-address model** for each trader:
+
+- **EOA (signer)** — a plain private key. Signs every order and every on-chain intent. Holds no trading funds.
+- **Safe (funder)** — a Gnosis Safe smart wallet whose address is deterministically derived from the EOA (CREATE2 via the Polymarket Safe Factory). This is where USDC.e / pUSD / CTF positions live, and it's the `maker` on every order.
+
+`ensureReady(privateKey)` on a fresh EOA does all four things for you, **gasless** via the Polymarket relayer:
+
+1. Derives the Safe address from the EOA via CREATE2
+2. Deploys the Safe if it doesn't exist yet on-chain
+3. Sets all required approvals (USDC.e/pUSD to exchanges + collateral adapters, CTF to exchanges)
+4. Creates CLOB API credentials (L2 HMAC) by signing an EIP-712 `ClobAuth` message from the EOA
+
+After this, the SDK stores the CLOB API key, secret, and passphrase in its local SQLite DB keyed by the EOA address. You never send them to polynode.
+
+### How orders are signed
+
+Every V2 order struct includes `maker` (the Safe address) and `signer` (the EOA address). The EOA signs the EIP-712 hash; the CLOB verifies the signature against `signer` and trusts that the `signer` is a 1-of-1 owner of the `maker` Safe (it is, because the Safe's sole owner is the EOA by construction). At settlement time, the V2 exchange calls the Safe's `execTransaction` with your signed payload as authorization.
+
+### How wrap/unwrap, approvals, and split/merge are signed
+
+For any on-chain action that needs to move funds out of the Safe (`wrapToPolyUsd`, `unwrapFromPolyUsd`, `setApprovals`, `split`, `merge`, `convert`), the SDK:
+
+1. Builds the raw calldata for the target contract call
+2. Wraps it in a Safe `execTransaction` EIP-712 payload with the current Safe nonce
+3. Has your EOA `personal_sign` that payload (via eth_account / alloy / ethers)
+4. POSTs the signed payload to `https://relayer-v2.polymarket.com/submit` with your **builder HMAC headers**
+5. Polls the relayer until the tx is mined on Polygon
+
+The relayer pays the gas. You never need MATIC. This is why `wrapToPolyUsd()` / `unwrapFromPolyUsd()` require `builderCredentials` in `TraderConfig` for Safe wallets — the HMAC authenticates your submit to the relayer.
+
+### Linking credentials vs ensureReady
+
+Three ways to get a wallet ready to trade, depending on what you already have:
+
+| Situation | Call | What it does |
+|---|---|---|
+| Fresh EOA (no Safe yet) | `trader.ensureReady(privateKey)` | Derives Safe, deploys, approves, creates CLOB creds, stores in local DB |
+| Existing EOA + Safe already set up (you re-start your service) | `trader.ensureReady(privateKey)` | No-op if the local DB already has creds; otherwise re-derives and re-fetches |
+| You already have CLOB creds from somewhere else (DB export, Polymarket account) | `trader.linkCredentials({ wallet, apiKey, apiSecret, apiPassphrase, signatureType, funderAddress })` then `trader.linkWallet(privateKey)` to attach the signer | Imports the creds into the local DB and attaches the signer for order signing. Skips approvals + deploys entirely. |
+| Multi-user platform (one SDK instance, many users) | `trader.linkCredentials(userA)` → `trader.linkWallet(userA.pk)` → trade; then switch with `trader.linkWallet(userB.pk)` | Each `linkWallet` call swaps the active signer. `linkCredentials` writes into the local DB so you can return to a user later by calling `linkWallet` again with their key. Consider using one `PolyNodeTrader` per user for concurrency. |
+
+### Multi-user / server wallet patterns
+
+For a backend that trades on behalf of many users:
+
+- **Privy / server-managed wallets:** use `createPrivySigner(privy, walletId, address)` instead of passing a raw private key to `ensureReady`. Same onboarding flow, but Privy holds the key and signs remotely.
+- **Your own KMS:** implement the `RouterSigner` interface (or `TradingSigner` in Rust / a signer callable in Python). The SDK only needs two operations from you: `getAddress()` and `signTypedData(payload)`. Everything else is local.
+- **Per-user DB file:** pass a different `dbPath` per user to keep their credentials isolated on disk. Or use a shared DB and call `linkWallet(userPk)` to swap active signers.
+
 ## Credential Custody
 
 Credentials are stored in a local SQLite database. The SDK never sends your private key or CLOB credentials to polynode's servers. Back up with `exportWallet()`.

@@ -167,30 +167,96 @@ Unwrapping is designed to be **permissionless** — any EOA can call `Collateral
 function unwrap(address underlyingToken, address recipient, uint256 amount)
 ```
 
-<Warning>
-**Pre-cutover (before April 22):** The Offramp contract is deployed on Polygon mainnet but has not yet been granted `WRAPPER_ROLE` on the pUSD token. Calling `unwrap()` directly today reverts with `Unauthorized()` from pUSD's `onlyRoles(WRAPPER_ROLE)` check. Polymarket is expected to grant the role to the Offramp at or around the V2 cutover on April 22.
+<Info>
+**Unwrap is live today.** The Collateral Offramp holds `WRAPPER_ROLE` on the pUSD token and processes user unwraps directly. Verified 2026-04-21 via tx [`0x154a906c5790e272cb209146e6716ff255d92791519f642f5c43a4997a47e030`](https://polygonscan.com/tx/0x154a906c5790e272cb209146e6716ff255d92791519f642f5c43a4997a47e030) (0.1 pUSD → 0.1 USDC.e from a Safe wallet via the Polymarket relayer).
 
-Until then, the only live pUSD → USDC.e paths are:
-- **Polymarket's withdraw UI** at `bridge.polymarket.com/withdraw` — routes through a Uniswap v3 pool for small amounts or an off-chain witness flow for larger amounts.
-- **Settlement through the V2 exchange** — the `CTFCollateralAdapter` already holds `WRAPPER_ROLE` and unwraps internally during `matchOrders` settlements.
-- **Redeeming resolved positions** — ConditionalTokens pays out USDC.e directly; bypasses the Offramp entirely.
+Alternative paths that also still work:
+- **Polymarket's withdraw UI** at `bridge.polymarket.com/withdraw` — routes through a Uniswap v3 pool or off-chain witness flow.
+- **Settlement through the V2 exchange** — `CTFCollateralAdapter` unwraps internally during `matchOrders`.
+- **Redeeming resolved positions** — ConditionalTokens pays out USDC.e directly.
+</Info>
 
-You can watch for the role grant on-chain by monitoring `RolesUpdated(0x2957922eb93258b93368531d39facca3b4dc5854, 2)` emitted by the pUSD proxy at `0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb`.
-</Warning>
-
-### Steps (post-cutover)
+### Steps
 
 1. **Approve** the Offramp to spend your pUSD
 2. **Call** `unwrap(USDC.e, recipient, amount)` on the Offramp
 
-Both steps are EOA-callable once the role is granted.
+Both steps are EOA-callable. For **Safe wallets**, route both through the Polymarket relayer (gasless) — the polynode SDK does this automatically, see below.
+
+### Via the polynode SDK (recommended for Safe wallets)
+
+The SDK's `wrapToPolyUsd()` / `unwrapFromPolyUsd()` automatically detect your wallet type. If you onboarded with `ensureReady(privateKey)` (Safe wallet, the default), both calls route through the Polymarket relayer and execute as gasless Safe transactions signed by your EOA. Amounts are raw 6-decimal integers (`1_000_000` = $1).
+
+<CodeGroup>
+```typescript TypeScript
+// polynode-sdk >= 0.9.1
+import { PolyNodeTrader } from 'polynode-sdk';
+
+const trader = new PolyNodeTrader({
+  polynodeKey: 'pn_live_...',
+  exchangeVersion: 'v2',
+  builderCredentials: { key: '...', secret: '...', passphrase: '...' },
+});
+await trader.ensureReady('0xYOUR_EOA_PRIVATE_KEY');
+
+// Wrap 10 USDC.e → pUSD (gasless via Safe+relayer)
+const wrapTx = await trader.wrapToPolyUsd(10_000_000n);
+
+// Unwrap 5 pUSD → USDC.e (gasless via Safe+relayer)
+const unwrapTx = await trader.unwrapFromPolyUsd(5_000_000n);
+```
+
+```python Python
+# polynode >= 0.9.1
+from polynode.trading import PolyNodeTrader, TraderConfig, ExchangeVersion, BuilderCredentials
+
+trader = PolyNodeTrader(TraderConfig(
+    polynode_key="pn_live_...",
+    exchange_version=ExchangeVersion.V2,
+    builder_credentials=BuilderCredentials(key="...", secret="...", passphrase="..."),
+))
+await trader.ensure_ready("0xYOUR_EOA_PRIVATE_KEY")
+
+# Wrap 10 USDC.e → pUSD
+wrap_tx = await trader.wrap_to_polyusd(10_000_000)
+
+# Unwrap 5 pUSD → USDC.e
+unwrap_tx = await trader.unwrap_from_polyusd(5_000_000)
+```
+
+```rust Rust
+// polynode >= 0.12.1
+use polynode::trading::{
+    PolyNodeTrader, TraderConfig, ExchangeVersion, BuilderCredentials, PrivateKeySigner,
+};
+
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: "pn_live_...".into(),
+    exchange_version: ExchangeVersion::V2,
+    builder_credentials: Some(BuilderCredentials {
+        key: "...".into(), secret: "...".into(), passphrase: "...".into(),
+    }),
+    ..Default::default()
+})?;
+let signer = PrivateKeySigner::from_hex("0xYOUR_EOA_PRIVATE_KEY")?;
+trader.ensure_ready(Box::new(signer), None).await?;
+
+// Wrap 10 USDC.e → pUSD
+let wrap_tx = trader.wrap_to_polyusd(10_000_000).await?;
+
+// Unwrap 5 pUSD → USDC.e
+let unwrap_tx = trader.unwrap_from_polyusd(5_000_000).await?;
+```
+</CodeGroup>
+
+**Which wallet type am I using?** `ensureReady(privateKey)` defaults to `POLY_GNOSIS_SAFE` — your EOA controls a Safe at the derived funder address, and SDK methods route through the Polymarket relayer (gasless). If you pass `{ type: SignatureType.EOA }` explicitly, the SDK signs directly from the EOA and you pay MATIC for gas. For Safe mode, `builderCredentials` is required because the SDK uses your Polymarket builder HMAC to authenticate relayer requests — mint one at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder).
 
 ### Related contracts
 
 | Contract | Address | Role on pUSD (today) |
 |----------|---------|----------------------|
 | Collateral Onramp (wrap) | `0x93070a847efef7f70739046a929d47a521f5b8ee` | WRAPPER_ROLE ✓ |
-| Collateral Offramp (unwrap) | `0x2957922eb93258b93368531d39facca3b4dc5854` | none (pending) |
+| Collateral Offramp (unwrap) | `0x2957922eb93258b93368531d39facca3b4dc5854` | WRAPPER_ROLE ✓ |
 | PermissionedRamp (witness-signed) | `0xebc2459ec962869ca4c0bd1e06368272732bcb08` | WRAPPER_ROLE ✓ |
 | CtfCollateralAdapter (internal) | `0xada100874d00e3331d00f2007a9c336a65009718` | WRAPPER_ROLE ✓ |
 
