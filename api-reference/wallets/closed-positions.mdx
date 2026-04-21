@@ -6,7 +6,11 @@ openapi: "GET /v2/wallets/{address}/closed-positions"
 
 Returns closed positions for a wallet with market metadata (title, outcome, slug) and realized P&L. Supports pagination and sorting.
 
-This complements the [onchain positions](/api-reference/wallets/onchain-positions) endpoint. The onchain endpoint returns all positions with accurate P&L but no market metadata. This endpoint returns closed positions with metadata but only those that Polymarket has indexed.
+<Note>
+**Data source — read before you integrate.** This endpoint proxies Polymarket's own `data-api.polymarket.com/closed-positions` and wraps it with pagination metadata. Row field names are Polymarket's names preserved as-is — so you'll see `asset` (not `token_id`), `proxy_wallet`, `cur_price`, `title` (not `market`). Coverage is whatever Polymarket has indexed; positions they haven't indexed won't appear here.
+
+For **onchain truth** with our own P&L calculations and consistent field naming across the rest of the API, use [`/v2/wallets/{address}/positions/onchain`](/api-reference/wallets/onchain-positions) — that endpoint returns every position the wallet has ever held (open and closed), with `token_id`, `size`, `realized_pnl`, and `unrealized_pnl` in a shape consistent with the other `/v2/onchain/*` endpoints.
+</Note>
 
 ## Request
 
