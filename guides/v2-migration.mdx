@@ -24,7 +24,7 @@ If you place orders on Polymarket, here's exactly what to do before April 28:
 2. **Flip the exchange version flag** in your `TraderConfig`. See [The Switch](#the-switch) below. This is the only code change required.
 3. **Mint a V2 builder code** at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder) if you want attribution on your orders. Optional, orders still work without one.
 4. **Cancel V1 resting orders** you don't want cleared at cutover. Open V1 orders get wiped when Polymarket flips the switch.
-5. **Fund PolyUSD.** V2 orders settle in PolyUSD (pUSD), not USDC.e. If your Safe holds USDC.e, call `trader.wrap_to_polyusd(amount)` (Python) / `trader.wrapToPolyusd(amount)` (TS) / `trader.wrap_to_polyusd(amount)` (Rust) to convert it via the Collateral Onramp. Existing V1 pUSD balance carries over.
+5. **Fund PolyUSD.** V2 orders settle in PolyUSD (pUSD), not USDC.e. If your Safe holds USDC.e, call `trader.wrap_to_polyusd(amount)` (Python) / `trader.wrapToPolyUsd(amount)` (TS) / `trader.wrap_to_polyusd(amount)` (Rust) to convert it via the Collateral Onramp. **`amount` is in raw 6-decimal units** (`1_000_000` = $1; TS takes a `bigint` — use `1_000_000n`). Existing V1 pUSD balance carries over.
 6. **Test against V2 now.** Point your SDK at V2 (step 2) and place a small order against `clob-v2.polymarket.com`. `ensure_ready` / `ensureReady` sets the V2 approvals and refreshes the CLOB's cached balance/allowance view for you.
 7. **Verify V2 confirmation.** Your settlement stream tags V2 trades with `"exchange_version": "v2"` on every event.
 
@@ -304,7 +304,11 @@ Your SDK sent a V1-formatted order but the V2 CLOB expected V2. Flip `exchange_v
 
 **`not enough balance / allowance`**
 
-Your wallet has USDC.e but not PolyUSD. V2 uses PolyUSD as the collateral token. Call the SDK's `ensure_ready` / `ensureReady`. It wraps your USDC.e into PolyUSD automatically and sets V2 spender allowances.
+Most common causes, in order:
+
+1. **Your wallet has USDC.e but not PolyUSD.** V2 uses PolyUSD as the collateral token. Call `trader.wrap_to_polyusd(amount_raw)` (Python/Rust) or `trader.wrapToPolyUsd(amount_raw)` (TS) to convert. Amounts are raw 6-decimal integers.
+2. **Approvals not yet visible to the CLOB.** The V2 CLOB caches per-API-key balance + allowance state. `ensureReady` / `ensure_ready` refreshes this cache after setting approvals; if you changed approvals outside that flow, call `trader.refreshBalanceAllowance()` / `trader.refresh_balance_allowance()` manually.
+3. **Order notional + fee exceeds balance.** V2 markets charge a fee (~2–5% of notional depending on `base_fee`). For a BUY, `balance >= makerAmount + platformFee` must hold or the CLOB rejects.
 
 **`error parsing fee rate bps () to int64`**
 

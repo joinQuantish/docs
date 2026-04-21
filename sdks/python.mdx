@@ -492,19 +492,19 @@ config = TraderConfig(
 trader = PolyNodeTrader(config)
 ```
 
-V2 uses PolyUSD (a 1:1 USDC.e wrapper) as collateral. You must wrap USDC.e into PolyUSD before placing orders:
+V2 uses PolyUSD (a 1:1 USDC.e wrapper) as collateral. You must wrap USDC.e into PolyUSD before placing orders. Amounts are in raw 6-decimal units (`1_000_000` = $1):
 
 ```python
-# Wrap USDC.e → PolyUSD
-result = await trader.wrap_to_polyusd(100.0)
+# Wrap 100 USDC.e → PolyUSD (100 * 1e6 = 100_000_000 raw units)
+tx_hash = await trader.wrap_to_polyusd(100_000_000)
 
-# Unwrap PolyUSD → USDC.e
-result = await trader.unwrap_from_polyusd(50.0)
+# Unwrap 50 PolyUSD → USDC.e
+tx_hash = await trader.unwrap_from_polyusd(50_000_000)
 
-# Check balances
-polyusd = await trader.get_polyusd_balance()
-usdce = await trader.get_usdce_balance()
-print(f"PolyUSD: {polyusd}, USDC.e: {usdce}")
+# Balance getters are synchronous and return raw 6-decimal integers
+polyusd_raw = trader.get_polyusd_balance()
+usdce_raw = trader.get_usdce_balance()
+print(f"PolyUSD: ${polyusd_raw / 1e6:.6f}, USDC.e: ${usdce_raw / 1e6:.6f}")
 ```
 
 See the [V2 Migration Guide](/guides/v2-migration) for details on the Polymarket V2 exchange upgrade.

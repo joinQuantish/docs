@@ -214,27 +214,107 @@ When `builderCredentials` is omitted, polynode's default builder credentials are
 
 The Polymarket V2 exchange uses PolyUSD as collateral instead of USDC.e directly. One config change enables V2 support:
 
-```typescript
+<CodeGroup>
+```typescript TypeScript
 const trader = new PolyNodeTrader({
   polynodeKey: 'pn_live_...',
   exchangeVersion: 'v2',
 });
 ```
 
-Before placing orders on V2 markets, you need to wrap your USDC.e into PolyUSD. Wrap amounts are in raw 6-decimal units (`1_000_000n` = $1):
+```python Python
+from polynode.trading import PolyNodeTrader, TraderConfig, ExchangeVersion
 
-```typescript
+trader = PolyNodeTrader(TraderConfig(
+    polynode_key="pn_live_...",
+    exchange_version=ExchangeVersion.V2,
+))
+```
+
+```rust Rust
+use polynode::trading::{PolyNodeTrader, TraderConfig, ExchangeVersion};
+
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: "pn_live_...".into(),
+    exchange_version: ExchangeVersion::V2,
+    ..Default::default()
+})?;
+```
+</CodeGroup>
+
+Before placing orders on V2 markets, wrap USDC.e into PolyUSD. Amounts are in raw 6-decimal integers (`1_000_000` = $1; TS uses `bigint`):
+
+<CodeGroup>
+```typescript TypeScript
 // Wrap 100 USDC.e → PolyUSD
 await trader.wrapToPolyUsd(100_000_000n);
 
-// Check PolyUSD balance (returns raw bigint, divide by 1e6 for dollars)
 const balanceRaw = await trader.getPolyUsdBalance();
 console.log(`PolyUSD: $${Number(balanceRaw) / 1e6}`);
 ```
 
-On V2, `ensureReady()` also refreshes the CLOB's cached balance-allowance view after setting approvals. If you change approvals outside of `ensureReady`, call `await trader.refreshBalanceAllowance()` before placing orders — otherwise the CLOB can reject with `"not enough balance / allowance"` until its cache catches up.
+```python Python
+# Wrap 100 USDC.e → PolyUSD
+tx_hash = await trader.wrap_to_polyusd(100_000_000)
 
-All other trading methods (`order()`, `cancelOrder()`, `split()`, `merge()`, etc.) work the same on V2 markets.
+polyusd_raw = trader.get_polyusd_balance()  # sync, returns int
+print(f"PolyUSD: ${polyusd_raw / 1e6:.6f}")
+```
+
+```rust Rust
+// Wrap 100 USDC.e → PolyUSD
+let tx_hash = trader.wrap_to_polyusd(100_000_000).await?;
+
+let balance_raw = trader.get_polyusd_balance().await?;
+println!("PolyUSD: ${:.6}", balance_raw as f64 / 1e6);
+```
+</CodeGroup>
+
+Pass your builder code via the `builder` field on each V2 order. Mint one at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder):
+
+<CodeGroup>
+```typescript TypeScript
+await trader.order({
+  tokenId: "...",
+  side: "BUY",
+  price: 0.42,
+  size: 5,
+  type: "GTC",
+  builder: "0x5472fdd7...",  // bytes32 builder code
+});
+```
+
+```python Python
+from polynode.trading import OrderParams
+
+await trader.order(OrderParams(
+    token_id="...",
+    side="BUY",
+    price=0.42,
+    size=5,
+    type="GTC",
+    builder="0x5472fdd7...",  # bytes32 builder code
+))
+```
+
+```rust Rust
+use polynode::trading::{OrderParams, OrderSide, OrderType};
+
+trader.order(OrderParams {
+    token_id: "...".into(),
+    side: OrderSide::Buy,
+    price: 0.42,
+    size: 5.0,
+    order_type: OrderType::GTC,
+    builder: Some("0x5472fdd7...".into()),
+    ..Default::default()
+}).await?;
+```
+</CodeGroup>
+
+On V2, `ensureReady()` / `ensure_ready()` also refreshes the CLOB's cached balance-allowance view after setting approvals. If you change approvals outside that flow, call `trader.refreshBalanceAllowance()` / `trader.refresh_balance_allowance()` before placing orders — otherwise the CLOB can reject with `"not enough balance / allowance"` until its cache catches up.
+
+All other trading methods (`order()`, `cancelOrder()`, `split()`, `merge()`, etc.) work the same on V2 markets. The `order_type` accepts `"GTC"` (default — rest on book), `"GTD"` (with `expiration` unix seconds), `"FOK"` (fill-or-kill, fully match or cancel), or `"FAK"` (fill-and-kill, match what you can, cancel the rest). `size` is in shares of the outcome token, `price` is the per-share USD price between 0 and 1.
 
 <Tip>
 See the [V2 Migration Guide](/guides/v2-migration) for full details on the Polymarket V2 exchange upgrade, and the [PolyUSD Guide](/guides/polyusd) for wrapping and unwrapping mechanics.
