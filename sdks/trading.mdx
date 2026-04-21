@@ -214,33 +214,46 @@ When `builderCredentials` is omitted, polynode's default builder credentials are
 
 ## Polymarket V2 Exchange
 
-The Polymarket V2 exchange uses PolyUSD as collateral instead of USDC.e directly. One config change enables V2 support:
+The Polymarket V2 exchange uses PolyUSD as collateral instead of USDC.e directly. One config change enables V2 support. Always call `ensureReady` / `ensure_ready` before any V2 method — it deploys the Safe (if needed), sets V2 approvals, creates CLOB credentials, and refreshes the V2 CLOB's balance-allowance cache:
 
 <CodeGroup>
 ```typescript TypeScript
+import { PolyNodeTrader } from 'polynode-sdk';
+
 const trader = new PolyNodeTrader({
   polynodeKey: 'pn_live_...',
   exchangeVersion: 'v2',
 });
+
+// Required before any wrap/order/cancel call:
+await trader.ensureReady('0xYOUR_EOA_PRIVATE_KEY');
 ```
 
 ```python Python
+import asyncio
 from polynode.trading import PolyNodeTrader, TraderConfig, ExchangeVersion
 
 trader = PolyNodeTrader(TraderConfig(
     polynode_key="pn_live_...",
     exchange_version=ExchangeVersion.V2,
 ))
+
+# Required before any wrap/order/cancel call:
+await trader.ensure_ready("0xYOUR_EOA_PRIVATE_KEY")
 ```
 
 ```rust Rust
-use polynode::trading::{PolyNodeTrader, TraderConfig, ExchangeVersion};
+use polynode::trading::{PolyNodeTrader, TraderConfig, ExchangeVersion, PrivateKeySigner};
 
 let mut trader = PolyNodeTrader::new(TraderConfig {
     polynode_key: "pn_live_...".into(),
     exchange_version: ExchangeVersion::V2,
     ..Default::default()
 })?;
+
+// Required before any wrap/order/cancel call:
+let signer = PrivateKeySigner::from_hex("0xYOUR_EOA_PRIVATE_KEY")?;
+trader.ensure_ready(Box::new(signer), None).await?;
 ```
 </CodeGroup>
 
