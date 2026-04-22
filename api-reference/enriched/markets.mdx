@@ -1,46 +1,112 @@
 ---
 title: "Markets by Category"
 openapi: "GET /v2/markets/{category}"
-description: "Browse markets by category with event counts."
+description: "Browse markets by category with pagination and event counts."
 ---
 
-Returns markets for a specific category, along with category-specific counts and metadata.
+Returns markets for a specific category, sorted by 24h volume. Supports pagination with `limit` and `offset`.
 
 <ParamField path="category" type="string" required>
-  Category slug. Available: `crypto`, `politics`, `sports`, `finance`, `economy`, `tech`, `pop-culture`, `geopolitics`, `weather`, `iran`, `elections`, `mentions`.
+  Category slug. One of:
+
+  | Category | Slug |
+  |----------|------|
+  | Crypto | `crypto` |
+  | Politics | `politics` |
+  | Sports | `sports` |
+  | Finance | `finance` |
+  | Economy | `economy` |
+  | Tech | `tech` |
+  | Pop Culture | `pop-culture` |
+  | Geopolitics | `geopolitics` |
+  | Weather | `weather` |
+  | Iran | `iran` |
+  | Elections | `elections` |
+  | Mentions | `mentions` |
 </ParamField>
+
+<ParamField query="limit" type="number" default="20">
+  Number of events to return. Min 1, max 100.
+</ParamField>
+
+<ParamField query="offset" type="number" default="0">
+  Pagination offset. Use with `limit` to page through results.
+</ParamField>
+
+### Example
+
+```bash
+curl "https://api.polynode.dev/v2/markets/crypto?limit=50&offset=0&key=YOUR_API_KEY"
+```
 
 <ResponseExample>
 ```json
 {
   "category": "crypto",
   "counts": {
-    "all": 253,
+    "all": 260,
     "fiveM": 7,
     "fifteenM": 7,
-    "pre-market": 103,
+    "pre-market": 112,
     "etf": 2,
     "hourly": 9,
+    "fourhour": 7,
     "daily": 11,
-    "weekly": 69,
-    "bitcoin": 34,
-    "ethereum": 20,
-    "solana": 12
+    "weekly": 64,
+    "monthly": 23,
+    "yearly": 22,
+    "bitcoin": 35,
+    "ethereum": 21,
+    "solana": 12,
+    "xrp": 11,
+    "dogecoin": 6,
+    "bnb": 6,
+    "microstrategy": 8
   },
   "events": [
     {
       "id": "273112",
-      "slug": "bitcoin-above-on-march-22",
-      "title": "Bitcoin above ___ on March 22?",
+      "slug": "bitcoin-above-on-april-23",
+      "title": "Bitcoin above ___ on April 23?",
       "image": "https://...",
-      "volume24hr": 5678901
+      "volume24hr": 5678901,
+      "liquidity": 1234567,
+      "active": true,
+      "closed": false
     }
   ],
-  "totalResults": 253
+  "limit": 50,
+  "offset": 0
 }
 ```
 </ResponseExample>
 
+### Pagination
+
+Page through all markets in a category:
+
+```python
+import requests
+
+API_KEY = "pn_live_..."
+category = "politics"
+all_events = []
+offset = 0
+
+while True:
+    resp = requests.get(
+        f"https://api.polynode.dev/v2/markets/{category}",
+        params={"key": API_KEY, "limit": 100, "offset": offset},
+    ).json()
+    events = resp.get("events", [])
+    if not events:
+        break
+    all_events.extend(events)
+    offset += len(events)
+
+print(f"Total {category} events: {len(all_events)}")
+```
+
 <Note>
-  The `counts` object varies by category. Crypto includes subcounts by asset and timeframe. Other categories may return a simple total.
+  The `counts` object varies by category. Crypto includes subcounts by asset and timeframe. Other categories return a simple `{"total": N}` count. Counts are cached and may not exactly match the paginated event total.
 </Note>
