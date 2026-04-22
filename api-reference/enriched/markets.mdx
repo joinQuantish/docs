@@ -23,6 +23,7 @@ Returns markets for a specific category, sorted by 24h volume. Supports paginati
   | Iran | `iran` |
   | Elections | `elections` |
   | Mentions | `mentions` |
+  | Esports | `esports` |
 </ParamField>
 
 <ParamField query="limit" type="number" default="20">
@@ -69,10 +70,19 @@ curl "https://api.polynode.dev/v2/markets/crypto?limit=50&offset=0&key=YOUR_API_
       "slug": "bitcoin-above-on-april-23",
       "title": "Bitcoin above ___ on April 23?",
       "image": "https://...",
+      "volume": 12345678,
       "volume24hr": 5678901,
       "liquidity": 1234567,
+      "openInterest": 890123,
+      "startDate": "2025-04-22T00:00:00Z",
+      "endDate": "2025-04-23T23:59:59Z",
       "active": true,
-      "closed": false
+      "closed": false,
+      "new": false,
+      "featured": true,
+      "competitive": true,
+      "commentCount": 42,
+      "tags": ["Crypto", "Bitcoin"]
     }
   ],
   "limit": 50,
@@ -80,6 +90,30 @@ curl "https://api.polynode.dev/v2/markets/crypto?limit=50&offset=0&key=YOUR_API_
 }
 ```
 </ResponseExample>
+
+### Response Fields
+
+Each event object includes:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Event ID |
+| `slug` | string | URL slug |
+| `title` | string | Event title |
+| `image` | string | Event image URL |
+| `volume` | number | Total lifetime volume |
+| `volume24hr` | number | 24-hour trading volume |
+| `liquidity` | number | Current liquidity |
+| `openInterest` | number | Open interest |
+| `startDate` | string | Event start date (ISO 8601) |
+| `endDate` | string | Event end date (ISO 8601) |
+| `active` | boolean | Whether the event is active |
+| `closed` | boolean | Whether the event is closed |
+| `new` | boolean | Whether the event is new |
+| `featured` | boolean | Whether the event is featured |
+| `competitive` | boolean | Whether the event is competitive |
+| `commentCount` | number | Number of comments |
+| `tags` | string[] | Category tags |
 
 ### Pagination
 
