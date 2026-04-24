@@ -162,7 +162,7 @@ from polynode.trading import PolyNodeTrader, TraderConfig, FeeConfig
 
 trader = PolyNodeTrader(TraderConfig(
     polynode_key="pn_live_...",
-    fee_config=FeeConfig(fee_bps=50),  # 0.5% fee on every order
+    fee_config=FeeConfig(fee_bps=50),  # 0.5% platform fee on every order (yours; separate from Polymarket's protocol fee and V2 builder rev share)
 ))
 
 result = await trader.order(OrderParams(
@@ -179,7 +179,7 @@ print(f"Fee: {result.fee_amount} USDC")        # fee amount charged
 await trader.cancel_order(result.order_id)
 ```
 
-Set `fee_bps=0` or omit `fee_config` to skip the escrow entirely. Per-order overrides:
+Set `fee_bps=0` or omit `fee_config` to skip your platform fee entirely. This only turns off **your** fee — Polymarket's protocol fee and (on V2) the builder rev share are charged independently by the CLOB. Per-order overrides:
 
 ```python
 result = await trader.order(OrderParams(
@@ -208,7 +208,7 @@ config = TraderConfig(
     default_signature_type=SignatureType.POLY_GNOSIS_SAFE,  # Safe (2), Proxy (1), or EOA (0)
     rpc_url="https://polygon-bor-rpc.publicnode.com",    # for on-chain reads
     exchange_version=ExchangeVersion.V1,                  # default; set to V2 for the Polymarket V2 exchange
-    fee_config=FeeConfig(fee_bps=50),                     # optional: 0.5% fee on every order
+    fee_config=FeeConfig(fee_bps=50),                     # optional: 0.5% platform fee on every order (yours, not Polymarket's)
 )
 
 trader = PolyNodeTrader(config)

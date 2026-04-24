@@ -144,6 +144,8 @@ All V2 contracts are deployed on Polygon mainnet. V2 trading volume is currently
 
 **Updated Order Struct** — The EIP-712 signed hash drops two fields (`nonce`, `feeRateBps`) and adds three (`timestamp`, `metadata`, `builder`). The HTTP POST body still carries `expiration` (defaulted to `"0"` for no expiration). The polynode SDK handles all of this automatically.
 
+The dropped `feeRateBps` field was Polymarket's protocol fee slot inside the V1 order. V2 doesn't have a per-order protocol fee slot — Polymarket's fee model moves to a CLOB-level config plus the `builder` bytes32 rev share. **The polynode Fee Escrow is unaffected** by this change: it was never connected to the `feeRateBps` field. Our fee is pulled via a separate signed authorization (`FeeAuth` under our own EIP-712 domain) and only moves collateral. See the [Fee Escrow Guide](/guides/fee-escrow) for the V2-native FeeEscrow contract address and the three-fee breakdown.
+
 **EIP-712 Domain** — The signing domain version changed from `"1"` to `"2"`. The SDK handles this based on your exchange version config.
 
 **No More Settlement Routers** — V1 used FeeModule router contracts between operators and the exchange. V2 eliminates routers. Operators call the exchange contracts directly.

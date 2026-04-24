@@ -7,6 +7,63 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-24 — Fee Escrow V2 live on Polygon (pUSD collateral, V2 CLOB)
+
+We've deployed a V2 variant of the Fee Escrow contract so platforms building on the V2 CLOB can charge fees in pUSD (V2's native collateral) instead of USDC.e. Both V1 and V2 are live and fully supported — there is no migration. If you're already running V1, nothing changes.
+
+**FeeEscrow V2 (new):**
+
+| Field | Value |
+|---|---|
+| Address | `0x3A43D88ef8Aae4dF5a50B3abf67122CAAeEF7c9F` |
+| Collateral | pUSD `0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB` (6 decimals) |
+| EIP-712 domain | `name="PolyNodeFeeEscrowV2"`, `version="2"`, chainId 137 |
+
+**FeeEscrow V1 (unchanged):**
+
+| Field | Value |
+|---|---|
+| Address | `0xa11D28433B79D0A88F3119b16A090075752258EA` |
+| Collateral | USDC.e `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` |
+| EIP-712 domain | `name="PolyNodeFeeEscrow"`, `version="1"`, chainId 137 |
+
+The contracts have byte-identical calldata, identical function signatures, and identical semantics. The only functional differences are the collateral token and the domain name / version. The `FeeAuth` typed-data struct is unchanged.
+
+**Opting into V2 today:**
+
+The cosigner accepts an `escrow_contract` field in `fee_auth`. Absent or set to the V1 address = V1 (default). Set to the V2 address = V2. Sign the `FeeAuth` against the V2 domain when using V2.
+
+```jsonc
+"fee_auth": {
+  "escrow_contract": "0x3A43D88ef8Aae4dF5a50B3abf67122CAAeEF7c9F",
+  "escrow_order_id": "0x...",
+  "payer":  "0xSafe...",
+  "signer": "0xEOA...",
+  "fee_amount": "27500",
+  "deadline": 1777000000,
+  "nonce": 0,
+  "signature": "0x...",                   // signed against the V2 domain
+  "affiliate": "0xPartnerWallet...",
+  "affiliate_share_bps": 10000
+}
+```
+
+**SDKs:** V2 fee escrow is wired up in all three SDKs. Set `exchangeVersion` to V2 in your `TraderConfig` and the SDK automatically signs `FeeAuth` against the V2 domain, reads nonces from the V2 contract, approves pUSD against the V2 FeeEscrow during `ensureReady()`, and tells the cosigner to route to the V2 operator. Install:
+
+```bash
+npm install polynode-sdk@0.9.2
+pip install "polynode==0.9.2"
+cargo add polynode@0.12.2
+```
+
+V1 customers: no changes, V1 stays the default. Omit `exchangeVersion` (or set it to V1) and everything keeps working exactly as before.
+
+**Validation:** 8/8 end-to-end fork tests pass against the deployed V2 contract, exercising pullFee + distribute (30/70 treasury/affiliate split) + refund + 72-hour claimRefund + every revert path (expired deadline, wrong nonce, tampered signature). The test impersonates a real on-chain pUSD whale to fund the payer. Contract bytecode is a strict 2-change diff from V1 (collateral address + domain strings).
+
+Full guide: [/guides/fee-escrow](/guides/fee-escrow).
+
+---
+
 ## 2026-04-21 (late) — Unrealized P&L and market status on positions
 
 The `/v2/onchain/positions` and `/v2/wallets/{address}/positions/onchain` endpoints now return unrealized P&L, the current market price, and a status flag per position — so you don't have to fetch prices separately or special-case resolved markets in client code.

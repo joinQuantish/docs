@@ -337,12 +337,12 @@ See the [V2 Migration Guide](/guides/v2-migration) for full details on the Polym
 
 ## Fee Escrow
 
-Charge per-order fees with on-chain escrow. Fees are pulled before the order, distributed on fill, and refunded on cancel. See the [Fee Escrow Guide](/guides/fee-escrow) for the full architecture and security model.
+Charge your platform's per-order fee via on-chain escrow. Fees are pulled before the order, distributed on fill, and refunded on cancel. This is **your** fee — independent of Polymarket's protocol fee and V2 builder rev share (which are charged separately by the CLOB). See the [Fee Escrow Guide](/guides/fee-escrow) for the full architecture and the three-fee breakdown.
 
 ```typescript
 const trader = new PolyNodeTrader({
   polynodeKey: 'pn_live_...',
-  feeConfig: { feeBps: 50 },  // 0.5% fee on every order
+  feeConfig: { feeBps: 50 },  // 0.5% platform fee on every order (yours; not Polymarket's)
 });
 
 const result = await trader.order({
@@ -359,7 +359,7 @@ console.log(result.feeAmount);       // "0.0275" USDC
 await trader.cancelOrder(result.orderId);
 ```
 
-Set `feeBps: 0` or omit `feeConfig` to skip the escrow entirely. Zero overhead, zero behavior change.
+Set `feeBps: 0` or omit `feeConfig` to skip your platform fee entirely. Zero overhead, zero behavior change. Note: this only turns off **your** fee — Polymarket's protocol fee and V2 builder rev share are controlled independently by the CLOB.
 
 ## API Reference
 

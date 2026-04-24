@@ -15,44 +15,86 @@ The Fee Escrow lets platforms charge a fee on trades placed through the polynode
 - If the operator doesn't settle within 72 hours, the user can self-refund on-chain.
 - All escrow operations are gasless via Polymarket's relayer.
 
+<Note>
+**This is your platform's fee — separate from anything Polymarket charges.**
+
+A user trading through your SDK may pay three distinct fees, each collected by a different system:
+
+| Fee | Who charges it | Where it's set | How it's collected |
+|---|---|---|---|
+| **Polymarket protocol fee** | Polymarket | V1 Order struct `feeRateBps` field. V2 has no per-order fee slot. | Taken by the CLOB at settlement, goes to Polymarket's treasury |
+| **Polymarket builder rev share** (V2 only) | Polymarket | V2 Order struct `builder` bytes32 field | Polymarket reads the field from the `OrderFilled` event and pays the builder rev share off-chain |
+| **Your platform fee** (this guide) | Your platform | `feeConfig.feeBps` in the polynode SDK | Pulled from the user's collateral into our FeeEscrow contract before the order reaches the CLOB |
+
+All three are independent. `feeBps: 0` turns off **your** platform fee only — it does not waive Polymarket's protocol fee or builder rev share. Setting your `feeBps` does not change anything inside the signed CLOB Order struct.
+</Note>
+
+## V1 and V2 — which one do I use?
+
+Two contracts are live. Both are fully supported; neither is being deprecated.
+
+| You're trading on… | Use | Collateral token |
+|---|---|---|
+| **V1 CLOB** (`clob.polymarket.com`) | **FeeEscrow V1** `0xa11D28433B79D0A88F3119b16A090075752258EA` | USDC.e |
+| **V2 CLOB** (`clob-v2.polymarket.com`) | **FeeEscrow V2** `0x3A43D88ef8Aae4dF5a50B3abf67122CAAeEF7c9F` | pUSD |
+
+The two contracts have byte-identical calldata, identical function signatures, and identical behavior. The only differences are the collateral token (USDC.e vs pUSD) and the EIP-712 domain name / version. If you're writing a new V2 integration you do not need to support V1 — just point at the V2 contract and sign against the V2 domain.
+
+Existing V1 integrations keep working unchanged — no migration required.
+
 ## How It Works
 
 ```
 1. User signs EIP-712 fee authorization (off-chain, free)
-2. Operator calls pullFee → USDC moves from user's Safe to escrow
+2. Operator calls pullFee → collateral moves from user's Safe to escrow
 3. Order goes to Polymarket CLOB (unchanged, builder creds preserved)
-4. On fill   → operator calls distribute → fee splits to treasury + affiliate
-   On cancel → operator calls refund    → USDC returns to user's Safe
-   On timeout (72h) → user calls claimRefund → USDC returns automatically
+4. On fill   → operator calls distribute  → fee splits to treasury + affiliate
+   On cancel → operator calls refund      → collateral returns to user's Safe
+   On timeout (72h) → user calls claimRefund → collateral returns automatically
 ```
 
-The fee escrow is completely independent from the Polymarket order flow. Builder credentials, order signing, and CLOB submission are unchanged. The fee is a separate USDC transfer that happens before the order.
+The fee escrow is completely independent from the Polymarket order flow. Builder credentials, order signing, and CLOB submission are unchanged. The fee is a separate ERC-20 transfer (USDC.e on V1, pUSD on V2) that happens before the order.
 
-## Contract
+## Contract addresses
+
+Both contracts are on Polygon mainnet (chain ID 137), both use the same 72-hour self-refund window, and both have the same `FEE_AUTH_TYPEHASH`.
+
+### V1 — USDC.e collateral (V1 CLOB)
 
 | Field | Value |
 |-------|-------|
 | **Address** | `0xa11D28433B79D0A88F3119b16A090075752258EA` |
-| **Chain** | Polygon (137) |
-| **USDC** | `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` (USDC.e) |
-| **Timeout** | 72 hours (user self-refund after this) |
+| **Collateral** | USDC.e `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` (6 decimals) |
+| **EIP-712 domain** | `name="PolyNodeFeeEscrow"`, `version="1"`, chainId 137 |
+
+### V2 — pUSD collateral (V2 CLOB, live 2026-04-24)
+
+| Field | Value |
+|-------|-------|
+| **Address** | `0x3A43D88ef8Aae4dF5a50B3abf67122CAAeEF7c9F` |
+| **Collateral** | pUSD `0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB` (6 decimals) |
+| **EIP-712 domain** | `name="PolyNodeFeeEscrowV2"`, `version="2"`, chainId 137 |
 
 ## Setup
 
-Users need one additional USDC approval for the escrow contract. This is added to the existing approval batch during wallet setup (7th approval, gasless, batched with the 6 Polymarket approvals).
+Users need one additional ERC-20 approval for the escrow contract — USDC.e for V1, pUSD for V2. This is added to the existing approval batch during wallet setup (7th approval, gasless, batched with the 6 Polymarket approvals).
 
 ```typescript
-// Already handled by ensureReady() — no manual setup needed.
-// The SDK adds the escrow approval to the existing Safe setup batch.
+// V1: ensureReady() approves USDC.e for the V1 FeeEscrow alongside
+//     the six Polymarket approvals. No manual setup needed.
 const status = await trader.ensureReady(privateKey);
 ```
 
+For V2, set `exchangeVersion: "v2"` in your `TraderConfig` (TypeScript), `exchange_version=ExchangeVersion.V2` (Python), or `exchange_version: ExchangeVersion::V2` (Rust). `ensureReady()` then approves pUSD for the V2 FeeEscrow contract as part of the same gasless Safe approval batch as V1 does for USDC.e.
+
+Supported from SDK versions: `polynode-sdk@0.9.2` (TypeScript), `polynode==0.9.2` (Python), `polynode = "0.12.2"` (Rust).
+
 ## Fee Authorization (EIP-712)
 
-The user signs a typed message authorizing a specific fee amount for a specific order. This prevents anyone from pulling more than the user agreed to.
+The user signs a typed message authorizing a specific fee amount for a specific order. This prevents anyone from pulling more than the user agreed to. The `FeeAuth` struct is identical across V1 and V2 — only the domain changes.
 
 ```typescript
-// EIP-712 domain
+// V1 domain (USDC.e collateral)
 {
   name: "PolyNodeFeeEscrow",
   version: "1",
@@ -60,16 +102,52 @@ The user signs a typed message authorizing a specific fee amount for a specific 
   verifyingContract: "0xa11D28433B79D0A88F3119b16A090075752258EA"
 }
 
-// FeeAuth struct
+// V2 domain (pUSD collateral)
+{
+  name: "PolyNodeFeeEscrowV2",
+  version: "2",
+  chainId: 137,
+  verifyingContract: "0x3A43D88ef8Aae4dF5a50B3abf67122CAAeEF7c9F"
+}
+
+// FeeAuth struct — same for V1 and V2
 {
   orderId: bytes32,   // unique order identifier
-  payer: address,     // user's Safe wallet (where USDC is pulled from)
+  payer: address,     // user's Safe wallet (where collateral is pulled from)
   signer: address,    // user's EOA (signs this message)
-  feeAmount: uint256, // fee in USDC (6 decimals)
+  feeAmount: uint256, // fee amount (6 decimals — USDC.e on V1, pUSD on V2)
   deadline: uint256,  // unix timestamp — authorization expires after this
   nonce: uint256      // signer's current nonce (prevents replay)
 }
 ```
+
+### Selecting V2 at submit time
+
+The polynode cosigner routes every fee request to V1 by default. To use V2, include the contract address in the `fee_auth` body of your `/submit` call:
+
+```jsonc
+// POST /submit to trade.polynode.dev
+{
+  "method": "POST",
+  "path": "/order",
+  "body": "...",                     // V2 CLOB order body
+  "headers": { ... },                // CLOB L2 HMAC headers
+  "fee_auth": {
+    "escrow_contract": "0x3A43D88ef8Aae4dF5a50B3abf67122CAAeEF7c9F",  // ← routes to V2
+    "escrow_order_id": "0x...",
+    "payer":  "0xSafe...",
+    "signer": "0xEOA...",
+    "fee_amount": "27500",
+    "deadline": 1777000000,
+    "nonce": 0,
+    "signature": "0x...",            // signed against the V2 domain above
+    "affiliate": "0xPartnerWallet...",
+    "affiliate_share_bps": 10000
+  }
+}
+```
+
+Omit `escrow_contract` (or set it to the V1 address) to use V1. Any other value falls through to V1, where the signature check will fail because the V2 domain separator won't match — you'll get an `InvalidSignature` revert rather than funds going to the wrong place.
 
 ## Order Types
 
@@ -211,7 +289,11 @@ Funds are never permanently locked, never routed to a third party, and never sur
 
 ## Security
 
-The contract has been through three independent security audits:
+**V1** has been through three independent security audits and 57 Foundry tests covering unit, fuzz, and adversarial scenarios.
+
+**V2** is a strict two-change diff from V1 (collateral token address + EIP-712 domain strings). Every other line of the contract is byte-identical to the audited V1 source. Verification against the deployed V2 contract on Polygon mainnet: 8/8 fork tests pass (pullFee, distribute 30/70 split, refund, 72h claimRefund, and every revert path — expired deadline, wrong nonce, tampered signature). Tests impersonate a real on-chain pUSD holder to fund the payer.
+
+Both versions enforce the same invariants:
 
 - **Signature malleability** — rejected (secp256k1 s-value upper bound check)
 - **Replay attacks** — prevented by per-signer sequential nonces
@@ -220,8 +302,6 @@ The contract has been through three independent security audits:
 - **ecrecover(0)** — rejected explicitly
 - **Operator compromise** — operator can be revoked by Safe owner instantly
 - **Stuck funds** — 72-hour user self-refund + owner emergency withdraw
-
-57 Foundry tests covering unit tests, fuzz tests, and adversarial attack scenarios.
 
 ## SDK Integration
 
