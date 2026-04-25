@@ -7,6 +7,38 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-25 — Equity Curve endpoint: faster default + four new query parameters
+
+The `/v2/trader/{wallet}/equity` endpoint is faster, more flexible, and more accurate.
+
+**Default is now realized-only.** The curve is built from completed P&L by default — the locked-in result of every closed position, partial sell, and resolution. Same query, same numbers, every time. Whales return in 1–2 seconds (was 8+).
+
+If you want mark-to-market on currently-open positions (the old behavior), pass `include_unrealized=1`. That path is still supported, just opt-in now because it adds latency and makes responses non-deterministic as live prices move.
+
+**Four new optional query parameters:**
+
+| Param | Description |
+|---|---|
+| `from=YYYY-MM-DD` | Start date (also accepts unix seconds). |
+| `to=YYYY-MM-DD` | End date (same format). |
+| `max_markets=N` | Keep only the most recent N markets the wallet has touched. |
+| `include_unrealized=1` | Mark-to-market open positions (was the old default). |
+
+All four compose. Example — fast realized-only curve over the wallet's last 50 markets in early April:
+
+```bash
+curl "https://api.polynode.dev/v2/trader/{wallet}/equity?from=2026-04-01&to=2026-04-15&max_markets=50&normalize=1" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+**New response fields:** `markets_count` (distinct outcome groups in the curve), `applied_filters` (echoes what was applied, useful for debugging), and `partial` (true if the request hit the 10-second server-side cap).
+
+**Coverage fix.** Wallets with more than 500 lifetime trades previously had positions whose first-trade timestamp wasn't found, causing those positions to be incorrectly stamped at "now" on the curve. The endpoint now walks all relevant trade history and falls back to sibling-token and redemption timestamps for positions acquired through USDC splits. Curves are dramatically more accurate for active traders.
+
+Full reference: [/api-reference/enriched/equity-curve](/api-reference/enriched/equity-curve).
+
+---
+
 ## 2026-04-24 — Fee Escrow V2 live on Polygon (pUSD collateral, V2 CLOB)
 
 We've deployed a V2 variant of the Fee Escrow contract so platforms building on the V2 CLOB can charge fees in pUSD (V2's native collateral) instead of USDC.e. Both V1 and V2 are live and fully supported — there is no migration. If you're already running V1, nothing changes.

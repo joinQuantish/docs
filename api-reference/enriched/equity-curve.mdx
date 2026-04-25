@@ -1,98 +1,187 @@
 ---
 title: "Equity Curve"
 openapi: "GET /v2/trader/{wallet}/equity"
-description: "Full equity curve for any Polymarket wallet, with optional dollar-normalized copy-trade analysis."
+description: "Time-ordered equity curve for any Polymarket wallet, with optional dollar-normalized copy-trade analysis."
 ---
 
-Returns a time-ordered equity curve showing cumulative profit and loss for every position a wallet has ever taken on Polymarket. Optionally returns a \$1-normalized curve that shows what your returns would look like if you copied every trade with exactly \$1 of risk per position.
+Returns a time-ordered equity curve showing cumulative profit and loss across every position a wallet has ever taken on Polymarket.
 
-## How it works
+By default, the curve is built from **realized** P&L only — the locked-in result from every closed position, every partial sell, every market resolution, every redemption. This makes the curve fully deterministic: the same query returns the same numbers regardless of when you call it. It's also fast, typically returning in under a second.
 
-For every position a wallet has traded, we pull two pieces of data directly from the blockchain:
+When `normalize=1` is set, the response also includes a **\$1-normalized** equity curve. Each position is scaled so its entry cost equals exactly \$1, then summed. This shows what your returns would look like if you copied every trade with \$1 of risk per position — the standard format for evaluating a wallet's edge across thousands of trades.
 
-1. **Realized P&L per position** from the PNL subgraph. This tracks every way tokens can be acquired or disposed of: orderbook trades, USDC splits into Yes/No token pairs, pair merges back to USDC, partial sells, and market resolutions. This is the same accounting Polymarket uses internally.
+## Simple example
 
-2. **First trade timestamp** from the orderbook subgraph. This tells us when each position was opened.
+```bash
+curl "https://api.polynode.dev/v2/trader/0xb4ab48b451101a779bf8c644318bb17fe652571d/equity?period=all&normalize=1" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
 
-We line up every position chronologically by entry date. For each one, we add its profit or loss to a running total. That running total over time is the equity curve.
+Response (truncated for clarity — `curve` arrays contain up to 500 points each):
 
-For positions that are still open, we fetch the current market price and compute unrealized P&L: `(current_price - avg_entry_price) * shares_held`. This gets included so the curve reflects the wallet's current standing, not just closed trades.
+```json
+{
+  "wallet": "0xb4ab48b451101a779bf8c644318bb17fe652571d",
+  "period": "all",
+  "source": "onchain",
+  "positions_count": 564,
+  "markets_count": 296,
+  "open_count": 30,
+  "applied_filters": {
+    "fromTs": null,
+    "toTs": null,
+    "maxMarkets": null,
+    "includeUnrealized": false
+  },
+  "partial": false,
+  "raw": {
+    "points": 500,
+    "final_pnl": -857.48,
+    "curve": [
+      { "t": 1774555427, "pnl": 10.56 },
+      { "t": 1774555427, "pnl": -14.44 },
+      { "t": 1774555441, "pnl": -6.62 }
+    ]
+  },
+  "normalized": {
+    "bet_size": 1,
+    "positions": 564,
+    "points": 500,
+    "final_pnl": -18.4366,
+    "curve": [
+      { "t": 1774555427, "pnl": 0.1234 },
+      { "t": 1774555427, "pnl": -0.0466 },
+      { "t": 1774555441, "pnl": 0.5934 }
+    ]
+  }
+}
+```
 
-## \$1 Normalized curve
-
-When `normalize=1` is set, each position is scaled so the entry cost equals exactly \$1.
-
-If someone put \$500 into a market and made \$50, their raw P&L is +\$50. The normalized P&L is `$50 * (1 / $500) = $0.10`. For every dollar risked on that market, they made 10 cents.
-
-The scale factor for each position is `1 / total_bought`, where `total_bought` is the total number of shares ever acquired for that position regardless of acquisition method.
-
-Sum all the normalized P&Ls across all positions and you get the normalized equity curve. This answers the question: "If I copy every trade this wallet makes but only risk \$1 per position, what are my expected returns?"
-
-A wallet with 2,000 positions and a normalized final PnL of +\$12 means each \$1 bet returned about \$0.006 on average. Across thousands of positions, that indicates a consistent edge.
-
-## Accuracy
-
-Realized P&L on closed positions is exact. We use the same blockchain source (PNL subgraph) that Polymarket uses internally, so there is zero deviation on any resolved or closed position.
-
-The only variance is on currently open positions, where we mark-to-market using live prices from Polymarket's Gamma API. Because our price fetch happens at a slightly different moment than any comparison snapshot, open position values can differ by 1-3%. Once a position closes, its P&L becomes exact.
+## Query parameters
 
 <ParamField path="wallet" type="string" required>
-  Polymarket wallet address (e.g., `0xB4Ab48b451101a779bf8C644318Bb17fe652571d`).
+  Polymarket wallet address.
 </ParamField>
 
 <ParamField query="period" type="string" default="30d">
-  Time window. Positions opened before the start of the window are excluded. One of: `7d`, `30d`, `90d`, `1y`, `all`.
+  Time window. Positions whose first activity falls before the start of the window are excluded. One of: `7d`, `30d`, `90d`, `1y`, `all`.
 </ParamField>
 
 <ParamField query="normalize" type="string" default="0">
   Set to `1` to include the \$1-normalized equity curve alongside the raw curve.
 </ParamField>
 
-<ResponseExample>
-```json
-{
-  "wallet": "0xb4ab48b451101a779bf8c644318bb17fe652571d",
-  "period": "all",
-  "source": "onchain",
-  "positions_count": 278,
-  "open_count": 83,
-  "raw": {
-    "points": 278,
-    "final_pnl": -376.89,
-    "curve": [
-      { "t": 1774555427, "pnl": 10.56 },
-      { "t": 1774555441, "pnl": -6.62 },
-      { "t": 1774612800, "pnl": -12.30 }
-    ]
-  },
-  "normalized": {
-    "bet_size": 1,
-    "positions": 278,
-    "points": 278,
-    "final_pnl": -2.5217,
-    "curve": [
-      { "t": 1774555427, "pnl": 0.0722 },
-      { "t": 1774555441, "pnl": -0.0181 },
-      { "t": 1774612800, "pnl": -0.0340 }
-    ]
-  }
-}
+<ParamField query="from" type="string">
+  Start date. Accepts `YYYY-MM-DD` (treated as UTC midnight) or a unix timestamp in seconds. Drops positions whose first activity is before this date.
+</ParamField>
+
+<ParamField query="to" type="string">
+  End date. Same format as `from`. Drops positions whose first activity is after this date.
+</ParamField>
+
+<ParamField query="max_markets" type="integer">
+  Keep only the most recent N markets the wallet has touched. A "market" is a unique outcome group; binary markets count as one. Useful for quickly evaluating a wallet's recent performance without scanning their full history.
+</ParamField>
+
+<ParamField query="include_unrealized" type="string" default="0">
+  Set to `1` to mark currently-open positions to current market price and include the unrealized P&L in the curve. **Off by default.** See [Realized vs unrealized](#realized-vs-unrealized) below before turning this on.
+</ParamField>
+
+## Realized vs unrealized
+
+The default response is **realized-only**. Every closed position contributes its locked-in P&L. Open positions contribute whatever they've already realized through partial sells (often zero if the wallet hasn't sold any shares of that position yet).
+
+This is the right default for backtesting and for evaluating a wallet's edge over time. It's deterministic — the same query returns the same numbers regardless of when you call it — and it returns in under a second even for whales.
+
+If you want a **current-portfolio snapshot** that marks open positions to the latest market price, pass `include_unrealized=1`. The curve's final point will reflect what the wallet would have if it closed all open positions right now. Tradeoffs:
+
+- **Slower.** Open positions need a current price each, fetched live.
+- **Non-deterministic.** Two queries five minutes apart return slightly different numbers as prices move.
+- **Worth it** when you specifically want a "what's my position worth right now" view rather than a backtest signal.
+
+```bash
+# Realized-only (default, fast, deterministic)
+curl ".../equity?period=all&normalize=1"
+
+# Mark-to-market (slower, current-snapshot)
+curl ".../equity?period=all&normalize=1&include_unrealized=1"
 ```
-</ResponseExample>
 
-### Response fields
+## Filtering examples
 
-| Field | Description |
-|-------|-------------|
-| `positions_count` | Total positions included in the curve |
-| `open_count` | Positions still open (mark-to-market with current prices) |
-| `raw.final_pnl` | Final cumulative P&L in USD |
-| `raw.curve[].t` | Unix timestamp (when the position was first entered) |
-| `raw.curve[].pnl` | Cumulative P&L at that point in USD |
-| `normalized.bet_size` | Always `1` (each position scaled to \$1 risk) |
-| `normalized.final_pnl` | Final cumulative normalized P&L |
-| `normalized.curve[].pnl` | Cumulative normalized P&L at that point |
+Last 30 days:
 
-<Note>
-The curve is downsampled to 500 points maximum for large wallets. First and last points are always preserved.
-</Note>
+```bash
+curl ".../equity?period=30d&normalize=1"
+```
+
+Specific date range — backtest the wallet's behavior in early April 2026:
+
+```bash
+curl ".../equity?from=2026-04-01&to=2026-04-15&normalize=1"
+```
+
+Recent 50 markets only — fast scan of the wallet's most recent activity:
+
+```bash
+curl ".../equity?period=all&max_markets=50&normalize=1"
+```
+
+Composed filters — fast realized-only curve over the last 100 markets in a specific window:
+
+```bash
+curl ".../equity?from=2026-04-01&max_markets=100"
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallet` | string | The lowercased wallet address. |
+| `period` | string | The period filter that was applied (`7d`, `30d`, `90d`, `1y`, or `all`). |
+| `source` | string | Always `"onchain"`. |
+| `positions_count` | integer | Total positions included in the curve after all filters. |
+| `markets_count` | integer | Distinct markets (unique outcome groups). For binary markets, two positions (Yes + No) on the same market count as one market. |
+| `open_count` | integer | Positions that still hold a non-zero balance. |
+| `applied_filters` | object | Echoes back exactly which filters were applied — useful for debugging. |
+| `partial` | boolean | `true` if the request hit the 10-second server-side timeout. The response will still contain whatever was computed; the `error` field will be set. |
+| `raw.points` | integer | Number of points in the raw curve (downsampled to a max of 500). |
+| `raw.final_pnl` | number | Final cumulative P&L across the included positions, in USD. |
+| `raw.curve[].t` | integer | Unix timestamp (seconds) when the position was first opened. |
+| `raw.curve[].pnl` | number | Cumulative P&L at that point, in USD. |
+| `normalized.bet_size` | number | Always `1`. Each position is scaled to \$1 of risk. |
+| `normalized.positions` | integer | Total positions in the normalized curve. |
+| `normalized.points` | integer | Number of points (downsampled to a max of 500). |
+| `normalized.final_pnl` | number | Final cumulative \$1-normalized P&L. |
+| `normalized.curve[].pnl` | number | Cumulative \$1-normalized P&L at that point. |
+
+## Performance
+
+| Query shape | Typical first-hit latency | Cached |
+|---|---|---|
+| Default (any wallet) | 50ms – 2s | <50ms |
+| `include_unrealized=1`, large open-position count | 1s – 8s | <50ms |
+| Composed filters (`from` + `max_markets`) | <1s | <50ms |
+
+Responses are cached for 5 minutes per unique parameter combination. The cache key separates every filter, so two callers using different filters won't collide.
+
+## Rate limit
+
+This endpoint is rate-limited at **1 request per 10 seconds per API key**. It's a heavy endpoint — caching results client-side is recommended.
+
+## $1 normalization math
+
+For every position in the included set:
+
+1. Take the position's P&L (realized only by default; realized + unrealized when opted in).
+2. Divide by `total_bought` for that position. `total_bought` is the total number of shares ever acquired across every acquisition method.
+3. Add the result to the running normalized cumulative.
+
+If a wallet put \$500 into a market and made \$50 realized, the normalized contribution is `$50 / $500 = $0.10`. For every dollar risked on that market, they made 10 cents.
+
+Sum across all positions and you get the normalized final P&L. A wallet with 2,000 positions and a normalized final P&L of `+12.0` means each \$1 risked returned about \$0.006 on average. Across thousands of positions, that indicates a real and consistent edge.
+
+## Notes on coverage
+
+- **NegRisk-split positions.** When a wallet acquires tokens via a USDC split into a Yes/No pair (rather than a CLOB trade), there is no on-chain trade event for that token. We use sibling-token timestamps and redemption timestamps as fallbacks where available, but in rare cases a split-derived position with no sibling activity and no redemption record can fall back to "now" on the curve. This affects shape, not totals — `final_pnl` remains correct.
+- **Curve downsampling.** Both the raw and normalized curves are downsampled to a maximum of 500 points. The first and last points are always preserved.

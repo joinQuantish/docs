@@ -3066,7 +3066,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "Unix timestamp \u2014 only return trades after this time"
+            "description": "Unix timestamp — only return trades after this time"
           },
           {
             "name": "end_time",
@@ -3074,7 +3074,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "Unix timestamp \u2014 only return trades before this time"
+            "description": "Unix timestamp — only return trades before this time"
           },
           {
             "name": "min_total",
@@ -3982,6 +3982,184 @@
           }
         ]
       }
+    },
+    "/v2/trader/{wallet}/equity": {
+      "get": {
+        "tags": [
+          "Enriched Data"
+        ],
+        "summary": "Equity Curve",
+        "description": "Time-ordered equity curve for a Polymarket wallet, with optional dollar-normalized copy-trade analysis. Default returns realized P&L only. Pass include_unrealized=1 to mark open positions to current market price.",
+        "operationId": "trader_equity",
+        "parameters": [
+          {
+            "name": "wallet",
+            "in": "path",
+            "description": "Polymarket wallet address",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time window. Positions whose first activity falls before the start of the window are excluded.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "90d",
+                "1y",
+                "all"
+              ],
+              "default": "30d"
+            }
+          },
+          {
+            "name": "normalize",
+            "in": "query",
+            "description": "Set to 1 to include the $1-normalized equity curve alongside the raw curve.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ],
+              "default": "0"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Start date. YYYY-MM-DD (treated as UTC midnight) or unix seconds.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "End date. Same format as from.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "max_markets",
+            "in": "query",
+            "description": "Keep only the most recent N markets the wallet has touched.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "include_unrealized",
+            "in": "query",
+            "description": "Set to 1 to mark open positions to current market price and include unrealized P&L. Off by default. Slower and non-deterministic.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ],
+              "default": "0"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Equity curve",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "wallet": "0xb4ab48b451101a779bf8c644318bb17fe652571d",
+                  "period": "all",
+                  "source": "onchain",
+                  "positions_count": 564,
+                  "markets_count": 296,
+                  "open_count": 30,
+                  "applied_filters": {
+                    "fromTs": null,
+                    "toTs": null,
+                    "maxMarkets": null,
+                    "includeUnrealized": false
+                  },
+                  "partial": false,
+                  "raw": {
+                    "points": 500,
+                    "final_pnl": -857.48,
+                    "curve": [
+                      {
+                        "t": 1774555427,
+                        "pnl": 10.56
+                      },
+                      {
+                        "t": 1774555427,
+                        "pnl": -14.44
+                      },
+                      {
+                        "t": 1774555441,
+                        "pnl": -6.62
+                      }
+                    ]
+                  },
+                  "normalized": {
+                    "bet_size": 1,
+                    "positions": 564,
+                    "points": 500,
+                    "final_pnl": -18.4366,
+                    "curve": [
+                      {
+                        "t": 1774555427,
+                        "pnl": 0.1234
+                      },
+                      {
+                        "t": 1774555427,
+                        "pnl": -0.0466
+                      },
+                      {
+                        "t": 1774555441,
+                        "pnl": 0.5934
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (1 request per 10 seconds per API key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -4550,7 +4728,7 @@
       },
       "EventStatus": {
         "type": "string",
-        "description": "Status of an event \u2014 pending (mempool) or confirmed (in a block).",
+        "description": "Status of an event — pending (mempool) or confirmed (in a block).",
         "enum": [
           "pending",
           "confirmed"
@@ -4773,7 +4951,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID \u2192 outcome name map.",
+            "description": "Token ID → outcome name map.",
             "additionalProperties": {
               "type": "string"
             },
@@ -4906,7 +5084,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID \u2192 outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
+            "description": "Token ID → outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
             "additionalProperties": {
               "type": "string"
             },
@@ -5126,7 +5304,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID \u2192 outcome name map.",
+            "description": "Token ID → outcome name map.",
             "additionalProperties": {
               "type": "string"
             },
@@ -5268,7 +5446,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID \u2192 outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
+            "description": "Token ID → outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
             "additionalProperties": {
               "type": "string"
             },
@@ -5394,7 +5572,7 @@
           },
           "redeemed": {
             "type": "boolean",
-            "description": "Whether the position has been redeemed onchain (tokens burned for USDC). Only present when `redeemable` is true. Determined by checking the CTF contract balance \u2014 zero balance means fully redeemed."
+            "description": "Whether the position has been redeemed onchain (tokens burned for USDC). Only present when `redeemable` is true. Determined by checking the CTF contract balance — zero balance means fully redeemed."
           },
           "unredeemed_balance": {
             "type": "number",
