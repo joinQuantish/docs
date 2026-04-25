@@ -74,6 +74,7 @@
               "guides/errors",
               "guides/rate-limits",
               "guides/fee-escrow",
+              "guides/copy-trading-api",
               "guides/trade-index",
               "guides/copy-trading"
             ]
@@ -110,19 +111,7 @@
             ]
           },
           {
-            "group": "Wallets",
-            "pages": [
-              "api-reference/wallets/positions",
-              "api-reference/wallets/closed-positions",
-              "api-reference/wallets/multi-positions",
-              "api-reference/wallets/trades",
-              "api-reference/wallets/market-positions",
-              "api-reference/wallets/market-trades",
-              "api-reference/wallets/resolve"
-            ]
-          },
-          {
-            "group": "Onchain",
+            "group": "Wallets / Positions / Onchain",
             "pages": [
               "api-reference/onchain/trades",
               "api-reference/onchain/positions",

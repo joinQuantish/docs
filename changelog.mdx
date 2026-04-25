@@ -7,6 +7,34 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-25 — Wallet endpoints reorganized: V1 wallet endpoints removed from documentation
+
+The "Wallets" and "Onchain" sidebar sections have been merged into a single section called **Wallets / Positions / Onchain**. All wallet, position, and trade endpoints now live in one place — the V2 onchain endpoints, which are backed by our own indexer rather than upstream Polymarket data-api.
+
+**What changed in the docs:**
+
+The seven legacy V1 wallet/market endpoints have been removed from the documentation sidebar. They were inferior duplicates of the V2 onchain equivalents — three of them returned empty or error responses, and the rest lacked PnL, average-price, current-price, and market-status fields that the V2 versions provide directly from chain data.
+
+| Removed from docs | Use instead |
+|---|---|
+| `GET /v1/wallets/{addr}/positions` | `GET /v2/onchain/positions?wallet=…` |
+| `GET /v1/wallets/{addr}/closed-positions` | `GET /v2/onchain/positions?wallet=…&status=closed` |
+| `GET /v1/wallets/positions` (multi-wallet) | Loop `GET /v2/onchain/positions?wallet=…` per wallet |
+| `GET /v1/wallets/{addr}/trades` | `GET /v2/onchain/wallets/{address}/trades` |
+| `GET /v1/markets/{id}/positions` | `GET /v2/onchain/positions?token_id=…` |
+| `GET /v1/markets/{id}/trades` | `GET /v2/onchain/markets/{token_id}/trades` |
+| `GET /v1/resolve/{query}` | `GET /v2/resolve/{query}` |
+
+**Important — backward compatibility preserved:**
+
+The V1 endpoints **still respond on the API**. We have not turned them off. If you have integrations hitting the legacy paths, they continue to work exactly as before — we just stopped surfacing them in the documentation because the V2 onchain replacements are strictly better. You should migrate, but you don't have to migrate today.
+
+**Why V2 onchain is better:**
+
+V1 wallet endpoints were thin proxies over Polymarket's `data-api.polymarket.com` and returned mostly social-flavored fields (bio, profile picture, pseudonym). V2 onchain endpoints are powered by our own indexer over Polymarket's CTF Exchange logs and return rich trading-relevant fields: `avg_price`, `realized_pnl`, `unrealized_pnl`, `current_price`, `total_bought`, `market_status`, `order_hash`, `fee`, `maker_amount`, `taker_amount`, `condition_id`, and more. Same data your equity curve, leaderboard, and PnL endpoints already use.
+
+---
+
 ## 2026-04-25 — Equity Curve endpoint: faster default + four new query parameters
 
 The `/v2/trader/{wallet}/equity` endpoint is faster, more flexible, and more accurate.
