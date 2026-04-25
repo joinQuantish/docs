@@ -96,13 +96,6 @@
             ]
           },
           {
-            "group": "Pricing",
-            "pages": [
-              "api-reference/pricing/market-statistics",
-              "api-reference/pricing/ohlcv-candles"
-            ]
-          },
-          {
             "group": "Orderbook",
             "pages": [
               "api-reference/orderbook/order-book",
@@ -159,6 +152,12 @@
               "api-reference/crypto/price",
               "api-reference/crypto/active",
               "api-reference/crypto/series"
+            ]
+          },
+          {
+            "group": "Market Card",
+            "pages": [
+              "api-reference/pricing/market-statistics"
             ]
           },
           {

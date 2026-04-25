@@ -7,6 +7,15 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-25 — Pricing section retired: candles deduplicated, "Market Card" introduced
+
+The "Pricing" sidebar section has been removed. It contained two endpoints:
+
+- **`GET /v1/stats/{token_id}`** — kept, renamed to **Market Card**, moved further down the sidebar (just above "System"). This one is genuinely useful: a single call returns the condition_id, outcomes, neg-risk flag, end date, current orderbook liquidity, 24h OHLCV summary, and last price. Saves you from chaining 3–4 calls when you just need a market overview tile.
+- **`GET /v1/candles/{token_id}`** — removed from documentation. It was an in-memory rolling buffer with no historical depth, no pagination, no VWAP, and no buy/sell split. Use **`GET /v2/onchain/candles/{token_id}`** instead — same OHLCV plus VWAP, volume in shares, trade count, full history, and pagination. The endpoint itself still responds on the API for backward compatibility.
+
+---
+
 ## 2026-04-25 — Wallet endpoints reorganized: V1 wallet endpoints removed from documentation
 
 The "Wallets" and "Onchain" sidebar sections have been merged into a single section called **Wallets / Positions / Onchain**. All wallet, position, and trade endpoints now live in one place — the V2 onchain endpoints, which are backed by our own indexer rather than upstream Polymarket data-api.
