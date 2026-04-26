@@ -1,0 +1,150 @@
+---
+title: "Tag Slugs (Discovery)"
+description: "List every tag slug in the polynode taxonomy. Use these values as ?tag_slug= filters on the wallet positions endpoints."
+openapi: "GET /v2/onchain/tags"
+---
+
+Returns every distinct tag slug currently in use, sourced from Polymarket's event-level taxonomy. **5,779 tags** at time of writing — refreshed hourly.
+
+The values returned by this endpoint are exactly what you pass to `?tag_slug=` on [`/v2/wallets/{addr}/positions/onchain`](/api-reference/wallets/onchain-positions) and [`/v2/onchain/positions`](/api-reference/onchain/positions). Use this endpoint to populate dropdowns, autocomplete inputs, or to discover new tags as Polymarket adds them.
+
+## Request
+
+```
+GET /v2/onchain/tags
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `details` | boolean (optional) | When `true`, returns enriched per-tag objects (markets, events, first/last seen timestamps). Default: returns just an array of slug strings. |
+| `prefix` | string (optional) | Case-sensitive starts-with match. `?prefix=nba` returns `nba`, `nba-finals`, `nba-playoffs`, etc. |
+| `min_markets` | integer (optional) | Filter out long-tail tags. `?min_markets=10000` returns ~48 mainstream tags. `?min_markets=100` returns the ~700 tags worth surfacing in a UI. |
+| `sort` | string (optional) | `popularity` (default, by market count desc) or `alpha` (alphabetical). |
+| `limit` | integer (optional) | Default 10,000 / max 10,000 (the full namespace fits comfortably in one response). |
+
+## Response
+
+### Default (lightweight — just slugs)
+
+```json
+{
+  "count": 5779,
+  "tags": [
+    "sports",
+    "games",
+    "hide-from-new",
+    "recurring",
+    "crypto",
+    "crypto-prices",
+    "up-or-down",
+    "esports",
+    "5M",
+    "soccer",
+    "basketball",
+    "..."
+  ]
+}
+```
+
+73 KB total payload, sorted by popularity. Suitable for caching client-side and using as the source list for filter UI.
+
+### With `?details=true`
+
+```json
+{
+  "count": 5779,
+  "tags": [
+    {
+      "slug": "sports",
+      "markets": 468766,
+      "events": 76449,
+      "first_seen_at": 1680722387,
+      "last_seen_at": 1777225921
+    },
+    {
+      "slug": "nba",
+      "markets": 58108,
+      "events": 3418,
+      "first_seen_at": 1702923075,
+      "last_seen_at": 1777225921
+    },
+    {
+      "slug": "bitcoin",
+      "markets": 76117,
+      "events": 16800,
+      "first_seen_at": 1700000000,
+      "last_seen_at": 1777225947
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `slug` | string | The tag value to use in `?tag_slug=` |
+| `markets` | number | How many markets on Polymarket carry this tag |
+| `events` | number | How many distinct parent events carry this tag |
+| `first_seen_at` | number | Unix seconds — earliest market.created_at for any market with this tag |
+| `last_seen_at` | number | Unix seconds — latest market.created_at for any market with this tag (use to detect freshly-active tags) |
+
+## What's in the namespace
+
+The 5,779 tags break down roughly as follows:
+
+| Coverage | Tag count | Examples |
+|---|---|---|
+| 100K+ markets | 10 | `sports`, `games`, `crypto`, `recurring`, `up-or-down` |
+| 10K-100K | 38 | `basketball`, `nba`, `bitcoin`, `ethereum`, `soccer`, `tennis`, `politics` |
+| 1K-10K | 133 | `weather`, `dota-2`, `counter-strike-2`, `weekly`, `nfl`, `mlb` |
+| 100-1K | 516 | Specific sports leagues, asset themes, event categories |
+| Long tail | ~5,000 | Event-specific tags (`fema`, `dallas-stars`, `gustavo-petro`, `walmart`) |
+
+For most filter UIs, **only the top ~700 tags (those with `min_markets >= 100`) are useful** — the long tail is dominated by one-off event tags that match a single market each.
+
+## Examples
+
+### Get all tags (default lightweight list)
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/tags" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Get only mainstream tags (worth surfacing in a UI)
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/tags?min_markets=100&details=true" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Returns ~700 tags with full enrichment — a reasonable size for populating an autocomplete or category dropdown.
+
+### Discover NBA-related tags
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/tags?prefix=nba&details=true" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Returns `nba`, `nba-playoffs`, `nba-finals`, `nba-draft`, `nba-all-star`, etc. — useful for narrowing a sports filter to a specific basketball context.
+
+### Find recently-introduced tags
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/tags?details=true&sort=alpha" \
+  -H "x-api-key: YOUR_KEY" \
+| jq '.tags | sort_by(-.first_seen_at) | .[0:20]'
+```
+
+Sorts newest tags first by their initial appearance — useful for catching newly-added Polymarket categories.
+
+## Refresh cadence
+
+The materialized view backing this endpoint refreshes once per hour. New tags appearing on Polymarket show up here within an hour of the metadata-ingester picking them up (typically minutes). Existing tags' `markets` / `events` counts and `last_seen_at` lag by at most 60 minutes.
+
+This endpoint is read-only and additive — calling it does not affect any other endpoint or response shape.
+
+## Related
+
+- [`/v2/wallets/{addr}/positions/onchain`](/api-reference/wallets/onchain-positions) — filter wallet positions by tag (`?tag_slug=`)
+- [`/v2/onchain/positions`](/api-reference/onchain/positions) — same filter on the paginated unified feed

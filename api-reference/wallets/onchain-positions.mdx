@@ -187,7 +187,16 @@ curl "https://api.polynode.dev/v2/wallets/0x.../positions/onchain?tag_slug=crypt
 
 ### Discovering available tags
 
-The simplest discovery path is to fetch a wallet's positions without a filter, then read the union of `tag_slugs` across the response — that's the tag namespace the wallet has actually traded in. For a global tag list, scan a few high-volume markets via `/v2/onchain/positions` and collect distinct `tag_slugs`.
+Use the dedicated [`/v2/onchain/tags`](/api-reference/onchain/tags) endpoint for the full tag namespace (5,779 tags currently). Returns a flat slug array by default, or `?details=true` for per-tag market counts and timestamps:
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/tags?min_markets=100&details=true" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+The values returned by `/v2/onchain/tags` are the exact strings to pass to `?tag_slug=` here.
+
+For a wallet-specific view, you can also fetch the wallet's positions without a filter and read the union of `tag_slugs` across the response — that's the tag namespace the wallet has actually traded in.
 
 ## How `realized_pnl` Works
 

@@ -7,6 +7,27 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-26 — New endpoint: `GET /v2/onchain/tags` for tag discovery
+
+Lists every tag slug in the polynode taxonomy — currently 5,779 tags. Lightweight by default (just slug strings, 73 KB / 43 ms cold for the full list) or `?details=true` for per-tag enrichment (markets, events, first/last seen).
+
+```bash
+# all tags
+curl "https://api.polynode.dev/v2/onchain/tags" -H "x-api-key: YOUR_KEY"
+
+# top 700 mainstream tags with stats
+curl "https://api.polynode.dev/v2/onchain/tags?min_markets=100&details=true" \
+  -H "x-api-key: YOUR_KEY"
+
+# discover NBA-related tags
+curl "https://api.polynode.dev/v2/onchain/tags?prefix=nba&details=true" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Values returned here are exactly what to pass to `?tag_slug=` on the [wallet positions](/api-reference/wallets/onchain-positions) and [unified positions](/api-reference/onchain/positions) endpoints. Use it to populate filter dropdowns or autocomplete inputs. The underlying materialized view refreshes hourly so newly-added Polymarket tags appear within an hour.
+
+---
+
 ## 2026-04-26 — Wallet Positions: `tag_slugs` field + `?tag_slug=` filter
 
 Every row of [`GET /v2/wallets/{address}/positions/onchain`](/api-reference/wallets/onchain-positions) now includes a `tag_slugs` array carrying the Polymarket event-level tags that apply to that market — typical values like `nba`, `basketball`, `sports`, `politics`, `crypto`, `fed`, `2025-predictions`, plus event-specific slugs like `2026-fifa-world-cup-winner-595`. Order is most-specific to most-general.

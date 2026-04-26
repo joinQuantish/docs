@@ -121,6 +121,12 @@
             ]
           },
           {
+            "group": "Tags",
+            "pages": [
+              "api-reference/onchain/tags"
+            ]
+          },
+          {
             "group": "BYOL",
             "pages": [
               "api-reference/byol/overview",
