@@ -1,10 +1,10 @@
 ---
 title: "Positions & P&L (Wallet)"
-description: "All positions (open and closed) with accurate realized P&L from onchain settlement data."
+description: "Every position a wallet has held — open and closed — with realized + unrealized P&L, per-position activity timestamps, market resolution timestamps, and parent event slugs. Optional time-window filtering."
 openapi: "GET /v2/wallets/{address}/positions/onchain"
 ---
 
-Returns every position a wallet has ever held, including closed positions that no longer appear in the standard positions endpoint. Each position includes precomputed `realized_pnl`, `avg_price`, and `total_bought` from onchain data.
+Returns every position a wallet has ever held, including closed positions that no longer appear in the standard positions endpoint. Each position includes precomputed `realized_pnl`, `avg_price`, `total_bought`, plus per-position activity, redemption, and resolution timestamps that let you build leaderboards, trim to a 30-day or 90-day window, or filter to a parent event.
 
 The standard `/v1/wallets/{addr}/positions` endpoint only returns open positions. Once a position is fully exited or a market resolves, it disappears. This endpoint fills that gap.
 
@@ -17,6 +17,10 @@ GET /v2/wallets/{address}/positions/onchain
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `address` | path | Wallet address (0x-prefixed, 40 hex chars) |
+| `since` | query (optional) | Unix seconds. Drop positions whose `last_trade_at` is before this timestamp. |
+| `until` | query (optional) | Unix seconds. Drop positions whose `last_trade_at` is after this timestamp. |
+
+`since` and `until` are **opt-in**. When neither is supplied, the response is identical to a request with no parameters at all — same shape, same aggregates over the full position set. When either is supplied, the response is filtered and aggregates are recomputed (see [Filtering by activity window](#filtering-by-activity-window)).
 
 ## Response
 
@@ -43,9 +47,13 @@ GET /v2/wallets/{address}/positions/onchain
       "total_bought": 398887.919433,
       "market": "Will Fulham FC win on 2026-03-21?",
       "slug": "epl-ful-bur-2026-03-21-ful",
+      "event_slug": "epl-ful-bur-2026-03-21",
       "outcome": "Yes",
       "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/Repetitive-markets/premier+league.jpg",
-      "condition_id": "0xae68634cb01137acbe26e65790f7268a523ee1519601f2576bd7b067c7c9f9da"
+      "condition_id": "0xae68634cb01137acbe26e65790f7268a523ee1519601f2576bd7b067c7c9f9da",
+      "last_trade_at": 1742568134,
+      "closed_at": 1742573012,
+      "resolved_at": 1742572840
     }
   ]
 }
@@ -58,23 +66,82 @@ GET /v2/wallets/{address}/positions/onchain
 | `count` | number | Total positions returned |
 | `open_count` | number | Positions with `size > 0` |
 | `closed_count` | number | Positions with `size = 0` and nonzero `realized_pnl` |
-| `total_realized_pnl` | number | Sum of `realized_pnl` across all positions |
-| `total_unrealized_pnl` | number | Sum of `unrealized_pnl` across all positions. Reflects open-size paper P&L at current (or terminal) market prices. |
+| `total_realized_pnl` | number | Sum of `realized_pnl` across all returned positions |
+| `total_unrealized_pnl` | number | Sum of `unrealized_pnl` across all returned positions. Reflects open-size paper P&L at current (or terminal) market prices. |
 | `total_pnl` | number | `total_realized_pnl + total_unrealized_pnl`. Matches the net portfolio PnL shown on a Polymarket profile page. |
 | `positions_with_pnl` | number | Positions where `realized_pnl != 0` |
+| `filtered` | boolean | Present **only** when `since` or `until` was supplied. Always `true` in that case. Absent in default responses. |
+| `applied_filters` | object | Present **only** when filtering. Echoes `{since, until}` (each is the supplied unix seconds or `null`). Absent in default responses. |
 | `positions[].token_id` | string | CTF token ID (called `asset` on the [closed-positions](/api-reference/wallets/closed-positions) endpoint) |
 | `positions[].size` | number | Current token balance (0 = fully exited) |
 | `positions[].avg_price` | number | Volume-weighted average entry price |
 | `positions[].realized_pnl` | number | Realized profit/loss in USDC |
 | `positions[].unrealized_pnl` | number | Paper P&L on remaining open shares. For resolved markets, uses the terminal settlement price (1.0 winner / 0.0 loser). For live markets, uses the current market price. `0` when `size = 0`. |
 | `positions[].current_price` | number \| null | Price used for `unrealized_pnl`. `1.0` or `0.0` on resolved markets, live market price on active markets, `null` when `size = 0` or no price is available. |
-| `positions[].market_status` | string | `"live"` / `"resolved-win"` / `"resolved-loss"` / `"closed"`. See [positions feed](/api-reference/onchain/positions#position-fields) for full enum. |
+| `positions[].market_status` | string | `"live"` / `"resolved-win"` / `"resolved-loss"` / `"resolved-unknown"` / `"closed"`. See [positions feed](/api-reference/onchain/positions#position-fields) for full enum. |
 | `positions[].total_bought` | number | Total tokens acquired for this position |
 | `positions[].market` | string | Market question |
-| `positions[].slug` | string | Market slug |
+| `positions[].slug` | string | **Market** slug — identifies the specific market within an event (e.g. `nba-bos-cle-2026-03-08-spread`). |
+| `positions[].event_slug` | string \| null | **Event** slug — identifies the parent event a market belongs to (e.g. `nba-bos-cle-2026-03-08`). For single-market events, equals `slug`. For multi-market events (NBA games with several lines, election markets with several candidates, FIFA World Cup with one market per team, etc.) this is the parent the markets share. `null` when the event metadata is not yet known. |
 | `positions[].outcome` | string | Outcome label (e.g. "Yes", "No", "Up") |
 | `positions[].image` | string | Market image URL |
 | `positions[].condition_id` | string | Market condition ID |
+| `positions[].last_trade_at` | number \| null | Unix seconds. Latest fill (maker or taker) on this token across V1 + V2 exchanges. `null` when polynode has no fill history for the token (e.g. positions acquired purely via splits/merges or NegRisk conversion with no later trade). |
+| `positions[].closed_at` | number \| null | Unix seconds. Latest moment this wallet redeemed any outcome of this market's `condition_id` for collateral. `null` when the wallet has not redeemed (positions sold to zero before resolution, or open positions, or wins held but not yet redeemed). |
+| `positions[].resolved_at` | number \| null | Unix seconds. Moment the market was resolved on-chain (when payouts became redeemable). `null` for markets that resolved before polynode began tracking, or for markets that have not yet resolved. Recent markets are fully covered. |
+
+## Distinguishing the three timestamp fields
+
+These three timestamp fields look similar but answer different questions. Choosing the right one matters when filtering:
+
+| Field | Whose action | When |
+|---|---|---|
+| `last_trade_at` | The **wallet**'s most recent fill on this exact token | Each fill event (buy or sell) updates this |
+| `closed_at` | The **wallet**'s most recent collateral redemption for the market | Set when the wallet calls `redeemPositions` on the CTF contract |
+| `resolved_at` | The **market itself** (not the wallet) becoming redeemable | Set once per market, when the oracle reports payouts on-chain |
+
+A position can have `resolved_at` populated and `closed_at` null — the market resolved but the wallet has not yet redeemed. A position can have `closed_at` set and `resolved_at` null — the wallet redeemed during a window polynode does not have full historical resolution coverage for, but the redemption itself was observed.
+
+For windowing a leaderboard to "the last 30 days of trading activity," `last_trade_at` is the right field — it captures every position the wallet was active in. For "positions resolved in the last 90 days," `resolved_at` is the right one. For "positions the wallet has actually closed out," `closed_at` is the right one.
+
+## Filtering by activity window
+
+`since` and `until` are optional unix-seconds query parameters that filter positions by `last_trade_at`. Designed to support 30d / 90d / 365d leaderboard windows without fetching multi-year history just to trim it client-side.
+
+### Behavior
+
+- Both bounds are **inclusive**.
+- Positions with `last_trade_at = null` are dropped under any active filter — there's no timestamp to compare against.
+- All seven aggregates (`count`, `open_count`, `closed_count`, `total_realized_pnl`, `total_unrealized_pnl`, `total_pnl`, `positions_with_pnl`) **recompute over the filtered set**.
+- The response gains two top-level keys to make the shift self-documenting: `filtered: true` and `applied_filters: { since, until }`. These keys are absent from default responses.
+- Bad inputs return `400` with a descriptive error.
+
+### 30-day window
+
+```bash
+SINCE=$(( $(date -u +%s) - 86400 * 30 ))
+curl "https://api.polynode.dev/v2/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/positions/onchain?since=$SINCE" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### 90-day window
+
+```bash
+SINCE=$(( $(date -u +%s) - 86400 * 90 ))
+curl "https://api.polynode.dev/v2/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/positions/onchain?since=$SINCE" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Bounded range (e.g. Q1 2026)
+
+```bash
+curl "https://api.polynode.dev/v2/wallets/0x.../positions/onchain?since=1735689600&until=1743465600" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+<Note>
+**The default response is unaffected by these new params.** When you call this endpoint with no `since`/`until`, the response shape and every aggregate is identical to what you got before. The `filtered` and `applied_filters` keys are only added when you opt in.
+</Note>
 
 ## How `realized_pnl` Works
 
@@ -106,9 +173,11 @@ The response returns three portfolio-level totals. Each answers a different ques
 `total_pnl = total_realized_pnl + total_unrealized_pnl`. Reach for `total_pnl` when you want a number that matches a Polymarket profile page. Reach for `total_realized_pnl` when you want only closed-out gains.
 </Note>
 
+When you supply `since` or `until`, all three totals recompute over the filtered set — the same logic, just narrower input.
+
 ## Performance
 
-Responses are cached for 5 minutes per wallet. First request for a new wallet takes 200ms-3s depending on position count (up to 20,000 positions supported). Cached responses return in under 50ms.
+Responses are cached for 5 minutes per wallet. First request for a new wallet takes 200ms-3s depending on position count (up to 20,000 positions supported). Cached responses return in under 50ms. Filter parameters are applied to the cached set; passing `since`/`until` does not invalidate the underlying cache.
 
 | Positions | First request | Cached |
 |-----------|--------------|--------|
@@ -116,9 +185,33 @@ Responses are cached for 5 minutes per wallet. First request for a new wallet ta
 | 500-1,000 | ~1.5s | < 50ms |
 | 1,000-5,000 | ~3s | < 50ms |
 
-## Example
+## Examples
+
+### Default response (no filter)
 
 ```bash
 curl "https://api.polynode.dev/v2/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/positions/onchain" \
   -H "x-api-key: YOUR_KEY"
 ```
+
+Returns every position the wallet has held, all-time, with the full set of fields documented above. Default response shape — no `filtered` or `applied_filters` keys.
+
+### Filter to the last 30 days
+
+```bash
+SINCE=$(( $(date -u +%s) - 86400 * 30 ))
+curl "https://api.polynode.dev/v2/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/positions/onchain?since=$SINCE" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Filter to a parent event
+
+`event_slug` is included on every row, so once you have a wallet's positions you can group them by parent event without an extra round-trip:
+
+```bash
+curl "https://api.polynode.dev/v2/wallets/0x.../positions/onchain" \
+  -H "x-api-key: YOUR_KEY" \
+| jq '.positions | group_by(.event_slug) | map({event_slug: .[0].event_slug, market_count: length, pnl: (map(.realized_pnl + .unrealized_pnl) | add)})'
+```
+
+This collapses a wallet's positions across the children of an event (e.g. all 32 World Cup winner markets, or the multiple lines of a single NBA game) into one row per event.

@@ -7,6 +7,35 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-26 — Wallet Positions: per-position timestamps, parent event slug, opt-in window filter
+
+Four new fields on every row of [`GET /v2/wallets/{address}/positions/onchain`](/api-reference/wallets/onchain-positions) (and the unified [`GET /v2/onchain/positions`](/api-reference/onchain/positions) feed). Two new optional query parameters for server-side window filtering. Every change is **strictly additive** — calls with no new parameters return responses byte-identical to before.
+
+**New per-position fields:**
+
+- **`last_trade_at`** — unix seconds. Latest fill on this token across V1 + V2 exchanges. The right field for "active in the last 30 / 90 days" leaderboard windows.
+- **`closed_at`** — unix seconds. Latest moment the wallet redeemed any outcome of the market for collateral. Distinct from `resolved_at` — `resolved_at` is when the market itself resolved on-chain; `closed_at` is when this specific wallet actually redeemed.
+- **`resolved_at`** — unix seconds. Moment the market became redeemable (oracle reported payouts on-chain). Recent markets are fully covered; markets that resolved before polynode began tracking return `null`.
+- **`event_slug`** — the parent **event** slug, distinct from the per-row `slug` (which is the per-market slug). For multi-market events (NBA games with several lines, election markets with multiple candidates, FIFA World Cup with one market per team), `event_slug` is the parent the markets share. For single-market events, `event_slug` equals `slug`. Lets you group positions by event without an extra metadata round-trip.
+
+**New optional query parameters** — opt-in only:
+
+- **`?since=<unix_seconds>`** — keep positions whose `last_trade_at >= since`.
+- **`?until=<unix_seconds>`** — keep positions whose `last_trade_at <= until`.
+
+When either is supplied, all aggregates (`count`, `open_count`, `closed_count`, `total_realized_pnl`, `total_unrealized_pnl`, `total_pnl`, `positions_with_pnl`) recompute over the filtered set, and the response gains two top-level keys to make the shift self-documenting: `filtered: true` and `applied_filters: { since, until }`. These keys are absent from default responses, so existing integrations see zero behavior change.
+
+```bash
+# 30-day window — leaderboard-style request
+SINCE=$(( $(date -u +%s) - 86400 * 30 ))
+curl "https://api.polynode.dev/v2/wallets/0x.../positions/onchain?since=$SINCE" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+See the [Positions & P&L (Wallet)](/api-reference/wallets/onchain-positions) reference for the full field catalog and filtering rules.
+
+---
+
 ## 2026-04-26 — X Search API beta
 
 New paid endpoints for live X (Twitter) search and account-timeline data. Aimed at teams adding social context next to their prediction-market data — sentiment around a market, replies on a leader's post, what's being said about an event.

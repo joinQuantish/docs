@@ -97,7 +97,11 @@ GET /v2/onchain/positions
 | `outcome` | string | Outcome label (e.g. "Yes", "No") |
 | `condition_id` | string | Market condition ID |
 | `image` | string \| null | Market image URL. `null` for some delisted or niche markets. |
+| `event_slug` | string \| null | Parent **event** slug, distinct from the per-row market `slug`. For multi-market events (NBA games with several lines, election markets with several candidates, FIFA World Cup with one market per team), this is the parent the markets share. For single-market events, equals the market slug. `null` when event metadata is not yet known. |
 | `last_activity` | number \| undefined | Unix timestamp of the wallet's most recent fill on this position. Present only when querying by `wallet`. Positions with no fill history (e.g. acquired purely via split/merge/redemption) omit this field and sort to the end. |
+| `last_trade_at` | number \| null | Unix seconds. Latest fill on this token across V1 + V2 exchanges. Same data as `last_activity` but always present (`null` instead of omitted) for consistent shape. Use either; `last_trade_at` is preferred for new integrations. |
+| `closed_at` | number \| null | Unix seconds. Latest moment this wallet redeemed any outcome of the market for collateral. `null` when the wallet has not redeemed (open positions, positions sold to zero pre-resolution, or wins held but not yet redeemed). |
+| `resolved_at` | number \| null | Unix seconds. Moment the market was resolved on-chain (when payouts became redeemable). `null` for markets that resolved before polynode began tracking, or for markets that have not yet resolved. Recent markets are fully covered. |
 
 ### Pagination fields
 
