@@ -114,6 +114,7 @@
               "api-reference/onchain/wallet-redemptions",
               "api-reference/onchain/wallet-activity",
               "api-reference/onchain/market-trades",
+              "api-reference/wallets/market-positions",
               "api-reference/onchain/candles",
               "api-reference/onchain/market-volume",
               "api-reference/onchain/market-oi",

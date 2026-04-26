@@ -1,4 +1,151 @@
 ---
-title: "Market Positions & P&L"
+title: "Top Traders (Market)"
+description: "Every wallet that holds (or has held) a position in a single market, grouped by outcome and sorted by P&L. The 'who's making money on this market' feed."
 openapi: "GET /v1/markets/{id}/positions"
 ---
+
+Returns every wallet with a position in a single market, broken out by outcome (e.g. Up/Down or Yes/No) and ranked by P&L. The natural feed for "top traders on this market" leaderboards, top-X-by-PnL widgets, and per-market trader audits.
+
+Path accepts either the **market slug** (e.g. `btc-updown-5m-1777179000`) or the **condition_id** (e.g. `0xa7ae8a41...`). It does **not** accept an outcome token id — pass the market identifier, not the side.
+
+<Note>
+Field shape is camelCase (`avgPrice`, `realizedPnl`, etc.) — distinct from polynode's V2 onchain endpoints which use snake_case. Different schemas, different use cases. Default cap is 50 rows per outcome; configurable up to 500.
+</Note>
+
+## Request
+
+```
+GET /v1/markets/{slug-or-condition-id}/positions
+```
+
+| Parameter | Type | Location | Description |
+|-----------|------|----------|-------------|
+| `id` | string | path | Market slug or condition_id (`0x…`). **Not** an outcome token id. |
+| `limit` | integer | query | Max rows per outcome. Default `50`, max `500`. |
+| `offset` | integer | query | Skip first N rows. |
+| `sortBy` | string | query | `TOTAL_PNL` (default), `REALIZED_PNL`, `AVG_PRICE`, `SIZE`, `TOTAL_BOUGHT`. |
+| `sortDirection` | string | query | `DESC` (default) or `ASC`. |
+| `status` | string | query | `OPEN`, `CLOSED`, or `ALL` (default). |
+| `includeTrades` | boolean | query | When `true`, adds `firstTradeAt` / `lastTradeAt` (unix seconds) per row. Heavy — separate 20 req/min rate limit per key. |
+| `user` | string | query | Filter to a single wallet, or up to 20 wallets comma-separated, scoped to this market. |
+
+## Response
+
+```json
+{
+  "condition_id": "0xa7ae8a4119fe00f231e693ed717339dd1e13da4617c79f3b1522ab1aee3965b6",
+  "market_title": "Bitcoin Up or Down - April 26, 12:50AM-12:55AM ET",
+  "slug": "btc-updown-5m-1777179000",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+  "outcome_names": ["Up", "Down"],
+  "outcomes": [
+    {
+      "token": "90684694382683135738693577247532961739938461809085935450142382916430459093778",
+      "positions": [
+        {
+          "proxyWallet": "0x9a1d392572d0e6bfefbf9302101b9e44c8ee86d6",
+          "name": "kq9000",
+          "profileImage": "",
+          "verified": false,
+          "asset": "90684694382683135738693577247532961739938461809085935450142382916430459093778",
+          "conditionId": "0xa7ae8a4119fe00f231e693ed717339dd1e13da4617c79f3b1522ab1aee3965b6",
+          "outcome": "Up",
+          "outcomeIndex": 0,
+          "size": 0,
+          "avgPrice": 0.4592,
+          "currPrice": 1,
+          "currentValue": 0,
+          "totalBought": 1633.1987,
+          "realizedPnl": 812.5754,
+          "cashPnl": 0,
+          "totalPnl": 812.5754,
+          "firstTradeAt": 1777179030,
+          "lastTradeAt": 1777179152
+        }
+      ]
+    },
+    { "token": "96824…", "positions": [ "…" ] }
+  ]
+}
+```
+
+### Top-level fields
+
+| Field | Type | Description |
+|---|---|---|
+| `condition_id` | string | Market condition id |
+| `market_title` | string | Human-readable market question |
+| `slug` | string | Market slug |
+| `image` | string | Market image URL |
+| `outcome_names` | string[] | Ordered outcome labels (`["Up","Down"]`, `["Yes","No"]`, etc.) |
+| `outcomes[]` | array | One entry per outcome — each holds a `positions` array |
+| `outcomes[].token` | string | Outcome token id |
+| `outcomes[].positions[]` | array | Traders with positions in this outcome, sorted by `sortBy` |
+
+### Per-trader fields (`outcomes[].positions[]`)
+
+| Field | Type | Description |
+|---|---|---|
+| `proxyWallet` | string | Trader address (Gnosis Safe proxy) |
+| `name` | string | Display name (often empty or auto-generated) |
+| `profileImage` | string | Profile image URL (often empty) |
+| `verified` | boolean | Verified flag |
+| `asset` | string | Outcome token id (same as `outcomes[].token`) |
+| `conditionId` | string | Market condition id |
+| `outcome` | string | Outcome label (`"Up"`, `"No"`, etc.) |
+| `outcomeIndex` | number | 0-based position in `outcome_names` |
+| `size` | number | Current token balance. `0` = fully exited or never held. |
+| `avgPrice` | number | Volume-weighted average entry price |
+| `currPrice` | number | Current market price (or terminal `1.0`/`0.0` for resolved markets) |
+| `currentValue` | number | Mark-to-market value of remaining shares (`size × currPrice`) |
+| `totalBought` | number | Lifetime tokens acquired |
+| `realizedPnl` | number | Realized P&L from sells + redemptions, in USDC |
+| `cashPnl` | number | P&L from cash flows (separate accounting axis) |
+| `totalPnl` | number | Net portfolio P&L for this position |
+| `firstTradeAt` | number | Unix seconds — only with `?includeTrades=true` |
+| `lastTradeAt` | number | Unix seconds — only with `?includeTrades=true` |
+
+## Examples
+
+### Top 10 traders on a market by total P&L
+
+```bash
+curl "https://api.polynode.dev/v1/markets/btc-updown-5m-1777179000/positions?limit=10&sortBy=TOTAL_PNL&sortDirection=DESC" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### By condition_id, with first/last trade timestamps
+
+```bash
+curl "https://api.polynode.dev/v1/markets/0xa7ae8a4119fe00f231e693ed717339dd1e13da4617c79f3b1522ab1aee3965b6/positions?includeTrades=true&limit=20" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Drill into specific wallets within a market
+
+```bash
+curl "https://api.polynode.dev/v1/markets/btc-updown-5m-1777179000/positions?user=0x9a1d392572d0e6bfefbf9302101b9e44c8ee86d6,0x44bd2993a69d8b569859ed8c0bf0b946f733f71a" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Closed positions only
+
+```bash
+curl "https://api.polynode.dev/v1/markets/btc-updown-5m-1777179000/positions?status=CLOSED&sortBy=REALIZED_PNL" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+## Notes
+
+- **Default cap of 50 rows** per outcome unless `limit` is set higher (max 500). On very large markets with deep tail traders, paginate with `offset`.
+- **Sort ties on equal P&L are non-deterministic** — two wallets at the same `totalPnl` may swap positions between calls. Use `proxyWallet` as a stable secondary key on the client side if you need consistent ordering.
+- **`size = 0` is normal** on closed positions, redeemed positions, or fully-exited positions. Use `realizedPnl` and `totalBought` to detect history.
+- **`firstTradeAt` / `lastTradeAt` require `?includeTrades=true`** and trip a separate heavy-endpoint rate limit (20 req/min per key). Don't request it on every refresh — fetch once and cache.
+
+## When to use this vs. other position endpoints
+
+| If you want | Use |
+|---|---|
+| Top traders ranked on a single market | **This endpoint** |
+| One wallet's positions across all markets | [`GET /v2/wallets/{addr}/positions/onchain`](/api-reference/wallets/onchain-positions) |
+| All trades on a market (chronological fill feed) | [`GET /v2/onchain/markets/{tokenId}/trades`](/api-reference/onchain/market-trades) |
