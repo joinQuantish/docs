@@ -1,0 +1,424 @@
+---
+title: "Copy Trading API"
+sidebarTitle: "Copy Trading API"
+description: "Build a copy-trading product on top of polynode. Register followers + leaders, we detect fills and webhook your backend an unsigned order ready to sign."
+icon: "copy"
+---
+
+<Note>
+**Beta.** This API is in beta while we onboard the first external customers. The shape of the request/response bodies is stable, but we may add optional fields. Non-breaking changes only. Email `josh@polynode.dev` if you're building something and want direct support.
+</Note>
+
+## What this is
+
+An HTTP + webhook service that does the hard parts of copy trading for you:
+
+- You register your followers' wallets and the leaders they want to copy.
+- We watch the Polymarket V2 CLOB for leader fills.
+- The instant a leader fills, we size + price a matching order for each follower, build the unsigned V2 CLOB order and EIP-712 typed data, and POST it to your webhook URL.
+- Your backend has your user sign the order (via Privy, MetaMask, whatever you use for signing) and submit it to Polymarket.
+- Optional: you can turn on a per-trade platform fee that gets pulled into our on-chain FeeEscrow and shared with affiliates.
+
+You never run a polynode node, never subscribe to a WebSocket, never decode a fill on-chain. You just handle signing and UI.
+
+## Who this is for
+
+You're the right fit if:
+
+- You're building a Polymarket-facing trading product (terminal, wallet, copy-trading UI, mobile app).
+- Your users already exist and you already hold or sign for their Polymarket Safes (typically via Privy embedded wallets).
+- You want to ship copy trading in days, not months, and you don't want to maintain the settlement-detection / order-building stack.
+
+If you're a single retail trader looking to copy a whale, this API is not for you — use one of the consumer products built on top of it.
+
+## How it maps to Polymarket
+
+Copy trading on Polymarket V2 is the same order flow as any other trade: your user's Safe is the `maker` of a V2 CLOB Order, signed with EIP-712, submitted to `clob-v2.polymarket.com/order`. The only thing we do is generate the order body and typed data *on the exact same block a leader fills*, so the order's `timestamp` + builder fields are correct and sizing/pricing matches the leader.
+
+If you're new to V2, read [V2 Order Details](/guides/v2-details) first — this guide assumes you already know what an `Order` struct looks like.
+
+## Base URL
+
+```
+https://api.polynode.dev/copytrade
+```
+
+All endpoints are HTTPS. Every request must carry your polynode API key.
+
+## Authentication
+
+Include your polynode API key as a Bearer token on every request:
+
+```http
+Authorization: Bearer pn_live_...
+```
+
+The SHA-256 of your bearer is your **tenant ID** — a 64-char hex string that scopes everything you create. Two different keys = two different tenants. Data is fully isolated at the SQL level: you cannot read or modify anything registered under another tenant's key.
+
+- Free-tier keys are rejected with `402 Payment Required`. You need a paid key (Starter tier or above).
+- Rate limits follow your paid tier's limits. The standard `x-ratelimit-{limit,remaining,reset}` response headers are always returned.
+
+## Quick start (5 minutes)
+
+```bash
+# 1. Create your tenant config — tells us where to webhook events
+curl -X POST https://api.polynode.dev/copytrade/config \
+  -H "Authorization: Bearer $PN_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"webhook_url": "https://your-backend.example/webhooks/polynode-copy"}'
+
+# Response:
+# {
+#   "webhook_url": "https://your-backend.example/webhooks/polynode-copy",
+#   "webhook_secret": "whsec_abc...",      ← save this, shown only once
+#   "schema_version": 1,
+#   "supports_fee_escrow": false
+# }
+
+# 2. Register one of your users as a follower
+curl -X POST https://api.polynode.dev/copytrade/followers \
+  -H "Authorization: Bearer $PN_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "wallet": "0xUserSafeAddress...",
+    "signer": "0xUserEOAAddress...",
+    "sig_type": 2,
+    "settings": {
+      "size_mode": "percentage",
+      "size_pct": 100,
+      "min_trade_pusd": 1,
+      "max_trade_pusd": 1000,
+      "slippage_bps": 50,
+      "copy_buys": true,
+      "copy_sells": true
+    }
+  }'
+
+# 3. Point that follower at a leader
+curl -X POST "https://api.polynode.dev/copytrade/followers/0xUserSafeAddress.../leaders" \
+  -H "Authorization: Bearer $PN_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"leaders": ["0xLeaderWalletAddress..."]}'
+```
+
+From now on, every time `0xLeaderWalletAddress...` fills an order on V2 CLOB, your webhook endpoint receives a signed POST with an unsigned V2 order ready for your user to sign.
+
+## Concepts
+
+| Term | Meaning |
+|---|---|
+| **Tenant** | You. Scoped by `sha256(your API key)`. All data is tenant-partitioned. |
+| **Follower** | One of your end users. Identified by their Safe `wallet` + their EOA `signer`. A follower belongs to exactly one tenant. |
+| **Leader** | A Polymarket wallet being copied. Can be attached to many followers across many tenants. |
+| **Settings** | Per-follower JSON: how much to copy (%/fixed/match), slippage, whether to copy buys/sells, TP/SL levels, fee config (if enabled). |
+| **Leader override** | Per-leader tweak to a follower's settings. `"leader_overrides": {"0xWhale...": {"size_pct": 50}}` means "copy this one leader at 50% size, keep everything else the same". |
+| **Delivery** | One webhook POST. Every delivery has a stable `event_id` and a sequence number. Retried up to 5 times; failures land in your DLQ. |
+
+## REST endpoints
+
+All paths below are under `https://api.polynode.dev/copytrade`.
+
+### Config — the tenant-level settings
+
+| Method | Path | Body | Purpose |
+|---|---|---|---|
+| `POST` | `/config` | `{webhook_url, builder?}` | Create or upsert your tenant config. Returns a fresh `webhook_secret` (shown **once** — save it). |
+| `GET` | `/config` | — | Read your current config. `webhook_secret` is always `null` on reads; rotate if you lost it. |
+| `POST` | `/config/rotate-secret` | — | Generate a new `webhook_secret`. Old secret stays valid for 1 hour so in-flight retries don't break. |
+| `PATCH` | `/config/fee-escrow` | `{enabled: bool, contract?}` | Turn on/off fee-escrow at the tenant level. See [Fee escrow](#fee-escrow-optional). |
+
+### Followers — your end users
+
+| Method | Path | Body | Purpose |
+|---|---|---|---|
+| `POST` | `/followers` | `{wallet, signer, sig_type, settings}` | Register a follower. |
+| `GET` | `/followers` | — | List all your followers. |
+| `GET` | `/followers/{wallet}` | — | Get one. 404 if not yours. |
+| `PATCH` | `/followers/{wallet}` | partial `{settings, active}` | Update settings or pause (`active: false`). |
+| `DELETE` | `/followers/{wallet}` | — | Remove follower + cascade delete their leaders and positions. |
+| `POST` | `/followers/{wallet}/positions/{token_id}/reset` | — | Clear a tracked position. Use when your user manually closed via a different path and you want TP/SL to stop firing. |
+
+### Leaders — who each follower copies
+
+| Method | Path | Body | Purpose |
+|---|---|---|---|
+| `POST` | `/followers/{wallet}/leaders` | `{leaders: [addr,...], overrides?}` | Attach leaders to a follower. |
+| `GET` | `/followers/{wallet}/leaders` | — | List this follower's leaders. |
+| `DELETE` | `/followers/{wallet}/leaders` | `{leaders: [addr,...]}` | Detach leaders. |
+
+### Deliveries — observability
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/deliveries/recent?limit=50` | Last hour of successful webhook deliveries (tenant-scoped). |
+| `GET` | `/deliveries/failed?limit=50` | Your dead-letter queue. Capped at 10 K entries per tenant. |
+| `POST` | `/deliveries/{event_id}/replay` | Replay a failed delivery. Same `event_id`, fresh HMAC signed with your current secret. |
+
+### Status
+
+| Method | Path | Returns |
+|---|---|---|
+| `GET` | `/status` | `{ok, followers_count, leaders_count, ws_connected, events_last_hour, dlq_size, schema_version, supports_fee_escrow, uptime_secs}` |
+
+## Follower settings
+
+The `settings` JSON on a follower controls how we size, price, and filter copies.
+
+```jsonc
+{
+  "size_mode": "percentage",   // "percentage" | "fixed_pusd" | "match_leader"
+  "size_pct": 100,             // for percentage: 100 = 1:1, 50 = half-size
+  "size_pusd": null,           // for fixed_pusd: copy size in pUSD
+  "min_trade_pusd": 1.0,       // skip copies below this
+  "max_trade_pusd": 10000.0,   // clamp copies above this
+  "slippage_bps": 50,          // 50 = 0.5% worse than leader's price
+  "copy_buys": true,           // copy the leader's opens
+  "copy_sells": true,          // copy the leader's closes
+  "copy_as": ["taker", "maker"], // taker = urgent (IOC), maker = post (GTC)
+  "token_whitelist": null,     // array of token_ids, or null for all
+  "token_blacklist": null,
+  "tp_pct": null,              // take-profit as a % of entry price (e.g. 20 = +20%)
+  "tp_price": null,            // absolute price threshold
+  "sl_pct": null,              // stop-loss as a % of entry
+  "sl_price": null,
+  "tpsl_enabled": true,
+  "max_trades_per_hour": null, // rate limit per follower (enforcement landing soon)
+
+  // Optional fee-escrow config (see Fee Escrow section):
+  "fee_bps": 0,
+  "fee_affiliate_wallet": null,
+  "fee_affiliate_share_bps": 0,
+
+  // Per-leader overrides: apply to one specific leader only
+  "leader_overrides": {
+    "0xWhale0000000000000000000000000000000000": {
+      "size_pct": 50,
+      "copy_sells": false
+    }
+  }
+}
+```
+
+**`size_mode`:**
+- `percentage` — size the copy at `size_pct`% of the leader's order size.
+- `fixed_pusd` — always copy at `size_pusd` pUSD regardless of leader size.
+- `match_leader` — exactly match the leader's size (subject to follower collateral).
+
+**`slippage_bps`:** the copy's price is set at the leader's fill price ± your slippage tolerance. Lower slippage = more protection but more skipped copies when the book moves.
+
+## Webhook contract
+
+Whenever your tenant has a copy to execute, we POST to your `webhook_url`.
+
+### Headers
+
+```http
+Content-Type: application/json
+X-PolyNode-Signature: sha256=<hex HMAC of raw body, webhook_secret>
+X-PolyNode-Event-Id: <stable event id>
+X-PolyNode-Delivery: <attempt number, 1..5>
+X-PolyNode-Sequence: <monotonic per-follower sequence>
+```
+
+**Always verify `X-PolyNode-Signature`** before processing. During a secret rotation, your code must accept HMACs computed with either your current or your previous secret for up to 1 hour.
+
+Example verification (Node.js):
+
+```js
+import crypto from "node:crypto";
+
+function verify(rawBody, header, secret) {
+  const expected = "sha256=" + crypto
+    .createHmac("sha256", secret)
+    .update(rawBody)
+    .digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(header), Buffer.from(expected));
+}
+```
+
+Python:
+
+```python
+import hmac, hashlib
+
+def verify(raw_body: bytes, header: str, secret: str) -> bool:
+    expected = "sha256=" + hmac.new(
+        secret.encode(), raw_body, hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(header, expected)
+```
+
+### Body
+
+```jsonc
+{
+  "event_id": "sha256(tx_hash || follower_wallet || fill_index)",
+  "event_type": "copy_order" | "tp_trigger" | "sl_trigger",
+  "sequence_number": 1234,
+  "timestamp": 1777000000,
+  "leader_wallet": "0x...",
+
+  "leader_trade": {
+    "tx_hash": "0x...",
+    "token_id": "...",
+    "side": "BUY" | "SELL",
+    "price": 0.35,
+    "size": 100,
+    "market_title": "...",
+    "outcome": "Yes" | "No",
+    "condition_id": "0x...",
+    "neg_risk": false,
+    "exchange_address": "0xe111...",
+    "source": "taker" | "maker",
+    "exchange_version": "v2"
+  },
+
+  "follower_payload": {
+    "follower_wallet": "0xSafe...",
+    "follower_signer": "0xEOA...",
+
+    "v2_order": {
+      "salt": "...",
+      "maker": "0xSafe...",
+      "signer": "0xEOA...",
+      "tokenId": "...",
+      "makerAmount": "...",
+      "takerAmount": "...",
+      "side": 0,              // 0 = BUY, 1 = SELL
+      "signatureType": 2,
+      "timestamp": 1777000000,
+      "metadata": "0x0000...",
+      "builder": "0x0000..."  // your builder bytes32 from config.builder
+    },
+
+    "v2_typed_data": {
+      "domain": {...},
+      "types": {...},
+      "message": {...},
+      "primaryType": "Order"
+    },
+    "v2_order_digest": "0x...",
+    "verifying_contract": "0xe111...",
+    "clob_host": "clob-v2.polymarket.com",
+
+    "copy_size_pusd": 2.5,
+    "copy_size_tokens": 7.143,
+    "copy_price": 0.3535
+
+    // Present ONLY when fee escrow fires for this event:
+    //   "fee_auth": { ... },
+    //   "submit_target": "cosigner",
+    //   "submit_url": "https://trade.polynode.dev/submit"
+  }
+}
+```
+
+### What your backend does with this
+
+1. **Verify the HMAC.** If it doesn't match, drop the event and 200 OK (don't leak that verification failed).
+2. **Look up the follower in your system** by `follower_payload.follower_wallet`.
+3. **Ask the user to sign `v2_typed_data`.** This is standard EIP-712 via Privy / ethers / viem / your wallet of choice. The user's signer EOA signs.
+4. **Submit to Polymarket.** If `fee_auth` is absent, POST to `clob-v2.polymarket.com/order`. If `fee_auth` is present, also have the user sign the `fee_auth.typed_data`, then POST the bundled signed payload to `submit_url`.
+5. **Return 2xx within 5 seconds.** We mark the delivery successful. If we don't see 2xx in that window, we retry.
+
+### Delivery semantics
+
+- Up to 5 attempts with backoff `1s / 5s / 15s / 30s / 60s`.
+- 2xx within 5s → success, dropped from the retry queue.
+- After 5 failures → the event goes to your DLQ (`GET /deliveries/failed`). You can fix your endpoint and `POST /deliveries/{event_id}/replay`.
+- The same `event_id` is used on every retry — dedupe on it.
+- `sequence_number` is monotonic **per follower** — buffer and process in order. Gaps mean you missed a delivery.
+
+## Fee escrow (optional)
+
+<Note>
+**This is your platform's fee, not Polymarket's.** Polymarket may also charge its own protocol fee or builder rev share — those are separate and always take effect regardless of this setting. Read [Fee Escrow](/guides/fee-escrow) for the full explanation.
+</Note>
+
+If you want to monetize with a per-trade fee — optionally split with affiliates — enable fee escrow:
+
+```bash
+# 1. Turn on fee escrow at the tenant level
+curl -X PATCH https://api.polynode.dev/copytrade/config/fee-escrow \
+  -H "Authorization: Bearer $PN_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": true}'
+
+# 2. On a follower, set fee_bps (and optionally affiliate info)
+curl -X PATCH https://api.polynode.dev/copytrade/followers/0xSafe... \
+  -H "Authorization: Bearer $PN_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"settings": {
+    "fee_bps": 50,
+    "fee_affiliate_wallet": "0xAffiliate...",
+    "fee_affiliate_share_bps": 3000
+  }}'
+```
+
+When a fee would be charged for an event, the webhook gets an extra block:
+
+```jsonc
+{
+  "follower_payload": {
+    "...": "...",
+    "fee_auth": {
+      "escrow_order_id": "0x...",
+      "payer": "0xSafe...",
+      "signer": "0xEOA...",
+      "fee_amount_raw": "50000",        // 6-decimal pUSD
+      "fee_amount_pusd": 0.05,
+      "deadline": 1777000600,
+      "nonce": 12,
+      "affiliate": "0xAffiliate...",
+      "affiliate_share_bps": 3000,
+      "escrow_contract": "0x3A43D88ef8Aae4dF5a50B3abf67122CAAeEF7c9F",
+      "typed_data": {...},              // EIP-712, V2 domain
+      "digest": "0x..."
+    },
+    "submit_target": "cosigner",
+    "submit_url": "https://trade.polynode.dev/submit"
+  }
+}
+```
+
+**Matrix:**
+
+| Tenant fee-escrow | Follower `fee_bps` | `fee_auth` on webhook | Submit path |
+|---|---|---|---|
+| off | any | not present | direct to `clob-v2.polymarket.com/order` |
+| on | `0` | not present | direct to `clob-v2.polymarket.com/order` |
+| on | `> 0` | present | bundled to `submit_url` (our cosigner) |
+
+When `fee_auth` is present, your user signs **two** typed-data objects (the V2 order AND the fee auth), you bundle them, and POST to `submit_url`. The cosigner pulls the fee into escrow, forwards the signed order to Polymarket, and on fill/cancel handles the split or refund automatically.
+
+## Errors
+
+Standard HTTP status codes apply. Common ones:
+
+| Code | Meaning |
+|---|---|
+| `400` | Bad request (malformed JSON, invalid wallet format, missing required field). |
+| `401` | Missing or invalid API key. |
+| `402` | Free-tier key. Upgrade to Starter or above. |
+| `404` | Resource not under your tenant, or doesn't exist. |
+| `409` | Wallet conflict (a follower with this `wallet` is already registered under a different tenant). |
+| `429` | Rate limit hit. See `x-ratelimit-*` headers. |
+| `5xx` | Transient. Retry with backoff. |
+
+## Non-goals / what we don't do
+
+- **We don't custody anything.** We never hold your users' keys, funds, or signed orders. Every signature happens on your side.
+- **We don't submit orders for you** (unless fee escrow is on, in which case we cosign + submit via our cosigner — still, we never see the user's signer key).
+- **We don't guarantee fills.** We generate an order with a sensible price + size; whether it fills depends on the V2 CLOB book. If the book moves past your `slippage_bps`, the order won't fill; that's intended.
+- **No V1 support.** This API is V2-only, aligned with Polymarket's 2026-04-28 V2 launch.
+
+## Roadmap
+
+- `max_trades_per_hour` enforcement (currently accepted as config, not yet enforced)
+- `systemd` + graceful shutdown (currently a dev process, small retry loss possible on restart)
+- Additional webhook event types (pending cancellations, resync notifications)
+- Self-serve dashboard for inspecting followers / leaders / deliveries
+
+## Questions
+
+Email `josh@polynode.dev` or book a slot at [cal.com/bosh-jerns-vozdcd/15min](https://cal.com/bosh-jerns-vozdcd/15min). We're actively supporting beta integrations.
