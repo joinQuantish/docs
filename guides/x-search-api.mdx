@@ -1,0 +1,207 @@
+---
+title: "X Search API"
+sidebarTitle: "X Search API"
+description: "Beta endpoint for live X (Twitter) search and account-timeline data. Drop social context next to your prediction market data without building your own X integration."
+icon: "magnifying-glass"
+---
+
+<Note>
+**Beta.** Response shape and quota numbers are stable. We may add optional fields, but no breaking changes. Email `josh@polynode.dev` if you're building something on top of this and need direct support.
+</Note>
+
+## What this is
+
+Two read-only endpoints for live X data:
+
+- **Search** any text across X. Full operator support (`from:`, `since:`, `min_faves:`, hashtags, exact phrases).
+- **Account timeline** for any public X handle — most-recent tweets, replies, retweets, and quoted content.
+
+Most teams already using polynode for prediction-market data also want to know what's being said on X about a market, an event, or a specific account. Setting up your own X feed is rate-limit hell and a maintenance treadmill — we just do it for you, and you query it like any other polynode endpoint.
+
+## Who this is for
+
+- Prediction-market dashboards layering social sentiment over on-chain data.
+- AI agents that need to factor live X posts into their reasoning about an event.
+- Research and analytics products that want clean JSON without building their own X integration.
+
+## Base URL
+
+```
+https://api.polynode.dev/v2/x
+```
+
+## Authentication
+
+Pass your polynode API key on every request — either header works:
+
+```http
+x-api-key: pn_live_...
+Authorization: Bearer pn_live_...
+```
+
+- Free-tier keys are rejected with `402 Payment Required`. Paid plans only.
+- Hard rate limit: **1 request per second per key**. Two requests on the same key in the same second → the second one gets `429`.
+- Each successful response (HTTP 200) increments your monthly quota counter. Rejected requests do not.
+
+## Tier quotas
+
+| Tier | Searches per month |
+|---|---|
+| starter | 500 |
+| growth | 1,000 |
+| pro | 1,500 |
+| enterprise | 5,000 |
+
+Quotas reset midnight UTC on the 1st of each month. Track your remaining usage in real time via response headers:
+
+```
+X-Quota-Used: 47
+X-Quota-Limit: 500
+```
+
+## Endpoints
+
+### `GET /v2/x/search`
+
+Search recent X posts by query.
+
+**Query params:**
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `q` | string | required | The search string. URL-encode operators and special characters. |
+| `max` | int | `20` | Number of tweets to return. Min `1`, max `50`. |
+
+**Operator examples:**
+
+```
+q=polymarket
+q=from:Polymarket
+q=election odds since:2026-04-20
+q=#prediction min_faves:100
+q="exact phrase" lang:en
+q=trump until:2026-05-01
+```
+
+**Example request:**
+
+```bash
+curl -H "x-api-key: $PN_KEY" \
+  "https://api.polynode.dev/v2/x/search?q=polymarket&max=5"
+```
+
+**Example response:**
+
+```json
+{
+  "query": "polymarket",
+  "tweets": [
+    {
+      "id": "2048234907965526306",
+      "text": "Polymarket is showing 65% on Trump for 2024",
+      "created_at": "Sun Apr 26 03:21:58 +0000 2026",
+      "public_metrics": {
+        "retweet_count": 244,
+        "reply_count": 38,
+        "like_count": 1450,
+        "quote_count": 22,
+        "bookmark_count": 87,
+        "impression_count": "184302"
+      },
+      "author": {
+        "id": "987654321",
+        "name": "Polymarket",
+        "username": "Polymarket"
+      },
+      "conversation_id": "2048234907965526306",
+      "urls": [
+        {
+          "url": "https://t.co/...",
+          "expanded_url": "https://polymarket.com/event/...",
+          "display_url": "polymarket.com/event/...",
+          "title": "Will Trump win 2024?",
+          "description": "..."
+        }
+      ],
+      "media": [
+        { "type": "photo", "url": "https://pbs.twimg.com/media/...", "expanded_url": "..." }
+      ]
+    }
+  ],
+  "result_count": 5,
+  "fetched_at": "2026-04-26T03:35:00Z"
+}
+```
+
+### `GET /v2/x/user/{handle}/tweets`
+
+Get the latest tweets from a specific X account's timeline.
+
+**Path params:**
+
+| Param | Type | Notes |
+|---|---|---|
+| `handle` | string | The X handle without `@`. Letters, digits, underscore only. |
+
+**Query params:**
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `max` | int | `30` | Number of tweets. Min `1`, max `50`. |
+
+**Example request:**
+
+```bash
+curl -H "x-api-key: $PN_KEY" \
+  "https://api.polynode.dev/v2/x/user/Polymarket/tweets?max=10"
+```
+
+The response shape is identical to `/v2/x/search`, except the top-level field is `handle` instead of `query`.
+
+## Errors
+
+| HTTP | Meaning |
+|---|---|
+| 400 / 422 | Invalid params: empty `q`, `max` out of range, or handle contains invalid characters. |
+| 401 | Missing or invalid API key. |
+| 402 | Free-tier key; this endpoint requires a paid plan. |
+| 404 | Handle does not exist (timeline endpoint only). |
+| 429 | Either the 1 req/sec rate cap, or your monthly quota is exhausted. Check `X-Quota-Used` / `X-Quota-Limit`. |
+| 502 | Transient upstream issue. Retry after a few seconds. We're alerted automatically. |
+
+## Tweet shape reference
+
+Every tweet object can include these fields. Optional fields are only present when relevant.
+
+| Field | Type | Always present? | Notes |
+|---|---|---|---|
+| `id` | string | yes | Tweet's numeric ID as a string. |
+| `text` | string | yes | The tweet body. `t.co` shortlinks are pre-expanded to their final destination URLs. |
+| `created_at` | string | yes | X's native timestamp format (e.g. `Sun Apr 26 03:21:58 +0000 2026`). |
+| `public_metrics` | object | yes | Counters: `retweet_count`, `reply_count`, `like_count`, `quote_count`, `bookmark_count`, `impression_count`. |
+| `author` | object | yes | `{ id, name, username }`. |
+| `conversation_id` | string | yes | The root tweet of the thread this tweet belongs to. |
+| `urls` | array | optional | Embedded link metadata: `{ url, expanded_url, display_url, title, description }`. |
+| `media` | array | optional | Photos, videos, GIFs: `{ type, url, expanded_url }` (videos include `video_url` for the highest-bitrate MP4). |
+| `card` | object | optional | Link preview cards: `{ name, url, title, description, domain, thumbnail_url }`. |
+| `quoted_tweet` | object | optional | Full tweet object of any quoted post (recursive). |
+| `article` | string | optional | Long-form X post content rendered as Markdown. |
+
+## Quirks worth knowing
+
+- **`created_at` is X's native string format**, not ISO 8601. Parse with `new Date(tweet.created_at)` in JS or `dateutil.parser.parse` in Python.
+- **`impression_count` is a string**, not an int — X returns it as a string and we pass it through verbatim. Cast on your side if you need a number.
+- **`text` is post-expansion.** All `t.co` shortlinks are already replaced with their target URLs. The `urls` array also gives you the full expanded metadata (title, description) per link, which is the easiest way to surface link previews in your UI.
+- **No pagination cursor** in the beta. The `max` cap is 50 per call. To go beyond that, run multiple queries narrowed with `since:` / `until:` operators.
+- **Search prefers recency.** Live results are ranked newest-first. Combine with `min_faves:N` or `min_retweets:N` if you want to floor on engagement.
+
+## FAQ
+
+**Why is search slower than timeline?**
+Search and timeline take different paths. Timeline is typically ~1-2 seconds. Search is typically 5-7 seconds because the underlying X data path is heavier. This is normal and stable.
+
+**Can I get my own quota lifted?**
+Yes — email `josh@polynode.dev` if you're hitting the cap and want a custom limit.
+
+**Will the response shape change?**
+We may add optional fields (e.g. new metrics X exposes). We will not rename or remove existing fields without versioning the endpoint. Code defensively against optional fields, never against missing ones.

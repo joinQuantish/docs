@@ -7,6 +7,19 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-26 — X Search API beta
+
+New paid endpoints for live X (Twitter) search and account-timeline data. Aimed at teams adding social context next to their prediction-market data — sentiment around a market, replies on a leader's post, what's being said about an event.
+
+- **`GET /v2/x/search?q=…&max=…`** — search by query, with full operator support (`from:`, `since:`, `min_faves:`, hashtags, `lang:`).
+- **`GET /v2/x/user/{handle}/tweets?max=…`** — most-recent tweets from any public X account.
+
+Available on starter, growth, pro, and enterprise tiers with monthly quotas of 500 / 1,000 / 1,500 / 5,000. Hard rate cap of 1 request per second per key. Track usage live via `X-Quota-Used` / `X-Quota-Limit` response headers.
+
+See the [X Search API guide](/guides/x-search-api) for the full schema and examples.
+
+---
+
 ## 2026-04-25 — Pricing section retired: candles deduplicated, "Market Card" introduced
 
 The "Pricing" sidebar section has been removed. It contained two endpoints:

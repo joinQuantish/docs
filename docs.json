@@ -75,6 +75,7 @@
               "guides/rate-limits",
               "guides/fee-escrow",
               "guides/copy-trading-api",
+              "guides/x-search-api",
               "guides/trade-index",
               "guides/copy-trading"
             ]
