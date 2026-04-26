@@ -102,7 +102,8 @@ You can combine market filters with `wallet` to find a specific wallet's trades 
 | `amount_usd` | number | Trade size in USD |
 | `fee_usd` | number | Fee paid in USD |
 | `shares` | number | Number of outcome shares traded |
-| `side` | string | `"maker"` or `"taker"` — only present when filtering by `wallet` |
+| `side` | string | Exchange role: `"maker"` or `"taker"`. Only present when filtering by `wallet`. |
+| `direction` | string | Trader intent: `"BUY"` or `"SELL"` from the queried wallet's perspective. `BUY` when the wallet contributed USDC and received outcome tokens; `SELL` when the wallet contributed outcome tokens and received USDC. Only present when filtering by `wallet` (no anchor wallet ⇒ no direction). Independent axis from `side` — they answer different questions and both are populated together when applicable. |
 | `market` | string | Market question text |
 | `market_slug` | string | Market URL slug |
 | `outcome` | string | Outcome label (e.g. "Yes", "No") |

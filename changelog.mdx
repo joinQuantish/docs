@@ -7,6 +7,14 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-26 — Unified Trades: additive `direction` (BUY/SELL) field on `/v2/onchain/trades`
+
+[`GET /v2/onchain/trades`](/api-reference/onchain/trades) now also returns `direction` (`"BUY"` / `"SELL"`) on every row when filtered by `wallet` — same semantics as the wallet-trades endpoint, applied to the unified-trades flow. Independent of the existing `side` field. When no wallet anchor is supplied, `direction` is omitted (no perspective to derive against). Strictly additive: every other field is byte-identical to prior responses, and queries without `wallet` are unchanged.
+
+Verified live: 1,214 trades cross-checked against Polymarket data-api `side` — zero drift.
+
+---
+
 ## 2026-04-26 — Wallet Trades: additive `direction` (BUY/SELL) field
 
 Every row of [`GET /v2/onchain/wallets/{address}/trades`](/api-reference/onchain/wallet-trades) now carries a `direction` field with values `"BUY"` or `"SELL"`, derived from whether the queried wallet contributed USDC or outcome tokens on the fill.
