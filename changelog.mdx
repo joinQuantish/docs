@@ -7,6 +7,24 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-26 — Wallet Positions: `tag_slugs` field + `?tag_slug=` filter
+
+Every row of [`GET /v2/wallets/{address}/positions/onchain`](/api-reference/wallets/onchain-positions) now includes a `tag_slugs` array carrying the Polymarket event-level tags that apply to that market — typical values like `nba`, `basketball`, `sports`, `politics`, `crypto`, `fed`, `2025-predictions`, plus event-specific slugs like `2026-fifa-world-cup-winner-595`. Order is most-specific to most-general.
+
+A new optional `?tag_slug=<slug>` query parameter filters the response to only positions whose market carries that tag. Composes with `since` / `until`, so you can ask for e.g. "all NBA positions traded in the last 30 days" in one request:
+
+```bash
+SINCE=$(( $(date -u +%s) - 86400 * 30 ))
+curl "https://api.polynode.dev/v2/wallets/0x.../positions/onchain?tag_slug=nba&since=$SINCE" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+When the filter is supplied, aggregates recompute over the filtered set and the response gains `filtered: true` plus `applied_filters: { since, until, tag_slug }` so the behavior is self-documenting. Strictly additive — when no filter param is supplied, the response shape is byte-identical to before.
+
+Coverage is effectively universal: tags are populated on every event Polymarket indexes (sampled empirically at 100% in our backfill audit), so any non-test market should return a populated `tag_slugs` array.
+
+---
+
 ## 2026-04-26 — Unified Trades: additive `direction` (BUY/SELL) field on `/v2/onchain/trades`
 
 [`GET /v2/onchain/trades`](/api-reference/onchain/trades) now also returns `direction` (`"BUY"` / `"SELL"`) on every row when filtered by `wallet` — same semantics as the wallet-trades endpoint, applied to the unified-trades flow. Independent of the existing `side` field. When no wallet anchor is supplied, `direction` is omitted (no perspective to derive against). Strictly additive: every other field is byte-identical to prior responses, and queries without `wallet` are unchanged.

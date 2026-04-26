@@ -19,8 +19,9 @@ GET /v2/wallets/{address}/positions/onchain
 | `address` | path | Wallet address (0x-prefixed, 40 hex chars) |
 | `since` | query (optional) | Unix seconds. Drop positions whose `last_trade_at` is before this timestamp. |
 | `until` | query (optional) | Unix seconds. Drop positions whose `last_trade_at` is after this timestamp. |
+| `tag_slug` | query (optional) | Keep only positions whose market carries this Polymarket event tag (e.g. `nba`, `politics`, `crypto`, `2026-fifa-world-cup-winner-595`). Matches against the per-market `tag_slugs` array. See [Filtering by tag](#filtering-by-tag). |
 
-`since` and `until` are **opt-in**. When neither is supplied, the response is identical to a request with no parameters at all — same shape, same aggregates over the full position set. When either is supplied, the response is filtered and aggregates are recomputed (see [Filtering by activity window](#filtering-by-activity-window)).
+`since`, `until`, and `tag_slug` are all **opt-in**. When none are supplied, the response is identical to a request with no parameters at all — same shape, same aggregates over the full position set. When any is supplied, positions are filtered and aggregates are recomputed (see [Filtering](#filtering-by-activity-window)).
 
 ## Response
 
@@ -89,6 +90,7 @@ GET /v2/wallets/{address}/positions/onchain
 | `positions[].last_trade_at` | number \| null | Unix seconds. Latest fill (maker or taker) on this token across V1 + V2 exchanges. `null` when polynode has no fill history for the token (e.g. positions acquired purely via splits/merges or NegRisk conversion with no later trade). |
 | `positions[].closed_at` | number \| null | Unix seconds. Latest moment this wallet redeemed any outcome of this market's `condition_id` for collateral. `null` when the wallet has not redeemed (positions sold to zero before resolution, or open positions, or wins held but not yet redeemed). |
 | `positions[].resolved_at` | number \| null | Unix seconds. Moment the market was resolved on-chain (when payouts became redeemable). `null` for markets that resolved before polynode began tracking, or for markets that have not yet resolved. Recent markets are fully covered. |
+| `positions[].tag_slugs` | string[] \| null | Polymarket event-level tags applied to this market. Examples: `["nba","basketball","sports","all"]` for an NBA game market, `["crypto","up-or-down","recurring","all"]` for a 5-min crypto market. Order is most-specific → most-general. Tags live on the parent event (markets sharing an `event_slug` share the same `tag_slugs`). `null` only on the rare event that doesn't carry any tag or hasn't been ingested yet. |
 
 ## Distinguishing the three timestamp fields
 
@@ -140,8 +142,52 @@ curl "https://api.polynode.dev/v2/wallets/0x.../positions/onchain?since=17356896
 ```
 
 <Note>
-**The default response is unaffected by these new params.** When you call this endpoint with no `since`/`until`, the response shape and every aggregate is identical to what you got before. The `filtered` and `applied_filters` keys are only added when you opt in.
+**The default response is unaffected by these new params.** When you call this endpoint with no `since`/`until`/`tag_slug`, the response shape and every aggregate is identical to what you got before. The `filtered` and `applied_filters` keys are only added when you opt in.
 </Note>
+
+## Filtering by tag
+
+`tag_slug` is an optional query parameter that keeps only positions whose market carries the matching Polymarket event tag.
+
+Tags come from Polymarket's event taxonomy — typical values include `nba`, `basketball`, `sports`, `politics`, `crypto`, `fed`, `world`, `2025-predictions`, and event-specific slugs like `2026-fifa-world-cup-winner-595`. Each market inherits the tag set of its parent event, so all 32 markets under "Will X win the World Cup?" share the same tag list. The full set is visible in the per-row `tag_slugs` array on every response.
+
+### Behavior
+
+- Match is case-sensitive and exact (`?tag_slug=nba` matches markets whose `tag_slugs` array contains `"nba"`).
+- Positions with `tag_slugs = null` are dropped under an active filter — same logic as `last_trade_at` for `since`/`until` (cannot match what we don't know).
+- Aggregates recompute over the filtered set.
+- `applied_filters.tag_slug` echoes the value back so the response is self-documenting.
+- Combine with `since` / `until` to get e.g. "all NBA positions in the last 30 days" — all three filters AND together.
+
+### Examples
+
+#### All NBA positions for a wallet
+
+```bash
+curl "https://api.polynode.dev/v2/wallets/0x.../positions/onchain?tag_slug=nba" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+#### All positions tagged to a specific event
+
+```bash
+curl "https://api.polynode.dev/v2/wallets/0x.../positions/onchain?tag_slug=2026-fifa-world-cup-winner-595" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+This collapses across every children market under the FIFA World Cup winner event.
+
+#### Crypto positions in the last 90 days
+
+```bash
+SINCE=$(( $(date -u +%s) - 86400 * 90 ))
+curl "https://api.polynode.dev/v2/wallets/0x.../positions/onchain?tag_slug=crypto&since=$SINCE" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Discovering available tags
+
+The simplest discovery path is to fetch a wallet's positions without a filter, then read the union of `tag_slugs` across the response — that's the tag namespace the wallet has actually traded in. For a global tag list, scan a few high-volume markets via `/v2/onchain/positions` and collect distinct `tag_slugs`.
 
 ## How `realized_pnl` Works
 
