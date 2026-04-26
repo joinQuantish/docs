@@ -1,0 +1,187 @@
+---
+title: "Subscribing & Filters"
+sidebarTitle: "Subscribing"
+description: "How to subscribe and filter the Sports WebSocket stream."
+---
+
+The Sports WebSocket supports a single subscription type (`sports_scores`) with multiple filter dimensions you can combine. Filters are applied server-side, so only matching events leave our edge.
+
+## Subscribe message format
+
+```json
+{
+  "action": "subscribe",
+  "type": "sports_scores",
+  "filters": {
+    "sport": ["tennis", "basketball"],
+    "league": ["nba", "atp"],
+    "game_id": [5320273],
+    "status": ["inprogress"],
+    "tournament": ["challenger busan"]
+  },
+  "snapshot": true
+}
+```
+
+Every field except `action` and `type` is optional. Omit them to subscribe to everything.
+
+## Filter dimensions
+
+| Field | Type | Notes |
+|---|---|---|
+| `sport` (or `sports`) | `string[]` | Match by sport category. Examples: `tennis`, `basketball`, `football`, `soccer`, `hockey`, `baseball`, `mma`, `cricket`, `lacrosse`, `chess`, `mma`. Case-insensitive. |
+| `league` (or `leagues`) | `string[]` | Match by league code. Examples: `nba`, `wnba`, `nfl`, `mlb`, `nhl`, `epl`, `laliga`, `bundesliga`, `atp`, `wta`, `challenger`, `ufc`, `lol`, `cs2`, `dota2`, `valorant`. Case-insensitive. |
+| `game_id` (or `game_ids`) | `number[]` | Subscribe to specific games by ID. |
+| `status` (or `statuses`) | `string[]` | Filter by game state. Common values: `inprogress`, `scheduled`, `final`. Case-insensitive. |
+| `tournament` (or `tournaments`) | `string[]` | Match by tournament name (lowercased). |
+| `snapshot` | `boolean` | Default `true`. When `true`, you receive the current state of every matching live game immediately on subscribe before live updates begin. Set to `false` to skip the backlog and only receive future events. |
+
+Filters within a dimension are OR-matched. Filters across dimensions are AND-matched.
+
+For example:
+```json
+{
+  "filters": {
+    "sport": ["tennis", "basketball"],
+    "status": ["inprogress"]
+  }
+}
+```
+matches games that are (tennis OR basketball) AND (currently in progress).
+
+## Subscription lifecycle
+
+<Steps>
+  <Step title="Send subscribe message">
+    Submit a subscribe action. The server allocates a `subscription_id` and acknowledges with a `subscribed` message echoing your resolved filters.
+
+    ```json
+    {
+      "type": "subscribed",
+      "subscription_id": "ab12cd34-...:55ee66ff-...",
+      "subscription_type": "sports_scores",
+      "filters": {
+        "sports": ["tennis"],
+        "leagues": [],
+        "game_ids": [],
+        "statuses": [],
+        "tournaments": []
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Receive snapshot backlog (optional)">
+    If `snapshot: true` (default), the server walks its current cache of live games and forwards each matching one as a `score_update` message. When the backlog is fully sent, you receive a `snapshot_complete` message:
+
+    ```json
+    {
+      "type": "snapshot_complete",
+      "subscription_id": "ab12cd34-...",
+      "events_replayed": 14
+    }
+    ```
+  </Step>
+
+  <Step title="Receive live updates">
+    From here on, every score update for matching games is pushed to your connection in real time. See [Event Format](/websocket/sports/event-format) for the full payload shape.
+  </Step>
+
+  <Step title="Unsubscribe (optional)">
+    To stop a specific subscription:
+    ```json
+    { "action": "unsubscribe", "subscription_id": "ab12cd34-..." }
+    ```
+
+    To stop all subscriptions on the connection:
+    ```json
+    { "action": "unsubscribe" }
+    ```
+  </Step>
+</Steps>
+
+## Multiple subscriptions on one connection
+
+You can register multiple subscribe messages on a single WebSocket connection. Each call returns its own `subscription_id`.
+
+```json
+{ "action": "subscribe", "type": "sports_scores", "filters": { "sport": ["tennis"] } }
+{ "action": "subscribe", "type": "sports_scores", "filters": { "league": ["nba"] } }
+```
+
+You'll receive matching events for either subscription on the same socket. Use `subscription_id` to disambiguate when needed.
+
+## Combining filters
+
+<Tabs>
+  <Tab title="Just live tennis">
+    ```json
+    {
+      "action": "subscribe",
+      "type": "sports_scores",
+      "filters": {
+        "sport": ["tennis"],
+        "status": ["inprogress"]
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="NBA + EPL only">
+    ```json
+    {
+      "action": "subscribe",
+      "type": "sports_scores",
+      "filters": {
+        "league": ["nba", "epl"]
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Single specific game">
+    ```json
+    {
+      "action": "subscribe",
+      "type": "sports_scores",
+      "filters": {
+        "game_id": [5320273]
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Tournament focus">
+    ```json
+    {
+      "action": "subscribe",
+      "type": "sports_scores",
+      "filters": {
+        "tournament": ["challenger busan"]
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="All esports">
+    ```json
+    {
+      "action": "subscribe",
+      "type": "sports_scores",
+      "filters": {
+        "league": ["lol", "cs2", "dota2", "valorant", "r6siege", "codmw"]
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Heartbeats
+
+The server sends a heartbeat every 30 seconds:
+
+```json
+{ "type": "heartbeat", "ts": 1776150744668 }
+```
+
+You don't need to respond, but you can send your own `{"action":"ping"}` at any time and the server will reply `{"type":"pong"}`. Use this for round-trip latency measurement or to verify a connection that's been quiet.
+
+## Reconnection
+
+If the WebSocket disconnects, reconnect with the same key and re-send your subscribe messages. Always include `snapshot: true` (the default) on reconnect so you immediately catch up on any events you missed during the disconnect.

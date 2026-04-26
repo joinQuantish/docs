@@ -1,0 +1,147 @@
+---
+title: "Sports Scores WebSocket"
+sidebarTitle: "Overview"
+description: "Real-time sports and esports score updates over a single WebSocket connection."
+---
+
+The polynode Sports WebSocket streams live game state for every sport polynode covers: traditional sports, esports, and niche tournaments. One connection, all sports, server-side filtering.
+
+<CardGroup cols={2}>
+  <Card title="One connection, all sports" icon="bolt">
+    Tennis, basketball, football, soccer, hockey, baseball, MMA, esports, cricket — all on a single subscription.
+  </Card>
+  <Card title="Server-side filtering" icon="filter">
+    Filter by sport, league, game ID, status, or tournament before events leave our edge. No client-side waste.
+  </Card>
+  <Card title="Snapshot on connect" icon="layer-group">
+    New subscribers receive the current state of every live game immediately, then continue receiving updates as they happen.
+  </Card>
+  <Card title="Multiple subscriptions per connection" icon="diagram-project">
+    Open one socket, register many filtered subscriptions on it. Each gets its own subscription ID for clean management.
+  </Card>
+</CardGroup>
+
+## Endpoint
+
+```
+wss://sports.polynode.dev/ws?key=pn_live_YOUR_KEY
+```
+
+Authentication is the same `pn_live_*` API key used for the rest of polynode. Connection limits and rate limits follow your tier.
+
+## Quick start
+
+<Steps>
+  <Step title="Connect">
+    <CodeGroup>
+    ```javascript Node.js
+    import { WebSocket } from "ws";
+
+    const ws = new WebSocket("wss://sports.polynode.dev/ws?key=pn_live_YOUR_KEY");
+
+    ws.on("open", () => {
+      ws.send(JSON.stringify({
+        action: "subscribe",
+        type: "sports_scores"
+      }));
+    });
+
+    ws.on("message", (raw) => {
+      const msg = JSON.parse(raw.toString());
+      if (msg.type === "score_update") {
+        const g = msg.data;
+        console.log(`${g.awayTeam} ${g.score} @ ${g.homeTeam} (${g.period}) — ${g.leagueAbbreviation}`);
+      }
+    });
+    ```
+
+    ```python Python
+    import asyncio, json
+    import websockets
+
+    async def stream():
+        url = "wss://sports.polynode.dev/ws?key=pn_live_YOUR_KEY"
+        async with websockets.connect(url) as ws:
+            await ws.send(json.dumps({
+                "action": "subscribe",
+                "type": "sports_scores"
+            }))
+            async for raw in ws:
+                msg = json.loads(raw)
+                if msg.get("type") == "score_update":
+                    g = msg["data"]
+                    print(f"{g['awayTeam']} {g['score']} @ {g['homeTeam']} ({g['period']}) — {g['leagueAbbreviation']}")
+
+    asyncio.run(stream())
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Receive a snapshot of every live game">
+    Immediately after subscribing you'll receive the current state of every live game that matches your filters. Each event arrives as a `score_update` message. A `snapshot_complete` message follows once the backlog is fully delivered.
+  </Step>
+
+  <Step title="Continue receiving updates as games progress">
+    After the snapshot, every score change, period change, or game state transition is pushed to your connection in real time.
+  </Step>
+</Steps>
+
+## Coverage
+
+The Sports WebSocket covers every sport with a live game in our system. Active categories include:
+
+- **Tennis** — ATP, WTA, Challenger, ITF
+- **Basketball** — NBA, WNBA, NCAA, EuroLeague, FIBA, China CBA, Korean KBL, and more
+- **Soccer** — Premier League, La Liga, Serie A, Bundesliga, Ligue 1, MLS, Brazilian Série A, Champions League, World Cup
+- **American Football** — NFL, NCAA
+- **Hockey** — NHL, AHL, KHL, SHL, DEL
+- **Baseball** — MLB, KBO, NPB
+- **Cricket** — IPL, BBL, PSL, T20 Internationals
+- **MMA** — UFC
+- **Esports** — League of Legends, Counter-Strike, Dota 2, Valorant, Mobile Legends, Rainbow Six, Call of Duty
+- **Other** — Chess, lacrosse, table tennis, motorsport
+
+Use the [REST `/games` snapshot](/websocket/sports/games-rest) to see exactly what's currently live.
+
+## Message types you'll receive
+
+| Type | Sent when |
+|---|---|
+| `subscribed` | Acknowledges your subscribe request, echoes the resolved filters |
+| `score_update` | A live game has new state (the main payload — see [event format](/websocket/sports/event-format)) |
+| `snapshot_complete` | Backlog replay is done after a fresh subscribe |
+| `unsubscribed` | Acknowledges your unsubscribe |
+| `heartbeat` | Sent every 30 seconds — used for connection liveness |
+| `pong` | Response to a `{"action":"ping"}` sent by your client |
+| `error` | Sent if something is wrong (invalid filter, etc.) |
+
+## Tier requirements
+
+The Sports WebSocket is included in **Starter tier and above**. Connection limits scale with tier:
+
+| Tier | Concurrent connections |
+|---|---|
+| Free | not included |
+| Starter | 5 |
+| Growth | 25 |
+| Pro | 150 |
+| Enterprise | custom |
+
+See [Pricing](/api-reference/pricing/overview) for details.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Subscribing & Filters" icon="filter" href="/websocket/sports/subscribing">
+    Filter by sport, league, game, status, tournament, and combinations.
+  </Card>
+  <Card title="Event Format" icon="file-code" href="/websocket/sports/event-format">
+    Complete reference for the `score_update` envelope and payload fields.
+  </Card>
+  <Card title="REST /games Snapshot" icon="list" href="/websocket/sports/games-rest">
+    Browse currently-tracked live games before opening a stream.
+  </Card>
+  <Card title="Examples" icon="code" href="/websocket/sports/examples">
+    Working code samples for common patterns.
+  </Card>
+</CardGroup>

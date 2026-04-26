@@ -1,0 +1,121 @@
+---
+title: "GET /games (REST snapshot)"
+sidebarTitle: "REST /games"
+description: "Browse currently-tracked live games via REST before opening a stream."
+---
+
+The Sports endpoint also exposes a REST helper that returns every game currently in our cache. Use it to browse what's live before you decide what to subscribe to over WebSocket.
+
+## Endpoint
+
+```
+GET https://sports.polynode.dev/games
+```
+
+No authentication required for this read-only browse helper.
+
+## Query parameters
+
+| Param | Type | Notes |
+|---|---|---|
+| `sport` | string | Filter by sport category (`tennis`, `basketball`, `soccer`, etc.). Case-insensitive. |
+| `league` | string | Filter by league code (`nba`, `atp`, `epl`, etc.). Case-insensitive. |
+| `status` | string | Filter by game state (`inprogress`, `scheduled`, `final`). Case-insensitive. |
+
+All filters are exact matches and combine with AND. Omit them to return everything.
+
+## Response shape
+
+```json
+{
+  "count": 27,
+  "games": [
+    {
+      "game_id": 5320273,
+      "sport": "tennis",
+      "league": "challenger",
+      "status": "inprogress",
+      "tournament": "challenger busan",
+      "received_at": 1776150744668,
+      "data": {
+        "gameId": 5320273,
+        "leagueAbbreviation": "challenger",
+        "homeTeam": "Soon-Woo Kwon",
+        "awayTeam": "Leandro Riedi",
+        "status": "inprogress",
+        "score": "2-3",
+        "period": "S1",
+        "live": true,
+        "ended": false,
+        "eventState": {
+          "type": "tennis",
+          "tournamentName": "Challenger Busan",
+          "tennisRound": "Round of 32"
+        }
+      }
+    }
+  ]
+}
+```
+
+| Field | Description |
+|---|---|
+| `count` | Number of games matching the filters. |
+| `games[]` | Array of game snapshots. |
+| `games[].game_id` | Stable identifier for use with `game_id` filtering on the WebSocket. |
+| `games[].sport` | Normalized sport category (lowercased). |
+| `games[].league` | Normalized league code (lowercased). |
+| `games[].status` | Game state (`inprogress`, `scheduled`, `final`). |
+| `games[].tournament` | Tournament or competition name (lowercased), if available. |
+| `games[].received_at` | Unix milliseconds when polynode last received an update for this game. |
+| `games[].data` | The full game payload — same shape as a [`score_update.data`](/websocket/sports/event-format#data-payload). |
+
+## Examples
+
+<Tabs>
+  <Tab title="All current games">
+    ```bash
+    curl https://sports.polynode.dev/games
+    ```
+  </Tab>
+  <Tab title="Live tennis only">
+    ```bash
+    curl "https://sports.polynode.dev/games?sport=tennis&status=inprogress"
+    ```
+  </Tab>
+  <Tab title="NBA games (any state)">
+    ```bash
+    curl "https://sports.polynode.dev/games?league=nba"
+    ```
+  </Tab>
+  <Tab title="Live soccer matches">
+    ```bash
+    curl "https://sports.polynode.dev/games?sport=soccer&status=inprogress"
+    ```
+  </Tab>
+</Tabs>
+
+## Typical workflow
+
+<Steps>
+  <Step title="Discover what's live">
+    Hit `GET /games?status=inprogress` to see every currently-live game and pick the ones you care about.
+  </Step>
+  <Step title="Subscribe to specific games">
+    Use the `game_id` values from the response in your WebSocket subscribe payload:
+    ```json
+    {
+      "action": "subscribe",
+      "type": "sports_scores",
+      "filters": { "game_id": [5320273, 9990001] }
+    }
+    ```
+  </Step>
+  <Step title="Receive updates as they happen">
+    Future score, period, and status changes for those games are pushed to your connection in real time.
+  </Step>
+</Steps>
+
+## Caching note
+
+The `/games` cache is updated in real time from the same stream that powers the WebSocket. There's no polling delay — when you call `/games`, you get whatever the server saw most recently from the underlying feed.

@@ -1,0 +1,241 @@
+---
+title: "Event Format"
+sidebarTitle: "Event Format"
+description: "Complete reference for the score_update message envelope and payload."
+---
+
+Every live score update arrives as a `score_update` message with a standard envelope and a `data` payload describing the game.
+
+## Envelope
+
+```json
+{
+  "type": "score_update",
+  "source": "polynode-sports",
+  "received_at": 1776150744668,
+  "data": { ... }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `type` | string | Always `"score_update"` for game state messages. |
+| `source` | string | Always `"polynode-sports"`. Identifies the stream this event came from. Future-proofs the format if we add additional sources. |
+| `received_at` | int | Unix milliseconds when polynode received this update from the underlying feed. |
+| `data` | object | The game state payload (see below). |
+
+## Data payload
+
+Each `data` object describes one game's current state. Field availability varies by sport (a tennis match has `tennisRound`, a soccer match has `period: "2H"`, etc.).
+
+```json
+{
+  "gameId": 5320273,
+  "leagueAbbreviation": "challenger",
+  "homeTeam": "Soon-Woo Kwon",
+  "awayTeam": "Leandro Riedi",
+  "status": "inprogress",
+  "score": "2-3",
+  "period": "S1",
+  "live": true,
+  "ended": false,
+  "eventState": {
+    "type": "tennis",
+    "score": "2-3",
+    "period": "S1",
+    "live": true,
+    "ended": false,
+    "tournamentName": "Challenger Busan",
+    "tennisRound": "Round of 32",
+    "createdAt": "2026-04-14T06:39:32.481280392Z",
+    "updatedAt": "2026-04-14T06:39:32.481280392Z"
+  }
+}
+```
+
+### Common fields (all sports)
+
+| Field | Type | Description |
+|---|---|---|
+| `gameId` | int | Stable unique identifier for this game. Use it for [`game_id` filtering](/websocket/sports/subscribing#filter-dimensions). |
+| `leagueAbbreviation` | string | League code (`nba`, `atp`, `epl`, `challenger`, etc.). Lowercase. |
+| `homeTeam` | string | Display name of the home team or player. |
+| `awayTeam` | string | Display name of the away team or player. |
+| `status` | string | Game state: `inprogress`, `scheduled`, `final`, etc. |
+| `score` | string | Current score in sport-appropriate format (e.g. `"102-99"`, `"2-3"`, `"7-6(7-1), 6-7(4-7), 0-0"`). |
+| `period` | string | Current period or quarter (`Q4`, `S1`, `1H`, `OT`, etc.). |
+| `live` | bool | True if the game is currently in progress. |
+| `ended` | bool | True if the game has finished. |
+| `eventState.type` | string | Sport category (`tennis`, `basketball`, `football`, `soccer`, `hockey`, `baseball`, `mma`, `cricket`, etc.). |
+| `eventState.tournamentName` | string | Tournament or competition name where applicable. |
+| `eventState.updatedAt` | ISO string | When the underlying game state was last updated. |
+
+### Sport-specific fields
+
+Tennis matches include `tennisRound` (e.g. `"Round of 32"`, `"Quarterfinal"`).
+
+NFL games include `turn` for possession indicator.
+
+Other sport-specific fields (period detail, clock, etc.) are passed through verbatim under `eventState` when available.
+
+## Field stability
+
+The `data` payload is forwarded faithfully from the underlying feed. New fields may appear over time as upstream sources add detail. Existing field names are stable.
+
+If you need to detect new fields without breaking, log `Object.keys(msg.data)` for new game IDs and treat unknown fields as additive.
+
+## Other message types on the same connection
+
+These are not score updates but you'll receive them on the same connection:
+
+```json
+// Subscription acknowledgement (one per subscribe call)
+{
+  "type": "subscribed",
+  "subscription_id": "ab12cd34-...",
+  "subscription_type": "sports_scores",
+  "filters": { "sports": ["tennis"], "leagues": [], "game_ids": [], "statuses": [], "tournaments": [] }
+}
+
+// Marks the end of snapshot replay
+{
+  "type": "snapshot_complete",
+  "subscription_id": "ab12cd34-...",
+  "events_replayed": 14
+}
+
+// Server liveness ping (every 30 seconds)
+{
+  "type": "heartbeat",
+  "ts": 1776150744668
+}
+
+// Response to a {"action":"ping"} from the client
+{ "type": "pong" }
+
+// Acknowledges an unsubscribe call
+{ "type": "unsubscribed" }
+
+// Sent when something is wrong with a subscribe or the connection
+{ "type": "error", "message": "..." }
+```
+
+## Sample for each major sport
+
+<Tabs>
+  <Tab title="Tennis">
+    ```json
+    {
+      "type": "score_update",
+      "source": "polynode-sports",
+      "received_at": 1776150744668,
+      "data": {
+        "gameId": 5320273,
+        "leagueAbbreviation": "atp",
+        "homeTeam": "Carlos Alcaraz",
+        "awayTeam": "Daniil Medvedev",
+        "status": "inprogress",
+        "score": "6-4, 3-2",
+        "period": "S2",
+        "live": true,
+        "ended": false,
+        "eventState": {
+          "type": "tennis",
+          "tournamentName": "Madrid Open",
+          "tennisRound": "Quarterfinal"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Basketball">
+    ```json
+    {
+      "type": "score_update",
+      "source": "polynode-sports",
+      "received_at": 1776150744668,
+      "data": {
+        "gameId": 7770001,
+        "leagueAbbreviation": "nba",
+        "homeTeam": "Lakers",
+        "awayTeam": "Celtics",
+        "status": "inprogress",
+        "score": "102-99",
+        "period": "Q4",
+        "live": true,
+        "ended": false,
+        "eventState": { "type": "basketball" }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Soccer">
+    ```json
+    {
+      "type": "score_update",
+      "source": "polynode-sports",
+      "received_at": 1776150744668,
+      "data": {
+        "gameId": 9990001,
+        "leagueAbbreviation": "epl",
+        "homeTeam": "Arsenal",
+        "awayTeam": "Chelsea",
+        "status": "inprogress",
+        "score": "1-0",
+        "period": "2H",
+        "live": true,
+        "ended": false,
+        "eventState": {
+          "type": "soccer",
+          "tournamentName": "Premier League"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Hockey">
+    ```json
+    {
+      "type": "score_update",
+      "source": "polynode-sports",
+      "received_at": 1776150744668,
+      "data": {
+        "gameId": 8800001,
+        "leagueAbbreviation": "nhl",
+        "homeTeam": "Maple Leafs",
+        "awayTeam": "Bruins",
+        "status": "inprogress",
+        "score": "3-2",
+        "period": "P3",
+        "live": true,
+        "ended": false,
+        "eventState": { "type": "hockey" }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Esports (LoL)">
+    ```json
+    {
+      "type": "score_update",
+      "source": "polynode-sports",
+      "received_at": 1776150744668,
+      "data": {
+        "gameId": 6600001,
+        "leagueAbbreviation": "lol",
+        "homeTeam": "T1",
+        "awayTeam": "Gen.G",
+        "status": "inprogress",
+        "score": "1-1",
+        "period": "Game 3",
+        "live": true,
+        "ended": false,
+        "eventState": {
+          "type": "esports",
+          "tournamentName": "LCK Spring 2026"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
