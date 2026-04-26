@@ -75,7 +75,6 @@
               "guides/rate-limits",
               "guides/fee-escrow",
               "guides/copy-trading-api",
-              "guides/x-search-api",
               "guides/trade-index",
               "guides/copy-trading"
             ]
@@ -169,6 +168,13 @@
               "api-reference/system/generate-api-key",
               "api-reference/system/health-check",
               "api-reference/system/readiness-check"
+            ]
+          },
+          {
+            "group": "X Search",
+            "tag": "BETA",
+            "pages": [
+              "api-reference/x-search"
             ]
           }
         ]
