@@ -7,6 +7,21 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-26 — Wallet Trades: additive `direction` (BUY/SELL) field
+
+Every row of [`GET /v2/onchain/wallets/{address}/trades`](/api-reference/onchain/wallet-trades) now carries a `direction` field with values `"BUY"` or `"SELL"`, derived from whether the queried wallet contributed USDC or outcome tokens on the fill.
+
+This is independent of the existing `side` field, which remains the exchange role (`"maker"` / `"taker"`) and is unchanged. The two answer different questions:
+
+- `side` — did the wallet provide liquidity or take it?
+- `direction` — did the wallet enter (BUY) or exit (SELL) outcome shares?
+
+All four combinations (`maker`+`BUY`, `maker`+`SELL`, `taker`+`BUY`, `taker`+`SELL`) appear in real responses. Strictly additive — every other field is byte-identical to prior responses.
+
+The information `direction` carries was always derivable from `maker_asset_id` / `taker_asset_id` (exactly one is `"0"` on every fill, that's the buyer). This change just makes the derivation explicit so analytics integrations don't have to compute it client-side.
+
+---
+
 ## 2026-04-26 — Wallet Positions: per-position timestamps, parent event slug, opt-in window filter
 
 Four new fields on every row of [`GET /v2/wallets/{address}/positions/onchain`](/api-reference/wallets/onchain-positions) (and the unified [`GET /v2/onchain/positions`](/api-reference/onchain/positions) feed). Two new optional query parameters for server-side window filtering. Every change is **strictly additive** — calls with no new parameters return responses byte-identical to before.

@@ -41,6 +41,7 @@ GET /v2/onchain/wallets/{address}/trades?limit=100&offset=0
       "taker_amount": 5,
       "fee": 0.319672,
       "side": "maker",
+      "direction": "BUY",
       "market": "Bitcoin Up or Down - March 28, 9:55PM-10:00PM ET",
       "slug": "btc-updown-5m-1774749300",
       "outcome": "Up",
@@ -62,11 +63,34 @@ GET /v2/onchain/wallets/{address}/trades?limit=100&offset=0
 | `trades[].maker_amount` | number | Amount maker provided (USDC) |
 | `trades[].taker_amount` | number | Amount taker provided (tokens) |
 | `trades[].fee` | number | Fee paid on this fill (USDC) |
-| `trades[].side` | string | `"maker"` or `"taker"` relative to the queried wallet |
+| `trades[].side` | string | Exchange role: `"maker"` or `"taker"` relative to the queried wallet. The on-chain ground truth from the OrderFilled event. Useful for orderbook simulation and fee economics (maker rebate vs taker fee). |
+| `trades[].direction` | string | Trader intent: `"BUY"` or `"SELL"` from the queried wallet's perspective. Derived: `BUY` when the wallet contributed USDC and received outcome tokens; `SELL` when the wallet contributed outcome tokens and received USDC. Independent axis from `side` — they answer different questions and both are populated on every row. |
 | `trades[].market` | string | Market question |
 | `trades[].slug` | string | Market slug |
 | `trades[].outcome` | string | Outcome label (e.g. "Yes", "Up", "Trump") |
 | `trades[].image` | string | Market image URL |
+
+## `side` vs `direction`
+
+These two fields look similar but answer different questions, and both are populated on every row:
+
+| Axis | Field | What it tells you |
+|---|---|---|
+| Exchange role | `side` | Did the queried wallet provide liquidity (maker) or take it (taker)? |
+| Trader intent | `direction` | Did the queried wallet enter (BUY) or exit (SELL) outcome shares? |
+
+A maker can be either a buyer or a seller depending on which side of the orderbook they posted to. A taker likewise. The two axes are independent.
+
+You will see all four combinations in real wallets:
+
+| `side` | `direction` | Means |
+|---|---|---|
+| `maker` | `BUY` | Wallet posted a resting buy order, was hit by a taker selling outcome shares |
+| `maker` | `SELL` | Wallet posted a resting sell order, was hit by a taker buying outcome shares |
+| `taker` | `BUY` | Wallet crossed the spread to buy outcome shares immediately |
+| `taker` | `SELL` | Wallet crossed the spread to sell outcome shares immediately |
+
+The information `direction` carries is also fully derivable from `maker_asset_id` / `taker_asset_id` — exactly one of those is `"0"` (USDC collateral) on every fill, and the side that gave USDC is the buyer. `direction` just makes that derivation explicit.
 
 ## Example
 
