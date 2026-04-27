@@ -7,6 +7,36 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-27 — Trades: unified schema, `direction` & `side` always present
+
+`/v2/onchain/trades`, `/v2/onchain/wallets/{w}/trades`, and `/v2/onchain/markets/{tok}/trades` now return the same `direction` and `side` fields on every row, regardless of which filter combination is passed. Previously these fields appeared only when a `?wallet=` anchor was supplied — market-wide queries (`?condition_id=…`, `?token_id=…`, no filter) omitted both, and consumers had to render two different schemas.
+
+```bash
+# customer's market-wide query — now returns direction+side on every row
+curl "https://api.polynode.dev/v2/onchain/trades?condition_id=0xb778…&limit=3" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "side": "maker",
+  "direction": "BUY",
+  "maker": "0xdf0d2c…",
+  "taker": "0xb323fd…"
+}
+```
+
+**Anchor rule:**
+
+- **With `?wallet=`** — `direction` and `side` are wallet-relative. `direction` is `BUY` when the wallet contributed USDC and received outcome shares, `SELL` when it contributed outcome shares and received USDC. `side` is `maker` when the wallet placed the resting order, `taker` when it crossed the spread.
+- **Without `?wallet=`** — `direction` is anchored on the **maker** of each fill (the user who signed the limit order; on Polymarket's CLOB this is always a user EOA). `side` is therefore always `"maker"` in this case.
+
+This means a single fill viewed from a wallet-filtered query and from a market-wide query may report different `direction` values — both are correct, just anchored on different parties. See the ["Direction & side semantics"](/api-reference/onchain/trades#direction--side-semantics) section on the trades reference page.
+
+Strictly additive — calls that previously returned `direction`/`side` continue to return the exact same values.
+
+---
+
 ## 2026-04-26 — New endpoint: `GET /v2/onchain/tags` for tag discovery
 
 Lists every tag slug in the polynode taxonomy — currently 5,779 tags. Lightweight by default (just slug strings, 73 KB / 43 ms cold for the full list) or `?details=true` for per-tag enrichment (markets, events, first/last seen).

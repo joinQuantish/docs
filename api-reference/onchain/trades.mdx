@@ -102,13 +102,29 @@ You can combine market filters with `wallet` to find a specific wallet's trades 
 | `amount_usd` | number | Trade size in USD |
 | `fee_usd` | number | Fee paid in USD |
 | `shares` | number | Number of outcome shares traded |
-| `side` | string | Exchange role: `"maker"` or `"taker"`. Only present when filtering by `wallet`. |
-| `direction` | string | Trader intent: `"BUY"` or `"SELL"` from the queried wallet's perspective. `BUY` when the wallet contributed USDC and received outcome tokens; `SELL` when the wallet contributed outcome tokens and received USDC. Only present when filtering by `wallet` (no anchor wallet ⇒ no direction). Independent axis from `side` — they answer different questions and both are populated together when applicable. |
+| `side` | string | Exchange role: `"maker"` or `"taker"`. With `wallet` filter, this is the queried wallet's role on the fill. Without `wallet`, always `"maker"` (see "Direction & side semantics" below). Always present. |
+| `direction` | string | Trader intent: `"BUY"` or `"SELL"`. With `wallet` filter, from the queried wallet's perspective (`BUY` when the wallet contributed USDC, `SELL` when it contributed outcome tokens). Without `wallet`, from the maker's perspective. Always present. |
 | `market` | string | Market question text |
 | `market_slug` | string | Market URL slug |
 | `outcome` | string | Outcome label (e.g. "Yes", "No") |
 | `condition_id` | string | Market condition ID |
 | `image` | string \| null | Market image URL. `null` for some delisted or niche markets. |
+
+### Direction & side semantics
+
+`direction` and `side` answer two different questions and are always populated:
+
+- **`direction` (`"BUY"` or `"SELL"`)** — what the subject of the row did, economically. They contributed USDC and received outcome shares (`BUY`) or contributed outcome shares and received USDC (`SELL`).
+- **`side` (`"maker"` or `"taker"`)** — the subject's role on the fill. The `maker` placed a resting limit order; the `taker` aggressed the spread.
+
+The "subject" of the row depends on the filter:
+
+| Query | Subject of `direction` / `side` |
+|-------|--------------------------------|
+| `?wallet=W` (with or without other filters) | The wallet `W`. `side` reflects whether `W` was the maker or taker on each fill. |
+| Any market-wide filter (no `wallet`): `?condition_id=…`, `?token_id=…`, `?market_slug=…`, or no filter | The **maker** of each fill. On Polymarket's CLOB the maker is always the user who signed the limit order, so `direction` is always a real user's BUY/SELL. `side` is therefore always `"maker"` in this case. |
+
+This means a row from a wallet-filtered query and the same row from a market-wide query may report different `direction` values — both are correct, just anchored on different parties (the queried wallet vs. the maker).
 
 ### Pagination fields
 
