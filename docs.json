@@ -106,6 +106,7 @@
           {
             "group": "Wallets / Positions / Onchain",
             "pages": [
+              "api-reference/wallets/resolve",
               "api-reference/onchain/trades",
               "api-reference/onchain/positions",
               "api-reference/wallets/onchain-positions",
