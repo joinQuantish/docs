@@ -23,11 +23,16 @@ GET /v1/markets/{slug-or-condition-id}/positions
 | `id` | string | path | Market slug or condition_id (`0x…`). **Not** an outcome token id. |
 | `limit` | integer | query | Max rows per outcome. Default `50`, max `500`. |
 | `offset` | integer | query | Skip first N rows. |
-| `sortBy` | string | query | `TOTAL_PNL` (default), `REALIZED_PNL`, `AVG_PRICE`, `SIZE`, `TOTAL_BOUGHT`. |
+| `sortBy` | string | query | `TOTAL_PNL` (default), `REALIZED_PNL`, `CURRENT_VALUE`, `SIZE`, `INITIAL_VALUE`. |
 | `sortDirection` | string | query | `DESC` (default) or `ASC`. |
 | `status` | string | query | `OPEN`, `CLOSED`, or `ALL` (default). |
+| `min_size` | number | query | Drop positions with `size < min_size` from each outcome. Use `min_size=0.0001` to filter to current holders only (excludes historical participants who closed out to zero). |
 | `includeTrades` | boolean | query | When `true`, adds `firstTradeAt` / `lastTradeAt` (unix seconds) per row. Heavy — separate 20 req/min rate limit per key. |
 | `user` | string | query | Filter to a single wallet, or up to 20 wallets comma-separated, scoped to this market. |
+
+<Note>
+`TOTAL_PNL` and `REALIZED_PNL` are sorted by Polymarket's data-api directly. `CURRENT_VALUE`, `SIZE`, and `INITIAL_VALUE` are sorted in-process after the fetch (and after `min_size` if set), so they pair cleanly with the holder-filtering use case.
+</Note>
 
 ## Response
 
