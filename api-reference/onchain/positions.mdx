@@ -87,11 +87,17 @@ GET /v2/onchain/positions
 | `token_id` | string | Outcome token ID |
 | `size` | number | Current position size in shares. `0` means the position is fully exited. |
 | `avg_price` | number | Average entry price (0 to 1) |
-| `realized_pnl` | number | Realized profit/loss in USD. Includes profits from onchain redemptions of resolved markets. |
-| `unrealized_pnl` | number | Unrealized profit/loss in USD on the remaining open shares. For resolved markets, uses the final settlement price (`1.0` for winners, `0.0` for losers). For live markets, uses the current market price. Returns `0` when `size = 0`. |
-| `current_price` | number \| null | Price used to compute `unrealized_pnl`. `1.0` or `0.0` for resolved markets, the live market price for active markets, and `null` when `size = 0` or no price is available. |
-| `market_status` | string | One of: `"live"` (market still trading), `"resolved-win"` (market resolved, this outcome won), `"resolved-loss"` (market resolved, this outcome lost), or `"closed"` (position fully exited, `size = 0`). A fifth value `"resolved-unknown"` may appear briefly for very old markets while resolution data is catching up. |
-| `total_bought` | number | Total amount bought in USD |
+| `realized_pnl` | number | Realized profit/loss in USD. Reflects gains/losses from closed portions of the position and from onchain redemptions of resolved markets. Stays `0` for resolved-but-not-yet-redeemed positions; check `redeemable` to detect those. |
+| `unrealized_pnl` | number | Unrealized profit/loss in USD on the remaining open shares. For resolved markets, uses the final settlement price (`1.0` for winners, `0.0` for losers). For live markets, uses the current market price. Returns `0` when `size = 0`. Byte-identical to Polymarket's `cashPnl` field for any position covered by both. |
+| `current_price` | number \| null | Price used to compute `unrealized_pnl`. `1.0` or `0.0` for resolved markets (derived deterministically from on-chain `payoutNumerators`), the live market price for active markets, and `null` when `size = 0` or no price is available. |
+| `market_status` | string | One of: `"live"` (market still trading), `"resolved-win"` (market resolved, this outcome won), `"resolved-loss"` (market resolved, this outcome lost), or `"closed"` (position fully exited, `size = 0`). A fifth value `"resolved-unknown"` may appear briefly for very old markets while resolution data is catching up. Never `"live"` when `resolved_at` is set. |
+| `won` | boolean \| undefined | Present only on `resolved-win` / `resolved-loss` rows. `true` when this outcome won, `false` when it lost. Derived from on-chain payouts. |
+| `winning_outcome_index` | number \| undefined | Present only on resolved rows. Numeric index of the outcome that won (0 or 1 for binary markets). Pair with `outcome_index` to know whether this row is the winning side. |
+| `outcome_index` | number \| undefined | Numeric index of this row's outcome within the market's outcomes array (0 or 1 for binary markets). Stable across the API regardless of how the UI labels the outcome (`Yes`/`No`, team names, etc.). Use this for cross-row joins instead of parsing `outcome` strings. |
+| `total_bought` | number | Total amount bought in USD over the lifetime of the position. |
+| `initial_value` | number \| undefined | Cost basis in USD of the currently held shares (`size × cost_per_share`). The exact value Polymarket uses internally to compute `cashPnl`. Use this if you need the basis number that matches what users see in the Polymarket UI. |
+| `redeemable` | boolean \| undefined | `true` when the market has resolved and the user can call redeem on the CTF contract to claim payout (or accept loss). Useful for detecting "resolved-but-not-redeemed" positions: filter `market_status = "resolved-loss"` AND `redeemable = true` for unclaimed losses, or `market_status = "resolved-win"` AND `redeemable = true` for unclaimed wins. |
+| `opposite_asset` | string \| undefined | Token ID of the OPPOSITE outcome on the same market (the binary counterpart). Useful for fetching the matching position on the other side without re-resolving the condition. |
 | `market` | string | Market question text |
 | `market_slug` | string | Market URL slug |
 | `outcome` | string | Outcome label (e.g. "Yes", "No") |

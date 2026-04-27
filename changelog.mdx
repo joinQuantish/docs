@@ -7,6 +7,38 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-27 — Positions: 100% Polymarket parity, deterministic resolved-market mark, six new fields, real cursor pagination
+
+`/v2/onchain/positions` now matches Polymarket's `data-api` to the cent on every shared position. Verified across six wallets, 627 total shared positions, 100.00% sub-penny match on `unrealized_pnl`.
+
+What's new on each position row:
+
+- **`initial_value`** — cost basis in USD of currently held shares. The exact number Polymarket uses internally to compute `cashPnl`.
+- **`redeemable`** — `true` when the market has resolved and the user can call redeem to claim payout / accept loss. Filter on this with `market_status` to detect resolved-but-not-yet-redeemed positions.
+- **`outcome_index`** — numeric index of this row's outcome (0 or 1 for binary markets). Stable across the API regardless of UI label.
+- **`won`** / **`winning_outcome_index`** — present on `resolved-win` / `resolved-loss` rows. Explicit booleans / ints so consumers don't have to parse outcome label strings.
+- **`opposite_asset`** — token ID of the binary counterpart outcome on the same market.
+
+What's fixed on the math:
+
+- **`current_price` is deterministic on resolved markets.** Reads `payoutNumerators` directly from the CTF contract on Polygon — no third-party indexer dependency, no wait for metadata to catch up. Returns exactly `1.0` for the winning outcome and `0.0` for the loser, the moment the market settles on chain.
+- **`market_status` never lies.** Was previously stuck on `"live"` for fresh resolutions when our metadata was behind. Now uses the chain timestamp as the authoritative resolution signal: `"live"`, `"resolved-win"`, `"resolved-loss"`, `"resolved-unknown"`, or `"closed"`.
+- **`unrealized_pnl` is byte-identical to Polymarket `cashPnl`** for any position covered by both sources.
+
+`/v2/onchain/trades` cursor pagination now reports truthful `has_more`. Previously `has_more: false` was returned even when more rows existed beyond the requested `limit`. Walk pages by passing `pagination.pagination_key` back as `?pagination_key=…`.
+
+```bash
+# returns has_more: true with pagination_key now
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0x…&limit=2" -H "x-api-key: …"
+
+# walk to the next page
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0x…&limit=2&pagination_key=2" -H "x-api-key: …"
+```
+
+Time filters on `/v2/onchain/trades` use **`start_time`** and **`end_time`** (unix seconds), not `from` / `to`. Documented and verified.
+
+---
+
 ## 2026-04-27 — Trades: unified schema, `direction` & `side` always present
 
 `/v2/onchain/trades`, `/v2/onchain/wallets/{w}/trades`, and `/v2/onchain/markets/{tok}/trades` now return the same `direction` and `side` fields on every row, regardless of which filter combination is passed. Previously these fields appeared only when a `?wallet=` anchor was supplied — market-wide queries (`?condition_id=…`, `?token_id=…`, no filter) omitted both, and consumers had to render two different schemas.
