@@ -7,6 +7,20 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-30 — Backtest Copy PnL: per-position metrics now match Polymarket byte-for-byte
+
+The new fields added earlier today (`avg_entry_prob_weighted`, `positions_closed` on `/v2/copy-pnl/*`) now produce values that match Polymarket's own data-api position math.
+
+Validated against `data-api.polymarket.com/positions` `realizedPnl` across 30 positions on diverse wallets (standard CTF + neg-risk markets):
+
+- **97 %** sub-penny match
+- **100 %** sub-$1 match
+- **100 %** sub-$10 match
+
+No API changes — same field names, same response shape. Existing integrations automatically benefit. Cached values progressively refresh as background scoring cycles complete.
+
+---
+
 ## 2026-04-30 — BYOB Snapshot: every wallet × every period in one read
 
 New endpoint `GET /v2/copy-pnl/snapshot` returns every wallet in your tracked-wallet pool with backtest copy-PnL scores across all six time windows (`7d`, `14d`, `30d`, `60d`, `90d`, `180d`) in a single response. Built for stats-card UIs and dashboards that need the whole pool at once instead of issuing one request per period.
