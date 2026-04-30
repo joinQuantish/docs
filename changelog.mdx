@@ -7,6 +7,26 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-30 — Wallet activity & redemptions: deep pagination unlocked
+
+Heavy wallets returning more than 1000 records on `/v2/onchain/wallets/{wallet}/redemptions` and `/v2/onchain/wallets/{wallet}/activity` now return the complete dataset:
+
+- **`offset` past 1000 now works.** Previously, pagination beyond the first 1000 records returned empty results regardless of how many records existed. You can now walk a heavy redeemer's full history with `offset=1000`, `offset=2000`, etc.
+- **No more silent truncation.** Wallets with >1000 redemptions, splits, merges, or neg-risk conversions previously had results capped at 1000. The full record set is now returned.
+
+No SDK update required. No integration changes. Same URLs, same query parameters, same response shapes — your existing code automatically benefits.
+
+```bash
+# Walk a heavy redeemer's full history:
+curl "https://api.polynode.dev/v2/onchain/wallets/{wallet}/redemptions?limit=1000&offset=0" \
+  -H "x-api-key: $YOUR_KEY"
+
+curl "https://api.polynode.dev/v2/onchain/wallets/{wallet}/redemptions?limit=1000&offset=1000" \
+  -H "x-api-key: $YOUR_KEY"
+```
+
+---
+
 ## 2026-04-30 — TypeScript SDK 0.9.7
 
 Pluggable storage for Bun/Deno/edge runtime compatibility:
