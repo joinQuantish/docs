@@ -52,7 +52,97 @@ PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement
     Save the `pn_live_...` key from the response.
   </Step>
 
-  <Step title="Connect and subscribe">
+  <Step title="Stream trades (30 seconds)">
+    Save this as `stream.js` and run with `API_KEY=pn_live_... node stream.js`:
+
+    <CodeGroup>
+    ```javascript Node.js
+    const WebSocket = require("ws");
+
+    const API_KEY = process.env.API_KEY || "YOUR_API_KEY";
+    const DURATION = 30000;
+
+    const ws = new WebSocket("wss://ws.polynode.dev/ws?key=" + API_KEY);
+
+    ws.on("open", () => {
+      ws.send(JSON.stringify({ action: "subscribe", type: "fills" }));
+      console.log("Streaming trades for " + (DURATION / 1000) + "s...\n");
+    });
+
+    let count = 0;
+    ws.on("message", (raw) => {
+      const msg = JSON.parse(raw);
+      if (msg.type !== "event") return;
+
+      count++;
+      const d = msg.data;
+      console.log({
+        outcome: d.token_label,
+        side: d.side,
+        price: d.price,
+        shares: d.shares_normalized,
+        user: d.user,
+        market: d.title
+      });
+    });
+
+    ws.on("close", () => console.log("\nDone. " + count + " trades."));
+    setTimeout(() => ws.close(), DURATION);
+    ```
+
+    ```python Python
+    import asyncio, json, websockets, time
+
+    API_KEY = "YOUR_API_KEY"
+    DURATION = 30
+
+    async def stream():
+        url = f"wss://ws.polynode.dev/ws?key={API_KEY}"
+        async with websockets.connect(url) as ws:
+            await ws.send(json.dumps({"action": "subscribe", "type": "fills"}))
+            print(f"Streaming trades for {DURATION}s...\n")
+
+            count = 0
+            end = time.time() + DURATION
+            async for message in ws:
+                if time.time() > end:
+                    break
+                msg = json.loads(message)
+                if msg.get("type") != "event":
+                    continue
+                count += 1
+                d = msg["data"]
+                print(f"{d['token_label']:5} {d['side']:4} {d['shares_normalized']:>8.2f} shares @ {d['price']:<8} | {d['user'][:12]}... | {d['title'][:50]}")
+            print(f"\nDone. {count} trades.")
+
+    asyncio.run(stream())
+    ```
+    </CodeGroup>
+
+    You'll see individual trades streaming in, one per line. Each event is a single fill with clear fields for outcome, side, price, shares, and the wallet involved.
+  </Step>
+
+  <Step title="What you'll see">
+    ```
+    Down  BUY    4.00 shares @ 0.71     | 0x673d4961... | Ethereum Up or Down - April 30, 1:15PM-1:20PM ET
+    Up    BUY    4.26 shares @ 0.4085   | 0xa855bf8e... | Ethereum Up or Down - April 30, 1:15PM-1:20PM ET
+    Yes   SELL  10.00 shares @ 0.946    | 0x1c06e4a2... | Highest temperature in Seoul on May 2?
+    No    BUY    6.00 shares @ 0.999    | 0x993c0725... | Will WTI Crude Oil hit $70 in April?
+    ```
+
+    Every line is one trade. Pre-confirmation delivery, 3-5 seconds before on-chain settlement.
+  </Step>
+</Steps>
+
+<Info>
+**`fills` vs `settlements`** — both stream the same trades at the same speed. `fills` gives you one flat event per trade (simplest). `settlements` gives you the full transaction bundle with a `trades[]` array and lifecycle tracking via `status_update` events. Start with `fills`, move to `settlements` when you need the full lifecycle. See [Subscriptions](/websocket/subscribing) for all options.
+</Info>
+
+<details>
+<summary>Settlement-based quick start (advanced)</summary>
+
+If you need the full transaction format with nested fills and status lifecycle:
+
     <CodeGroup>
     ```javascript Node.js
     const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
