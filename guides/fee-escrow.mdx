@@ -29,6 +29,64 @@ A user trading through your SDK may pay three distinct fees, each collected by a
 All three are independent. `feeBps: 0` turns off **your** platform fee only — it does not waive Polymarket's protocol fee or builder rev share. Setting your `feeBps` does not change anything inside the signed CLOB Order struct.
 </Note>
 
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="How does the contract know how much to distribute?">
+    It doesn't know anything about the Polymarket order. The amount is locked at deposit time. When `pullFee` is called, the contract stores `escrows[orderId].amount = feeAmount`. That number is immutable. `distribute` sends from that stored amount. `refund` sends back whatever's left. The contract just moves money between three fixed addresses: the escrow pool, the affiliate wallet, and the treasury.
+  </Accordion>
+
+  <Accordion title="What stops someone else from taking my fee out of the contract?">
+    Three access controls, each with a single hardcoded destination:
+
+    - **`distribute()`** requires `onlyAuthorized` (our operator wallet or contract owner). Sends funds only to the `affiliate` and `treasury` addresses stored at deposit time. Anyone else calling it gets `Unauthorized`.
+    - **`refund()`** also requires `onlyAuthorized`. Sends funds only back to the original `payer`.
+    - **`claimRefund()`** can be called by anyone, but the contract checks `msg.sender == escrow.payer` and `block.timestamp > pulledAt + 72 hours`. Only the original payer can claim, and only after 72h. Funds go exclusively to `escrow.payer`.
+
+    The affiliate address and share split are signed by the user in the EIP-712 FeeAuth message and stored on-chain at deposit time. Nobody can change them after deposit. The user signed it, the contract stored it, and that's where the money goes.
+  </Accordion>
+
+  <Accordion title="Where exactly does the money go when distributed?">
+    The contract splits every distribution into two transfers:
+
+    - `affiliateShareBps / 10000` of the amount goes to the `affiliate` address (your wallet).
+    - The remainder goes to the `treasury` address (set by the contract owner).
+
+    If `affiliateShareBps` is `10000` (the default), you keep 100% and nothing goes to the treasury. Both addresses are immutable for each escrow entry.
+  </Accordion>
+
+  <Accordion title="What if the order never fills? How does the fee get returned?">
+    Three independent paths back to the user, any one of which is sufficient:
+
+    1. **Inline refund on cancel.** When you call `cancelOrder()` or `cancelAll()`, our cosigner automatically calls `refund()` in the same request. The collateral returns to the user's wallet immediately.
+    2. **Lifecycle refund.** Our background service checks pending escrow orders every 30 seconds using on-chain verification. If an order has no fills after 72 hours, it calls `refund()` automatically.
+    3. **User self-refund.** After 72 hours, the user (or anyone on their behalf) can call `claimRefund(orderId)` directly on the contract. No involvement from us needed. Funds go to the original payer, always.
+
+    These three paths are completely independent. If our backend is down, path 3 still works. If the user is offline, paths 1 and 2 still work.
+  </Accordion>
+
+  <Accordion title="Can money get permanently stuck in the contract?">
+    No. Every escrowed fee has exactly two possible exits, and at least one is always available:
+
+    - **Distribute** sends it to the affiliate and treasury.
+    - **Refund / claimRefund** sends it back to the payer.
+
+    There is no expiration that burns funds. There is no third destination. If all automated paths fail, the contract owner has `emergencyWithdraw` as a last resort. And `claimRefund` is always available to the payer after 72 hours with zero dependencies on our infrastructure.
+  </Accordion>
+
+  <Accordion title="Is there any edge case where a cancelled order doesn't get refunded?">
+    The only scenario where a refund doesn't happen automatically: our cosigner is down at the moment of cancellation AND the lifecycle service is also down AND the user doesn't call `claimRefund` themselves after 72 hours. In that case the funds sit in the contract, untouched, until someone acts. They don't disappear, they don't move, and no one else can take them. The moment any one of those three systems comes back online, the refund happens.
+  </Accordion>
+
+  <Accordion title="How does partial fill distribution work?">
+    Our lifecycle service checks on-chain `OrderFilled` events every 30 seconds. Each partial fill emits an event with the exact amount filled. The service sums all fills, computes the fill fraction against the original order size, and distributes only the new portion since the last check. The contract tracks cumulative distributed amounts internally and caps at the total, so there's no risk of over-distribution even if our math has a rounding error. Undistributed remainder is refunded after the 72-hour timeout.
+  </Accordion>
+
+  <Accordion title="How does the system verify that an order actually filled?">
+    Pure on-chain verification. The CLOB order ID is the EIP-712 hash of the signed order, and that same hash appears as an indexed topic in every on-chain `OrderFilled` event. Our lifecycle queries `eth_getLogs` with that hash across all Polymarket V2 exchange contracts. If the event exists on the blockchain, the fill happened. If it doesn't exist, it didn't. No API calls, no authentication, no trust assumptions. Immutable blockchain state is the source of truth.
+  </Accordion>
+</AccordionGroup>
+
 ## V1 and V2 — which one do I use?
 
 Two contracts are live. Both are fully supported; neither is being deprecated.
