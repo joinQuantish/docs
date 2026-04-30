@@ -123,14 +123,33 @@ polynode's WebSocket is the fastest way to get Polymarket trade data. Every fill
   </Step>
 
   <Step title="What you'll see">
-    ```
-    Down  BUY    4.00 shares @ 0.71     | 0x673d4961... | Ethereum Up or Down - April 30, 1:15PM-1:20PM ET
-    Up    BUY    4.26 shares @ 0.4085   | 0xa855bf8e... | Ethereum Up or Down - April 30, 1:15PM-1:20PM ET
-    Yes   SELL  10.00 shares @ 0.946    | 0x1c06e4a2... | Highest temperature in Seoul on May 2?
-    No    BUY    6.00 shares @ 0.999    | 0x993c0725... | Will WTI Crude Oil hit $70 in April?
+    Every message is one flat event with everything you need. Here's a real captured fill:
+
+    ```json
+    {
+      "type": "event",
+      "data": {
+        "side": "BUY",
+        "price": 0.85,
+        "shares_normalized": 1.67,
+        "token_label": "Up",
+        "title": "Bitcoin Up or Down - April 30, 2:50PM-2:55PM ET",
+        "user": "0xe54bbd9dcef861af50bf2c4dcc354a87e87bff96",
+        "taker": "0x70412cbf28288d47ece30002be45efff5d2d5c73",
+        "order_hash": "0x40169bc2d2af4dded1fbe4d2655838f2b79ba4a9aabc548b8fec3649e66ed9f4",
+        "tx_hash": "0xef710f81783210de00d90fd477d3c190c3acd657cf7dd5dae31188c53ded2e4e",
+        "market_slug": "btc-updown-5m-1777575000",
+        "condition_id": "0x6fe03c3c781f62d456518a3a6b2b95c0d0bee427243bcef06f5b37b3f1c395b7",
+        "token_id": "28011179493432352359106676407817901302975340324989108630179591254583544078282",
+        "shares": 1670000,
+        "timestamp": 1777575164,
+        "block_number": null,
+        "log_index": null
+      }
+    }
     ```
 
-    Every line is one trade. Pre-confirmation delivery, 3-5 seconds before on-chain settlement.
+    `block_number: null` means this was detected **before** the block confirmed. Pre-confirmation delivery, 3-5 seconds ahead of on-chain settlement. One event per fill, no arrays to iterate, all fields included.
   </Step>
 </Steps>
 
