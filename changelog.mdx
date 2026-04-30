@@ -7,25 +7,30 @@ icon: "clock-rotate-left"
 
 ---
 
-## 2026-04-30 — TypeScript SDK 0.9.6
+## 2026-04-30 — TypeScript SDK 0.9.7
 
 Pluggable storage for Bun/Deno/edge runtime compatibility:
 
 - **`storage` config option** — pass `'memory'` for an in-memory backend (no native dependencies), a file path for SQLite (default), or your own `TradingStorage` implementation.
 - **Auto-fallback** — if `better-sqlite3` isn't available (Bun, Deno, edge runtimes), the SDK automatically falls back to in-memory storage instead of crashing.
-- **Exported interface** — `TradingStorage` and `InMemoryStorage` are exported so you can build custom adapters (e.g. `bun:sqlite`, Postgres, Redis).
+- **`BunSqliteBackend`** — persistent SQLite storage using Bun's built-in `bun:sqlite`. Zero native dependencies. Same schema, same persistence as the Node backend.
+- **Auto-detection** — if you don't pass a `storage` option, the SDK tries `better-sqlite3` first (Node), then `bun:sqlite` (Bun), then falls back to in-memory. Just works in both runtimes.
+- **Exported interface** — `TradingStorage`, `InMemoryStorage`, and `BunSqliteBackend` are all exported so you can use them directly or build custom adapters.
 
 ```typescript
-// Bun users — no better-sqlite3 needed:
+// Bun — auto-detected, no config needed:
+const trader = new PolyNodeTrader({ /* storage auto-detects bun:sqlite */ });
+
+// Bun — explicit:
+import { PolyNodeTrader, BunSqliteBackend } from 'polynode-sdk';
 const trader = new PolyNodeTrader({
-  storage: 'memory',
-  // ... rest of config
+  storage: new BunSqliteBackend('./trading.db'),
 });
 ```
 
 Upgrade:
 ```bash
-npm install polynode-sdk@0.9.6
+npm install polynode-sdk@0.9.7
 ```
 
 ---
