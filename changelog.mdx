@@ -7,6 +7,12 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-30 — `/v2/onchain/markets/{token}/volume` faster
+
+Backend optimization for the market volume endpoint. Response shape and values are unchanged — same `buys`, `sells`, `total_trades`, `buy_volume_usdc`, `sell_volume_usdc`, `volume_usdc`, `found` fields. Light and empty markets see roughly halved latency. No integration changes required.
+
+---
+
 ## 2026-04-30 — Wallet activity & redemptions: deep pagination unlocked
 
 Heavy wallets returning more than 1000 records on `/v2/onchain/wallets/{wallet}/redemptions` and `/v2/onchain/wallets/{wallet}/activity` now return the complete dataset:
