@@ -38,6 +38,20 @@ This is the right number for copy-trading quality scoring because a copier event
 
 If you want PM-website style realized + unrealized PnL, use the [Trader PnL Series](/api-reference/enriched/trader-pnl) endpoint.
 
+### Per-position metrics: parity with Polymarket
+
+The `avg_entry_prob_weighted` and `positions_closed` fields are computed via per-position weighted-average cost basis matching across every fill, split, merge, redemption, and neg-risk conversion in the requested window — the same algorithm Polymarket's own data-api uses internally.
+
+Validation against `data-api.polymarket.com/positions` `realizedPnl` across 30 positions on diverse wallets (standard CTF + neg-risk markets):
+
+| Threshold | Match rate |
+|---|---|
+| sub-penny | 97 % |
+| sub-$1 | **100 %** |
+| sub-$10 | **100 %** |
+
+If your wallet has positions on Polymarket's positions page, the per-position basis our matcher tracks is the same one Polymarket displays. Any drift larger than $1 indicates a data-fetching issue (e.g. very old activity outside our event-fetch window), not an algorithm difference.
+
 ## Endpoints
 
 **Score on demand:**
