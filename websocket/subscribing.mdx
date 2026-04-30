@@ -34,10 +34,71 @@ All fields except `action` are optional.
 
 The `type` field selects a preset of event types. If you also set `filters.event_types`, it overrides the preset.
 
+<ResponseField name="fills" type="string">
+  Events: `settlement` (reformatted as one flat event per fill)
+
+  The simplest way to stream Polymarket trades. Each fill arrives as its own flat event with clear fields: `user` (the wallet whose fill this is), `side`, `price`, `shares_normalized`, `token_label` (outcome name), and `title` (market name). No arrays to iterate, no nested objects to unpack.
+
+  Pre-confirmation delivery, 3-5 seconds before on-chain settlement. Same speed as `settlements`, just a cleaner format for per-trade tracking.
+
+  ```javascript
+  const ws = new WebSocket("wss://ws.polynode.dev/ws?key=YOUR_KEY");
+
+  ws.on("open", () => {
+    ws.send(JSON.stringify({ action: "subscribe", type: "fills" }));
+  });
+
+  ws.on("message", (raw) => {
+    const msg = JSON.parse(raw);
+    if (msg.type !== "event") return;
+
+    const fill = msg.data;
+    console.log({
+      outcome: fill.token_label,
+      side: fill.side,
+      price: fill.price,
+      shares: fill.shares_normalized,
+      user: fill.user,
+      market: fill.title
+    });
+  });
+  ```
+
+  **Example event:**
+
+  ```json
+  {
+    "type": "event",
+    "data": {
+      "order_hash": "0x7b281ecba532e471...",
+      "user": "0x0c6367b4e0022ca702ad6f33cd2cf504b2cc3cbb",
+      "taker": "0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e",
+      "tx_hash": "0xf7d09a5f24609e82...",
+      "side": "BUY",
+      "price": 0.59,
+      "shares": 33898304,
+      "shares_normalized": 33.898304,
+      "token_id": "111868385514416639...",
+      "token_label": "Astralis",
+      "condition_id": "0xd546a1f7ff24a008...",
+      "market_slug": "cs2-ast10-eye-2026-04-09-game1",
+      "title": "Counter-Strike: Astralis vs EYEBALLERS - Map 1 Winner",
+      "timestamp": 1775731431,
+      "block_number": null,
+      "log_index": null
+    }
+  }
+  ```
+
+  `block_number: null` means pre-confirmation (detected before the block). Once confirmed, a `status_update` fires on the `settlements` subscription if you have one active. If you only need trades and don't care about the confirmation lifecycle, `fills` is all you need.
+</ResponseField>
+
 <ResponseField name="settlements" type="default">
   Events: `settlement`, `status_update`
 
-  Pending and confirmed Polymarket settlements. The default subscription type.
+  Pending and confirmed Polymarket settlements. The default subscription type. Each event contains a `trades[]` array with all fills in the transaction. Use this when you need the full settlement lifecycle (pending detection, block confirmation via `status_update`, and all fills grouped by transaction).
+
+  If you just want individual trades in a flat format, use [`fills`](#fills) instead.
 </ResponseField>
 
 <ResponseField name="trades" type="string">

@@ -6,9 +6,21 @@ description: "Real-time Polymarket settlements, up to 5 seconds before on-chain 
 
 PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlements are delivered to your connection **1–2 blocks before they confirm on-chain** (median 2.9 seconds, up to 5 seconds early).
 
+<CardGroup cols={3}>
+  <Card title="Fills" icon="bolt" href="/websocket/subscribing#fills">
+    Individual trades, one per message. Pre-confirmation, flat format, no array parsing. The fastest way to track trades.
+  </Card>
+  <Card title="Settlements" icon="file-lines" href="/websocket/subscribing#settlements">
+    Full transaction bundles with all fills in a `trades[]` array plus status lifecycle tracking.
+  </Card>
+  <Card title="Trades" icon="arrow-right-arrow-left" href="/websocket/subscribing#trades">
+    Confirmed on-chain fills. Same data as settlements but after block confirmation with exact receipt values.
+  </Card>
+</CardGroup>
+
 <CardGroup cols={2}>
-  <Card title="Up to 5 second edge" icon="bolt">
-    Settlements detected and enriched before on-chain confirmation — typically 2–5 seconds (1–2 blocks) early.
+  <Card title="Up to 5 second edge" icon="clock">
+    Settlements and fills detected before on-chain confirmation. Typically 3-5 seconds (1-2 blocks) early.
   </Card>
   <Card title="Filtered subscriptions" icon="filter">
     Subscribe by wallet, token, market slug, side, size, or event type. Only receive what you need.
@@ -149,8 +161,9 @@ PolyNode supports multiple subscription types on the same WebSocket:
 
 | Stream | Purpose | Subscribe |
 |--------|---------|-----------|
-| **Settlements** | Pending and confirmed Polymarket settlements (default) | `{"action": "subscribe", "type": "settlements"}` |
-| **Trades** | All trade activity including confirmed on-chain trades | `{"action": "subscribe", "type": "trades"}` |
+| **Fills** | Individual pre-confirmation trades, one flat event per fill. Simplest format. | `{"action": "subscribe", "type": "fills"}` |
+| **Settlements** | Pre-confirmation transaction bundles with all fills in a `trades[]` array (default) | `{"action": "subscribe", "type": "settlements"}` |
+| **Trades** | Confirmed on-chain fills with exact receipt values | `{"action": "subscribe", "type": "trades"}` |
 | **Prices** | Price-moving events for specific markets | `{"action": "subscribe", "type": "prices"}` |
 | **Blocks** | New Polygon block notifications with Polymarket stats | `{"action": "subscribe", "type": "blocks"}` |
 | **Wallets** | All activity for specified wallets | `{"action": "subscribe", "type": "wallets"}` |
