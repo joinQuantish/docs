@@ -7,6 +7,24 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-30 — BYOB Snapshot: every wallet × every period in one read
+
+New endpoint `GET /v2/copy-pnl/snapshot` returns every wallet in your tracked-wallet pool with backtest copy-PnL scores across all six time windows (`7d`, `14d`, `30d`, `60d`, `90d`, `180d`) in a single response. Built for stats-card UIs and dashboards that need the whole pool at once instead of issuing one request per period.
+
+- **One request** — no per-period round trips, no client-side stitching.
+- **Sub-second cached** — 100 wallets × 6 periods returns in ~70 ms / ~150 KB. 1000 wallets × 6 periods in ~500 ms / ~1.5 MB.
+- **Optional period subset** via `?periods=7d,30d` to drop payload when you only need one window.
+- **Per-wallet error reporting** — heavy whales that errored on the most recent refresh surface their failure reason inline, so your UI can render "X wallets retrying" instead of hiding gaps.
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/snapshot"
+```
+
+See [BYOB — Snapshot](/api-reference/backtesting/byob-snapshot) for the full response shape and examples.
+
+---
+
 ## 2026-04-30 — `/v2/onchain/markets/{token}/volume` faster
 
 Backend optimization for the market volume endpoint. Response shape and values are unchanged — same `buys`, `sells`, `total_trades`, `buy_volume_usdc`, `sell_volume_usdc`, `volume_usdc`, `found` fields. Light and empty markets see roughly halved latency. No integration changes required.

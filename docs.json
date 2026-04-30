@@ -146,7 +146,8 @@
               "api-reference/backtesting/byob-add-wallets",
               "api-reference/backtesting/byob-remove-wallets",
               "api-reference/backtesting/byob-list-wallets",
-              "api-reference/backtesting/byob-leaderboard"
+              "api-reference/backtesting/byob-leaderboard",
+              "api-reference/backtesting/byob-snapshot"
             ]
           },
           {

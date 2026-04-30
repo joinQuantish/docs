@@ -1,0 +1,114 @@
+---
+title: "BYOB — Snapshot"
+description: "Every wallet in your tracked pool with backtest scores across every period in a single response. The headline read for stats-card UIs."
+---
+
+```http
+GET https://api.polynode.dev/v2/copy-pnl/snapshot
+```
+
+Returns every wallet currently in your BYOB pool together with their backtest copy-PnL scores across all six time windows (or a chosen subset). One request — no per-period round trips, no client-side stitching.
+
+This is the canonical read for any UI that renders stats cards, dashboards, or grids over the entire tracked-wallet set. Pair it with `GET /wallets` if you need to render the empty-state pool too.
+
+## Query parameters
+
+<ParamField query="periods" type="string" default="7d,14d,30d,60d,90d,180d">
+  Comma-separated subset of periods to include. Defaults to all six. Useful when you only render a single time window — e.g. `?periods=30d` returns ~1/6 the payload.
+</ParamField>
+
+## Response shape
+
+| Field | Type | Description |
+|---|---|---|
+| `total_in_pool` | int | Wallets currently in your pool |
+| `scored_any` | int | Wallets with a score for at least one of the requested periods |
+| `errored_any` | int | Wallets whose last refresh attempt failed (heavy whales hitting timeout on long windows) |
+| `pending_any` | int | Wallets with no score yet (newly added or queued for the next refresh) |
+| `periods` | string[] | Echo of the periods returned (matches input or default order) |
+| `last_refresh` | int (unix) \| null | When the last full chunked-refresh cycle completed |
+| `wallets` | array | One entry per pooled wallet (see below) |
+
+### Per-wallet entry
+
+| Field | Type | Description |
+|---|---|---|
+| `wallet` | string | Lowercased address |
+| `periods` | object | Map keyed by period (`7d`, `14d`, …). Each value is the score blob, or `null` if that specific period is pending |
+| `error` | object | Only present if this wallet's last refresh errored. `{ error: string, ts: int }` |
+
+### Per-period score blob
+
+| Field | Type | Description |
+|---|---|---|
+| `actual_pnl_usdc` | number | Cashflow PnL the wallet realized over the period |
+| `backtest_copy_pnl_usdc` | number | Same trade walk with 2 % slippage on every entry/exit |
+| `slippage_amount_usdc` | number | Dollar friction the copier eats |
+| `slippage_cost_rate_pct` | number \| null | Friction as % of `\|actual_pnl\|` (null when `\|actual\| < $1`) |
+| `toxic_for_copying` | bool | `true` when rate > 15 % |
+| `trade_count` | int | Number of fills in the window |
+| `partial` | bool | `true` if the underlying walk hit the per-wallet 180 s budget |
+| `computed_at` | int (unix) | When this specific score was last refreshed |
+
+## Examples
+
+### Full snapshot (default)
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/snapshot"
+```
+
+Response (`200 OK`, abridged):
+
+```json
+{
+  "total_in_pool": 108,
+  "scored_any": 107,
+  "errored_any": 1,
+  "pending_any": 0,
+  "periods": ["7d", "14d", "30d", "60d", "90d", "180d"],
+  "last_refresh": 1777545636,
+  "wallets": [
+    {
+      "wallet": "0x000d257d2dc7616feaef4ae0f14600fdf50a758e",
+      "periods": {
+        "7d":   { "actual_pnl_usdc":  104635.85, "backtest_copy_pnl_usdc":  101463.76, "slippage_amount_usdc":   3172.09, "slippage_cost_rate_pct":   3.03, "toxic_for_copying": false, "trade_count":    90, "partial": false, "computed_at": 1777544903 },
+        "14d":  { "actual_pnl_usdc": -123675.90, "backtest_copy_pnl_usdc": -134838.05, "slippage_amount_usdc":  11162.15, "slippage_cost_rate_pct":   9.03, "toxic_for_copying": false, "trade_count":   458, "partial": false, "computed_at": 1777544903 },
+        "30d":  { "actual_pnl_usdc":  317864.92, "backtest_copy_pnl_usdc":  266790.44, "slippage_amount_usdc":  51074.48, "slippage_cost_rate_pct":  16.07, "toxic_for_copying":  true, "trade_count":  2253, "partial": false, "computed_at": 1777544903 },
+        "60d":  { "actual_pnl_usdc":  -66101.80, "backtest_copy_pnl_usdc": -181792.53, "slippage_amount_usdc": 115690.73, "slippage_cost_rate_pct": 175.02, "toxic_for_copying":  true, "trade_count":  5916, "partial": false, "computed_at": 1777544903 },
+        "90d":  { "actual_pnl_usdc":  289034.81, "backtest_copy_pnl_usdc":  122089.67, "slippage_amount_usdc": 166945.14, "slippage_cost_rate_pct":  57.76, "toxic_for_copying":  true, "trade_count":  8761, "partial": false, "computed_at": 1777544903 },
+        "180d": { "actual_pnl_usdc":  665955.87, "backtest_copy_pnl_usdc":  311352.42, "slippage_amount_usdc": 354603.45, "slippage_cost_rate_pct":  53.25, "toxic_for_copying":  true, "trade_count": 18545, "partial": false, "computed_at": 1777544903 }
+      }
+    }
+  ]
+}
+```
+
+### Subset of periods
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/snapshot?periods=7d,30d"
+```
+
+Returns the same shape but with only the requested periods inside each `wallets[].periods` object. Use this when your UI only renders a single window — payload drops proportionally.
+
+## Performance
+
+| Pool size | Periods | Payload | Latency (warm) |
+|---|---|---|---|
+| 100 wallets  | all 6   | ~150 KB  | ~70 ms |
+| 100 wallets  | 1       | ~30 KB   | <30 ms |
+| 1000 wallets | all 6   | ~1.5 MB  | ~500 ms |
+| 1000 wallets | 1       | ~250 KB  | ~100 ms |
+
+All reads come from the precomputed score cache. The endpoint never walks Goldsky.
+
+## Notes
+
+- **`scored_any` vs `scored` on the leaderboard.** A wallet counts as `scored_any` here if it has a score for *at least one* of the requested periods. The leaderboard's `scored` is per-requested-period.
+- **Per-period `null`.** A wallet may be scored for `30d` but `null` for `180d` (heavy whales often time out on long windows). Read each period's value independently.
+- **`error` is wallet-global.** A single `error` object per wallet covers the most recent refresh failure across any period. Use it to surface "X wallets retrying" in your UI.
+- **No pagination.** This endpoint always returns the full pool. Use the leaderboard endpoint with `limit`/`offset` if you need server-side paging — that's the trade-off vs the one-shot snapshot.
+- **Race-safe with adds.** Wallets you add via `POST /v2/copy-pnl/wallets` show up here immediately, with `null` periods until the on-add freshening finishes (~30 s).
