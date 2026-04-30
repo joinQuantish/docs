@@ -107,7 +107,7 @@ GET    /v2/copy-pnl/wallets                              list pool
 GET    /v2/copy-pnl/leaderboard   ?period=&sort_by=&order=&limit=&offset=&min_trade_count=&exclude_toxic=
 ```
 
-Newly-added wallets are scored within ~30s (on-add freshening). The full pool refreshes daily, processed in chunks of 50 wallets spread across the day to keep peak load bounded. Each result row includes `computed_at` so you can render freshness in your UI.
+Newly-added wallets are scored within ~30s of being added. The full pool refreshes daily in the background. Each result row includes `computed_at` so you can render freshness in your UI.
 
 Per-tenant isolation: each API key has its own private pool keyed on the SHA256 of the key. Your tracked wallets are never visible to other customers.
 
@@ -123,8 +123,7 @@ Customer-visible behavior changes:
 - Heavy wallets (e.g. 1M+ fills) now return correct, complete trade history
 - Deep `?offset=` queries return real data instead of empty arrays
 - No SDK or query-shape changes required — same `?limit=&offset=` parameters
-
-Internal: switched the underlying Goldsky queries from a 2-query maker/taker split to a single `or:` operator query with timestamp-cursor pagination. Halves Goldsky load per request.
+- Lower latency on most queries
 
 ---
 
@@ -137,7 +136,7 @@ POST /v2/copy-pnl/batch
 { "addresses": ["0x...", ...], "from": "...", "to": "..." }
 ```
 
-Same math + response shape as the single-wallet endpoint, fanned out internally with concurrency 8. Per-wallet errors don't fail the batch — the bad slot returns `{"wallet": "...", "error": "..."}` and the rest still come back.
+Same math + response shape as the single-wallet endpoint. Per-wallet errors don't fail the batch — the bad slot returns `{"wallet": "...", "error": "..."}` and the rest still come back.
 
 Reference: [Batch endpoint](/api-reference/backtesting/batch)
 

@@ -45,7 +45,7 @@ If you want PM-website style realized + unrealized PnL, use the [Trader PnL Seri
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/v2/copy-pnl/{wallet}` | Score one wallet over a time window |
-| `POST` | `/v2/copy-pnl/batch` | Score up to 100 wallets in one call (internal concurrency 8) |
+| `POST` | `/v2/copy-pnl/batch` | Score up to 100 wallets in one call |
 
 **BYOB — Bring Your Own Backtest** (precomputed leaderboard):
 
@@ -70,7 +70,7 @@ The on-demand endpoints (`GET /v2/copy-pnl/{wallet}` and `POST /v2/copy-pnl/batc
 
 1. POST your wallet list to `/v2/copy-pnl/wallets` (max 1000 wallets per API key)
 2. Newly-added wallets get scored immediately (on-add freshening — usually within ~30s of the add)
-3. The full pool also refreshes on a chunked daily cadence (50 wallets per chunk, spread across the day to bound load)
+3. The full pool also refreshes daily in the background
 4. Query `/v2/copy-pnl/leaderboard` to read sorted/filtered results — all from cache, sub-second
 5. Each result row includes `computed_at` so you can show freshness in your UI
 

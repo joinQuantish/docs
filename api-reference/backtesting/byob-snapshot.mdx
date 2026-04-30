@@ -26,7 +26,7 @@ This is the canonical read for any UI that renders stats cards, dashboards, or g
 | `errored_any` | int | Wallets whose last refresh attempt failed (heavy whales hitting timeout on long windows) |
 | `pending_any` | int | Wallets with no score yet (newly added or queued for the next refresh) |
 | `periods` | string[] | Echo of the periods returned (matches input or default order) |
-| `last_refresh` | int (unix) \| null | When the last full chunked-refresh cycle completed |
+| `last_refresh` | int (unix) \| null | When the last full refresh cycle completed |
 | `wallets` | array | One entry per pooled wallet (see below) |
 
 ### Per-wallet entry
@@ -103,7 +103,7 @@ Returns the same shape but with only the requested periods inside each `wallets[
 | 1000 wallets | all 6   | ~1.5 MB  | ~500 ms |
 | 1000 wallets | 1       | ~250 KB  | ~100 ms |
 
-All reads come from the precomputed score cache. The endpoint never walks Goldsky.
+All reads come from the precomputed score cache.
 
 ## Notes
 

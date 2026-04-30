@@ -54,7 +54,7 @@ Query the precomputed leaderboard over your private wallet pool. All reads come 
 | `errored` | int | Wallets whose last refresh attempt failed (typically heavy whales hitting timeout on long windows) |
 | `offset` | int | Echo |
 | `limit` | int | Echo |
-| `last_refresh` | int (unix) \| null | When the last full chunked-refresh cycle completed |
+| `last_refresh` | int (unix) \| null | When the last full refresh cycle completed |
 | `results` | array | Top N matching rows after filters and sort |
 | `errored_sample` | array | Up to 10 errored wallets with their last-error message — only present when `errored > 0` |
 | `pending_sample` | array | Up to 10 pending wallet addresses — only present when `pending > 0` |
@@ -188,8 +188,8 @@ Auth/rate-limit errors mirror the rest of the `/v2/copy-pnl/*` family.
 
 ## Notes
 
-- **Sub-second.** All scores live in our Redis cache; the query never walks Goldsky. Even a 1000-wallet pool with all six periods scored returns in <100ms.
+- **Sub-second.** All scores are precomputed and served from cache. Even a 1000-wallet pool with all six periods scored returns in <100ms.
 - **`pending` and `errored` aren't included in `results`.** Use `pending_sample` and `errored_sample` to identify which specific wallets need attention. The `errored_sample` includes the upstream error message — typically `timeout_180s` for the heaviest whales on long windows.
 - **`computed_at` per row.** Use this to render "as of X minutes ago" in your UI. Newly-added wallets (via on-add freshening) typically have a `computed_at` within ~30s of the add. Periodic refresh updates it once per chunk slot.
-- **`last_refresh` at top level.** When the most recent full chunked-refresh cycle completed (cursor wrapped back to 0). Doesn't mean every wallet was refreshed at that exact moment — chunks span the cycle.
+- **`last_refresh` at top level.** When the most recent full refresh cycle completed. Individual wallets may have been refreshed earlier or later within the cycle — use the per-row `computed_at` field for exact freshness.
 - **Sort ties + nulls.** When two wallets share the exact sort_by value, secondary order is undefined. Wallets with `null` `slippage_cost_rate_pct` always sort last when sorting on that field.

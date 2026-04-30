@@ -1,13 +1,13 @@
 ---
 title: "Backtest Copy PnL — Batch"
-description: "Score multiple wallets in one call. Same math as the single-wallet endpoint, fanned out internally with concurrency control."
+description: "Score multiple wallets in one call. Same math as the single-wallet endpoint."
 ---
 
 ```http
 POST https://api.polynode.dev/v2/copy-pnl/batch
 ```
 
-Use this when you need to score many wallets at once — for example, ranking a candidate-leader list. The endpoint fans out internally with concurrency 8 and returns one result per wallet, so 50 wallets don't take 50× single-wallet time.
+Use this when you need to score many wallets at once — for example, ranking a candidate-leader list. The endpoint returns one result per wallet, processed in parallel so 50 wallets don't take 50× single-wallet time.
 
 ## Request body
 
@@ -135,8 +135,8 @@ Auth errors (`401`, `403`) and rate-limit errors (`429`) are identical to the si
 ## Limits and behavior
 
 - **Max 100 addresses per call**.
-- **Internal concurrency: 8** — fan-out runs 8 wallets at a time. A 100-wallet batch with average ~1.5s per wallet completes in ~20s.
-- **45-second total timeout** at the s1 forwarder. Heavy batches (many high-volume wallets) may exceed — split the address list across multiple calls if so.
+- **Typical batch latency** — a 100-wallet batch with average ~1.5s per wallet completes in roughly 20s.
+- **45-second total timeout**. Heavy batches (many high-volume wallets) may exceed — split the address list across multiple calls if so.
 - **Same rate limit** as the single endpoint: 1 request per 5 seconds per API key. The batch counts as one request regardless of how many wallets are inside.
 - **Per-wallet errors don't fail the batch.** A wallet that errors during processing returns `{"wallet": "...", "error": "..."}` in its slot. Other wallets still return their full result.
 - **Same `partial: true` behavior per wallet** as the single endpoint — extreme high-frequency wallets may flag partial inside their result.
