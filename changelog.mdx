@@ -7,6 +7,20 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-30 — TypeScript SDK 0.9.4
+
+Bug fix release for the trading module:
+
+- **Fixed signer detection crash** — `ensureReady()` and `linkWallet()` could throw `"signer.getAddress is not a function"` when the signer object had partial method coverage. The detection logic now correctly validates all required methods before dispatching to each signer path.
+- **Hardened address extraction** — the relay signer adapter now handles additional wallet shapes, preventing crashes during Safe deployment and approval flows.
+
+Upgrade:
+```bash
+npm install polynode-sdk@0.9.4
+```
+
+---
+
 ## 2026-04-30 — Backtest Copy PnL: batch endpoint
 
 Score up to 100 wallets in one call:
