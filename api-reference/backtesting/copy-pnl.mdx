@@ -50,15 +50,16 @@ GET https://api.polynode.dev/v2/copy-pnl/{wallet}
 
 ## Example: default 30-day window
 
-<RequestExample>
-```bash cURL
+Request:
+
+```bash
 curl -H "x-api-key: $YOUR_KEY" \
   "https://api.polynode.dev/v2/copy-pnl/0x0c73d8abc3cd918bc62d0204e33ee05c3f5a68e7"
 ```
-</RequestExample>
 
-<ResponseExample>
-```json 200 OK
+Response (`200 OK`):
+
+```json
 {
   "wallet": "0x0c73d8abc3cd918bc62d0204e33ee05c3f5a68e7",
   "actual_pnl_usdc": -5697.9,
@@ -88,19 +89,19 @@ curl -H "x-api-key: $YOUR_KEY" \
   }
 }
 ```
-</ResponseExample>
 
 ## Example: 7-day window via preset
 
-<RequestExample>
-```bash cURL
+Request:
+
+```bash
 curl -H "x-api-key: $YOUR_KEY" \
   "https://api.polynode.dev/v2/copy-pnl/0x9977760c6bd6f824cac834d1a36ee99478d63020?period=7d"
 ```
-</RequestExample>
 
-<ResponseExample>
-```json 200 OK
+Response (`200 OK`):
+
+```json
 {
   "wallet": "0x9977760c6bd6f824cac834d1a36ee99478d63020",
   "actual_pnl_usdc": 8082.45,
@@ -130,20 +131,19 @@ curl -H "x-api-key: $YOUR_KEY" \
   }
 }
 ```
-</ResponseExample>
 
 ## Example: explicit date range
 
-<RequestExample>
-```bash cURL
-# Score the window from April 15 to April 25 inclusive
+Request — score the window from April 15 to April 25 inclusive:
+
+```bash
 curl -H "x-api-key: $YOUR_KEY" \
   "https://api.polynode.dev/v2/copy-pnl/0x9977760c6bd6f824cac834d1a36ee99478d63020?from=2026-04-15&to=2026-04-25"
 ```
-</RequestExample>
 
-<ResponseExample>
-```json 200 OK
+Response (`200 OK`):
+
+```json
 {
   "wallet": "0x9977760c6bd6f824cac834d1a36ee99478d63020",
   "actual_pnl_usdc": -70450.73,
@@ -162,19 +162,19 @@ curl -H "x-api-key: $YOUR_KEY" \
   "sources": { "...": "..." }
 }
 ```
-</ResponseExample>
 
 ## Example: per-fill drill-down
 
-<RequestExample>
-```bash cURL
+Request:
+
+```bash
 curl -H "x-api-key: $YOUR_KEY" \
   "https://api.polynode.dev/v2/copy-pnl/0x0c73d8abc3cd918bc62d0204e33ee05c3f5a68e7?period=7d&include_trades=1"
 ```
-</RequestExample>
 
-<ResponseExample>
-```json 200 OK (truncated)
+Response (`200 OK`, truncated):
+
+```json
 {
   "wallet": "0x0c73d8abc3cd918bc62d0204e33ee05c3f5a68e7",
   "actual_pnl_usdc": -5027.89,
@@ -204,38 +204,37 @@ curl -H "x-api-key: $YOUR_KEY" \
   ]
 }
 ```
-</ResponseExample>
 
 ## Errors
 
-<ResponseExample>
-```json 400 Invalid period
+`400 Invalid period`:
+
+```json
 { "error": "Invalid period. Allowed: 7d, 14d, 30d, 60d, 90d, 180d" }
 ```
-</ResponseExample>
 
-<ResponseExample>
-```json 401 No API key
+`401 No API key`:
+
+```json
 { "error": "API key required. Pass via ?key= or x-api-key header." }
 ```
-</ResponseExample>
 
-<ResponseExample>
-```json 403 Free tier
+`403 Free tier`:
+
+```json
 { "error": "V2 endpoints require a paid plan. See polynode.dev/pricing for details." }
 ```
-</ResponseExample>
 
-<ResponseExample>
-```json 429 Rate limited
+`429 Rate limited`:
+
+```json
 {
   "error": "copy-pnl rate limited (1 req per 5s per key).",
   "retryAfterMs": 4231
 }
 ```
-</ResponseExample>
 
-The `Retry-After` header (in seconds, rounded up) is also set on 429 responses.
+The `Retry-After` header (in seconds, rounded up) is also set on 429 responses. The rate limit is shared across all `/v2/copy-pnl/*` calls per API key — calling the endpoint with different wallets or different params still counts toward the same 1 req per 5 seconds budget.
 
 ## Notes
 
