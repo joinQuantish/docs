@@ -1,0 +1,245 @@
+---
+title: "Backtest Copy PnL"
+description: "Score a wallet for copy-trading quality. Returns cashflow PnL, simulated copier PnL with 2% slippage friction, and a toxic-for-copying flag."
+---
+
+```http
+GET https://api.polynode.dev/v2/copy-pnl/{wallet}
+```
+
+## Path parameters
+
+<ParamField path="wallet" type="string" required>
+  The Polymarket wallet address (Safe proxy or EOA, lowercased internally).
+</ParamField>
+
+## Query parameters
+
+<ParamField query="period" type="string" default="30d">
+  Convenience window preset. One of: `7d`, `14d`, `30d`, `60d`, `90d`, `180d`. Anchored to "now". If you pass `period`, you don't need `from`.
+</ParamField>
+
+<ParamField query="from" type="string | number">
+  Start of the window. Accepts `YYYY-MM-DD` (UTC midnight) or unix seconds. Overrides `period` if both are passed.
+</ParamField>
+
+<ParamField query="to" type="string | number">
+  End of the window. Same format as `from`. Defaults to current time when omitted.
+</ParamField>
+
+<ParamField query="include_trades" type="boolean" default="false">
+  When `1` or `true`, response includes a `trades` array with one entry per fill (`ts`, `side`, `price`, `shares`, `actual_usd`, `backtest_usd`). Useful for transparency and debugging.
+</ParamField>
+
+## Response fields
+
+| Field | Type | Description |
+|---|---|---|
+| `wallet` | string | Echo of the requested wallet (lowercased) |
+| `actual_pnl_usdc` | number | Cashflow PnL over the window: `-buys + sells + settlements`. No marks on open positions. |
+| `backtest_copy_pnl_usdc` | number | Same walk with 2% slippage applied to buys (capped at $1) and sells. Settlements unchanged. |
+| `slippage_amount_usdc` | number | `actual_pnl_usdc − backtest_copy_pnl_usdc`. The dollar friction the copier eats. |
+| `slippage_cost_rate_pct` | number \| null | `slippage / abs(actual_pnl) × 100`. `null` when `abs(actual_pnl) < 1` (denominator unstable). |
+| `toxic_for_copying` | boolean | `true` when `slippage_cost_rate_pct > 15`. |
+| `trade_count` | int | Number of fills walked in the window. |
+| `pnl_definition` | string | Always `"cashflow"`. Reminds callers this differs from PM's website PnL (which marks open positions). |
+| `applied_filters` | object | Resolved `from` (unix), `to` (unix), and `window_days` (only set when default 30d window was used). |
+| `partial` | boolean | `true` if the underlying walk hit the 30s budget and returned incomplete data. |
+| `sources` | object | Breakdown: `window_trades`, `window_activity`, per-event-type counts, `cashflow_breakdown` (buys/sells/settlements). For transparency. |
+| `trades` | array | Only present when `include_trades=1`. One entry per fill. |
+
+## Example: default 30-day window
+
+<RequestExample>
+```bash cURL
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/0x0c73d8abc3cd918bc62d0204e33ee05c3f5a68e7"
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+{
+  "wallet": "0x0c73d8abc3cd918bc62d0204e33ee05c3f5a68e7",
+  "actual_pnl_usdc": -5697.9,
+  "backtest_copy_pnl_usdc": -8932.81,
+  "slippage_amount_usdc": 3234.91,
+  "slippage_cost_rate_pct": 56.77,
+  "toxic_for_copying": true,
+  "trade_count": 1726,
+  "pnl_definition": "cashflow",
+  "applied_filters": {
+    "from": 1774916101,
+    "to": 1777508101,
+    "window_days": 30
+  },
+  "partial": false,
+  "sources": {
+    "window_trades": 1726,
+    "window_activity": 51,
+    "activity_breakdown": { "redemption": 51 },
+    "cashflow_breakdown": {
+      "actual_buy_cost": 85766.5,
+      "actual_sell_rev": 77266.87,
+      "settlement_in": 2801.73,
+      "settlement_out": 0
+    },
+    "fetch_ms": 1361
+  }
+}
+```
+</ResponseExample>
+
+## Example: 7-day window via preset
+
+<RequestExample>
+```bash cURL
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/0x9977760c6bd6f824cac834d1a36ee99478d63020?period=7d"
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+{
+  "wallet": "0x9977760c6bd6f824cac834d1a36ee99478d63020",
+  "actual_pnl_usdc": 8082.45,
+  "backtest_copy_pnl_usdc": 7077.07,
+  "slippage_amount_usdc": 1005.38,
+  "slippage_cost_rate_pct": 12.44,
+  "toxic_for_copying": false,
+  "trade_count": 1753,
+  "pnl_definition": "cashflow",
+  "applied_filters": {
+    "from": 1776903319,
+    "to": 1777508119,
+    "window_days": null
+  },
+  "partial": false,
+  "sources": {
+    "window_trades": 1753,
+    "window_activity": 144,
+    "activity_breakdown": { "redemption": 144 },
+    "cashflow_breakdown": {
+      "actual_buy_cost": 339438.1,
+      "actual_sell_rev": 596.28,
+      "settlement_in": 346924.27,
+      "settlement_out": 0
+    },
+    "fetch_ms": 632
+  }
+}
+```
+</ResponseExample>
+
+## Example: explicit date range
+
+<RequestExample>
+```bash cURL
+# Score the window from April 15 to April 25 inclusive
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/0x9977760c6bd6f824cac834d1a36ee99478d63020?from=2026-04-15&to=2026-04-25"
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK
+{
+  "wallet": "0x9977760c6bd6f824cac834d1a36ee99478d63020",
+  "actual_pnl_usdc": -70450.73,
+  "backtest_copy_pnl_usdc": -74413.34,
+  "slippage_amount_usdc": 3962.61,
+  "slippage_cost_rate_pct": 5.62,
+  "toxic_for_copying": false,
+  "trade_count": 3787,
+  "pnl_definition": "cashflow",
+  "applied_filters": {
+    "from": 1776211200,
+    "to": 1777075200,
+    "window_days": null
+  },
+  "partial": false,
+  "sources": { "...": "..." }
+}
+```
+</ResponseExample>
+
+## Example: per-fill drill-down
+
+<RequestExample>
+```bash cURL
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/0x0c73d8abc3cd918bc62d0204e33ee05c3f5a68e7?period=7d&include_trades=1"
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 OK (truncated)
+{
+  "wallet": "0x0c73d8abc3cd918bc62d0204e33ee05c3f5a68e7",
+  "actual_pnl_usdc": -5027.89,
+  "backtest_copy_pnl_usdc": -6783.42,
+  "slippage_amount_usdc": 1755.53,
+  "slippage_cost_rate_pct": 34.92,
+  "toxic_for_copying": true,
+  "trade_count": 838,
+  "pnl_definition": "cashflow",
+  "trades": [
+    {
+      "ts": 1777232322,
+      "side": "BUY",
+      "price": 0.7916,
+      "shares": 252.66,
+      "actual_usd": 200,
+      "backtest_usd": 204
+    },
+    {
+      "ts": 1777232322,
+      "side": "SELL",
+      "price": 0.21,
+      "shares": 48,
+      "actual_usd": 10.08,
+      "backtest_usd": 9.88
+    }
+  ]
+}
+```
+</ResponseExample>
+
+## Errors
+
+<ResponseExample>
+```json 400 Invalid period
+{ "error": "Invalid period. Allowed: 7d, 14d, 30d, 60d, 90d, 180d" }
+```
+</ResponseExample>
+
+<ResponseExample>
+```json 401 No API key
+{ "error": "API key required. Pass via ?key= or x-api-key header." }
+```
+</ResponseExample>
+
+<ResponseExample>
+```json 403 Free tier
+{ "error": "V2 endpoints require a paid plan. See polynode.dev/pricing for details." }
+```
+</ResponseExample>
+
+<ResponseExample>
+```json 429 Rate limited
+{
+  "error": "copy-pnl rate limited (1 req per 5s per key).",
+  "retryAfterMs": 4231
+}
+```
+</ResponseExample>
+
+The `Retry-After` header (in seconds, rounded up) is also set on 429 responses.
+
+## Notes
+
+- **Wallet address is case-insensitive**. Internally lowercased.
+- **Time precision**: when `from` is `YYYY-MM-DD`, it resolves to that date at 00:00 UTC. Pass unix seconds for sub-day precision.
+- **Settlement events** (redemption, merge, split, neg_risk_conversion) are processed at face value on both `actual_pnl` and `backtest_copy_pnl`, so they cancel out in `slippage_amount` but remain in the absolute PnL numbers.
+- **High-volume wallets**: the underlying walk is paginated by time bucket and runs in parallel. Wallets with up to ~1.6M fills in the window have been validated. Beyond that, pass a tighter window or expect `partial: true`.

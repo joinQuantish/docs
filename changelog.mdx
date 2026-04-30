@@ -7,6 +7,33 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-30 — Backtest Copy PnL endpoint
+
+New paid endpoint for scoring any wallet's copy-trade quality:
+
+```
+GET /v2/copy-pnl/{wallet}?period=30d
+```
+
+Walks every fill in the requested window, applies a realistic 2% slippage on buys and sells (capped at $1.00 per share for buys), settles redemptions / merges / splits at face value, and returns:
+
+- `actual_pnl_usdc` — the wallet's cashflow PnL over the window
+- `backtest_copy_pnl_usdc` — what a copier would have earned with friction
+- `slippage_amount_usdc` — the dollar gap
+- `slippage_cost_rate_pct` — friction as a percentage of actual PnL
+- `toxic_for_copying` — `true` when the rate exceeds 15% (wallet's profit relies on execution speed; copier won't replicate)
+- `trade_count`, `applied_filters`, `sources`, optional `trades[]` drill-down
+
+**Time window options**: `?period=7d|14d|30d|60d|90d|180d` (default 30d), or `?from=&to=` with `YYYY-MM-DD` or unix seconds.
+
+**Note on PnL definition**: this returns **cashflow** PnL (real dollars moved), not Polymarket's website PnL (which marks open positions at current price). The response includes a `pnl_definition: "cashflow"` field to make this explicit. For PM-website style PnL use [Trader PnL Series](/api-reference/enriched/trader-pnl).
+
+**Limits**: paid tier required, 1 request per 5s per key, 30s server-side budget. Validated on wallets up to ~1.6M fills in the window.
+
+Full reference: [Backtest Copy PnL](/api-reference/backtesting/copy-pnl) · [Backtesting Overview](/api-reference/backtesting/overview)
+
+---
+
 ## 2026-04-27 — Positions: 100% Polymarket parity, deterministic resolved-market mark, six new fields, real cursor pagination
 
 `/v2/onchain/positions` now matches Polymarket's `data-api` to the cent on every shared position. Verified across six wallets, 627 total shared positions, 100.00% sub-penny match on `unrealized_pnl`.

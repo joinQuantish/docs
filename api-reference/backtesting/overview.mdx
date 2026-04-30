@@ -1,0 +1,59 @@
+---
+title: "Backtesting Overview"
+description: "Score any wallet for copy-trading quality. Walks every fill in a window, applies realistic slippage, returns a single rate that flags toxic-to-copy wallets."
+---
+
+The backtesting endpoint answers one question for any Polymarket wallet:
+
+> "If I had copied every trade this wallet made, how much would slippage friction have eaten?"
+
+You pass a wallet and a time window. We walk every fill in that window, apply a realistic 2% slippage on each buy and sell (capped at $1.00 per share for buys), settle redemptions / merges / splits at face value, and return both the wallet's actual cashflow PnL and the simulated copier's PnL. The dollar gap between them — divided by the trader's actual PnL — is the **slippage cost rate**.
+
+A wallet with a high slippage rate (>15%) profits primarily from execution speed and tight spreads. A copier following them with normal latency and slippage won't replicate the returns. We flag those as `toxic_for_copying`.
+
+## How the math works
+
+For each fill in the window:
+- **BUY**: copier pays `price × 1.02 × shares`, capped at `1.00 × shares`
+- **SELL**: copier receives `price × 0.98 × shares`
+
+For each settlement event (redemption, merge, split, neg_risk_conversion):
+- Processed at face value, no slippage applied to either side
+
+```
+actual_pnl    = -sum(buy_usd) + sum(sell_usd) + settlements_in - settlements_out
+backtest_pnl  = -sum(buy_usd × slippage_mult) + sum(sell_usd × 0.98) + settlements_in - settlements_out
+slippage_amount = actual_pnl - backtest_pnl
+slippage_cost_rate_pct = slippage_amount / abs(actual_pnl) × 100
+toxic_for_copying = slippage_cost_rate_pct > 15
+```
+
+When `abs(actual_pnl) < $1`, the rate denominator is unstable and we return `null` for the rate.
+
+## What "PnL" means here
+
+`actual_pnl_usdc` is **cashflow PnL** over the requested window: the real dollars that moved through this wallet's Safe. It does **not** mark open positions to current price the way Polymarket's website does. The response includes a `pnl_definition: "cashflow"` field to make this explicit.
+
+This is the right number for copy-trading quality scoring because a copier eventually realizes their open positions too — what matters is the friction-adjusted dollars actually banked, not paper marks that can evaporate.
+
+If you want PM-website style realized + unrealized PnL, use the [Trader PnL Series](/api-reference/enriched/trader-pnl) endpoint.
+
+## Endpoint
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/v2/copy-pnl/{wallet}` | Score one wallet over a time window |
+
+## Time-window options
+
+- **Default**: last 30 days (when no `from`, `to`, or `period` is provided)
+- **Preset**: `?period=7d|14d|30d|60d|90d|180d`
+- **Explicit**: `?from=YYYY-MM-DD` and/or `?to=YYYY-MM-DD` (also accepts unix seconds)
+- **Precedence**: explicit `from`/`to` beats `period` beats default
+
+## Limits and behavior
+
+- **Paid tier required**: free tier returns 403
+- **Rate limit**: 1 request per 5 seconds per API key (backtest is compute-heavy)
+- **Server budget**: 30 second hard cap on the underlying walk. Extreme high-frequency wallets (50K+ fills in the window) may return `partial: true` — pass a tighter window to fit in budget
+- **Maximum window**: `180d` (6 months). Past that, even normal wallets exceed budget

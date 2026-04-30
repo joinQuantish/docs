@@ -138,6 +138,13 @@
             ]
           },
           {
+            "group": "Backtesting",
+            "pages": [
+              "api-reference/backtesting/overview",
+              "api-reference/backtesting/copy-pnl"
+            ]
+          },
+          {
             "group": "Enriched Data",
             "pages": [
               "api-reference/enriched/leaderboard",
