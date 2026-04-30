@@ -188,7 +188,7 @@ Auth/rate-limit errors mirror the rest of the `/v2/copy-pnl/*` family.
 
 ## Notes
 
-- **Sub-second.** All scores are precomputed and served from cache. Even a 1000-wallet pool with all six periods scored returns in <100ms.
+- **Sub-second.** All scores are precomputed and served from cache. Even a 1000-wallet pool with all six periods scored returns in under 100ms.
 - **`pending` and `errored` aren't included in `results`.** Use `pending_sample` and `errored_sample` to identify which specific wallets need attention. The `errored_sample` includes the upstream error message — typically `timeout_180s` for the heaviest whales on long windows.
 - **`computed_at` per row.** Use this to render "as of X minutes ago" in your UI. Newly-added wallets (via on-add freshening) typically have a `computed_at` within ~30s of the add. Periodic refresh updates it once per chunk slot.
 - **`last_refresh` at top level.** When the most recent full refresh cycle completed. Individual wallets may have been refreshed earlier or later within the cycle — use the per-row `computed_at` field for exact freshness.
