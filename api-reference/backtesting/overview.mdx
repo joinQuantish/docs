@@ -107,3 +107,22 @@ For BYOB, scores are precomputed for **all six period presets** (7/14/30/60/90/1
 - **Per-wallet budget on background refresh**: 180 seconds (3 minutes) — longer than the on-demand 30s cap because the customer isn't waiting on the response
 - **Leaderboard query latency**: sub-second (all reads from cache)
 - **Freshness signal**: every result row includes `computed_at` (unix ts of when that score was last computed); top-level response includes `last_refresh` (last full-cycle complete)
+
+## FAQ: Why do two traders on the same market get different rates?
+
+The math (2% friction per fill) is identical for every wallet. What changes between traders is **how many fills they need** to extract their PnL, and how big that PnL is. The rate is `slippage / |actual_pnl|` — same numerator math, different denominators and trade counts.
+
+The cleanest rule of thumb: **the more trades it takes to extract a given dollar of PnL, the less of that PnL survives reproduction.**
+
+| Wallet | Strategy | Actual PnL | Trades | Slip $ | Rate | Copyable? |
+|---|---|---|---:|---:|---:|---|
+| `0x4924…3782` | Concentrated whale: few large positions held to resolution | $20.0M | 8K | $786K | **3.9 %** | Yes — copier captures ~$19.2M |
+| `0x37c1…74a6` | Profitable scalper: tight spreads, fast execution | +$755K | 93K | $925K | **122 %** (toxic) | No — copier ends up at -$170K |
+| `0xee61…fc18` | High-frequency loser: many fills for tiny per-trade margin | -$132K | 303K | $929K | **705 %** (toxic) | No — copier loses 7x what they did |
+
+All three traded across the same broad set of Polymarket markets in the same 30-day window. The rate does not measure "is this trader good?" — it measures **"how much of their edge survives reproduction by a copier with realistic friction?"**
+
+- **Strategic edge** (market reads, conviction, timing of large positions) → low rate, reproducible
+- **Execution edge** (HFT, queue priority, spread capture) → high rate, not reproducible
+
+A wallet can be massively profitable AND uncopyable. The rate tells you which kind they are before you wire money to copy them.
