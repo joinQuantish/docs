@@ -22,5 +22,5 @@ The `openPrice` is the Chainlink oracle price at market open. The `closePrice` u
 </ResponseExample>
 
 <Note>
-  Cached for 10 seconds. The `window` parameter is a Unix epoch timestamp. Get window timestamps from the `/v1/crypto/active` endpoint.
+  Real-time. No cache. `closePrice` is locked in the instant a window ends — no waiting. The `window` parameter is a Unix epoch timestamp. Get window timestamps from the `/v1/crypto/active` endpoint.
 </Note>
