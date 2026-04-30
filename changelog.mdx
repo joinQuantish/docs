@@ -7,16 +7,17 @@ icon: "clock-rotate-left"
 
 ---
 
-## 2026-04-30 — TypeScript SDK 0.9.4
+## 2026-04-30 — TypeScript SDK 0.9.5
 
 Bug fix release for the trading module:
 
-- **Fixed signer detection crash** — `ensureReady()` and `linkWallet()` could throw `"signer.getAddress is not a function"` when the signer object had partial method coverage. The detection logic now correctly validates all required methods before dispatching to each signer path.
-- **Hardened address extraction** — the relay signer adapter now handles additional wallet shapes, preventing crashes during Safe deployment and approval flows.
+- **Fixed `signer.getAddress is not a function` crash** — `ensureReady()` and `linkWallet()` could throw this error when the internal viem WalletClient was passed to downstream Polymarket packages that expect an ethers-style `getAddress()` method. The SDK now ensures `getAddress()` is always available on the normalized signer, regardless of which `@polymarket/clob-client` version you have installed.
+- **Fixed signer detection logic** — a duplicate guard condition was allowing incomplete signer objects through, causing crashes instead of clean error messages.
+- **Hardened relay signer adapter** — address extraction now handles additional wallet shapes during Safe deployment and approval flows.
 
 Upgrade:
 ```bash
-npm install polynode-sdk@0.9.4
+npm install polynode-sdk@0.9.5
 ```
 
 ---
