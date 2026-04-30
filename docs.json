@@ -142,7 +142,11 @@
             "pages": [
               "api-reference/backtesting/overview",
               "api-reference/backtesting/copy-pnl",
-              "api-reference/backtesting/batch"
+              "api-reference/backtesting/batch",
+              "api-reference/backtesting/byob-add-wallets",
+              "api-reference/backtesting/byob-remove-wallets",
+              "api-reference/backtesting/byob-list-wallets",
+              "api-reference/backtesting/byob-leaderboard"
             ]
           },
           {

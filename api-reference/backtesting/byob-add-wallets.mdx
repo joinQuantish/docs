@@ -1,0 +1,118 @@
+---
+title: "BYOB — Add Wallets"
+description: "Add wallets to your BYOB tracked-pool. Newly-added wallets get scored within seconds (on-add freshening)."
+---
+
+```http
+POST https://api.polynode.dev/v2/copy-pnl/wallets
+```
+
+Add one or more wallets to your private BYOB tracked-pool. Wallets are immediately added to the global refresh queue AND scored right away by the on-add freshening pass — usually within ~30 seconds for normal wallets, longer for whales.
+
+## Request body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `addresses` | `string[]` | yes | Array of valid `0x…` wallet addresses (Safe proxy or EOA). Lowercased internally. Max 1000 per request. |
+
+## Response fields
+
+| Field | Type | Description |
+|---|---|---|
+| `added` | int | Number of NEW wallets added to your pool (excludes those already tracked) |
+| `already_tracked` | int | Number of wallets in the request body that were already in your pool |
+| `total` | int | Current size of your pool after this request |
+| `max` | int | Hard cap on pool size per API key (currently 1000) |
+| `capped` | bool | `true` when your request would have exceeded `max` and we accepted only the first N that fit |
+| `refresh_kicked` | int | Number of newly-added wallets queued for immediate background scoring (matches `added`) |
+| `hint` | string | Only present when `capped: true` — explains how many of your wallets were dropped |
+
+## Example: fresh add
+
+Request:
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{
+    "addresses": [
+      "0xdead0000000000000000000000000000000000aa",
+      "0xdead0000000000000000000000000000000000bb"
+    ]
+  }' \
+  "https://api.polynode.dev/v2/copy-pnl/wallets"
+```
+
+Response (`200 OK`):
+
+```json
+{
+  "added": 2,
+  "already_tracked": 0,
+  "total": 110,
+  "max": 1000,
+  "capped": false,
+  "refresh_kicked": 2
+}
+```
+
+The two new wallets are now in your pool AND queued for immediate scoring. Within ~30s (faster for small wallets, longer for whales) you'll see them populated in `/v2/copy-pnl/leaderboard`.
+
+## Example: re-add (dedupe)
+
+Wallets already in your pool are silently skipped — sending the same address twice doesn't count toward your cap.
+
+Request (one wallet already tracked, one new):
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{
+    "addresses": [
+      "0xdead0000000000000000000000000000000000aa",
+      "0xdead0000000000000000000000000000000000cc"
+    ]
+  }' \
+  "https://api.polynode.dev/v2/copy-pnl/wallets"
+```
+
+Response (`200 OK`):
+
+```json
+{
+  "added": 1,
+  "already_tracked": 1,
+  "total": 111,
+  "max": 1000,
+  "capped": false,
+  "refresh_kicked": 1
+}
+```
+
+Only the genuinely new wallet (`0xdead…cc`) was added and refresh-kicked. The duplicate was a no-op.
+
+## Errors
+
+`400 Missing or invalid addresses` (covers: missing `addresses` field, non-string in array, malformed hex):
+
+```json
+{ "error": "Body must include \"addresses\" — array of valid 0x… wallet addresses." }
+```
+
+`400 Too many addresses in one request`:
+
+```json
+{ "error": "At most 1000 wallets per request (and per tenant)." }
+```
+
+`401 Missing API key`, `403 Free tier`, `429 Rate limited` — same as the on-demand `/v2/copy-pnl/{wallet}` endpoint. See [Backtest Copy PnL → Errors](/api-reference/backtesting/copy-pnl#errors).
+
+## Notes
+
+- **Wallets are lowercased internally.** Mixing case across requests is fine; the same wallet in different case won't double-track.
+- **Within a single request, duplicates are de-duped** before the dedup-against-pool check. So passing the same address twice in one body counts as one.
+- **Pool isolation:** each API key has its own private pool keyed on the SHA256 of your key. Adding wallets to one pool doesn't affect any other customer.
+- **On-add freshening** runs in the background — the HTTP response returns within milliseconds even though scoring takes 30s+ to complete. Poll `/v2/copy-pnl/leaderboard` to see scores land.
+- **Capacity behavior**: if your request would have pushed your pool past `max`, we accept the first N that fit and set `capped: true` plus a `hint` explaining what was dropped. We do NOT reject the entire request.

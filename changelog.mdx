@@ -50,6 +50,40 @@ npm install polynode-sdk@0.9.5
 
 ---
 
+## 2026-04-30 — BYOB (Bring Your Own Backtest) — precomputed leaderboards
+
+The on-demand backtest endpoints answer "score this wallet" synchronously. **BYOB inverts that** — you hand us a private wallet pool, we precompute scores in the background across all six period presets, you query the resulting leaderboard with sub-second latency.
+
+Four new endpoints under `/v2/copy-pnl/`:
+
+```
+POST   /v2/copy-pnl/wallets       body: {addresses[]}    add to pool (max 1000)
+DELETE /v2/copy-pnl/wallets       body: {addresses[]}    remove from pool
+GET    /v2/copy-pnl/wallets                              list pool
+GET    /v2/copy-pnl/leaderboard   ?period=&sort_by=&order=&limit=&offset=&min_trade_count=&exclude_toxic=
+```
+
+Newly-added wallets are scored within ~30s (on-add freshening). The full pool refreshes daily, processed in chunks of 50 wallets spread across the day to keep peak load bounded. Each result row includes `computed_at` so you can render freshness in your UI.
+
+Per-tenant isolation: each API key has its own private pool keyed on the SHA256 of the key. Your tracked wallets are never visible to other customers.
+
+References: [Backtesting Overview](/api-reference/backtesting/overview) · [Add Wallets](/api-reference/backtesting/byob-add-wallets) · [Remove Wallets](/api-reference/backtesting/byob-remove-wallets) · [List Wallets](/api-reference/backtesting/byob-list-wallets) · [Leaderboard](/api-reference/backtesting/byob-leaderboard)
+
+---
+
+## 2026-04-30 — On-chain wallet/market trades: deep pagination unlocked
+
+`/v2/onchain/wallets/{w}/trades` and `/v2/onchain/markets/{token}/trades` now properly paginate across the full trade history of any wallet or market, no matter how active. Previously these endpoints silently truncated heavy traders to ~2000 fills lifetime — deep `?offset=` queries returned empty.
+
+Customer-visible behavior changes:
+- Heavy wallets (e.g. 1M+ fills) now return correct, complete trade history
+- Deep `?offset=` queries return real data instead of empty arrays
+- No SDK or query-shape changes required — same `?limit=&offset=` parameters
+
+Internal: switched the underlying Goldsky queries from a 2-query maker/taker split to a single `or:` operator query with timestamp-cursor pagination. Halves Goldsky load per request.
+
+---
+
 ## 2026-04-30 — Backtest Copy PnL: batch endpoint
 
 Score up to 100 wallets in one call:

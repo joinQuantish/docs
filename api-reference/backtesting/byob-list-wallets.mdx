@@ -1,0 +1,50 @@
+---
+title: "BYOB — List Wallets"
+description: "Return every wallet in your BYOB tracked-pool, sorted lexicographically."
+---
+
+```http
+GET https://api.polynode.dev/v2/copy-pnl/wallets
+```
+
+Returns every wallet currently in your private BYOB pool. Useful for showing your tracked-set in a UI, exporting, or auditing what's queued for the leaderboard.
+
+## Response fields
+
+| Field | Type | Description |
+|---|---|---|
+| `wallets` | `string[]` | Every wallet in your pool, lowercased, sorted lexicographically (stable order) |
+| `count` | int | Length of the `wallets` array |
+| `max` | int | Hard cap on pool size per API key (1000) |
+
+## Example
+
+Request:
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/wallets"
+```
+
+Response (`200 OK`):
+
+```json
+{
+  "wallets": [
+    "0x000d257d2dc7616feaef4ae0f14600fdf50a758e",
+    "0x01c78f8873c0c86d6b6b92ff627e3802237ee995",
+    "0x034475def048324ad32d87c5fd90e99f0f7b2538",
+    "0x090a9efe46c0e42e4fd598cd81be011ad72f27e7",
+    "0x0979bad57d7a1403db89cbcd9c52bf43f2138d9b"
+  ],
+  "count": 108,
+  "max": 1000
+}
+```
+
+## Notes
+
+- **Sorted output.** Wallets are returned in lexicographic order, not in the order you added them. The order is stable — useful for paginating through your own pool client-side without surprises.
+- **No pagination on this endpoint.** The full list returns in one response. With `max: 1000` and ~42 bytes per wallet address, the largest possible payload is well under 50 KB.
+- **Pool isolation.** Only wallets added by THIS API key are returned. No way to see other customers' pools.
+- **Includes wallets that haven't been scored yet.** A wallet you just added via `POST /v2/copy-pnl/wallets` shows here immediately, even if its `computed_at` won't appear in the leaderboard for ~30 seconds while on-add freshening runs.

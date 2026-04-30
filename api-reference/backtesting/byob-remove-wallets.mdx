@@ -1,0 +1,95 @@
+---
+title: "BYOB — Remove Wallets"
+description: "Remove wallets from your BYOB tracked-pool. Removal is idempotent — re-removing a wallet that's not in the pool returns 0 with no error."
+---
+
+```http
+DELETE https://api.polynode.dev/v2/copy-pnl/wallets
+```
+
+Remove one or more wallets from your private BYOB pool. Wallets not in the pool (or already removed) are silently skipped — `removed` reflects only how many wallets were actually present.
+
+## Request body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `addresses` | `string[]` | yes | Array of `0x…` wallet addresses to remove. Wallets not in your pool are no-ops. |
+
+## Response fields
+
+| Field | Type | Description |
+|---|---|---|
+| `removed` | int | Number of wallets actually removed from your pool |
+| `total` | int | Current size of your pool after removal |
+| `max` | int | Hard cap on pool size per API key (1000) |
+
+## Example: remove an existing wallet
+
+Request:
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -X DELETE \
+  -d '{
+    "addresses": [
+      "0xfeed0000000000000000000000000000000000aa",
+      "0xfeed0000000000000000000000000000000000ff"
+    ]
+  }' \
+  "https://api.polynode.dev/v2/copy-pnl/wallets"
+```
+
+Response (`200 OK`):
+
+```json
+{
+  "removed": 1,
+  "total": 109,
+  "max": 1000
+}
+```
+
+Only the first wallet was actually in the pool — the second was never tracked, so it's a silent no-op. The response tells you exactly how many were touched.
+
+## Example: idempotent re-remove
+
+Calling delete on a wallet already removed is safe — returns `removed: 0` with no error.
+
+Request:
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -X DELETE \
+  -d '{"addresses": ["0xfeed0000000000000000000000000000000000aa"]}' \
+  "https://api.polynode.dev/v2/copy-pnl/wallets"
+```
+
+Response (`200 OK`):
+
+```json
+{
+  "removed": 0,
+  "total": 109,
+  "max": 1000
+}
+```
+
+This makes "set my pool to exactly this list" workflows simple — DELETE old, POST new, both safe to re-run.
+
+## Errors
+
+`400 Missing or invalid addresses`:
+
+```json
+{ "error": "Body must include \"addresses\" — array of valid 0x… wallet addresses." }
+```
+
+Same auth/rate-limit errors as the rest of the `/v2/copy-pnl/*` family.
+
+## Notes
+
+- **Removal is per-tenant.** Removing a wallet from your pool does NOT remove it from the global refresh queue if other tenants still track it — the wallet's score keeps refreshing for them. Your private query just stops returning that wallet.
+- **Cached scores survive briefly.** The wallet's last-computed score stays in our cache (24h TTL). If you re-add the same wallet within 24h, the leaderboard will show its existing score immediately while the on-add freshening kicks off a fresh recompute.
+- **No bulk-clear endpoint.** To wipe your entire pool, GET your wallet list first, then DELETE all of them in chunks of 1000.

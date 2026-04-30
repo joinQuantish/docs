@@ -1,0 +1,195 @@
+---
+title: "BYOB — Leaderboard"
+description: "Sub-second sorted, filtered, paginated leaderboard over your tracked-wallet pool. Reads precomputed scores from cache."
+---
+
+```http
+GET https://api.polynode.dev/v2/copy-pnl/leaderboard
+```
+
+Query the precomputed leaderboard over your private wallet pool. All reads come from cache — sub-second latency regardless of pool size or window. Sort by any output field, filter out toxic wallets or low-volume traders, paginate.
+
+## Query parameters
+
+<ParamField query="period" type="string" default="30d">
+  Time window the scores were computed against. One of: `7d`, `14d`, `30d`, `60d`, `90d`, `180d`. Scores are precomputed for **all six periods** so any choice is sub-second.
+</ParamField>
+
+<ParamField query="sort_by" type="string" default="backtest_copy_pnl_usdc">
+  Field to sort by. One of: `backtest_copy_pnl_usdc`, `actual_pnl_usdc`, `slippage_amount_usdc`, `slippage_cost_rate_pct`, `trade_count`.
+</ParamField>
+
+<ParamField query="order" type="string" default="desc">
+  `asc` or `desc`. Wallets with `null` `slippage_cost_rate_pct` (when `abs(actual_pnl) < 1`) always sort last regardless of direction.
+</ParamField>
+
+<ParamField query="limit" type="int" default="100">
+  Max results to return. 1 to 1000.
+</ParamField>
+
+<ParamField query="offset" type="int" default="0">
+  Skip the first N results. Useful for paginating beyond `limit`.
+</ParamField>
+
+<ParamField query="min_trade_count" type="int" default="0">
+  Filter out wallets with fewer than N fills in the window. Useful to drop sample-too-small noise.
+</ParamField>
+
+<ParamField query="exclude_toxic" type="boolean" default="false">
+  When `true`, drops wallets where `slippage_cost_rate_pct > 15`. The leader-selection power filter.
+</ParamField>
+
+## Response shape
+
+| Field | Type | Description |
+|---|---|---|
+| `period` | string | Echo of the requested period |
+| `sort_by` | string | Echo of the sort field |
+| `order` | string | Echo of the sort direction |
+| `filters` | object | `{min_trade_count, exclude_toxic}` echo |
+| `total_in_pool` | int | Total wallets in your pool |
+| `scored` | int | Wallets with a score for this period |
+| `filtered_in` | int | Wallets that passed the `min_trade_count` + `exclude_toxic` filters |
+| `pending` | int | Wallets in your pool with no score yet (newly added or queued for next refresh) |
+| `errored` | int | Wallets whose last refresh attempt failed (typically heavy whales hitting timeout on long windows) |
+| `offset` | int | Echo |
+| `limit` | int | Echo |
+| `last_refresh` | int (unix) \| null | When the last full chunked-refresh cycle completed |
+| `results` | array | Top N matching rows after filters and sort |
+| `errored_sample` | array | Up to 10 errored wallets with their last-error message — only present when `errored > 0` |
+| `pending_sample` | array | Up to 10 pending wallet addresses — only present when `pending > 0` |
+
+### Per-result row
+
+| Field | Type | Description |
+|---|---|---|
+| `local_rank` | int | 1-indexed rank within your pool (after offset) |
+| `wallet` | string | Lowercased address |
+| `actual_pnl_usdc` | number | Cashflow PnL over the period |
+| `backtest_copy_pnl_usdc` | number | Same walk with 2% slippage |
+| `slippage_amount_usdc` | number | Dollar friction the copier eats |
+| `slippage_cost_rate_pct` | number \| null | Friction as % of actual PnL (null when \|actual\| < $1) |
+| `toxic_for_copying` | bool | `true` when rate > 15% |
+| `trade_count` | int | Number of fills in the window |
+| `partial` | bool | `true` if the underlying walk hit the per-wallet 180s budget |
+| `computed_at` | int (unix) | When this specific score was last refreshed — surface this in your UI as freshness signal |
+
+## Example: top 3 by actual_pnl_usdc desc
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/leaderboard?period=30d&sort_by=actual_pnl_usdc&order=desc&limit=3"
+```
+
+Response (`200 OK`):
+
+```json
+{
+  "period": "30d",
+  "sort_by": "actual_pnl_usdc",
+  "order": "desc",
+  "filters": { "min_trade_count": 0, "exclude_toxic": false },
+  "total_in_pool": 108,
+  "scored": 104,
+  "filtered_in": 104,
+  "pending": 1,
+  "errored": 3,
+  "offset": 0,
+  "limit": 3,
+  "last_refresh": 1777521943,
+  "results": [
+    {
+      "local_rank": 1,
+      "wallet": "0x492442eab586f242b53bda933fd5de859c8a3782",
+      "actual_pnl_usdc": 22915787.92,
+      "backtest_copy_pnl_usdc": 22129678.06,
+      "slippage_amount_usdc": 786109.86,
+      "slippage_cost_rate_pct": 3.43,
+      "toxic_for_copying": false,
+      "trade_count": 8045,
+      "partial": false,
+      "computed_at": 1777522146
+    }
+  ]
+}
+```
+
+## Example: leader screening — best non-toxic, min volume
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/leaderboard?period=30d&sort_by=slippage_cost_rate_pct&order=asc&exclude_toxic=true&min_trade_count=1000&limit=3"
+```
+
+Response (`200 OK`):
+
+```json
+{
+  "period": "30d",
+  "sort_by": "slippage_cost_rate_pct",
+  "order": "asc",
+  "filters": { "min_trade_count": 1000, "exclude_toxic": true },
+  "total_in_pool": 108,
+  "scored": 104,
+  "filtered_in": 50,
+  "pending": 2,
+  "errored": 2,
+  "offset": 0,
+  "limit": 3,
+  "results": [
+    {
+      "local_rank": 1,
+      "wallet": "0x9c16127eccf031df45461ef1e04b52ea286a09cb",
+      "actual_pnl_usdc": 102171.68,
+      "backtest_copy_pnl_usdc": 101643.41,
+      "slippage_amount_usdc": 528.27,
+      "slippage_cost_rate_pct": 0.52,
+      "toxic_for_copying": false,
+      "trade_count": 9472,
+      "partial": false,
+      "computed_at": 1777521515
+    }
+  ]
+}
+```
+
+This is the canonical "find good leaders to copy" query: lowest slippage rate, but only among wallets that have actually traded enough (`min_trade_count: 1000`) and aren't already flagged toxic.
+
+## Example: pagination (offset)
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/leaderboard?period=30d&offset=10&limit=3"
+```
+
+Response includes results with `local_rank: 11, 12, 13` — i.e. ranks within your pool start at `offset + 1`. The default sort is `backtest_copy_pnl_usdc desc`.
+
+## Errors
+
+`400 Invalid period`:
+
+```json
+{ "error": "Invalid period. Allowed: 7d, 14d, 30d, 60d, 90d, 180d" }
+```
+
+`400 Invalid sort_by`:
+
+```json
+{ "error": "Invalid sort_by. Allowed: backtest_copy_pnl_usdc, actual_pnl_usdc, slippage_amount_usdc, slippage_cost_rate_pct, trade_count" }
+```
+
+`400 Invalid order`:
+
+```json
+{ "error": "Invalid order. Allowed: asc | desc" }
+```
+
+Auth/rate-limit errors mirror the rest of the `/v2/copy-pnl/*` family.
+
+## Notes
+
+- **Sub-second.** All scores live in our Redis cache; the query never walks Goldsky. Even a 1000-wallet pool with all six periods scored returns in <100ms.
+- **`pending` and `errored` aren't included in `results`.** Use `pending_sample` and `errored_sample` to identify which specific wallets need attention. The `errored_sample` includes the upstream error message — typically `timeout_180s` for the heaviest whales on long windows.
+- **`computed_at` per row.** Use this to render "as of X minutes ago" in your UI. Newly-added wallets (via on-add freshening) typically have a `computed_at` within ~30s of the add. Periodic refresh updates it once per chunk slot.
+- **`last_refresh` at top level.** When the most recent full chunked-refresh cycle completed (cursor wrapped back to 0). Doesn't mean every wallet was refreshed at that exact moment — chunks span the cycle.
+- **Sort ties + nulls.** When two wallets share the exact sort_by value, secondary order is undefined. Wallets with `null` `slippage_cost_rate_pct` always sort last when sorting on that field.

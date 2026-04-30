@@ -40,10 +40,50 @@ If you want PM-website style realized + unrealized PnL, use the [Trader PnL Seri
 
 ## Endpoints
 
+**Score on demand:**
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/v2/copy-pnl/{wallet}` | Score one wallet over a time window |
 | `POST` | `/v2/copy-pnl/batch` | Score up to 100 wallets in one call (internal concurrency 8) |
+
+**BYOB — Bring Your Own Backtest** (precomputed leaderboard):
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/v2/copy-pnl/wallets` | Add wallets to your private tracked-pool |
+| `DELETE` | `/v2/copy-pnl/wallets` | Remove wallets from your pool |
+| `GET` | `/v2/copy-pnl/wallets` | List wallets in your pool |
+| `GET` | `/v2/copy-pnl/leaderboard` | Sorted, filtered, paginated leaderboard over your pool |
+
+## BYOB — when to use it
+
+The on-demand endpoints (`GET /v2/copy-pnl/{wallet}` and `POST /v2/copy-pnl/batch`) are **synchronous** — you wait while we walk the wallet's history, which can take up to 30 seconds per wallet. Great for one-off lookups.
+
+**BYOB inverts that.** You hand us a list of wallets you care about; we precompute their copy-pnl scores in the background across multiple time windows; you query the resulting leaderboard with sub-second latency. Best for:
+
+- Picking leader wallets to surface in your UI from a candidate pool
+- Daily-refreshed dashboards
+- Anywhere you need "top N by backtest_copy_pnl_usdc, excluding toxic, with min trade count" answered fast
+
+**How it works:**
+
+1. POST your wallet list to `/v2/copy-pnl/wallets` (max 1000 wallets per API key)
+2. Newly-added wallets get scored immediately (on-add freshening — usually within ~30s of the add)
+3. The full pool also refreshes on a chunked daily cadence (50 wallets per chunk, spread across the day to bound load)
+4. Query `/v2/copy-pnl/leaderboard` to read sorted/filtered results — all from cache, sub-second
+5. Each result row includes `computed_at` so you can show freshness in your UI
+
+**Tenant isolation:** each API key has its own private pool. Pools are keyed on the SHA256 of your API key — your wallets are never visible to other customers.
+
+## Time-window options
+
+- **Default**: last 30 days (when no `from`, `to`, or `period` is provided)
+- **Preset**: `?period=7d|14d|30d|60d|90d|180d`
+- **Explicit**: `?from=YYYY-MM-DD` and/or `?to=YYYY-MM-DD` (also accepts unix seconds)
+- **Precedence**: explicit `from`/`to` beats `period` beats default
+
+For BYOB, scores are precomputed for **all six period presets** (7/14/30/60/90/180 days) so the leaderboard query just picks one.
 
 ## Time-window options
 
@@ -54,7 +94,16 @@ If you want PM-website style realized + unrealized PnL, use the [Trader PnL Seri
 
 ## Limits and behavior
 
-- **Paid tier required**: free tier returns 403
+**On-demand endpoints (`{wallet}` + `batch`):**
+- **Paid tier required** — free tier returns 403
 - **Rate limit**: 1 request per 5 seconds per API key (backtest is compute-heavy)
-- **Server budget**: 30 second hard cap on the underlying walk. Extreme high-frequency wallets (50K+ fills in the window) may return `partial: true` — pass a tighter window to fit in budget
+- **Server budget**: 30 second hard cap on the underlying walk. Extreme high-frequency wallets (1M+ fills in the window) may return `partial: true` — pass a tighter window to fit in budget
 - **Maximum window**: `180d` (6 months). Past that, even normal wallets exceed budget
+- **Batch**: max 100 wallets per call
+
+**BYOB:**
+- **Pool size**: 1000 wallets per API key max
+- **Refresh cadence**: 24 hour periodic cycle, processed in chunks of 50 wallets spread across the day. Plus on-add freshening (new wallets scored immediately, usually within seconds).
+- **Per-wallet budget on background refresh**: 180 seconds (3 minutes) — longer than the on-demand 30s cap because the customer isn't waiting on the response
+- **Leaderboard query latency**: sub-second (all reads from cache)
+- **Freshness signal**: every result row includes `computed_at` (unix ts of when that score was last computed); top-level response includes `last_refresh` (last full-cycle complete)
