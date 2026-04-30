@@ -1,0 +1,142 @@
+---
+title: "Backtest Copy PnL — Batch"
+description: "Score multiple wallets in one call. Same math as the single-wallet endpoint, fanned out internally with concurrency control."
+---
+
+```http
+POST https://api.polynode.dev/v2/copy-pnl/batch
+```
+
+Use this when you need to score many wallets at once — for example, ranking a candidate-leader list. The endpoint fans out internally with concurrency 8 and returns one result per wallet, so 50 wallets don't take 50× single-wallet time.
+
+## Request body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `addresses` | `string[]` | yes | Array of wallet addresses (Safe proxy or EOA). 1 to 100 entries per call. |
+| `from` | `string \| number` | no | Window start. `YYYY-MM-DD` (UTC midnight) or unix seconds. Defaults to last 30 days when omitted. |
+| `to` | `string \| number` | no | Window end. Same format as `from`. Defaults to current time. |
+| `include_trades` | `boolean` | no | When `true`, every result includes the per-fill `trades` array. Off by default — payloads can grow large quickly. |
+
+The `from`/`to` window applies to **every** wallet in the batch — pass per-wallet windows by making separate calls.
+
+`?period=` preset is **not supported** in the batch body. Use explicit `from`/`to`.
+
+## Response
+
+```
+{
+  count: int,
+  elapsed_ms: int,
+  results: [ /* one entry per address — same shape as the single-wallet endpoint */ ]
+}
+```
+
+Per-result fields are identical to the [single-wallet response](/api-reference/backtesting/copy-pnl#response-fields).
+
+## Example: 3 wallets over a 10-day window
+
+Request:
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{
+    "addresses": [
+      "0x0c73d8abc3cd918bc62d0204e33ee05c3f5a68e7",
+      "0xba4ac793e68eacb93b41566137f25757656a9fa6",
+      "0x4b2995b6c8cc2cf56899ad62ee87c3f70c97716f"
+    ],
+    "from": "2026-04-15",
+    "to":   "2026-04-25"
+  }' \
+  "https://api.polynode.dev/v2/copy-pnl/batch"
+```
+
+Response (`200 OK`, abridged):
+
+```json
+{
+  "count": 3,
+  "elapsed_ms": 1948,
+  "results": [
+    {
+      "wallet": "0x0c73d8abc3cd918bc62d0204e33ee05c3f5a68e7",
+      "actual_pnl_usdc": -7323.06,
+      "backtest_copy_pnl_usdc": -9664.1,
+      "slippage_amount_usdc": 2341.04,
+      "slippage_cost_rate_pct": 31.97,
+      "toxic_for_copying": true,
+      "trade_count": 1637,
+      "pnl_definition": "cashflow",
+      "applied_filters": {
+        "from": 1776211200,
+        "to": 1777075200,
+        "window_days": null
+      },
+      "partial": false,
+      "sources": { "...": "..." }
+    },
+    {
+      "wallet": "0xba4ac793e68eacb93b41566137f25757656a9fa6",
+      "actual_pnl_usdc": 0,
+      "backtest_copy_pnl_usdc": 0,
+      "slippage_amount_usdc": 0,
+      "slippage_cost_rate_pct": null,
+      "toxic_for_copying": false,
+      "trade_count": 0,
+      "pnl_definition": "cashflow",
+      "applied_filters": { "from": 1776211200, "to": 1777075200, "window_days": null },
+      "partial": false,
+      "sources": { "...": "..." }
+    },
+    {
+      "wallet": "0x4b2995b6c8cc2cf56899ad62ee87c3f70c97716f",
+      "actual_pnl_usdc": -2637.15,
+      "backtest_copy_pnl_usdc": -2690.17,
+      "slippage_amount_usdc": 53.02,
+      "slippage_cost_rate_pct": 2.01,
+      "toxic_for_copying": false,
+      "trade_count": 12,
+      "pnl_definition": "cashflow",
+      "applied_filters": { "from": 1776211200, "to": 1777075200, "window_days": null },
+      "partial": false,
+      "sources": { "...": "..." }
+    }
+  ]
+}
+```
+
+Note the second wallet — no on-chain trading activity in the window — returns the standard zero-shape with `slippage_cost_rate_pct: null` (denominator unstable per the spec edge case). Wallets that error individually return `{"wallet": "...", "error": "..."}` instead of the full shape, so a single bad wallet won't fail the whole batch.
+
+## Errors
+
+`400 Body must include "addresses": [...]`:
+
+```json
+{ "error": "Body must include \"addresses\": [...]." }
+```
+
+`400 Invalid wallet`:
+
+```json
+{ "error": "Invalid wallet: not-a-wallet" }
+```
+
+`400 Too many addresses`:
+
+```json
+{ "error": "Max 100 addresses per batch." }
+```
+
+Auth errors (`401`, `403`) and rate-limit errors (`429`) are identical to the single-wallet endpoint — see [Backtest Copy PnL](/api-reference/backtesting/copy-pnl#errors).
+
+## Limits and behavior
+
+- **Max 100 addresses per call**.
+- **Internal concurrency: 8** — fan-out runs 8 wallets at a time. A 100-wallet batch with average ~1.5s per wallet completes in ~20s.
+- **45-second total timeout** at the s1 forwarder. Heavy batches (many high-volume wallets) may exceed — split the address list across multiple calls if so.
+- **Same rate limit** as the single endpoint: 1 request per 5 seconds per API key. The batch counts as one request regardless of how many wallets are inside.
+- **Per-wallet errors don't fail the batch.** A wallet that errors during processing returns `{"wallet": "...", "error": "..."}` in its slot. Other wallets still return their full result.
+- **Same `partial: true` behavior per wallet** as the single endpoint — extreme high-frequency wallets may flag partial inside their result.

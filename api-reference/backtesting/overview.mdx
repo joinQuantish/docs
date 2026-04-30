@@ -38,11 +38,12 @@ This is the right number for copy-trading quality scoring because a copier event
 
 If you want PM-website style realized + unrealized PnL, use the [Trader PnL Series](/api-reference/enriched/trader-pnl) endpoint.
 
-## Endpoint
+## Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/v2/copy-pnl/{wallet}` | Score one wallet over a time window |
+| `POST` | `/v2/copy-pnl/batch` | Score up to 100 wallets in one call (internal concurrency 8) |
 
 ## Time-window options
 

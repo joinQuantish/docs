@@ -7,6 +7,21 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-04-30 — Backtest Copy PnL: batch endpoint
+
+Score up to 100 wallets in one call:
+
+```
+POST /v2/copy-pnl/batch
+{ "addresses": ["0x...", ...], "from": "...", "to": "..." }
+```
+
+Same math + response shape as the single-wallet endpoint, fanned out internally with concurrency 8. Per-wallet errors don't fail the batch — the bad slot returns `{"wallet": "...", "error": "..."}` and the rest still come back.
+
+Reference: [Batch endpoint](/api-reference/backtesting/batch)
+
+---
+
 ## 2026-04-30 — Backtest Copy PnL endpoint
 
 New paid endpoint for scoring any wallet's copy-trade quality:

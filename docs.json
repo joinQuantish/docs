@@ -141,7 +141,8 @@
             "group": "Backtesting",
             "pages": [
               "api-reference/backtesting/overview",
-              "api-reference/backtesting/copy-pnl"
+              "api-reference/backtesting/copy-pnl",
+              "api-reference/backtesting/batch"
             ]
           },
           {
