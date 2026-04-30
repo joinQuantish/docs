@@ -1,10 +1,10 @@
 ---
 title: "WebSocket Overview"
 sidebarTitle: "Overview"
-description: "Real-time Polymarket settlements, up to 5 seconds before on-chain confirmation."
+description: "Real-time Polymarket trades, 3-5 seconds before on-chain confirmation."
 ---
 
-PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlements are delivered to your connection **1–2 blocks before they confirm on-chain** (median 2.9 seconds, up to 5 seconds early).
+polynode's WebSocket is the fastest way to get Polymarket trade data. Every fill is delivered **3-5 seconds before on-chain confirmation** (1-2 blocks early). Subscribe to `fills` to get one clean event per trade, or `settlements` for the full transaction lifecycle.
 
 <CardGroup cols={3}>
   <Card title="Fills" icon="bolt" href="/websocket/subscribing#fills">
@@ -138,99 +138,31 @@ PolyNode's WebSocket is the fastest way to get Polymarket trade data. Settlement
 **`fills` vs `settlements`** — both stream the same trades at the same speed. `fills` gives you one flat event per trade (simplest). `settlements` gives you the full transaction bundle with a `trades[]` array and lifecycle tracking via `status_update` events. Start with `fills`, move to `settlements` when you need the full lifecycle. See [Subscriptions](/websocket/subscribing) for all options.
 </Info>
 
-<details>
-<summary>Settlement-based quick start (advanced)</summary>
+<Accordion title="Settlement-based quick start (full lifecycle)">
 
-If you need the full transaction format with nested fills and status lifecycle:
+If you need the full transaction format with nested fills and status lifecycle, subscribe to `settlements` instead:
 
-    <CodeGroup>
-    ```javascript Node.js
-    const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
+```javascript
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
-    };
+ws.onopen = () => {
+  ws.send(JSON.stringify({ action: "subscribe", type: "fills" }));
+};
 
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      if (msg.type === "settlement") {
-        const d = msg.data;
-        console.log(`${d.taker_side} ${d.taker_size} @ ${d.taker_price} | ${d.market_title}`);
-      }
-    };
-    ```
-
-    ```python Python
-    import asyncio, json, websockets
-
-    async def stream():
-        async with websockets.connect("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY") as ws:
-            await ws.send(json.dumps({"action": "subscribe", "type": "settlements"}))
-            async for message in ws:
-                msg = json.loads(message)
-                if msg["type"] == "settlement":
-                    d = msg["data"]
-                    print(f"{d['taker_side']} {d['taker_size']} @ {d['taker_price']} | {d.get('market_title')}")
-
-    asyncio.run(stream())
-    ```
-
-    ```bash CLI
-    npx wscat -c "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
-    # once connected, send:
-    {"action":"subscribe","type":"settlements"}
-    ```
-    </CodeGroup>
-  </Step>
-
-  <Step title="Receive events">
-    You'll get a `snapshot` of recent matching events, then live `settlement` events as they happen:
-    ```json
-    {
-      "data": {
-        "block_number": null,
-        "condition_id": "0xb27aae79542981f7a476fb93b7ec456f...",
-        "detected_at": 1772500000000,
-        "event_title": "Bitcoin Price Milestones",
-        "event_type": "settlement",
-        "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/...",
-        "market_slug": "bitcoin-100k-2026",
-        "market_title": "Will Bitcoin hit $100K in 2026?",
-        "neg_risk": true,
-        "outcome": "Yes",
-        "status": "pending",
-        "taker_base_fee": 0,
-        "taker_price": 0.72,
-        "taker_side": "BUY",
-        "taker_size": 500.0,
-        "taker_token": "21742633143463906290569404...",
-        "taker_wallet": "0xabcdef1234567890...",
-        "tick_size": 0.01,
-        "tokens": {
-          "21742633143463906290569404...": "Yes",
-          "48393153309905564935848131...": "No"
-        },
-        "trades": [
-          {
-            "maker": "0x999888777666...",
-            "maker_amount": "360000000",
-            "price": 0.72,
-            "side": "BUY",
-            "signer": "0xabc123...",
-            "size": 500.0,
-            "taker": "0xabcdef1234567890...",
-            "taker_amount": "500000000",
-            "token_id": "21742633..."
-          }
-        ],
-        "tx_hash": "0x1a2b3c4d5e6f..."
-      },
-      "timestamp": 1772500000000,
-      "type": "settlement"
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type === "settlement") {
+    const d = msg.data;
+    console.log(`${d.taker_side} ${d.taker_size} @ ${d.taker_price} | ${d.market_title}`);
+    for (const fill of d.trades) {
+      console.log(`  ${fill.side} ${fill.size} @ ${fill.price} | maker: ${fill.maker}`);
     }
-    ```
-  </Step>
-</Steps>
+  }
+};
+```
+
+See [Settlement Event](/websocket/events/settlement) for the full field reference.
+</Accordion>
 
 ## Connection URL
 
@@ -303,7 +235,7 @@ import asyncio, json, websockets
 async def stream():
     url = "wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY"
     async with websockets.connect(url, ping_interval=None, ping_timeout=None) as ws:
-        await ws.send(json.dumps({"action": "subscribe", "type": "settlements"}))
+        await ws.send(json.dumps({"action": "subscribe", "type": "fills"}))
 
         async def keepalive():
             while True:
@@ -328,7 +260,7 @@ asyncio.run(stream())
 const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.onopen = () => {
-  ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
+  ws.send(JSON.stringify({ action: "subscribe", type: "fills" }));
   setInterval(() => ws.send(JSON.stringify({ action: "ping" })), 30000);
 };
 ```
@@ -339,16 +271,14 @@ ws.onopen = () => {
 ```
 Connect → wss://ws.polynode.dev/ws?key=pn_live_...
     ↓
-Send → {"action": "subscribe", "type": "settlements", ...}
+Send → {"action": "subscribe", "type": "fills"}
     ↓
-Receive ← {"type": "snapshot", "count": 20, "events": [...]}
 Receive ← {"type": "subscribed", "subscriber_id": "...", "subscription_id": "...:1"}
     ↓
 Send → {"action": "subscribe", ...}        (additional subscriptions stack)
 Receive ← {"type": "subscribed", "subscription_id": "...:2"}
     ↓
-Receive ← {"type": "settlement", ...}     (live events)
-Receive ← {"type": "status_update", ...}
+Receive ← {"type": "event", "data": {...}} (live fills)
 Receive ← Ping frame                       (every 30s)
 Send   → Pong frame                        (automatic)
 Receive ← {"type": "heartbeat", ...}       (every 30s)
@@ -392,7 +322,7 @@ function connect() {
   ws.onopen = () => {
     delay = 1000;
     const filters = lastEventTs ? { since: lastEventTs } : {};
-    ws.send(JSON.stringify({ action: "subscribe", type: "settlements", filters }));
+    ws.send(JSON.stringify({ action: "subscribe", type: "fills", filters }));
   };
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data);
