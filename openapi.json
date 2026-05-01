@@ -3066,7 +3066,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "Unix timestamp — only return trades after this time"
+            "description": "Unix timestamp \u2014 only return trades after this time"
           },
           {
             "name": "end_time",
@@ -3074,7 +3074,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "Unix timestamp — only return trades before this time"
+            "description": "Unix timestamp \u2014 only return trades before this time"
           },
           {
             "name": "min_total",
@@ -3176,6 +3176,14 @@
               "default": 0
             },
             "description": "Skip first N results"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cursor pagination. Pass empty string `?cursor=` for the first page, then echo back `pagination.cursor` from each response. Format: `<lastTs>:<lastId>`. Each page loads at the same speed regardless of depth \u2014 recommended over offset for paging beyond ~25K results."
           }
         ],
         "responses": {
@@ -3332,6 +3340,14 @@
               "default": 0
             },
             "description": "Skip first N results"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cursor pagination. Pass empty string `?cursor=` for the first page, then echo back `pagination.cursor` from each response. Format: `<lastTs>:<lastId>`. Each page loads at the same speed regardless of depth \u2014 recommended over offset for paging beyond ~25K results."
           }
         ],
         "responses": {
@@ -4160,6 +4176,112 @@
           }
         ]
       }
+    },
+    "/v2/onchain/markets/{token_id}/trades/all": {
+      "get": {
+        "tags": [
+          "Onchain"
+        ],
+        "summary": "Market trade history \u2014 bulk export",
+        "description": "Returns the entire trade history for a market token in a single response. No client-side pagination. Up to 250,000 trades per call. **Growth plan or above.**",
+        "operationId": "onchain_market_trades_all",
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "CTF token ID"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Optional unix timestamp lower bound"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Optional unix timestamp upper bound"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full trade history"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Tier requirement not met (Growth plan or above)"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
+    },
+    "/v2/onchain/wallets/{address}/trades/all": {
+      "get": {
+        "tags": [
+          "Onchain"
+        ],
+        "summary": "Wallet trade history \u2014 bulk export",
+        "description": "Returns the entire trade history for a wallet in a single response. No client-side pagination. Up to 250,000 trades per call. **Growth plan or above.**",
+        "operationId": "onchain_wallet_trades_all",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Wallet address"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Optional unix timestamp lower bound"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Optional unix timestamp upper bound"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full trade history"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Tier requirement not met (Growth plan or above)"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -4728,7 +4850,7 @@
       },
       "EventStatus": {
         "type": "string",
-        "description": "Status of an event — pending (mempool) or confirmed (in a block).",
+        "description": "Status of an event \u2014 pending (mempool) or confirmed (in a block).",
         "enum": [
           "pending",
           "confirmed"
@@ -4951,7 +5073,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map.",
+            "description": "Token ID \u2192 outcome name map.",
             "additionalProperties": {
               "type": "string"
             },
@@ -5084,7 +5206,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
+            "description": "Token ID \u2192 outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
             "additionalProperties": {
               "type": "string"
             },
@@ -5304,7 +5426,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map.",
+            "description": "Token ID \u2192 outcome name map.",
             "additionalProperties": {
               "type": "string"
             },
@@ -5446,7 +5568,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
+            "description": "Token ID \u2192 outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
             "additionalProperties": {
               "type": "string"
             },
@@ -5572,7 +5694,7 @@
           },
           "redeemed": {
             "type": "boolean",
-            "description": "Whether the position has been redeemed onchain (tokens burned for USDC). Only present when `redeemable` is true. Determined by checking the CTF contract balance — zero balance means fully redeemed."
+            "description": "Whether the position has been redeemed onchain (tokens burned for USDC). Only present when `redeemable` is true. Determined by checking the CTF contract balance \u2014 zero balance means fully redeemed."
           },
           "unredeemed_balance": {
             "type": "number",
