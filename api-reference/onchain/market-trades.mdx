@@ -6,6 +6,10 @@ openapi: "GET /v2/onchain/markets/{token_id}/trades"
 
 Returns every onchain trade fill for a specific market token. This is the complete trade tape from the blockchain, enriched with market metadata.
 
+<Note>
+**Paginating? Use `?cursor=` instead of `?offset=`.** Each page loads at the same speed regardless of depth — page 1000 is just as fast as page 1. Offset slows down past the first ~25K results. See [pagination modes](#two-pagination-modes) below.
+</Note>
+
 <Tip>
 **Need to bulk-export the entire market in one call?** See [Trade History (Market) — Bulk](/api-reference/onchain/market-trades-all) — Growth plan and above can fetch the full trade history in one response (no pagination, up to 250K trades).
 </Tip>
@@ -17,9 +21,11 @@ This endpoint supports both **offset** and **cursor** pagination. They produce i
 | Mode | Trigger | Speed | When to use |
 |---|---|---|---|
 | **Offset** (default) | `?offset=N` (or no pagination params) | Slows linearly with depth — fast for the first ~25K results, then degrades | Casual use, small markets, getting just the first page |
-| **Cursor** (recommended for paging) | Pass `?cursor=` (empty for first page, then `?cursor=<lastTs>:<lastId>` from prior response) | **Constant ~1 second per page at any depth** | Walking the entire trade history of a market, deep pagination, large markets |
+| **Cursor** (recommended for paging) | Pass `?cursor=` (empty for first page, then `?cursor=<lastTs>:<lastId>` from prior response) | **~1 second per page, regardless of how deep you page** | Walking the entire trade history of a market, deep pagination, large markets |
 
-**Cursor walks any market in seconds-per-page regardless of how many trades it has.** Available on every paid tier — no growth restriction.
+**Why cursor is faster:** offset has the database walk-and-discard every prior row to find your starting point — page 500 means walking 50,000 rows. Cursor encodes the exact `(timestamp, id)` to start from, and the index lets the database jump straight there. Page 1 and page 1000 do the same amount of work.
+
+Available on every paid tier — no growth restriction.
 
 For a one-shot bulk export of an entire market in a single response (no pagination needed), see [Trade History (Market) — Bulk](/api-reference/onchain/market-trades-all) — Growth plan and above.
 
