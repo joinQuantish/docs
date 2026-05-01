@@ -4,6 +4,7 @@ description: "Return every trade for a wallet in a single response. Growth plan 
 openapi: "GET /v2/onchain/wallets/{address}/trades/all"
 ---
 
+
 <Card title="Growth plan ($200/mo) or above only" icon="bolt" color="#f59e0b">
 This endpoint returns the **entire** trade history for a wallet in **one response** — no client-side pagination, no offset bookkeeping. Because a single call can return tens of thousands of fills (and tens of MB of JSON), it's gated to the **Growth plan and above**. Starter and free tier requests receive `403`.
 
