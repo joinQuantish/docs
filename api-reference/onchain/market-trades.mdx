@@ -10,40 +10,64 @@ Returns every onchain trade fill for a specific market token. This is the comple
 **Need to bulk-export the entire market in one call?** See [Trade History (Market) — Bulk](/api-reference/onchain/market-trades-all) — Growth plan and above can fetch the full trade history in one response (no pagination, up to 250K trades).
 </Tip>
 
+## Two pagination modes
+
+This endpoint supports both **offset** and **cursor** pagination. They produce identical data; cursor is much faster at depth.
+
+| Mode | Trigger | Speed | When to use |
+|---|---|---|---|
+| **Offset** (default) | `?offset=N` (or no pagination params) | Slows linearly with depth — fast for the first ~25K results, then degrades | Casual use, small markets, getting just the first page |
+| **Cursor** (recommended for paging) | Pass `?cursor=` (empty for first page, then `?cursor=<lastTs>:<lastId>` from prior response) | **Constant ~1 second per page at any depth** | Walking the entire trade history of a market, deep pagination, large markets |
+
+**Cursor walks any market in seconds-per-page regardless of how many trades it has.** Available on every paid tier — no growth restriction.
+
+For a one-shot bulk export of an entire market in a single response (no pagination needed), see [Trade History (Market) — Bulk](/api-reference/onchain/market-trades-all) — Growth plan and above.
+
 ## Request
 
 ```
 GET /v2/onchain/markets/{token_id}/trades?limit=100&offset=0
+GET /v2/onchain/markets/{token_id}/trades?limit=1000&cursor=<cursor>
 ```
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
 | `token_id` | string | path | CTF token ID (numeric string) |
 | `limit` | integer | query | Max results (default 100, max 1000) |
-| `offset` | integer | query | Skip first N results for pagination |
+| `offset` | integer | query | Offset mode: skip first N results. Used only when `cursor` is absent. Slow at depth (>25K). |
+| `cursor` | string | query | Cursor mode: pass empty string `?cursor=` for first page, then echo back `pagination.cursor` from the response for each subsequent page. Format: `<lastTs>:<lastId>`. Constant-time at any depth. |
 
 ## Response
 
 ```json
 {
-  "token_id": "21912724974096796009916816278814088615574660931588091764221331842149572809887",
+  "token_id": "110959653450933276250915064669875552310439627880508793089816880777942697720191",
   "source": "onchain",
-  "count": 1,
-  "offset": 0,
-  "market": "Bitcoin Up or Down - March 28, 9:55PM-10:00PM ET",
-  "slug": "btc-updown-5m-1774749300",
-  "outcome": "Up",
-  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
-  "condition_id": "0xb91dbc2ba7f0d33c71fca765909e98b2023af855f1d69b82d5fd59732085700d",
+  "count": 3,
+  "market": "US x Iran ceasefire extended by April 22, 2026?",
+  "slug": "us-x-iran-ceasefire-extended-by-april-22-2026",
+  "outcome": "No",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/us-x-iran-ceasefire-by-Cgmx3GCuOwjs.jpg",
+  "condition_id": "0x1d2787cb8aed975d092b2799ed6f4083e9445f7420cdc09e9d47e7d54356c6cd",
+  "pagination": {
+    "limit": 3,
+    "has_more": true,
+    "cursor": "1777595648:0xeae6ca0aeb75fc866ddb29d3a4b2cd15382895b923fe05b9315445d6346d1c47_0x49ddd1e169186d350488e3d62f58452fe76862c5f81f33987e659759e2c66100"
+  },
   "trades": [
     {
-      "tx_hash": "0xe21d6bb1388057e285cde7cc4032fc1819d5daa562844c6996cefd64ccd4d9d8",
-      "timestamp": 1774749406,
-      "maker": "0x37b3a418576757f4636680fcaf16d1f37a602623",
-      "taker": "0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e",
-      "maker_amount": 4.711,
-      "taker_amount": 6.73,
-      "fee": 0.288428
+      "tx_hash": "0x044dc412fa97d972fae1e77f8a30e769b7bea339cc3a27b5045e5668b513a520",
+      "order_hash": "0x6b3d58dcf19f26a0b2f325bc43dc793765d1abeedfc449a3c5be38b6523613c9",
+      "timestamp": 1777595650,
+      "maker": "0x84571f1bf97a5c710cbe51daff2dd4556cc887fd",
+      "taker": "0xe111180000d2663c0091e4f400237545b87b996b",
+      "maker_asset_id": "0",
+      "taker_asset_id": "110959653450933276250915064669875552310439627880508793089816880777942697720191",
+      "maker_amount": 617.382,
+      "taker_amount": 618,
+      "fee": 0,
+      "direction": "BUY",
+      "side": "maker"
     }
   ]
 }
@@ -57,16 +81,85 @@ GET /v2/onchain/markets/{token_id}/trades?limit=100&offset=0
 | `image` | string | Market image URL |
 | `condition_id` | string | Market condition ID |
 | `trades[].tx_hash` | string | Transaction hash |
+| `trades[].order_hash` | string | Order hash that was filled |
 | `trades[].timestamp` | number | Unix timestamp |
 | `trades[].maker` | string | Maker wallet |
 | `trades[].taker` | string | Taker wallet |
-| `trades[].maker_amount` | number | USDC amount |
-| `trades[].taker_amount` | number | Token amount |
+| `trades[].maker_asset_id` | string | Asset the maker provided (`"0"` = USDC) |
+| `trades[].taker_asset_id` | string | Asset the taker provided |
+| `trades[].maker_amount` | number | Amount maker provided |
+| `trades[].taker_amount` | number | Amount taker provided |
 | `trades[].fee` | number | Fee (USDC) |
+| `trades[].direction` | string | `"BUY"` or `"SELL"` from the buyer's perspective on this fill (the side that gave USDC is the buyer) |
+| `trades[].side` | string | `"maker"` always, since this is the maker-side view of every fill on the token |
 
-## Example
+## Example: simple offset (first page)
 
 ```bash
-curl "https://api.polynode.dev/v2/onchain/markets/21912724974096796009916816278814088615574660931588091764221331842149572809887/trades?limit=20" \
+curl "https://api.polynode.dev/v2/onchain/markets/110959653450933276250915064669875552310439627880508793089816880777942697720191/trades?limit=20" \
   -H "x-api-key: YOUR_KEY"
 ```
+
+## Example: cursor pagination — walk an entire market
+
+For markets with thousands of trades, use cursor mode. Each page is constant-time (~1 second) regardless of depth.
+
+**Page 1 (first page, no cursor yet — pass empty `?cursor=`):**
+
+```bash
+TOK=110959653450933276250915064669875552310439627880508793089816880777942697720191
+curl "https://api.polynode.dev/v2/onchain/markets/$TOK/trades?limit=1000&cursor=" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Response (real, captured live) includes a `pagination` block:
+
+```json
+{
+  "count": 3,
+  "source": "onchain",
+  "token_id": "110959653450933276250915064669875552310439627880508793089816880777942697720191",
+  "market": "US x Iran ceasefire extended by April 22, 2026?",
+  "slug": "us-x-iran-ceasefire-extended-by-april-22-2026",
+  "outcome": "No",
+  "condition_id": "0x1d2787cb8aed975d092b2799ed6f4083e9445f7420cdc09e9d47e7d54356c6cd",
+  "pagination": {
+    "limit": 3,
+    "has_more": true,
+    "cursor": "1777595648:0xeae6ca0aeb75fc866ddb29d3a4b2cd15382895b923fe05b9315445d6346d1c47_0x49ddd1e169186d350488e3d62f58452fe76862c5f81f33987e659759e2c66100"
+  },
+  "trades": [
+    {
+      "tx_hash": "0x044dc412fa97d972fae1e77f8a30e769b7bea339cc3a27b5045e5668b513a520",
+      "order_hash": "0x6b3d58dcf19f26a0b2f325bc43dc793765d1abeedfc449a3c5be38b6523613c9",
+      "timestamp": 1777595650,
+      "maker": "0x84571f1bf97a5c710cbe51daff2dd4556cc887fd",
+      "taker": "0xe111180000d2663c0091e4f400237545b87b996b",
+      "maker_asset_id": "0",
+      "taker_asset_id": "110959653450933276250915064669875552310439627880508793089816880777942697720191",
+      "maker_amount": 617.382,
+      "taker_amount": 618,
+      "fee": 0,
+      "direction": "BUY",
+      "side": "maker"
+    }
+  ]
+}
+```
+
+**Page 2+ — echo back the `cursor` from the previous response:**
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/markets/$TOK/trades?limit=1000&cursor=1777595648:0xeae6ca0aeb75fc866ddb29d3a4b2cd15382895b923fe05b9315445d6346d1c47_0x49ddd1e169186d350488e3d62f58452fe76862c5f81f33987e659759e2c66100" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Repeat until `pagination.has_more` is `false`. Done — you've walked the entire trade history of the market.
+
+**Cursor format:** `<unix_timestamp>:<txHash_orderHash>`. Treat it as opaque — pass it back unchanged. Server-side it filters trades where `(timestamp < lastTs) OR (timestamp == lastTs AND id < lastId)`, so same-timestamp ties (multiple fills in one block) are handled correctly with no dups or skips.
+
+## When to use which
+
+- **First page only / interactive UI** → offset mode, no params (`?limit=100`).
+- **Walking the full history** → cursor mode (`?cursor=` then echo back).
+- **One-shot bulk export of the entire market** → [`/trades/all`](/api-reference/onchain/market-trades-all) (Growth plan).
