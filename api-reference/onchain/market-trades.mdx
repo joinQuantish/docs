@@ -4,44 +4,122 @@ description: "Complete onchain trade history for any market token."
 openapi: "GET /v2/onchain/markets/{token_id}/trades"
 ---
 
-Returns every onchain trade fill for a specific market token. This is the complete trade tape from the blockchain, enriched with market metadata.
-
-<Note>
-**Paginating? Use `?cursor=` instead of `?offset=`.** Each page loads at the same speed regardless of depth — page 1000 is just as fast as page 1. Offset slows down past the first ~25K results. See [pagination modes](#two-pagination-modes) below.
-</Note>
+Returns every onchain trade fill for a specific market token, enriched with market metadata.
 
 <Tip>
-**Need to bulk-export the entire market in one call?** See [Trade History (Market) — Bulk](/api-reference/onchain/market-trades-all) — Growth plan and above can fetch the full trade history in one response (no pagination, up to 250K trades).
+**Want the entire market in one call?** Use [Trade History (Market) — Bulk](/api-reference/onchain/market-trades-all) (Growth plan and above). Returns up to 250K trades in a single response, no pagination.
 </Tip>
 
-## Two pagination modes
+## Quick start — get the most recent 100 trades
 
-This endpoint supports both **offset** and **cursor** pagination. They produce identical data; cursor is much faster at depth.
+```bash
+curl "https://api.polynode.dev/v2/onchain/markets/{token_id}/trades?limit=100" \
+  -H "x-api-key: YOUR_KEY"
+```
 
-| Mode | Trigger | Speed | When to use |
-|---|---|---|---|
-| **Offset** (default) | `?offset=N` (or no pagination params) | Slows linearly with depth — fast for the first ~25K results, then degrades | Casual use, small markets, getting just the first page |
-| **Cursor** (recommended for paging) | Pass `?cursor=` (empty for first page, then `?cursor=<lastTs>:<lastId>` from prior response) | **~1 second per page, regardless of how deep you page** | Walking the entire trade history of a market, deep pagination, large markets |
+Default `limit=100`, max `limit=1000`. That's all most apps need.
 
-**Why cursor is faster:** offset has the database walk-and-discard every prior row to find your starting point — page 500 means walking 50,000 rows. Cursor encodes the exact `(timestamp, id)` to start from, and the index lets the database jump straight there. Page 1 and page 1000 do the same amount of work.
+## Get every trade in the market (full history)
 
-Available on every paid tier — no growth restriction.
+To walk the entire history, add `?cursor=` (empty value) to the first request, then **for each next page, copy `pagination.cursor` from the response back into the URL**. Stop when `pagination.has_more` is `false`.
 
-For a one-shot bulk export of an entire market in a single response (no pagination needed), see [Trade History (Market) — Bulk](/api-reference/onchain/market-trades-all) — Growth plan and above.
+Three complete copy-paste scripts that walk an entire market:
+
+<CodeGroup>
+
+```python Python
+import requests
+
+API_KEY = "YOUR_KEY"
+TOKEN_ID = "21743669032210695168079601505378236205866986767926346409604806906483294819314"
+
+def get_all_trades(token_id):
+    cursor = ""           # empty string = first page
+    all_trades = []
+    while True:
+        r = requests.get(
+            f"https://api.polynode.dev/v2/onchain/markets/{token_id}/trades",
+            params={"limit": 1000, "cursor": cursor},
+            headers={"x-api-key": API_KEY},
+        ).json()
+        all_trades.extend(r["trades"])
+        if not r["pagination"]["has_more"]:
+            break
+        cursor = r["pagination"]["cursor"]   # feed this into the next request
+    return all_trades
+
+trades = get_all_trades(TOKEN_ID)
+print(f"got {len(trades)} trades")
+```
+
+```javascript JavaScript
+const API_KEY = "YOUR_KEY";
+const TOKEN_ID = "21743669032210695168079601505378236205866986767926346409604806906483294819314";
+
+async function getAllTrades(tokenId) {
+  let cursor = "";              // empty string = first page
+  const allTrades = [];
+  while (true) {
+    const url = `https://api.polynode.dev/v2/onchain/markets/${tokenId}/trades`
+              + `?limit=1000&cursor=${encodeURIComponent(cursor)}`;
+    const r = await fetch(url, { headers: { "x-api-key": API_KEY } }).then(r => r.json());
+    allTrades.push(...r.trades);
+    if (!r.pagination.has_more) break;
+    cursor = r.pagination.cursor;   // feed this into the next request
+  }
+  return allTrades;
+}
+
+const trades = await getAllTrades(TOKEN_ID);
+console.log(`got ${trades.length} trades`);
+```
+
+```bash bash
+KEY="YOUR_KEY"
+TOKEN_ID="21743669032210695168079601505378236205866986767926346409604806906483294819314"
+
+CURSOR=""
+TOTAL=0
+while true; do
+  RESP=$(curl -s "https://api.polynode.dev/v2/onchain/markets/$TOKEN_ID/trades?limit=1000&cursor=$CURSOR" \
+    -H "x-api-key: $KEY")
+  COUNT=$(echo "$RESP" | python3 -c "import json,sys;print(json.load(sys.stdin)['count'])")
+  HAS_MORE=$(echo "$RESP" | python3 -c "import json,sys;print(json.load(sys.stdin)['pagination']['has_more'])")
+  TOTAL=$((TOTAL + COUNT))
+  echo "got $COUNT trades, total: $TOTAL"
+  [ "$HAS_MORE" = "False" ] && break
+  CURSOR=$(echo "$RESP" | python3 -c "import json,sys;print(json.load(sys.stdin)['pagination']['cursor'])")
+done
+```
+
+</CodeGroup>
+
+**Real run** (heavy market, walked live with the Python script above):
+
+```
+got 1000 trades  (total: 1000)
+got 1000 trades  (total: 2000)
+got 1000 trades  (total: 3000)
+...
+got 1000 trades  (total: 20000)
+DONE. 20,000 trades in 24 seconds.
+```
+
+Each page takes ~1 second regardless of how deep you go — the loop just keeps running until `has_more` is `false`.
 
 ## Request
 
 ```
-GET /v2/onchain/markets/{token_id}/trades?limit=100&offset=0
-GET /v2/onchain/markets/{token_id}/trades?limit=1000&cursor=<cursor>
+GET /v2/onchain/markets/{token_id}/trades?limit=100
+GET /v2/onchain/markets/{token_id}/trades?limit=1000&cursor=<value-from-prior-response>
 ```
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
 | `token_id` | string | path | CTF token ID (numeric string) |
-| `limit` | integer | query | Max results (default 100, max 1000) |
-| `offset` | integer | query | Offset mode: skip first N results. Used only when `cursor` is absent. Slow at depth (>25K). |
-| `cursor` | string | query | Cursor mode: pass empty string `?cursor=` for first page, then echo back `pagination.cursor` from the response for each subsequent page. Format: `<lastTs>:<lastId>`. Constant-time at any depth. |
+| `limit` | integer | query | Max results per page (default 100, max 1000) |
+| `cursor` | string | query | Pass empty string `?cursor=` for first page, then echo back `pagination.cursor` from each response. Required to walk past the first page reliably on large markets. |
+| `offset` | integer | query | Alternative to cursor: skip first N. Fast for the first ~25K results then degrades. Use `cursor` for anything bigger. |
 
 ## Response
 
@@ -81,6 +159,9 @@ GET /v2/onchain/markets/{token_id}/trades?limit=1000&cursor=<cursor>
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `count` | integer | Number of trades in this response |
+| `pagination.has_more` | boolean | `true` if more pages available — keep paginating |
+| `pagination.cursor` | string | Pass this back as `?cursor=<value>` for the next page |
 | `market` | string | Market question |
 | `slug` | string | Market slug |
 | `outcome` | string | Outcome label for this token |
@@ -96,76 +177,5 @@ GET /v2/onchain/markets/{token_id}/trades?limit=1000&cursor=<cursor>
 | `trades[].maker_amount` | number | Amount maker provided |
 | `trades[].taker_amount` | number | Amount taker provided |
 | `trades[].fee` | number | Fee (USDC) |
-| `trades[].direction` | string | `"BUY"` or `"SELL"` from the buyer's perspective on this fill (the side that gave USDC is the buyer) |
-| `trades[].side` | string | `"maker"` always, since this is the maker-side view of every fill on the token |
-
-## Example: simple offset (first page)
-
-```bash
-curl "https://api.polynode.dev/v2/onchain/markets/110959653450933276250915064669875552310439627880508793089816880777942697720191/trades?limit=20" \
-  -H "x-api-key: YOUR_KEY"
-```
-
-## Example: cursor pagination — walk an entire market
-
-For markets with thousands of trades, use cursor mode. Each page is constant-time (~1 second) regardless of depth.
-
-**Page 1 (first page, no cursor yet — pass empty `?cursor=`):**
-
-```bash
-TOK=110959653450933276250915064669875552310439627880508793089816880777942697720191
-curl "https://api.polynode.dev/v2/onchain/markets/$TOK/trades?limit=1000&cursor=" \
-  -H "x-api-key: YOUR_KEY"
-```
-
-Response (real, captured live) includes a `pagination` block:
-
-```json
-{
-  "count": 3,
-  "source": "onchain",
-  "token_id": "110959653450933276250915064669875552310439627880508793089816880777942697720191",
-  "market": "US x Iran ceasefire extended by April 22, 2026?",
-  "slug": "us-x-iran-ceasefire-extended-by-april-22-2026",
-  "outcome": "No",
-  "condition_id": "0x1d2787cb8aed975d092b2799ed6f4083e9445f7420cdc09e9d47e7d54356c6cd",
-  "pagination": {
-    "limit": 3,
-    "has_more": true,
-    "cursor": "1777595648:0xeae6ca0aeb75fc866ddb29d3a4b2cd15382895b923fe05b9315445d6346d1c47_0x49ddd1e169186d350488e3d62f58452fe76862c5f81f33987e659759e2c66100"
-  },
-  "trades": [
-    {
-      "tx_hash": "0x044dc412fa97d972fae1e77f8a30e769b7bea339cc3a27b5045e5668b513a520",
-      "order_hash": "0x6b3d58dcf19f26a0b2f325bc43dc793765d1abeedfc449a3c5be38b6523613c9",
-      "timestamp": 1777595650,
-      "maker": "0x84571f1bf97a5c710cbe51daff2dd4556cc887fd",
-      "taker": "0xe111180000d2663c0091e4f400237545b87b996b",
-      "maker_asset_id": "0",
-      "taker_asset_id": "110959653450933276250915064669875552310439627880508793089816880777942697720191",
-      "maker_amount": 617.382,
-      "taker_amount": 618,
-      "fee": 0,
-      "direction": "BUY",
-      "side": "maker"
-    }
-  ]
-}
-```
-
-**Page 2+ — echo back the `cursor` from the previous response:**
-
-```bash
-curl "https://api.polynode.dev/v2/onchain/markets/$TOK/trades?limit=1000&cursor=1777595648:0xeae6ca0aeb75fc866ddb29d3a4b2cd15382895b923fe05b9315445d6346d1c47_0x49ddd1e169186d350488e3d62f58452fe76862c5f81f33987e659759e2c66100" \
-  -H "x-api-key: YOUR_KEY"
-```
-
-Repeat until `pagination.has_more` is `false`. Done — you've walked the entire trade history of the market.
-
-**Cursor format:** `<unix_timestamp>:<txHash_orderHash>`. Treat it as opaque — pass it back unchanged. Server-side it filters trades where `(timestamp < lastTs) OR (timestamp == lastTs AND id < lastId)`, so same-timestamp ties (multiple fills in one block) are handled correctly with no dups or skips.
-
-## When to use which
-
-- **First page only / interactive UI** → offset mode, no params (`?limit=100`).
-- **Walking the full history** → cursor mode (`?cursor=` then echo back).
-- **One-shot bulk export of the entire market** → [`/trades/all`](/api-reference/onchain/market-trades-all) (Growth plan).
+| `trades[].direction` | string | `"BUY"` or `"SELL"` from the buyer's perspective on this fill |
+| `trades[].side` | string | Always `"maker"` for this endpoint |

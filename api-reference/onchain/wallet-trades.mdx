@@ -4,46 +4,111 @@ description: "Complete onchain trade fill history for any wallet. Every fill, ev
 openapi: "GET /v2/onchain/wallets/{address}/trades"
 ---
 
-Returns every onchain trade fill for a wallet, including both maker and taker sides. This is the complete settlement record from the blockchain. Each trade is enriched with market metadata (question, slug, outcome, image).
-
-Unlike the standard [wallet trade history](/api-reference/wallets/trades) which relies on Polymarket's data API (and can timeout or miss trades for heavy wallets), this endpoint pulls directly from onchain settlement data and never misses a fill.
-
-<Note>
-**Paginating? Use `?cursor=` instead of `?offset=`.** Each page loads at the same speed regardless of depth — page 1000 is just as fast as page 1. Offset slows down past the first ~25K results. See [pagination modes](#two-pagination-modes) below.
-</Note>
+Returns every onchain trade fill for a wallet — both maker and taker sides, every fill, every counterparty, every fee. Pulled directly from onchain settlement data, never misses a fill. Each trade is enriched with market metadata (question, slug, outcome, image).
 
 <Tip>
-**Need to bulk-export the wallet's entire trade history in one call?** See [Trade History (Wallet) — Bulk](/api-reference/onchain/wallet-trades-all) — Growth plan and above can fetch the full history in one response (no pagination, up to 250K trades).
+**Want the entire wallet's history in one call?** Use [Trade History (Wallet) — Bulk](/api-reference/onchain/wallet-trades-all) (Growth plan and above). Returns up to 250K trades in a single response, no pagination.
 </Tip>
 
-## Two pagination modes
+## Quick start — get the most recent 100 trades
 
-This endpoint supports both **offset** and **cursor** pagination. They produce identical data; cursor is much faster at depth.
+```bash
+curl "https://api.polynode.dev/v2/onchain/wallets/{address}/trades?limit=100" \
+  -H "x-api-key: YOUR_KEY"
+```
 
-| Mode | Trigger | Speed | When to use |
-|---|---|---|---|
-| **Offset** (default) | `?offset=N` (or no pagination params) | Slows linearly with depth — fast for the first ~25K results, then degrades | Casual use, small wallets, getting just the first page |
-| **Cursor** (recommended for paging) | Pass `?cursor=` (empty for first page, then `?cursor=<lastTs>:<lastId>` from prior response) | **~1 second per page, regardless of how deep you page** | Walking the entire trade history of a wallet, deep pagination, heavy traders |
+Default `limit=100`, max `limit=1000`. That's all most apps need.
 
-**Why cursor is faster:** offset has the database walk-and-discard every prior row to find your starting point — page 500 means walking 50,000 rows. Cursor encodes the exact `(timestamp, id)` to start from, and the index lets the database jump straight there. Page 1 and page 1000 do the same amount of work.
+## Get every trade for the wallet (full history)
 
-Available on every paid tier — no growth restriction.
+To walk the entire history, add `?cursor=` (empty value) to the first request, then **for each next page, copy `pagination.cursor` from the response back into the URL**. Stop when `pagination.has_more` is `false`.
 
-For a one-shot bulk export of an entire wallet's trade history in a single response (no pagination needed), see [Trade History (Wallet) — Bulk](/api-reference/onchain/wallet-trades-all) — Growth plan and above.
+Three complete copy-paste scripts that walk an entire wallet:
+
+<CodeGroup>
+
+```python Python
+import requests
+
+API_KEY = "YOUR_KEY"
+WALLET = "0xc944d399164b4460a4a79184fc6f419027891e0a"
+
+def get_all_trades(wallet):
+    cursor = ""           # empty string = first page
+    all_trades = []
+    while True:
+        r = requests.get(
+            f"https://api.polynode.dev/v2/onchain/wallets/{wallet}/trades",
+            params={"limit": 1000, "cursor": cursor},
+            headers={"x-api-key": API_KEY},
+        ).json()
+        all_trades.extend(r["trades"])
+        if not r["pagination"]["has_more"]:
+            break
+        cursor = r["pagination"]["cursor"]   # feed this into the next request
+    return all_trades
+
+trades = get_all_trades(WALLET)
+print(f"got {len(trades)} trades")
+```
+
+```javascript JavaScript
+const API_KEY = "YOUR_KEY";
+const WALLET = "0xc944d399164b4460a4a79184fc6f419027891e0a";
+
+async function getAllTrades(wallet) {
+  let cursor = "";              // empty string = first page
+  const allTrades = [];
+  while (true) {
+    const url = `https://api.polynode.dev/v2/onchain/wallets/${wallet}/trades`
+              + `?limit=1000&cursor=${encodeURIComponent(cursor)}`;
+    const r = await fetch(url, { headers: { "x-api-key": API_KEY } }).then(r => r.json());
+    allTrades.push(...r.trades);
+    if (!r.pagination.has_more) break;
+    cursor = r.pagination.cursor;   // feed this into the next request
+  }
+  return allTrades;
+}
+
+const trades = await getAllTrades(WALLET);
+console.log(`got ${trades.length} trades`);
+```
+
+```bash bash
+KEY="YOUR_KEY"
+WALLET="0xc944d399164b4460a4a79184fc6f419027891e0a"
+
+CURSOR=""
+TOTAL=0
+while true; do
+  RESP=$(curl -s "https://api.polynode.dev/v2/onchain/wallets/$WALLET/trades?limit=1000&cursor=$CURSOR" \
+    -H "x-api-key: $KEY")
+  COUNT=$(echo "$RESP" | python3 -c "import json,sys;print(json.load(sys.stdin)['count'])")
+  HAS_MORE=$(echo "$RESP" | python3 -c "import json,sys;print(json.load(sys.stdin)['pagination']['has_more'])")
+  TOTAL=$((TOTAL + COUNT))
+  echo "got $COUNT trades, total: $TOTAL"
+  [ "$HAS_MORE" = "False" ] && break
+  CURSOR=$(echo "$RESP" | python3 -c "import json,sys;print(json.load(sys.stdin)['pagination']['cursor'])")
+done
+```
+
+</CodeGroup>
+
+Each page takes ~1 second regardless of how many trades the wallet has. The loop just keeps running until `has_more` is `false`.
 
 ## Request
 
 ```
-GET /v2/onchain/wallets/{address}/trades?limit=100&offset=0
-GET /v2/onchain/wallets/{address}/trades?limit=1000&cursor=<cursor>
+GET /v2/onchain/wallets/{address}/trades?limit=100
+GET /v2/onchain/wallets/{address}/trades?limit=1000&cursor=<value-from-prior-response>
 ```
 
 | Parameter | Type | Location | Description |
 |-----------|------|----------|-------------|
 | `address` | string | path | Wallet address (0x-prefixed, 40 hex chars) |
-| `limit` | integer | query | Max results (default 100, max 1000) |
-| `offset` | integer | query | Offset mode: skip first N results. Used only when `cursor` is absent. Slow at depth (>25K). |
-| `cursor` | string | query | Cursor mode: pass empty string `?cursor=` for first page, then echo back `pagination.cursor` from the response for each subsequent page. Format: `<lastTs>:<lastId>`. Constant-time at any depth. |
+| `limit` | integer | query | Max results per page (default 100, max 1000) |
+| `cursor` | string | query | Pass empty string `?cursor=` for first page, then echo back `pagination.cursor` from each response. Required to walk past the first page reliably on heavy wallets. |
+| `offset` | integer | query | Alternative to cursor: skip first N. Fast for the first ~25K results then degrades. Use `cursor` for anything bigger. |
 
 ## Response
 
@@ -52,11 +117,15 @@ GET /v2/onchain/wallets/{address}/trades?limit=1000&cursor=<cursor>
   "wallet": "0xc944d399164b4460a4a79184fc6f419027891e0a",
   "source": "onchain",
   "count": 1,
+  "pagination": {
+    "limit": 1000,
+    "has_more": false
+  },
   "trades": [
     {
       "tx_hash": "0x3611178d615caeab8f1fb32bc6232a32aaf93fc1e2f5bc5c9914ce2ddb9a13c3",
-      "timestamp": 1777503244,
       "order_hash": "0x8676e03168a3cbf39bc1c695e9419127605bd070ff26e7cd628b662c363a82b5",
+      "timestamp": 1777503244,
       "maker": "0xc944d399164b4460a4a79184fc6f419027891e0a",
       "taker": "0xe111180000d2663c0091e4f400237545b87b996b",
       "maker_asset_id": "0",
@@ -75,8 +144,13 @@ GET /v2/onchain/wallets/{address}/trades?limit=1000&cursor=<cursor>
 }
 ```
 
+When `pagination.has_more` is `true`, the response also includes a `pagination.cursor` string — pass that as `?cursor=<value>` for the next request.
+
 | Field | Type | Description |
 |-------|------|-------------|
+| `count` | integer | Number of trades in this response |
+| `pagination.has_more` | boolean | `true` if more pages available — keep paginating |
+| `pagination.cursor` | string | Pass back as `?cursor=<value>` for the next page (only present when `has_more` is `true`) |
 | `trades[].tx_hash` | string | Transaction hash |
 | `trades[].timestamp` | number | Unix timestamp of the fill |
 | `trades[].order_hash` | string | Order hash that was filled |
@@ -87,8 +161,8 @@ GET /v2/onchain/wallets/{address}/trades?limit=1000&cursor=<cursor>
 | `trades[].maker_amount` | number | Amount maker provided (USDC) |
 | `trades[].taker_amount` | number | Amount taker provided (tokens) |
 | `trades[].fee` | number | Fee paid on this fill (USDC) |
-| `trades[].side` | string | Exchange role: `"maker"` or `"taker"` relative to the queried wallet. The on-chain ground truth from the OrderFilled event. Useful for orderbook simulation and fee economics (maker rebate vs taker fee). |
-| `trades[].direction` | string | Trader intent: `"BUY"` or `"SELL"` from the queried wallet's perspective. Derived: `BUY` when the wallet contributed USDC and received outcome tokens; `SELL` when the wallet contributed outcome tokens and received USDC. Independent axis from `side` — they answer different questions and both are populated on every row. |
+| `trades[].side` | string | `"maker"` or `"taker"` relative to the queried wallet — exchange role on this fill |
+| `trades[].direction` | string | `"BUY"` or `"SELL"` from the queried wallet's perspective. `BUY` = wallet contributed USDC and received outcome tokens. `SELL` = wallet contributed outcome tokens and received USDC. |
 | `trades[].market` | string | Market question |
 | `trades[].slug` | string | Market slug |
 | `trades[].outcome` | string | Outcome label (e.g. "Yes", "Up", "Trump") |
@@ -96,83 +170,9 @@ GET /v2/onchain/wallets/{address}/trades?limit=1000&cursor=<cursor>
 
 ## `side` vs `direction`
 
-These two fields look similar but answer different questions, and both are populated on every row:
+Both fields are populated on every row, and they answer different questions:
 
-| Axis | Field | What it tells you |
-|---|---|---|
-| Exchange role | `side` | Did the queried wallet provide liquidity (maker) or take it (taker)? |
-| Trader intent | `direction` | Did the queried wallet enter (BUY) or exit (SELL) outcome shares? |
+- **`side`** = was the wallet the **maker** (resting limit order) or **taker** (crossing the spread) on this fill?
+- **`direction`** = did the wallet **BUY** outcome shares (gave USDC) or **SELL** them (received USDC)?
 
-A maker can be either a buyer or a seller depending on which side of the orderbook they posted to. A taker likewise. The two axes are independent.
-
-You will see all four combinations in real wallets:
-
-| `side` | `direction` | Means |
-|---|---|---|
-| `maker` | `BUY` | Wallet posted a resting buy order, was hit by a taker selling outcome shares |
-| `maker` | `SELL` | Wallet posted a resting sell order, was hit by a taker buying outcome shares |
-| `taker` | `BUY` | Wallet crossed the spread to buy outcome shares immediately |
-| `taker` | `SELL` | Wallet crossed the spread to sell outcome shares immediately |
-
-The information `direction` carries is also fully derivable from `maker_asset_id` / `taker_asset_id` — exactly one of those is `"0"` (USDC collateral) on every fill, and the side that gave USDC is the buyer. `direction` just makes that derivation explicit.
-
-## Example: simple offset (first page)
-
-```bash
-curl "https://api.polynode.dev/v2/onchain/wallets/0xc944d399164b4460a4a79184fc6f419027891e0a/trades?limit=10" \
-  -H "x-api-key: YOUR_KEY"
-```
-
-## Example: cursor pagination — walk an entire wallet
-
-For wallets with thousands of trades, use cursor mode. Each page is constant-time (~1 second) regardless of depth.
-
-**Page 1 (first page, no cursor yet — pass empty `?cursor=`):**
-
-```bash
-WALLET=0xc944d399164b4460a4a79184fc6f419027891e0a
-curl "https://api.polynode.dev/v2/onchain/wallets/$WALLET/trades?limit=1000&cursor=" \
-  -H "x-api-key: YOUR_KEY"
-```
-
-Response (real, captured live) includes a `pagination` block:
-
-```json
-{
-  "wallet": "0xc944d399164b4460a4a79184fc6f419027891e0a",
-  "source": "onchain",
-  "count": 2,
-  "pagination": {
-    "limit": 2,
-    "has_more": true,
-    "cursor": "1777503244:0x3611178d615caeab8f1fb32bc6232a32aaf93fc1e2f5bc5c9914ce2ddb9a13c3_0x2848adef58d655171403ed29b4564cef6d6203a2279149e5759120295724b178"
-  },
-  "trades": [
-    {
-      "tx_hash": "0x3611178d615caeab8f1fb32bc6232a32aaf93fc1e2f5bc5c9914ce2ddb9a13c3",
-      "order_hash": "0x8676e03168a3cbf39bc1c695e9419127605bd070ff26e7cd628b662c363a82b5",
-      "timestamp": 1777503244,
-      "maker": "0xc944d399164b4460a4a79184fc6f419027891e0a",
-      "taker": "0xe111180000d2663c0091e4f400237545b87b996b",
-      "maker_asset_id": "0",
-      "taker_asset_id": "110959653450933276250915064669875552310439627880508793089816880777942697720191",
-      "maker_amount": 4723.199764,
-      "taker_amount": 4737.412,
-      "fee": 0,
-      "side": "maker",
-      "direction": "BUY"
-    }
-  ]
-}
-```
-
-**Page 2+ — echo back the `cursor` from the previous response:**
-
-```bash
-curl "https://api.polynode.dev/v2/onchain/wallets/$WALLET/trades?limit=1000&cursor=1777503244:0x3611178d615caeab8f1fb32bc6232a32aaf93fc1e2f5bc5c9914ce2ddb9a13c3_0x2848adef58d655171403ed29b4564cef6d6203a2279149e5759120295724b178" \
-  -H "x-api-key: YOUR_KEY"
-```
-
-Repeat until `pagination.has_more` is `false`. Done — you've walked the entire wallet's trade history.
-
-**Cursor format:** `<unix_timestamp>:<txHash_orderHash>`. Treat it as opaque — pass it back unchanged. Server-side it filters trades where `(timestamp < lastTs) OR (timestamp == lastTs AND id < lastId)`, so same-timestamp ties (multiple fills in one block) are handled correctly with no dups or skips.
+You'll see all four combinations in real wallets — a maker can be a buyer or seller depending on which side of the orderbook they posted to. Same for takers.
