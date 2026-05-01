@@ -7,6 +7,30 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-01 — Cursor pagination on `/v2/onchain/*/trades`
+
+The two trade-history endpoints now support **cursor pagination** in addition to offset:
+
+- `GET /v2/onchain/markets/{token_id}/trades?cursor=<lastTs>:<lastId>`
+- `GET /v2/onchain/wallets/{address}/trades?cursor=<lastTs>:<lastId>`
+
+**Why it matters:** offset pagination slows down the deeper you page — page 500 means the database walks 50,000 rows of wasted work to find your starting point. Cursor pagination loads page 1000 just as fast as page 1 — typically ~1 second per page, regardless of how deep you go.
+
+**How to use:**
+
+1. First page: pass `?cursor=` (empty value) instead of `?offset=0`.
+2. Response includes a `pagination` block with `cursor` and `has_more`.
+3. Subsequent pages: pass that `cursor` back as `?cursor=<value>`.
+4. Stop when `has_more` is `false`.
+
+**Available on every paid tier** — no Growth restriction.
+
+**Compatibility:** purely additive. The existing `?offset=` mode is unchanged and remains fully supported. Existing integrations don't need to change anything — switch to cursor when you next touch the integration.
+
+See the updated docs for full examples: [Trade History (Market)](/api-reference/onchain/market-trades) · [Trade History (Wallet)](/api-reference/onchain/wallet-trades).
+
+---
+
 ## 2026-05-01 — Bulk trade-export endpoints (Growth plan and above)
 
 Two new endpoints return the **entire** trade history for a market token or wallet in a **single response** — no client-side pagination required:
