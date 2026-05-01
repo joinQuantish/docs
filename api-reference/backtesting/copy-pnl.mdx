@@ -1,11 +1,22 @@
 ---
 title: "Backtest Copy PnL"
-description: "Score a wallet for copy-trading quality. Returns cashflow PnL, simulated copier PnL with 2% slippage friction, and a toxic-for-copying flag."
+description: "Score a wallet for copy-trading quality. Returns realized PnL, cashflow PnL, simulated copier PnL with 2% slippage friction, and a toxic-for-copying flag."
 ---
 
 ```http
 GET https://api.polynode.dev/v2/copy-pnl/{wallet}
 ```
+
+## TL;DR — which PnL field do you actually want?
+
+This endpoint returns **two different PnL numbers** that can look very different for the same wallet. Pick the right one for your use case:
+
+| Field | What it answers | When to use |
+|---|---|---|
+| `total_realized_pnl_usdc` | "Did this wallet **make money** trading?" | **Default for customer-facing UI.** Closest to what other trading platforms call "PnL". Equivalent to summing per-position WAVG-realized PnL across every position the wallet touched. |
+| `actual_pnl_usdc` | "How much **net cash** moved through this wallet's USDC balance from trading?" | Diagnostic / slippage-analysis. Used internally to compute `slippage_*` fields. Inflated for active wallets that hold inventory. |
+
+**Both numbers are correct** — they measure different things. See [the worked example below](#understanding-cashflow-pnl-vs-realized-pnl) for the math.
 
 ## Path parameters
 
@@ -36,17 +47,53 @@ GET https://api.polynode.dev/v2/copy-pnl/{wallet}
 | Field | Type | Description |
 |---|---|---|
 | `wallet` | string | Echo of the requested wallet (lowercased) |
-| `actual_pnl_usdc` | number | Cashflow PnL over the window: `-buys + sells + settlements`. No marks on open positions. |
-| `backtest_copy_pnl_usdc` | number | Same walk with 2% slippage applied to buys (capped at $1) and sells. Settlements unchanged. |
+| **`total_realized_pnl_usdc`** | **number** | **Realized PnL: signed sum of per-position WAVG-realized P/L across every position the matcher touched in the window. Counts only profit/loss on positions the wallet actually closed (or partially closed). Recommended primary "PnL" for customer UI.** |
+| `actual_pnl_usdc` | number | **Cashflow PnL** over the window: `-buys + sells + settlements`. Counts every USDC inflow/outflow from trading. Includes inventory bought but not yet sold (so often very negative for active buyers). Used as input to slippage formula. |
+| `backtest_copy_pnl_usdc` | number | Same cashflow walk with 2% slippage applied to buys (capped at $1) and sells. Settlements unchanged. |
 | `slippage_amount_usdc` | number | `actual_pnl_usdc − backtest_copy_pnl_usdc`. The dollar friction the copier eats. |
 | `slippage_cost_rate_pct` | number \| null | `slippage / abs(actual_pnl) × 100`. `null` when `abs(actual_pnl) < 1` (denominator unstable). |
 | `toxic_for_copying` | boolean | `true` when `slippage_cost_rate_pct > 15`. |
 | `trade_count` | int | Number of fills walked in the window. |
-| `pnl_definition` | string | Always `"cashflow"`. Reminds callers this differs from PM's website PnL (which marks open positions). |
+| `positions_closed` | int | Count of positions that contributed non-zero realized PnL in the window. |
+| `avg_entry_prob_weighted` | number \| null | PnL-weighted average entry probability across closed positions. `Σ(entry_price × |realized|) / Σ|realized|`. Null when `Σ|realized| < $1`. |
+| `avg_hold_seconds_weighted` | number \| null | PnL-weighted average hold duration. Currently always `null` (WAVG matcher doesn't track per-segment timestamps; planned for future). |
+| `pnl_definition` | string | Always `"cashflow"` for `actual_pnl_usdc`. Reminds callers `actual_pnl_usdc` differs from PM website PnL (which marks open positions). |
 | `applied_filters` | object | Resolved `from` (unix), `to` (unix), and `window_days` (only set when default 30d window was used). |
 | `partial` | boolean | `true` if the underlying walk hit the 30s budget and returned incomplete data. |
-| `sources` | object | Breakdown: `window_trades`, `window_activity`, per-event-type counts, `cashflow_breakdown` (buys/sells/settlements). For transparency. |
+| `sources` | object | Breakdown: `window_trades`, `window_activity`, per-event-type counts, `cashflow_breakdown` (buys/sells/settlements), `fifo_breakdown` (matcher diagnostics including `total_realized_pnl_usdc`). For transparency. |
 | `trades` | array | Only present when `include_trades=1`. One entry per fill. |
+
+## Understanding cashflow PnL vs realized PnL
+
+The most common source of confusion with this endpoint is "why don't `actual_pnl_usdc` and `total_realized_pnl_usdc` agree?" — they're answering different questions.
+
+**Worked example.** A wallet's first 30 days:
+
+```
+Day  | Action                | actual_pnl_usdc | total_realized_pnl_usdc
+-----+-----------------------+-----------------+-------------------------
+ 1   | BUY  100 YES @ $0.40  |     -$40.00     |        $0.00
+ 5   | SELL  50 YES @ $0.60  |     -$10.00     |       +$10.00
+10   | BUY  100 YES @ $0.50  |     -$60.00     |       +$10.00
+15   | SELL  80 YES @ $0.55  |     -$16.00     |       +$17.20
+30   | (still hold 70)       |     -$16.00     |       +$17.20
+```
+
+**Final state explained:**
+- `actual_pnl_usdc = -$16` — the wallet paid out $16 more USDC than it received over the 30 days.
+- `total_realized_pnl_usdc = +$17.20` — actual trading profit on the 130 shares the wallet closed.
+- The wallet still HOLDS 70 shares (cost basis $32.20). Cashflow counts that as money "spent". Realized ignores it.
+
+**Reconciliation:** `cashflow_pnl + cost_basis_of_open_positions ≈ realized_pnl`. In this example: `-$16 + $32.20 = $16.20 ≈ $17.20` (small rounding from WAVG cost basis updates).
+
+**Which to use:**
+- For "did the wallet make money trading?" → **`total_realized_pnl_usdc`**. This is what trading platforms typically call "PnL" and what users intuitively expect.
+- For "how much net cash flowed through this wallet?" → `actual_pnl_usdc`. Useful for liquidity analysis and the slippage formula, but **not** what most people mean by "PnL".
+- For copy-trading slippage analysis → use `slippage_*` fields (which are derived from cashflow). The slippage formula needs apples-to-apples cashflow comparison; this is why `actual_pnl_usdc` is defined as cashflow.
+
+**One-line summary:** realized = closed-trade profit; cashflow = USDC delta in/out of the wallet. They reconcile when the wallet holds zero open inventory.
+
+---
 
 ## Example: default 30-day window
 
@@ -68,6 +115,10 @@ Response (`200 OK`):
   "slippage_cost_rate_pct": 56.77,
   "toxic_for_copying": true,
   "trade_count": 1726,
+  "avg_entry_prob_weighted": 0.4892,
+  "avg_hold_seconds_weighted": null,
+  "positions_closed": 142,
+  "total_realized_pnl_usdc": -2412.06,
   "pnl_definition": "cashflow",
   "applied_filters": {
     "from": 1774916101,
@@ -85,10 +136,18 @@ Response (`200 OK`):
       "settlement_in": 2801.73,
       "settlement_out": 0
     },
+    "fifo_breakdown": {
+      "over_sells": 3,
+      "unresolved_activity": 0,
+      "total_abs_pnl_usdc": 4823.18,
+      "total_realized_pnl_usdc": -2412.06
+    },
     "fetch_ms": 1361
   }
 }
 ```
+
+Reading this response: the wallet's **realized** trading P/L is **-$2,412** (lost ~$2.4K on 142 positions that closed in the window). The **cashflow** says **-$5,697** — the extra $3,285 is the cost basis of positions still open at window-end (inventory the wallet bought but hasn't sold yet). For "did this wallet make money?" the answer is `total_realized_pnl_usdc` — and the answer is no.
 
 ## Example: 7-day window via preset
 
@@ -110,6 +169,10 @@ Response (`200 OK`):
   "slippage_cost_rate_pct": 12.44,
   "toxic_for_copying": false,
   "trade_count": 1753,
+  "avg_entry_prob_weighted": 0.5210,
+  "avg_hold_seconds_weighted": null,
+  "positions_closed": 87,
+  "total_realized_pnl_usdc": 6428.91,
   "pnl_definition": "cashflow",
   "applied_filters": {
     "from": 1776903319,
@@ -126,6 +189,12 @@ Response (`200 OK`):
       "actual_sell_rev": 596.28,
       "settlement_in": 346924.27,
       "settlement_out": 0
+    },
+    "fifo_breakdown": {
+      "over_sells": 0,
+      "unresolved_activity": 0,
+      "total_abs_pnl_usdc": 12857.82,
+      "total_realized_pnl_usdc": 6428.91
     },
     "fetch_ms": 632
   }
