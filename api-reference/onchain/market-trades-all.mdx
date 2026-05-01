@@ -10,7 +10,7 @@ openapi: "GET /v2/onchain/markets/{token_id}/trades/all"
 
 - Hard cap: **250,000 trades per call** — beyond that, response includes `"partial": true` with `"partial_reason": "hard_cap_250000"`
 - Wall-clock budget: **180 seconds** — first cold-cache call on a busy market may take 1-3 minutes
-- Cache: full results cached **5 minutes**. Repeat calls return in **<1 second**
+- Cache: full results cached **5 minutes**. Repeat calls return in under 1 second
 - Typical payload: 1-50 MB. Worst case (capped): 100-200 MB JSON
 </Warning>
 
