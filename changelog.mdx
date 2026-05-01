@@ -7,6 +7,40 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-01 — Bulk trade-export endpoints (Growth plan and above)
+
+Two new endpoints return the **entire** trade history for a market token or wallet in a **single response** — no client-side pagination required:
+
+- `GET /v2/onchain/markets/{token_id}/trades/all`
+- `GET /v2/onchain/wallets/{address}/trades/all`
+
+The server walks the full history with parallel time-bucketed queries internally. Optional `from` and `to` query parameters narrow the window.
+
+**Limits:**
+
+- Hard cap **250,000 trades** per call. Beyond that, response includes `"partial": true` with `"partial_reason": "hard_cap_250000"`.
+- Wall-clock budget **180 seconds**. First cold-cache calls on busy markets/heavy wallets may take **1-3 minutes**. Subsequent calls hit Redis cache and return in **<1 second**.
+- Typical payload **1-50 MB**. Worst case (capped): **100-200 MB JSON**.
+- Cache TTL **5 minutes** per `(scope, from, to)` combination. Partial results are **not cached**.
+
+**Tier requirement:** **Growth plan ($200/mo) or above.** Starter and free tier requests receive `403`. The bulk endpoints are gated to paid plans because of the heavy server-side compute (one call drives 100s of internal sub-queries) and large payloads.
+
+**Compatibility:** purely additive. The standard paginated `/trades` endpoints are unchanged and remain available on all paid tiers.
+
+Updated upstream timeout to 180 seconds across the gateway path so cold-cache calls complete cleanly.
+
+---
+
+## 2026-05-01 — Backtest Copy PnL: new `total_realized_pnl_usdc` field
+
+Added `total_realized_pnl_usdc` to `/v2/copy-pnl/{wallet}` responses. This is the **signed sum of WAVG-realized PnL across every position the matcher touched in the window** — the closest single number to "did this wallet make money trading?" and the recommended primary "PnL" field for customer-facing UI.
+
+Existing `actual_pnl_usdc` is unchanged but is now documented as a **cashflow** metric (USDC delta in/out of the wallet over the window), which is intentionally different from realized PnL — see the [endpoint docs](/api-reference/backtesting/copy-pnl#understanding-cashflow-pnl-vs-realized-pnl) for the worked example.
+
+Also fixed a long-standing bug in the cashflow accounting where neg-risk-conversion events were over-counting `settlement_in` (treating share counts as USDC). NRC-active wallets see corrected numbers across all four periods (`14d`, `30d`, `60d`, `180d`) on the next BYOB cycle refresh.
+
+---
+
 ## 2026-04-30 — Backtest Copy PnL: per-position metrics now match Polymarket byte-for-byte
 
 The new fields added earlier today (`avg_entry_prob_weighted`, `positions_closed` on `/v2/copy-pnl/*`) now produce values that match Polymarket's own data-api position math.

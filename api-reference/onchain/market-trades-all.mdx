@@ -1,0 +1,122 @@
+---
+title: "Trade History (Market) — Bulk"
+description: "Return every trade for a market token in a single response. Growth plan or above."
+openapi: "GET /v2/onchain/markets/{token_id}/trades/all"
+---
+
+<Card title="Growth plan ($200/mo) or above only" icon="bolt" color="#f59e0b">
+This endpoint returns the **entire** trade history for a market token in **one response** — no client-side pagination, no offset bookkeeping. Because a single call can return tens of thousands of fills (and tens of MB of JSON), it's gated to the **Growth plan and above**. Starter and free tier requests receive `403`.
+
+- Hard cap: **250,000 trades per call** — beyond that, response includes `"partial": true` with `"partial_reason": "hard_cap_250000"`
+- Wall-clock budget: **180 seconds** — first cold-cache call on a busy market may take 1-3 minutes
+- Cache: full results cached **5 minutes**. Repeat calls return in **<1 second**
+- Typical payload: 1-50 MB. Worst case (capped): 100-200 MB JSON
+</Card>
+
+Returns every onchain trade fill for one market token in a single response. The server walks the full trade history with parallel time-bucketed queries server-side — you don't need to paginate. Each trade is enriched with market metadata.
+
+This is the right endpoint when you want **bulk-export** a market for analysis, indexing, or backtesting. For interactive UIs that just need the most recent N fills, use the standard [Market Trade History](/api-reference/onchain/market-trades) instead.
+
+## Request
+
+```
+GET /v2/onchain/markets/{token_id}/trades/all?from=<unix>&to=<unix>
+```
+
+| Parameter | Type | Location | Description |
+|-----------|------|----------|-------------|
+| `token_id` | string | path | CTF token ID (numeric string) |
+| `from` | integer | query | Optional start of window in unix seconds. Default: 2024-01-01 (covers all Polymarket history) |
+| `to` | integer | query | Optional end of window in unix seconds. Default: now |
+
+## Response
+
+```json
+{
+  "token_id": "21743669032210695168079601505378236205866986767926346409604806906483294819314",
+  "from_ts": 1774588800,
+  "to_ts": 1775817600,
+  "count": 27601,
+  "partial": false,
+  "partial_reason": null,
+  "fetched_in_ms": 5437,
+  "cache": "miss",
+  "trades": [
+    {
+      "tx_hash": "0xa73ccafda4acf5473d65ce9b6ed9f9e41861ea2ae0b5c0a8bb5cfd3869583fdf",
+      "order_hash": "0x3e5baca0ae04010bfe01ec0a0a3fe8b6e291ca8373bb4803f31620754f83a17d",
+      "timestamp": 1775817557,
+      "maker": "0x4ef7e2e97735a144c35c04bf22bcac184d3221be",
+      "taker": "0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e",
+      "token_id": "21743669032210695168079601505378236205866986767926346409604806906483294819314",
+      "direction": "SELL",
+      "price": 0.545,
+      "shares": 1827.47,
+      "usd": 995.99,
+      "fee": 0
+    }
+  ]
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|---|---|---|
+| `token_id` | string | The CTF token ID requested |
+| `from_ts` / `to_ts` | integer | Resolved time window in unix seconds |
+| `count` | integer | Total trades returned (≤ 250,000) |
+| `partial` | boolean | `true` if either the 250K hard cap or the 180s wall-clock budget was hit before the full window was walked |
+| `partial_reason` | string \| null | `"hard_cap_250000"` or `"wall_clock_180s"` when partial; otherwise `null` |
+| `fetched_in_ms` | integer | Server-side fetch time. Cached calls show the original miss time |
+| `cache` | string | `"hit"` if served from Redis cache, `"miss"` if freshly walked |
+| `trades` | array | All trades, sorted by `timestamp` descending (newest first) |
+
+## Trade fields
+
+| Field | Type | Description |
+|---|---|---|
+| `tx_hash` | string | Polygon transaction hash |
+| `order_hash` | string | Order hash from the exchange |
+| `timestamp` | integer | Unix seconds when the fill settled |
+| `maker` | string | Maker address |
+| `taker` | string | Taker address |
+| `token_id` | string | The outcome token id (echoes the request param) |
+| `direction` | string | `"BUY"` or `"SELL"` from the maker's perspective |
+| `price` | number | USDC per share, 4-decimal precision |
+| `shares` | number | Outcome tokens traded |
+| `usd` | number | USDC notional |
+| `fee` | number | Maker fee paid (USDC) |
+
+## Example: full lifetime of a market
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/markets/21743669032210695168079601505378236205866986767926346409604806906483294819314/trades/all?key=$YOUR_KEY"
+```
+
+## Example: window inside a longer-running market
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/markets/$TOKEN/trades/all?from=1774588800&to=1775817600&key=$YOUR_KEY"
+```
+
+## Errors
+
+`403 Tier required`:
+
+```json
+{ "error": "/trades/all requires the Growth plan or above. Your tier: starter. See polynode.dev/pricing." }
+```
+
+`401 No API key`:
+
+```json
+{ "error": "API key required. Pass via ?key= or x-api-key header." }
+```
+
+## Notes
+
+- For a multi-token market (binary YES/NO), call this endpoint **twice** — once per `token_id`. A `condition_id` variant that returns both tokens in one call is on the roadmap.
+- `partial: true` results are **not cached**. Subsequent calls re-attempt the full walk. Tighten the time window with `from`/`to` if you keep hitting the cap.
+- Cache key is `(token_id, from_ts, to_ts)`. Different windows are cached independently. Default-window calls (no `from`/`to`) share a cache slot.
+- The walk is internally parallelized — total bandwidth use is moderate even for huge markets.

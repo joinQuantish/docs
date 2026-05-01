@@ -1,0 +1,123 @@
+---
+title: "Trade History (Wallet) — Bulk"
+description: "Return every trade for a wallet in a single response. Growth plan or above."
+openapi: "GET /v2/onchain/wallets/{address}/trades/all"
+---
+
+<Card title="Growth plan ($200/mo) or above only" icon="bolt" color="#f59e0b">
+This endpoint returns the **entire** trade history for a wallet in **one response** — no client-side pagination, no offset bookkeeping. Because a single call can return tens of thousands of fills (and tens of MB of JSON), it's gated to the **Growth plan and above**. Starter and free tier requests receive `403`.
+
+- Hard cap: **250,000 trades per call** — beyond that, response includes `"partial": true` with `"partial_reason": "hard_cap_250000"`
+- Wall-clock budget: **180 seconds** — first cold-cache call on a heavy wallet may take 1-3 minutes
+- Cache: full results cached **5 minutes**. Repeat calls return in **<1 second**
+- Typical payload: 1-50 MB. Worst case (capped): 100-200 MB JSON
+</Card>
+
+Returns every onchain trade fill for a wallet in a single response — both maker and taker sides, every counterparty, every fee, complete history. The server walks the full trade record with parallel time-bucketed queries server-side; you don't need to paginate.
+
+This is the right endpoint for **bulk-export** of a wallet for analysis, indexing, or backtesting. For interactive UIs that just need the most recent N trades, use the standard [Wallet Trade History](/api-reference/onchain/wallet-trades) instead.
+
+## Request
+
+```
+GET /v2/onchain/wallets/{address}/trades/all?from=<unix>&to=<unix>
+```
+
+| Parameter | Type | Location | Description |
+|-----------|------|----------|-------------|
+| `address` | string | path | Wallet address (0x-prefixed, 40 hex chars) |
+| `from` | integer | query | Optional start of window in unix seconds. Default: 2024-01-01 (covers all Polymarket history) |
+| `to` | integer | query | Optional end of window in unix seconds. Default: now |
+
+## Response
+
+```json
+{
+  "wallet": "0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa",
+  "from_ts": 1704067200,
+  "to_ts": 1777600000,
+  "count": 8421,
+  "partial": false,
+  "partial_reason": null,
+  "fetched_in_ms": 7813,
+  "cache": "miss",
+  "trades": [
+    {
+      "tx_hash": "0x2fc63f3efc794d13c747d089d3b42bb9b4539b22216ccb2e6b2ea039ca5bb9ca",
+      "order_hash": "0x84f21e21f5c2a1df3264694a33ec9a8a292b83e163cbda4efe63333243aa08ef",
+      "timestamp": 1774749310,
+      "maker": "0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa",
+      "taker": "0x198098d9c6c1dcb843314b9da212c44396c9a1d0",
+      "token_id": "21912724974096796009916816278814088615574660931588091764221331842149572809887",
+      "direction": "BUY",
+      "price": 0.625,
+      "shares": 4.88,
+      "usd": 3.05,
+      "fee": 0
+    }
+  ]
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|---|---|---|
+| `wallet` | string | The wallet address requested (lowercased) |
+| `from_ts` / `to_ts` | integer | Resolved time window in unix seconds |
+| `count` | integer | Total trades returned (≤ 250,000) |
+| `partial` | boolean | `true` if either the 250K hard cap or the 180s wall-clock budget was hit before the full window was walked |
+| `partial_reason` | string \| null | `"hard_cap_250000"` or `"wall_clock_180s"` when partial; otherwise `null` |
+| `fetched_in_ms` | integer | Server-side fetch time. Cached calls show the original miss time |
+| `cache` | string | `"hit"` if served from Redis cache, `"miss"` if freshly walked |
+| `trades` | array | All trades, sorted by `timestamp` descending (newest first) |
+
+## Trade fields
+
+| Field | Type | Description |
+|---|---|---|
+| `tx_hash` | string | Polygon transaction hash |
+| `order_hash` | string | Order hash from the exchange |
+| `timestamp` | integer | Unix seconds when the fill settled |
+| `maker` | string | Maker address |
+| `taker` | string | Taker address |
+| `token_id` | string | The outcome token id traded in this fill |
+| `direction` | string | `"BUY"` or `"SELL"` from the maker's perspective |
+| `price` | number | USDC per share, 4-decimal precision |
+| `shares` | number | Outcome tokens traded |
+| `usd` | number | USDC notional |
+| `fee` | number | Maker fee paid (USDC) |
+
+## Example: full lifetime trade history of a wallet
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/wallets/0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa/trades/all?key=$YOUR_KEY"
+```
+
+## Example: only trades from the last 30 days
+
+```bash
+NOW=$(date +%s); FROM=$((NOW - 2592000))
+curl "https://api.polynode.dev/v2/onchain/wallets/0x2f5653a3761f65c5a299f9839eadbd4d4d679ffa/trades/all?from=$FROM&to=$NOW&key=$YOUR_KEY"
+```
+
+## Errors
+
+`403 Tier required`:
+
+```json
+{ "error": "/trades/all requires the Growth plan or above. Your tier: starter. See polynode.dev/pricing." }
+```
+
+`401 No API key`:
+
+```json
+{ "error": "API key required. Pass via ?key= or x-api-key header." }
+```
+
+## Notes
+
+- `partial: true` results are **not cached**. Subsequent calls re-attempt the full walk. Tighten the time window with `from`/`to` if you keep hitting the cap.
+- Cache key is `(wallet, from_ts, to_ts)`. Different windows cached independently.
+- For wallets that consistently exceed the 250K cap, slice into multiple windowed calls and concatenate client-side. Each window cached separately for 5 minutes.
+- Trades include both maker AND taker sides — every fill the wallet was involved in. No double-counting.

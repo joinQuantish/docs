@@ -6,6 +6,10 @@ openapi: "GET /v2/onchain/markets/{token_id}/trades"
 
 Returns every onchain trade fill for a specific market token. This is the complete trade tape from the blockchain, enriched with market metadata.
 
+<Tip>
+**Need to bulk-export the entire market in one call?** See [Trade History (Market) — Bulk](/api-reference/onchain/market-trades-all) — Growth plan and above can fetch the full trade history in one response (no pagination, up to 250K trades).
+</Tip>
+
 ## Request
 
 ```

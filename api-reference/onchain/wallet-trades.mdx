@@ -8,6 +8,10 @@ Returns every onchain trade fill for a wallet, including both maker and taker si
 
 Unlike the standard [wallet trade history](/api-reference/wallets/trades) which relies on Polymarket's data API (and can timeout or miss trades for heavy wallets), this endpoint pulls directly from onchain settlement data and never misses a fill.
 
+<Tip>
+**Need to bulk-export the wallet's entire trade history in one call?** See [Trade History (Wallet) — Bulk](/api-reference/onchain/wallet-trades-all) — Growth plan and above can fetch the full history in one response (no pagination, up to 250K trades).
+</Tip>
+
 ## Request
 
 ```
