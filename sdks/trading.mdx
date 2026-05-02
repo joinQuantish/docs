@@ -17,7 +17,7 @@ The trading module lets you place and manage orders on Polymarket. One function 
 npm install polynode-sdk viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
 ```
 
-V2 order placement requires `polynode-sdk >= 0.9.0`. Deposit wallet support requires `>= 0.10.0`.
+V2 order placement requires `polynode-sdk >= 0.9.0`. Deposit wallet support (address derivation, wallet detection) requires `>= 0.10.0`. Deposit wallet order signing (POLY_1271) requires `>= 0.10.5`.
 
 <Note>
 Your project must use ESM imports (`import` syntax). Add `"type": "module"` to your `package.json`, or use `.mjs` file extensions.
@@ -394,6 +394,8 @@ One-call onboarding. Detects wallet type (Safe, proxy, or deposit wallet), deplo
 | `EOA` | 0 | Direct EOA signing |
 
 Calling it again on a ready wallet is instant (loads from local DB).
+
+For deposit wallet users (`POLY_1271`), order signing uses the ERC-7739 TypedDataSign wrapper automatically. No code changes needed on your side — `order()` detects the wallet type from stored credentials and signs accordingly.
 
 ### `order(params)`
 

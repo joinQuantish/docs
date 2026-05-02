@@ -7,6 +7,18 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-02 — SDK v0.13.1 (Rust) / v0.10.5 (TS) / v0.10.2 (Python) — POLY_1271 order signing
+
+Deposit wallet users can now place V2 orders. When `signatureType` is `POLY_1271` (3), the SDK automatically wraps the EIP-712 signature using the ERC-7739 TypedDataSign format required by Polymarket's deposit wallet contracts. No additional configuration needed — `signV2Order` (TS) / `create_signed_order_v2` (Python) / `order()` (Rust) detect the signature type and handle wrapping transparently.
+
+```bash
+cargo add polynode@0.13.1
+npm install polynode-sdk@0.10.5
+pip install polynode==0.10.2
+```
+
+---
+
 ## 2026-05-02 — SDK v0.13.0 (Rust) / v0.10.4 (TS) / v0.10.0 (Python)
 
 All three SDKs now support Polymarket's new deposit wallet type:
