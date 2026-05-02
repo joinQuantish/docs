@@ -64,6 +64,7 @@
           {
             "group": "Guides",
             "pages": [
+              "guides/deposit-wallets",
               "guides/v2-migration",
               "guides/v2-details",
               "guides/polyusd",

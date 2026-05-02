@@ -1,0 +1,200 @@
+---
+title: "Deposit Wallets"
+sidebarTitle: "Deposit Wallets"
+description: "Everything you need to know about Polymarket's new deposit wallet system and how it affects your integration."
+icon: "wallet"
+---
+
+Polymarket is rolling out **deposit wallets** as a new account type alongside the existing Gnosis Safe proxy wallets. This guide explains what changed, whether you need to do anything, and how to handle both wallet types in your integration.
+
+## What are deposit wallets?
+
+Deposit wallets are Polymarket's new smart contract wallet type for new accounts. They replace the Gnosis Safe proxy that existing accounts use.
+
+From your perspective as a builder, the key differences are:
+
+| | Safe proxy (existing) | Deposit wallet (new) |
+|---|---|---|
+| **Signature type** | `2` (POLY_GNOSIS_SAFE) | `3` (POLY_1271) |
+| **How addresses are derived** | CREATE2 from Safe factory | CREATE2 from deposit wallet factory |
+| **Order signing** | Standard EIP-712 | EIP-712 with ERC-7739 TypedDataSign wrapper |
+| **Approvals** | Gasless via Safe multisend | Gasless via WALLET batch |
+| **V1 support** | Yes | No (V2 only) |
+
+**The good news:** if you use the polynode SDK, all of this is handled automatically. `ensureReady()` detects the wallet type, `order()` signs correctly, and the `/resolve` endpoint returns both types.
+
+## Do I need to change anything?
+
+**If you use the polynode SDK for trading:** update to the latest version. Everything else is automatic.
+
+```bash
+# Minimum versions for deposit wallet support
+cargo add polynode@0.13.3        # Rust
+npm install polynode-sdk@0.10.6  # TypeScript
+pip install polynode==0.10.3     # Python
+```
+
+**If you only read data (positions, trades, /resolve):** the only change is that `/resolve` responses now include a `type` field. Your existing code continues to work — the `safe`, `eoa`, and `username` fields are unchanged.
+
+**If you call the Polymarket CLOB directly (without our SDK):** you need to implement ERC-7739 TypedDataSign wrapping for `signatureType: 3` orders. See the [signing details](#how-poly_1271-signing-works) below.
+
+## How to detect wallet type
+
+The SDK auto-detects wallet type when you call `ensureReady()` or `detectWalletType()`. Detection checks on-chain in this order:
+
+1. Safe deployed? -> `POLY_GNOSIS_SAFE` (type 2)
+2. Proxy deployed? -> `POLY_PROXY` (type 1)
+3. Deposit wallet deployed? -> `POLY_1271` (type 3)
+4. Nothing deployed -> defaults to `POLY_GNOSIS_SAFE` (new Safe will be created)
+
+This means existing Safe users keep their Safe. Only users who have never had a Safe or Proxy will get a deposit wallet.
+
+```typescript
+import { PolyNodeTrader } from 'polynode-sdk';
+
+const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
+const status = await trader.ensureReady(privateKey);
+
+console.log(status.signatureType);
+// 2 = Safe (existing user)
+// 3 = Deposit wallet (new user)
+
+// Either way, order() works the same:
+await trader.order({ tokenId: '...', side: 'BUY', price: 0.55, size: 100 });
+```
+
+## How to handle mixed user bases
+
+If your platform has existing Safe users and new deposit wallet users, no special handling is needed. The SDK stores each user's wallet type in the local database and uses the correct signing method automatically.
+
+```typescript
+// User A: existing Safe wallet
+await trader.ensureReady(userA_privateKey);
+// status.signatureType === 2, uses standard EIP-712
+
+await trader.order({ tokenId: '...', side: 'BUY', price: 0.5, size: 50 });
+
+// User B: new deposit wallet
+await trader.ensureReady(userB_privateKey);
+// status.signatureType === 3, uses ERC-7739 TypedDataSign wrapper
+
+await trader.order({ tokenId: '...', side: 'BUY', price: 0.5, size: 50 });
+// Same API, different signing under the hood
+```
+
+## Wallet address derivation
+
+You can derive any user's deposit wallet address from their EOA without any network calls:
+
+<CodeGroup>
+```typescript TypeScript
+import { deriveDepositWalletAddress, deriveSafeAddress } from 'polynode-sdk';
+
+const eoa = '0xA60601A4d903af91855C52BFB3814f6bA342f201';
+const depositWallet = await deriveDepositWalletAddress(eoa);
+const safe = await deriveSafeAddress(eoa);
+
+// Both are deterministic — same EOA always produces the same addresses
+```
+
+```python Python
+from polynode.trading import derive_deposit_wallet_address, derive_safe_address
+
+eoa = "0xA60601A4d903af91855C52BFB3814f6bA342f201"
+deposit_wallet = derive_deposit_wallet_address(eoa)
+safe = derive_safe_address(eoa)
+```
+
+```rust Rust
+use polynode::trading::onboarding::{derive_deposit_wallet_address, derive_safe_address};
+
+let eoa = "0xA60601A4d903af91855C52BFB3814f6bA342f201".parse().unwrap();
+let deposit_wallet = derive_deposit_wallet_address(eoa);
+let safe = derive_safe_address(eoa);
+```
+</CodeGroup>
+
+## The /resolve endpoint
+
+The [Resolve Wallet](/api-reference/wallets/resolve) endpoint now returns a `type` field indicating the wallet type. This is additive — existing fields (`safe`, `eoa`, `username`) are unchanged.
+
+```bash
+curl "https://api.polynode.dev/v1/resolve/0x8b60bf0f650bf7a0d93f10d72375b37de18f8c40" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "safe": "0x8b60bf0f650bf7a0d93f10d72375b37de18f8c40",
+  "eoa": "0xa60601a4d903af91855c52bfb3814f6ba342f201",
+  "username": null,
+  "type": "deposit_wallet"
+}
+```
+
+The `safe` field contains the trading wallet address regardless of type. For Safe users it's the Safe address, for deposit wallet users it's the deposit wallet address. The `type` field tells you which.
+
+| `type` value | Description |
+|---|---|
+| `"safe"` | Gnosis Safe proxy (most existing accounts) |
+| `"deposit_wallet"` | Deposit wallet (newer accounts) |
+| `"proxy"` | Legacy proxy wallet |
+
+Both forward resolution (EOA -> wallet) and reverse resolution (wallet -> EOA) work for all wallet types.
+
+## How POLY_1271 signing works
+
+<Note>
+You only need this section if you're implementing signing without the polynode SDK. If you use `signV2Order()` or `trader.order()`, this is handled automatically.
+</Note>
+
+For deposit wallet users, V2 orders use `signatureType: 3` (POLY_1271). The signing process wraps the standard Order EIP-712 hash in a Solady TypedDataSign struct:
+
+1. Build the standard V2 Order struct (same fields as type 0/1/2)
+2. Set `maker` and `signer` to the **deposit wallet address** (not the EOA)
+3. Sign using `TypedDataSign` as the EIP-712 primary type under the exchange domain, with the deposit wallet parameters as struct fields
+4. Wrap the resulting signature: `innerSig (65 bytes) + appDomainSeparator (32 bytes) + contentsHash (32 bytes) + orderTypeString (186 bytes) + typeStringLength (2 bytes)`
+
+The final wrapped signature is 317 bytes (634 hex chars + "0x" prefix = 636 total).
+
+The `TypedDataSign` struct includes the deposit wallet's identity:
+- `name`: `"DepositWallet"`
+- `version`: `"1"`
+- `verifyingContract`: the deposit wallet address
+- `salt`: `bytes32(0)`
+
+## FAQ
+
+<AccordionGroup>
+<Accordion title="Do existing Safe wallet users need to change anything?">
+No. Safe wallets continue to work exactly as before. The SDK detects your wallet type automatically. All existing integrations are backward compatible.
+</Accordion>
+
+<Accordion title="Will my /resolve API responses break?">
+No. The `safe`, `eoa`, and `username` fields are unchanged. A new `type` field was added. If your code ignores unknown fields (standard JSON parsing behavior), nothing breaks.
+</Accordion>
+
+<Accordion title="Can I still create new Safe wallets?">
+Yes. The SDK defaults to creating Safe wallets for new users when no wallet is detected on-chain. Deposit wallets are created through Polymarket's frontend or relayer, not through the polynode SDK's default flow.
+</Accordion>
+
+<Accordion title="What SDK version do I need?">
+Deposit wallet address derivation and detection: `>= 0.10.0`. POLY_1271 order signing: `>= 0.10.5`. Full onboarding flow (deploy + approve): `>= 0.10.6`. Latest recommended: Rust `0.13.3`, TypeScript `0.10.6`, Python `0.10.3`.
+</Accordion>
+
+<Accordion title="What if a user has both a Safe and a deposit wallet?">
+The SDK checks Safe first. If a Safe is deployed, it uses the Safe. Deposit wallet is only used when no Safe or Proxy exists. This preserves backward compatibility for all existing users.
+</Accordion>
+
+<Accordion title="Do deposit wallets work with V1 orders?">
+No. POLY_1271 (signature type 3) is V2 only. V1 orders only support types 0 (EOA), 1 (POLY_PROXY), and 2 (POLY_GNOSIS_SAFE). Since Polymarket's V2 exchange is now live, all new activity uses V2.
+</Accordion>
+
+<Accordion title="How do I know which wallet type to use for copy trading?">
+Register followers with their actual `sig_type` (2 for Safe, 3 for deposit wallet). The copy trading engine automatically generates the correct typed data for each follower's wallet type. Your signing code should use `signV2Order()` from the SDK, which handles both types transparently.
+</Accordion>
+
+<Accordion title="Is there a performance difference?">
+Deposit wallet signatures are larger (317 bytes vs 65 bytes) due to the ERC-7739 wrapping, but this has no meaningful impact on order submission speed or gas costs. The CLOB processes both types identically.
+</Accordion>
+</AccordionGroup>

@@ -7,58 +7,15 @@ icon: "clock-rotate-left"
 
 ---
 
-## 2026-05-02 — SDK v0.13.3 (Rust) / v0.10.6 (TS) / v0.10.3 (Python) — deposit wallet onboarding
+## 2026-05-02 — Deposit wallet support
 
-`ensureReady()` now handles the full onboarding flow for deposit wallet users: derives the wallet address, deploys via `WALLET-CREATE` if needed, and sets all V2 approvals via a signed `WALLET` batch. Same one-call pattern as Safe wallets.
+Polymarket is rolling out deposit wallets as a new account type for new users. This release adds full support across the API, all three SDKs, and the copy trading engine. **Existing integrations are fully backward compatible** — no code changes required unless you want to take advantage of the new features.
 
-```bash
-cargo add polynode@0.13.3
-npm install polynode-sdk@0.10.6
-pip install polynode==0.10.3
-```
+Read the full [Deposit Wallets guide](/guides/deposit-wallets) for details, code examples, and FAQ.
 
----
+### What's new
 
-## 2026-05-02 — SDK v0.13.1 (Rust) / v0.10.5 (TS) / v0.10.2 (Python) — POLY_1271 order signing
-
-Deposit wallet users can now place V2 orders. When `signatureType` is `POLY_1271` (3), the SDK automatically wraps the EIP-712 signature using the ERC-7739 TypedDataSign format required by Polymarket's deposit wallet contracts. No additional configuration needed — `signV2Order` (TS) / `create_signed_order_v2` (Python) / `order()` (Rust) detect the signature type and handle wrapping transparently.
-
-```bash
-cargo add polynode@0.13.1
-npm install polynode-sdk@0.10.5
-pip install polynode==0.10.2
-```
-
----
-
-## 2026-05-02 — SDK v0.13.0 (Rust) / v0.10.4 (TS) / v0.10.0 (Python)
-
-All three SDKs now support Polymarket's new deposit wallet type:
-
-- **New signature type:** `SignatureType::Poly1271` (Rust) / `SignatureType.POLY_1271` (TS/Python) — value `3`
-- **New derivation:** `deriveDepositWalletAddress(eoa)` (TS) / `derive_deposit_wallet_address(eoa)` (Rust/Python) computes the deterministic deposit wallet address for any EOA
-- **Auto-detection:** `detectWalletType()` and `ensureReady()` automatically detect whether an EOA has a Safe, proxy, or deposit wallet deployed
-
-Fully backward compatible. Existing Safe and proxy wallet flows are unchanged. Install the latest version to get deposit wallet support.
-
-```bash
-# Rust
-cargo add polynode@0.13
-
-# TypeScript
-npm install polynode-sdk@0.10.4
-
-# Python
-pip install polynode==0.10.0
-```
-
----
-
-## 2026-05-02 — Deposit wallet support on `/resolve`
-
-The [Resolve Wallet](/api-reference/wallets/resolve) endpoint now supports Polymarket's new deposit wallet type alongside the existing Safe proxy wallets. Both forward resolution (EOA to deposit wallet) and reverse resolution (deposit wallet to EOA) work automatically.
-
-**New `type` field** in all responses:
+**`/resolve` endpoint** — now returns a `type` field (`"safe"`, `"deposit_wallet"`, or `"proxy"`) in all responses. Resolves deposit wallets in both directions: wallet address to EOA and EOA to wallet address. Existing `safe`, `eoa`, and `username` fields unchanged.
 
 ```json
 {
@@ -69,9 +26,27 @@ The [Resolve Wallet](/api-reference/wallets/resolve) endpoint now supports Polym
 }
 ```
 
-Possible values: `"safe"` (Gnosis Safe proxy), `"deposit_wallet"` (new deposit wallet), or `"proxy"` (legacy proxy).
+**SDK — address derivation and detection** — `deriveDepositWalletAddress(eoa)` computes the deterministic deposit wallet address for any EOA. `detectWalletType()` and `ensureReady()` automatically detect whether an EOA has a Safe, proxy, or deposit wallet. Safe is checked first, so existing users keep their existing wallet type.
 
-**Backward compatible.** The `safe` field still contains the trading wallet address regardless of type. Existing integrations continue working without changes. The `type` field is additive.
+**SDK — order signing** — when `signatureType` is `POLY_1271` (3), the SDK wraps the EIP-712 signature using ERC-7739 TypedDataSign format automatically. `order()` / `signV2Order()` / `create_signed_order_v2()` detect the signature type from stored credentials and sign correctly. No code changes needed on your side.
+
+**SDK — onboarding** — `ensureReady()` handles the full flow for deposit wallet users: derives the wallet, deploys via `WALLET-CREATE` if needed, and sets V2 approvals via a signed `WALLET` batch. Same one-call pattern as Safe wallets.
+
+**Copy trading** — the copy trading engine generates the correct typed data for deposit wallet followers (`sig_type: 3`). Your signing code should use `signV2Order()` from the SDK.
+
+### Install
+
+```bash
+cargo add polynode@0.13.3        # Rust
+npm install polynode-sdk@0.10.6  # TypeScript
+pip install polynode==0.10.3     # Python
+```
+
+### Do I need to update?
+
+- **If you only read data** (positions, trades, resolve): no changes needed. The `type` field is additive.
+- **If you place orders via the SDK**: update to the versions above. Your code stays the same.
+- **If you build order signatures yourself**: you need to implement ERC-7739 wrapping for `signatureType: 3`. See the [guide](/guides/deposit-wallets#how-poly_1271-signing-works).
 
 ---
 
