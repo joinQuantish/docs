@@ -7,13 +7,13 @@ icon: "clock-rotate-left"
 
 ---
 
-## 2026-05-02 — SDK v0.13.0 (Rust) / v0.10.1 (TS) / v0.10.0 (Python)
+## 2026-05-02 — SDK v0.13.0 (Rust) / v0.10.4 (TS) / v0.10.0 (Python)
 
 All three SDKs now support Polymarket's new deposit wallet type:
 
-- **New signature type:** `SignatureType::Poly1271` (Rust) / `POLY_1271` (TS/Python) — value `3`
-- **New derivation:** `derive_deposit_wallet_address(eoa)` computes the deterministic deposit wallet address for any EOA
-- **Auto-detection:** `detect_wallet_type()` and `ensureReady()` automatically detect whether an EOA has a Safe, proxy, or deposit wallet deployed
+- **New signature type:** `SignatureType::Poly1271` (Rust) / `SignatureType.POLY_1271` (TS/Python) — value `3`
+- **New derivation:** `deriveDepositWalletAddress(eoa)` (TS) / `derive_deposit_wallet_address(eoa)` (Rust/Python) computes the deterministic deposit wallet address for any EOA
+- **Auto-detection:** `detectWalletType()` and `ensureReady()` automatically detect whether an EOA has a Safe, proxy, or deposit wallet deployed
 
 Fully backward compatible. Existing Safe and proxy wallet flows are unchanged. Install the latest version to get deposit wallet support.
 
@@ -22,7 +22,7 @@ Fully backward compatible. Existing Safe and proxy wallet flows are unchanged. I
 cargo add polynode@0.13
 
 # TypeScript
-npm install polynode-sdk@latest
+npm install polynode-sdk@0.10.4
 
 # Python
 pip install polynode==0.10.0

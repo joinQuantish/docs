@@ -115,11 +115,12 @@ wallets = trader.get_linked_wallets()
 ### Address Derivation
 
 ```python
-from polynode.trading import derive_safe_address, derive_proxy_address
+from polynode.trading import derive_safe_address, derive_proxy_address, derive_deposit_wallet_address
 
 eoa = "0xacd89cFCB82Ae1f843467D56b58796bb928C9E1A"
-safe = derive_safe_address(eoa)    # 0xf75564cEe0ed847463E18D20B5005c9db245c374
-proxy = derive_proxy_address(eoa)  # 0x65FA7F1aFB344A3F78a62D662798A32d850738c8
+safe = derive_safe_address(eoa)              # Gnosis Safe proxy address
+proxy = derive_proxy_address(eoa)            # Legacy proxy address
+deposit = derive_deposit_wallet_address(eoa) # Deposit wallet address (newer accounts)
 ```
 
 ### Polymarket V2 Exchange
@@ -221,6 +222,7 @@ trader = PolyNodeTrader(config)
 | `SignatureType.EOA` | 0 | Direct EOA signing (user pays gas for approvals) |
 | `SignatureType.POLY_PROXY` | 1 | Legacy Polymarket proxy wallet |
 | `SignatureType.POLY_GNOSIS_SAFE` | 2 | Gnosis Safe (default, gasless onboarding) |
+| `SignatureType.POLY_1271` | 3 | Deposit wallet (newer Polymarket accounts, V2 only) |
 
 ### Privy Signer (Server-Side Wallets)
 
