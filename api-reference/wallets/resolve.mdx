@@ -4,20 +4,20 @@ openapi: "GET /v1/resolve/{query}"
 description: "Instantly resolve any Polymarket wallet address, EOA, or username."
 ---
 
-Look up the full identity triple for any Polymarket user: proxy wallet (safe), EOA (externally owned account), and username. Accepts any of the three as input and returns all three.
+Look up the full identity for any Polymarket user: trading wallet, EOA (externally owned account), username, and wallet type. Accepts any of the three identifiers as input and returns all fields.
 
-Backed by a pre-indexed table of every Polymarket wallet ever created. Lookups are sub-millisecond.
+Supports both Polymarket's original Safe proxy wallets and the newer deposit wallets. The response format is the same regardless of wallet type, with an additional `type` field to distinguish them.
 
 <ParamField path="query" type="string" required>
   One of:
-  - **Safe address** — Polymarket proxy wallet (`0x...`, 42 chars)
+  - **Wallet address** — Polymarket trading wallet: Safe proxy or deposit wallet (`0x...`, 42 chars)
   - **EOA address** — externally owned account (`0x...`, 42 chars)
   - **Username** — Polymarket display name (case-insensitive)
 </ParamField>
 
-## By safe address
+## By wallet address (Safe)
 
-Look up a Polymarket proxy wallet to get the controlling EOA and username.
+Look up a Polymarket Safe proxy wallet to get the controlling EOA and username.
 
 ```bash
 curl "https://api.polynode.dev/v1/resolve/0xfa85349327a63aa563029737f0492a79dca8f95d" \
@@ -28,13 +28,32 @@ curl "https://api.polynode.dev/v1/resolve/0xfa85349327a63aa563029737f0492a79dca8
 {
   "safe": "0xfa85349327a63aa563029737f0492a79dca8f95d",
   "eoa": "0xc2783891b1d2287345e30f75e0f1ecd189a967d0",
-  "username": "Letsgetit6969"
+  "username": "Letsgetit6969",
+  "type": "safe"
+}
+```
+
+## By wallet address (deposit wallet)
+
+Look up a Polymarket deposit wallet to get the controlling EOA. Deposit wallets are a newer wallet type introduced by Polymarket for new accounts.
+
+```bash
+curl "https://api.polynode.dev/v1/resolve/0x8b60bf0f650bf7a0d93f10d72375b37de18f8c40" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "safe": "0x8b60bf0f650bf7a0d93f10d72375b37de18f8c40",
+  "eoa": "0xa60601a4d903af91855c52bfb3814f6ba342f201",
+  "username": null,
+  "type": "deposit_wallet"
 }
 ```
 
 ## By EOA address
 
-Look up an EOA to find its Polymarket proxy wallet and username.
+Look up an EOA to find its Polymarket trading wallet and username. Works for both Safe and deposit wallet users.
 
 ```bash
 curl "https://api.polynode.dev/v1/resolve/0xc2783891b1d2287345e30f75e0f1ecd189a967d0" \
@@ -45,7 +64,8 @@ curl "https://api.polynode.dev/v1/resolve/0xc2783891b1d2287345e30f75e0f1ecd189a9
 {
   "safe": "0xfa85349327a63aa563029737f0492a79dca8f95d",
   "eoa": "0xc2783891b1d2287345e30f75e0f1ecd189a967d0",
-  "username": "Letsgetit6969"
+  "username": "Letsgetit6969",
+  "type": "safe"
 }
 ```
 
@@ -54,30 +74,38 @@ curl "https://api.polynode.dev/v1/resolve/0xc2783891b1d2287345e30f75e0f1ecd189a9
 Look up a Polymarket username to find both wallet addresses. Case-insensitive.
 
 ```bash
-curl "https://api.polynode.dev/v1/resolve/DTCahill" \
+curl "https://api.polynode.dev/v1/resolve/Fredi9999" \
   -H "x-api-key: YOUR_KEY"
 ```
 
 ```json
 {
-  "safe": "0x0ecdd241ec1bc84a40b8142bebe65787aee97514",
-  "eoa": "0xddd57cce99ca962fe23aa2da95b139f86a241459",
-  "username": "DTCahill"
+  "safe": "0x1f2dd6d473f3e824cd2f8a89d9c69fb96f6ad0cf",
+  "eoa": null,
+  "username": "Fredi9999",
+  "type": "safe"
 }
 ```
 
 ## Response fields
 
 <ResponseField name="safe" type="string" required>
-  Polymarket proxy wallet address (Gnosis Safe). This is the address that holds positions and executes trades on Polymarket.
+  Polymarket trading wallet address. This is the address that holds positions and executes trades on Polymarket. For older accounts this is a Gnosis Safe proxy, for newer accounts it may be a deposit wallet.
 </ResponseField>
 
-<ResponseField name="eoa" type="string" required>
-  Externally owned account that controls the proxy wallet. This is the signer address.
+<ResponseField name="eoa" type="string">
+  Externally owned account that controls the trading wallet. This is the signer address. May be `null` in rare cases where the EOA cannot be determined.
 </ResponseField>
 
 <ResponseField name="username" type="string">
   Polymarket display name. `null` if the user has no profile set.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Wallet type. One of:
+  - `"safe"` — Gnosis Safe proxy wallet (most existing Polymarket accounts)
+  - `"deposit_wallet"` — deposit wallet (newer Polymarket accounts)
+  - `"proxy"` — legacy proxy wallet
 </ResponseField>
 
 ## Error responses
@@ -94,11 +122,12 @@ curl "https://api.polynode.dev/v1/resolve/DTCahill" \
 
 ## Coverage
 
-The resolver indexes every Polymarket wallet created through the SafeProxyFactory contract on Polygon. The index updates daily and covers ~3 million wallets. New wallets are picked up within 24 hours of creation.
+The resolver supports every Polymarket wallet type on Polygon, including Safe proxy wallets and the newer deposit wallets. Cached lookups are sub-millisecond. Uncached lookups resolve on-chain in real time.
 
 ## Use cases
 
-- **Database enrichment** — bulk-resolve proxy wallets to EOAs for analytics pipelines
+- **Database enrichment** — bulk-resolve trading wallets to EOAs for analytics pipelines
 - **Profile lookups** — show usernames alongside wallet addresses in your UI
-- **Cross-referencing** — match on-chain activity (EOA) to Polymarket activity (proxy wallet)
-- **Whale tracking** — identify the EOA behind a proxy wallet to track activity across protocols
+- **Cross-referencing** — match on-chain activity (EOA) to Polymarket activity (trading wallet)
+- **Whale tracking** — identify the EOA behind a trading wallet to track activity across protocols
+- **Wallet type detection** — use the `type` field to determine how a user's account is set up

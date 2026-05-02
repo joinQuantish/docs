@@ -7,6 +7,27 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-02 — Deposit wallet support on `/resolve`
+
+The [Resolve Wallet](/api-reference/wallets/resolve) endpoint now supports Polymarket's new deposit wallet type alongside the existing Safe proxy wallets. Both forward resolution (EOA to deposit wallet) and reverse resolution (deposit wallet to EOA) work automatically.
+
+**New `type` field** in all responses:
+
+```json
+{
+  "safe": "0x8b60bf0f650bf7a0d93f10d72375b37de18f8c40",
+  "eoa": "0xa60601a4d903af91855c52bfb3814f6ba342f201",
+  "username": null,
+  "type": "deposit_wallet"
+}
+```
+
+Possible values: `"safe"` (Gnosis Safe proxy), `"deposit_wallet"` (new deposit wallet), or `"proxy"` (legacy proxy).
+
+**Backward compatible.** The `safe` field still contains the trading wallet address regardless of type. Existing integrations continue working without changes. The `type` field is additive.
+
+---
+
 ## 2026-05-01 — Cursor pagination on `/v2/onchain/*/trades`
 
 The two trade-history endpoints now support **cursor pagination** in addition to offset:
