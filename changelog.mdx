@@ -7,12 +7,12 @@ icon: "clock-rotate-left"
 
 ---
 
-## 2026-05-02 — SDK v0.13.2 (Rust) / v0.10.6 (TS) / v0.10.3 (Python) — deposit wallet onboarding
+## 2026-05-02 — SDK v0.13.3 (Rust) / v0.10.6 (TS) / v0.10.3 (Python) — deposit wallet onboarding
 
 `ensureReady()` now handles the full onboarding flow for deposit wallet users: derives the wallet address, deploys via `WALLET-CREATE` if needed, and sets all V2 approvals via a signed `WALLET` batch. Same one-call pattern as Safe wallets.
 
 ```bash
-cargo add polynode@0.13.2
+cargo add polynode@0.13.3
 npm install polynode-sdk@0.10.6
 pip install polynode==0.10.3
 ```
