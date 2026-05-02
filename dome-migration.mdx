@@ -330,7 +330,7 @@ The dome subscription supports all standard polynode filters:
 
 ## Order Placement
 
-If you used Dome's trading SDK to place orders on Polymarket, the polynode SDK is a drop-in replacement with two key improvements: your credentials stay on your machine (not on a third-party server), and wallet type is auto-detected so you don't need to know if you're EOA, Proxy, or Safe.
+If you used Dome's trading SDK to place orders on Polymarket, the polynode SDK is a drop-in replacement with two key improvements: your credentials stay on your machine (not on a third-party server), and wallet type is auto-detected so you don't need to know if you're EOA, Proxy, Safe, or deposit wallet.
 
 ```bash
 npm install polynode-sdk@0.5.5 viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
@@ -430,7 +430,7 @@ If you exported your private key from Polymarket's settings, you don't need to k
 ```typescript
 const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
 
-// Auto-detects your wallet type, finds your Safe or Proxy on-chain,
+// Auto-detects your wallet type (Safe, Proxy, or deposit wallet),
 // derives CLOB credentials. You don't need to know your wallet type.
 const status = await trader.ensureReady('0xEXPORTED_KEY_FROM_POLYMARKET');
 

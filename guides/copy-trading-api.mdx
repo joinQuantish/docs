@@ -26,14 +26,16 @@ You never run a polynode node, never subscribe to a WebSocket, never decode a fi
 You're the right fit if:
 
 - You're building a Polymarket-facing trading product (terminal, wallet, copy-trading UI, mobile app).
-- Your users already exist and you already hold or sign for their Polymarket Safes (typically via Privy embedded wallets).
+- Your users already exist and you already hold or sign for their Polymarket wallets — Safe proxies or deposit wallets (typically via Privy embedded wallets).
 - You want to ship copy trading in days, not months, and you don't want to maintain the settlement-detection / order-building stack.
 
 If you're a single retail trader looking to copy a whale, this API is not for you — use one of the consumer products built on top of it.
 
 ## How it maps to Polymarket
 
-Copy trading on Polymarket V2 is the same order flow as any other trade: your user's Safe is the `maker` of a V2 CLOB Order, signed with EIP-712, submitted to `clob-v2.polymarket.com/order`. The only thing we do is generate the order body and typed data *on the exact same block a leader fills*, so the order's `timestamp` + builder fields are correct and sizing/pricing matches the leader.
+Copy trading on Polymarket V2 is the same order flow as any other trade: your user's wallet (Safe proxy or deposit wallet) is the `maker` of a V2 CLOB Order, signed with EIP-712, submitted to `clob-v2.polymarket.com/order`. The only thing we do is generate the order body and typed data *on the exact same block a leader fills*, so the order's `timestamp` + builder fields are correct and sizing/pricing matches the leader.
+
+For deposit wallet users (`sig_type: 3`), the typed data uses the `TypedDataSign` wrapper automatically. Your signing code should use `signV2Order()` from the polynode SDK, which handles both Safe and deposit wallet signatures transparently.
 
 If you're new to V2, read [V2 Order Details](/guides/v2-details) first — this guide assumes you already know what an `Order` struct looks like.
 
@@ -80,7 +82,7 @@ curl -X POST https://api.polynode.dev/copytrade/followers \
   -H "Authorization: Bearer $PN_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "wallet": "0xUserSafeAddress...",
+    "wallet": "0xUserWalletAddress...",
     "signer": "0xUserEOAAddress...",
     "sig_type": 2,
     "settings": {
@@ -108,7 +110,7 @@ From now on, every time `0xLeaderWalletAddress...` fills an order on V2 CLOB, yo
 | Term | Meaning |
 |---|---|
 | **Tenant** | You. Scoped by `sha256(your API key)`. All data is tenant-partitioned. |
-| **Follower** | One of your end users. Identified by their Safe `wallet` + their EOA `signer`. A follower belongs to exactly one tenant. |
+| **Follower** | One of your end users. Identified by their trading `wallet` (Safe or deposit wallet) + their EOA `signer`. `sig_type` is `2` for Safe, `3` for deposit wallet. A follower belongs to exactly one tenant. |
 | **Leader** | A Polymarket wallet being copied. Can be attached to many followers across many tenants. |
 | **Settings** | Per-follower JSON: how much to copy (%/fixed/match), slippage, whether to copy buys/sells, TP/SL levels, fee config (if enabled). |
 | **Leader override** | Per-leader tweak to a follower's settings. `"leader_overrides": {"0xWhale...": {"size_pct": 50}}` means "copy this one leader at 50% size, keep everything else the same". |
