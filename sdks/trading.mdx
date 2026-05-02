@@ -17,7 +17,7 @@ The trading module lets you place and manage orders on Polymarket. One function 
 npm install polynode-sdk viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
 ```
 
-V2 order placement requires `polynode-sdk >= 0.9.0`.
+V2 order placement requires `polynode-sdk >= 0.9.0`. Deposit wallet support requires `>= 0.10.0`.
 
 <Note>
 Your project must use ESM imports (`import` syntax). Add `"type": "module"` to your `package.json`, or use `.mjs` file extensions.
@@ -374,7 +374,7 @@ const { privateKey, address } = await PolyNodeTrader.generateWallet();
 
 ### `ensureReady(signer, opts?)`
 
-One-call onboarding. Detects wallet type, deploys contracts if needed, sets all approvals, creates CLOB credentials.
+One-call onboarding. Detects wallet type (Safe, proxy, or deposit wallet), deploys contracts if needed, sets all approvals, creates CLOB credentials.
 
 **Signer types accepted:**
 - `string` — hex private key (most common)
@@ -382,7 +382,16 @@ One-call onboarding. Detects wallet type, deploys contracts if needed, sets all 
 - ethers v5/v6 Signer
 - viem WalletClient
 
-**Returns:** `ReadyStatus` with `funderAddress` (where to send USDC.e), `signatureType`, `approvalsSet`, `credentials`, and `actions` (what it did).
+**Returns:** `ReadyStatus` with `funderAddress` (where to send collateral), `signatureType`, `approvalsSet`, `credentials`, and `actions` (what it did).
+
+**Wallet types detected automatically:**
+
+| `signatureType` | Value | Description |
+|---|---|---|
+| `POLY_GNOSIS_SAFE` | 2 | Gnosis Safe proxy (most existing Polymarket accounts) |
+| `POLY_PROXY` | 1 | Legacy proxy wallet |
+| `POLY_1271` | 3 | Deposit wallet (newer Polymarket accounts, V2 only) |
+| `EOA` | 0 | Direct EOA signing |
 
 Calling it again on a ready wallet is instant (loads from local DB).
 

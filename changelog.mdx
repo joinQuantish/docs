@@ -7,6 +7,29 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-02 — SDK v0.13.0 (Rust) / v0.10.1 (TS) / v0.10.0 (Python)
+
+All three SDKs now support Polymarket's new deposit wallet type:
+
+- **New signature type:** `SignatureType::Poly1271` (Rust) / `POLY_1271` (TS/Python) — value `3`
+- **New derivation:** `derive_deposit_wallet_address(eoa)` computes the deterministic deposit wallet address for any EOA
+- **Auto-detection:** `detect_wallet_type()` and `ensureReady()` automatically detect whether an EOA has a Safe, proxy, or deposit wallet deployed
+
+Fully backward compatible. Existing Safe and proxy wallet flows are unchanged. Install the latest version to get deposit wallet support.
+
+```bash
+# Rust
+cargo add polynode@0.13
+
+# TypeScript
+npm install polynode-sdk@latest
+
+# Python
+pip install polynode==0.10.0
+```
+
+---
+
 ## 2026-05-02 — Deposit wallet support on `/resolve`
 
 The [Resolve Wallet](/api-reference/wallets/resolve) endpoint now supports Polymarket's new deposit wallet type alongside the existing Safe proxy wallets. Both forward resolution (EOA to deposit wallet) and reverse resolution (deposit wallet to EOA) work automatically.
