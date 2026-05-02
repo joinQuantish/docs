@@ -7,6 +7,18 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-02 — SDK v0.13.2 (Rust) / v0.10.6 (TS) / v0.10.3 (Python) — deposit wallet onboarding
+
+`ensureReady()` now handles the full onboarding flow for deposit wallet users: derives the wallet address, deploys via `WALLET-CREATE` if needed, and sets all V2 approvals via a signed `WALLET` batch. Same one-call pattern as Safe wallets.
+
+```bash
+cargo add polynode@0.13.2
+npm install polynode-sdk@0.10.6
+pip install polynode==0.10.3
+```
+
+---
+
 ## 2026-05-02 — SDK v0.13.1 (Rust) / v0.10.5 (TS) / v0.10.2 (Python) — POLY_1271 order signing
 
 Deposit wallet users can now place V2 orders. When `signatureType` is `POLY_1271` (3), the SDK automatically wraps the EIP-712 signature using the ERC-7739 TypedDataSign format required by Polymarket's deposit wallet contracts. No additional configuration needed — `signV2Order` (TS) / `create_signed_order_v2` (Python) / `order()` (Rust) detect the signature type and handle wrapping transparently.
