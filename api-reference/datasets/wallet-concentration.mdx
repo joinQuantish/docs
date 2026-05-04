@@ -1,0 +1,75 @@
+---
+title: "GET /wallets/concentration"
+description: "Volume concentration analysis — what share of total volume do the top N wallets hold?"
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/wallets/concentration
+```
+
+Returns the top N wallets by volume for a tag, with each wallet's percentage of total tag volume. Reveals whether a market is whale-dominated or broadly distributed.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `tag` | string | `sports` | Tag slug to analyze. |
+| `top` | integer | 10 | Number of top wallets (max 100). |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/concentration?tag=nba&top=5"
+```
+
+### Response
+
+```json
+{
+    "tag_slug": "nba",
+    "top_n": 5,
+    "total_volume_usdc": "2876963391.160815",
+    "top_n_volume_usdc": "735236761.104621",
+    "top_n_pct": "25.56",
+    "wallets": [
+        {
+            "wallet": "0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e",
+            "volume_usdc": "481187428.534655",
+            "pct_of_total": "16.73"
+        },
+        {
+            "wallet": "0xc5d563a36ae78145c45a50134d48a1215220f80a",
+            "volume_usdc": "161306746.808235",
+            "pct_of_total": "5.61"
+        },
+        {
+            "wallet": "0xe111180000d2663c0091e4f400237545b87b996b",
+            "volume_usdc": "36446670.314223",
+            "pct_of_total": "1.27"
+        },
+        {
+            "wallet": "0x6d3c5bd13984b2de47c3a88ddc455309aab3d294",
+            "volume_usdc": "28313236.769916",
+            "pct_of_total": "0.98"
+        },
+        {
+            "wallet": "0xe9cbb1c9b3f7f411dd4fdf2ea7afa780c8b4d096",
+            "volume_usdc": "27982678.677592",
+            "pct_of_total": "0.97"
+        }
+    ]
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tag_slug` | string | The tag analyzed |
+| `top_n` | integer | Number of top wallets returned |
+| `total_volume_usdc` | string | Total volume for this tag across all wallets |
+| `top_n_volume_usdc` | string | Combined volume of the top N wallets |
+| `top_n_pct` | string | Percentage of total volume held by top N wallets |
+| `wallets[].wallet` | string | Wallet address |
+| `wallets[].volume_usdc` | string | This wallet's volume |
+| `wallets[].pct_of_total` | string | This wallet's share of total tag volume |

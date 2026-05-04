@@ -1,0 +1,62 @@
+---
+title: "GET /wallets/overlap"
+description: "Find wallets that trade across multiple specified tags."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/wallets/overlap
+```
+
+Returns wallets active in ALL specified tags. Find cross-sport bettors, multi-league market makers, etc.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `tags` | string | *required* | Comma-separated tag slugs (2-10). Example: `nba,nfl` |
+| `min_volume` | number | — | Minimum total volume in USDC across matched tags. |
+| `sort` | string | `volume` | Sort by: `volume`, `fills`, `markets`. |
+| `limit` | integer | 50 | Max results (max 500). |
+| `offset` | integer | 0 | Pagination offset. |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/overlap?tags=nba,nfl&limit=2"
+```
+
+### Response
+
+```json
+{
+    "count": 2,
+    "tags": ["nba", "nfl"],
+    "wallets": [
+        {
+            "wallet": "0x4bfb41d5b3570defd03c39a9a4d8de6bd8b8982e",
+            "tags_matched": 2,
+            "total_fills": 1550406,
+            "total_volume_usdc": "599632635.742278",
+            "total_markets": 31557
+        },
+        {
+            "wallet": "0xc5d563a36ae78145c45a50134d48a1215220f80a",
+            "tags_matched": 2,
+            "total_fills": 1048778,
+            "total_volume_usdc": "272822005.552589",
+            "total_markets": 3693
+        }
+    ]
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tags` | string[] | The tags that were requested |
+| `wallets[].wallet` | string | Wallet address |
+| `wallets[].tags_matched` | integer | Number of tags this wallet is active in (equals `tags` length for overlap) |
+| `wallets[].total_fills` | integer | Combined fills across matched tags |
+| `wallets[].total_volume_usdc` | string | Combined volume across matched tags |
+| `wallets[].total_markets` | integer | Combined unique markets across matched tags |

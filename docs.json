@@ -223,7 +223,9 @@
               "api-reference/datasets/wallet-market-makers",
               "api-reference/datasets/wallet-new",
               "api-reference/datasets/wallet-high-frequency",
-              "api-reference/datasets/wallet-cross-tag"
+              "api-reference/datasets/wallet-cross-tag",
+              "api-reference/datasets/wallet-overlap",
+              "api-reference/datasets/wallet-concentration"
             ]
           },
           {
@@ -231,7 +233,8 @@
             "pages": [
               "api-reference/datasets/list-tags",
               "api-reference/datasets/tag-detail",
-              "api-reference/datasets/tag-wallets"
+              "api-reference/datasets/tag-wallets",
+              "api-reference/datasets/tags-compare"
             ]
           },
           {

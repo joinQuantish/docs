@@ -1,0 +1,76 @@
+---
+title: "GET /tags/compare"
+description: "Side-by-side comparison of multiple tags in a single request."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/tags/compare
+```
+
+Returns stats for multiple tags in one call. Compare wallet counts, volume, and fill counts across sports without making separate requests.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `tags` | string | *required* | Comma-separated tag slugs (1-20). Example: `nba,nfl,soccer,esports` |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/tags/compare?tags=nba,nfl,soccer,esports"
+```
+
+### Response
+
+```json
+{
+    "count": 4,
+    "tags": [
+        {
+            "tag_slug": "soccer",
+            "unique_wallets": 361123,
+            "total_fills": 17627590,
+            "volume_usdc": "3804019081.265170",
+            "earliest_fill": 1761955208,
+            "latest_fill": 1777856426
+        },
+        {
+            "tag_slug": "nba",
+            "unique_wallets": 309015,
+            "total_fills": 10987057,
+            "volume_usdc": "2880635747.973354",
+            "earliest_fill": 1761955216,
+            "latest_fill": 1777856426
+        },
+        {
+            "tag_slug": "nfl",
+            "unique_wallets": 141308,
+            "total_fills": 2518340,
+            "volume_usdc": "800892801.343017",
+            "earliest_fill": 1761955228,
+            "latest_fill": 1777856416
+        },
+        {
+            "tag_slug": "esports",
+            "unique_wallets": 133879,
+            "total_fills": 8869984,
+            "volume_usdc": "1599506211.248862",
+            "earliest_fill": 1761955208,
+            "latest_fill": 1777856426
+        }
+    ]
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `count` | integer | Number of tags returned |
+| `tags[].tag_slug` | string | Tag identifier |
+| `tags[].unique_wallets` | integer | Unique wallets that traded in this tag |
+| `tags[].total_fills` | integer | Total fills for this tag |
+| `tags[].volume_usdc` | string | Total volume in USDC |
+| `tags[].earliest_fill` | integer | Unix timestamp of oldest fill |
+| `tags[].latest_fill` | integer | Unix timestamp of newest fill |
