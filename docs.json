@@ -203,6 +203,42 @@
         ]
       },
       {
+        "tab": "Datasets API",
+        "badge": "New",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/datasets/overview"
+            ]
+          },
+          {
+            "group": "Wallets",
+            "pages": [
+              "api-reference/datasets/wallets"
+            ]
+          },
+          {
+            "group": "Tags",
+            "pages": [
+              "api-reference/datasets/tags"
+            ]
+          },
+          {
+            "group": "Activity",
+            "pages": [
+              "api-reference/datasets/activity"
+            ]
+          },
+          {
+            "group": "Markets",
+            "pages": [
+              "api-reference/datasets/markets"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "CLOB v2 API",
         "groups": [
           {

@@ -1,0 +1,76 @@
+---
+title: "Activity"
+description: "Daily and monthly time-series data for wallet activity and volume."
+---
+
+## Daily Activity
+
+```
+GET /datasets/sports-esports/activity/daily
+```
+
+Daily active wallets, fill count, and volume across all sports tags.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `days` | integer | 30 | Number of days to return. |
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/activity/daily?days=7"
+```
+
+```json
+{
+  "days": [
+    {
+      "timestamp": 1777708800,
+      "wallets": 48291,
+      "fills": 312847,
+      "volume_usdc": "71204832"
+    },
+    {
+      "timestamp": 1777622400,
+      "wallets": 51003,
+      "fills": 340192,
+      "volume_usdc": "78412093"
+    }
+  ],
+  "count": 7
+}
+```
+
+The `timestamp` field is the start of each day (midnight UTC, unix seconds).
+
+---
+
+## Monthly Activity
+
+```
+GET /datasets/sports-esports/activity/monthly
+```
+
+Monthly aggregate across the full dataset. No parameters.
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/activity/monthly"
+```
+
+```json
+{
+  "months": [
+    {
+      "timestamp": 1761955200,
+      "wallets": 182043,
+      "fills": 8204712,
+      "volume_usdc": "1840293847"
+    },
+    {
+      "timestamp": 1764547200,
+      "wallets": 201482,
+      "fills": 9102384,
+      "volume_usdc": "2013847291"
+    }
+  ],
+  "count": 7
+}
+```

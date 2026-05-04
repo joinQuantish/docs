@@ -1,0 +1,86 @@
+---
+title: "Datasets API"
+description: "Curated, queryable datasets of Polymarket wallet activity by category. Filter by sport, tag, wallet, time range. SQL playground included."
+---
+
+Curated datasets of on-chain Polymarket wallet activity, indexed by category. Each dataset covers a specific vertical (sports, esports, crypto, etc.) with every fill tagged by sport/league, wallet addresses extracted, and maker/taker roles identified.
+
+The first dataset is **Sports & Esports** — every wallet that traded a sports or esports market on Polymarket from November 2025 onward. 715K+ unique wallets, 56M+ fills, $11.7B+ volume, 11 tag categories.
+
+## Base URL
+
+```
+https://datasets.polynode.dev/api/
+```
+
+## Available Datasets
+
+| Dataset | ID | Status | Wallets | Fills | Volume |
+|---------|-----|--------|---------|-------|--------|
+| Sports & Esports | `sports-esports` | Live | 715K+ | 56M+ | $11.7B+ |
+| Crypto & DeFi | `crypto-defi` | Coming soon | — | — | — |
+
+## How It Works
+
+Every fill on Polymarket is tagged with the sport/league categories from its parent market. A single NBA game market produces fills tagged `sports`, `nba`, and `basketball`. You can query at any granularity — broad (`sports`) or narrow (`nba`).
+
+Each fill records:
+- **wallet** — the maker or taker address (both sides captured)
+- **tag_slug** — the category tag (sports, nfl, esports, soccer, etc.)
+- **timestamp** — unix timestamp of the fill
+- **volume_usdc** — dollar volume of the fill
+- **is_maker** — whether this wallet was the maker (liquidity provider) or taker
+- **condition_id** — the Polymarket market identifier
+
+Pre-computed materialized views power the leaderboard and analytics endpoints for sub-200ms responses.
+
+## Available Tags
+
+| Tag Slug | Wallets | Fills | Volume |
+|----------|---------|-------|--------|
+| `sports` | 677K | 55.8M | $11.67B |
+| `esports` | 18.6K | 167K | $47M |
+| `nfl` | 10.2K | 203K | $22.5M |
+| `boxing` | 3.8K | 30K | $4.7M |
+| `soccer` | 2.5K | 26K | $3.8M |
+| `tennis` | 1.5K | 13K | $3.2M |
+| `ufc` | 736 | 2.7K | $278K |
+| `mlb` | 431 | 1.8K | $349K |
+| `baseball` | 127 | 603 | $70K |
+| `nba` | 27 | 91 | $1.8K |
+| `counter-strike-2` | 27 | 80 | $1.2K |
+
+## Quick Start
+
+The original question: *"Extract all wallet addresses for Sports that placed trades after January 1, 2025."*
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets?tag=sports&after=1735689600&sort=volume&limit=10"
+```
+
+Response:
+
+```json
+{
+  "wallets": [
+    {
+      "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+      "tag_slug": "sports",
+      "fill_count": 374922,
+      "total_volume_usdc": "72603487.44",
+      "maker_fills": 72628,
+      "taker_fills": 302294,
+      "first_seen": 1761955252,
+      "last_seen": 1777408494,
+      "markets_traded": 52815
+    }
+  ],
+  "count": 10,
+  "limit": 10,
+  "offset": 0
+}
+```
+
+## Explorer & SQL Playground
+
+Browse the data visually at [datasets.polynode.dev](https://datasets.polynode.dev). Click into a dataset to get a full SQL playground with pre-built recipes, table browser, and schema explorer.
