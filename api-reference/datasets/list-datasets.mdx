@@ -1,0 +1,37 @@
+---
+title: "GET /datasets"
+description: "List all available datasets with metadata and endpoint map."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets
+```
+
+Returns all available datasets with their status, stats, and endpoint paths.
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets"
+```
+
+### Response
+
+```json
+{
+  "datasets": [
+    {
+      "id": "sports-esports",
+      "name": "Sports & Esports",
+      "status": "live",
+      "endpoints": {
+        "metadata": "/datasets/sports-esports",
+        "wallets": "/datasets/sports-esports/wallets",
+        "tags": "/datasets/sports-esports/tags",
+        "activity": "/datasets/sports-esports/activity/daily",
+        "markets": "/datasets/sports-esports/markets"
+      }
+    }
+  ]
+}
+```

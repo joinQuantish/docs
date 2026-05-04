@@ -1,0 +1,40 @@
+---
+title: "GET /wallets/high-frequency"
+description: "Wallets ranked by trades per day."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/wallets/high-frequency
+```
+
+Returns wallets ranked by their average fills per day.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `min_fills` | integer | 100 | Minimum total fills to qualify. |
+| `limit` | integer | 100 | Max results (max 500). |
+| `offset` | integer | 0 | Pagination offset. |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/high-frequency?min_fills=500&limit=5"
+```
+
+### Response
+
+```json
+{
+  "wallets": [
+    {
+      "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+      "fills": 374922,
+      "volume_usdc": "72603487.44",
+      "fills_per_day": "2178.6"
+    }
+  ],
+  "count": 5
+}
+```

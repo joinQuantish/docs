@@ -1,0 +1,41 @@
+---
+title: "GET /tags"
+description: "All available sport/esport tags with wallet count, fills, and volume."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/tags
+```
+
+Returns all tag slugs with aggregate stats. No parameters.
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/tags"
+```
+
+### Response
+
+```json
+{
+  "tags": [
+    {
+      "tag_slug": "sports",
+      "unique_wallets": 677107,
+      "total_fills": 55852819,
+      "total_volume_usdc": "11672942584.11",
+      "earliest_fill": 1761955208,
+      "latest_fill": 1777836030
+    },
+    {
+      "tag_slug": "nfl",
+      "unique_wallets": 10250,
+      "total_fills": 202748,
+      "total_volume_usdc": "22535343.79",
+      "earliest_fill": 1762006651,
+      "latest_fill": 1777830310
+    }
+  ]
+}
+```

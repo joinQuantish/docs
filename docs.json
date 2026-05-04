@@ -209,31 +209,42 @@
           {
             "group": "Overview",
             "pages": [
-              "api-reference/datasets/overview"
+              "api-reference/datasets/overview",
+              "api-reference/datasets/list-datasets",
+              "api-reference/datasets/dataset-stats"
             ]
           },
           {
             "group": "Wallets",
             "pages": [
-              "api-reference/datasets/wallets"
+              "api-reference/datasets/list-wallets",
+              "api-reference/datasets/wallet-detail",
+              "api-reference/datasets/wallet-whales",
+              "api-reference/datasets/wallet-market-makers",
+              "api-reference/datasets/wallet-new",
+              "api-reference/datasets/wallet-high-frequency",
+              "api-reference/datasets/wallet-cross-tag"
             ]
           },
           {
             "group": "Tags",
             "pages": [
-              "api-reference/datasets/tags"
+              "api-reference/datasets/list-tags",
+              "api-reference/datasets/tag-detail",
+              "api-reference/datasets/tag-wallets"
             ]
           },
           {
             "group": "Activity",
             "pages": [
-              "api-reference/datasets/activity"
+              "api-reference/datasets/daily-activity",
+              "api-reference/datasets/monthly-activity"
             ]
           },
           {
             "group": "Markets",
             "pages": [
-              "api-reference/datasets/markets"
+              "api-reference/datasets/list-markets"
             ]
           }
         ]

@@ -1,0 +1,44 @@
+---
+title: "GET /wallets/new"
+description: "Wallets whose first sports trade was within the last N days."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/wallets/new
+```
+
+Returns wallets that appeared for the first time within a recent window.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `days` | integer | 7 | Look-back window in days. |
+| `limit` | integer | 100 | Max results (max 500). |
+| `offset` | integer | 0 | Pagination offset. |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/new?days=14&limit=10"
+```
+
+### Response
+
+```json
+{
+  "wallets": [
+    {
+      "wallet": "0xabc123...",
+      "tag_slug": "sports",
+      "fill_count": 42,
+      "volume_usdc": "8420.50",
+      "first_seen": 1777401632,
+      "last_seen": 1777408494,
+      "markets_traded": 12
+    }
+  ],
+  "count": 10,
+  "days": 14
+}
+```

@@ -1,0 +1,40 @@
+---
+title: "GET /datasets/sports-esports"
+description: "Dataset metadata — total wallets, fills, volume, tag count, date range."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports
+```
+
+Returns aggregate stats for the Sports & Esports dataset.
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports"
+```
+
+### Response
+
+```json
+{
+  "unique_wallets": 715171,
+  "total_fills": 56297435,
+  "total_volume_usdc": "11754917501",
+  "tag_count": 11,
+  "earliest_fill": 1761955208,
+  "latest_fill": 1777836030
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `unique_wallets` | integer | Total unique wallet addresses in the dataset |
+| `total_fills` | integer | Total number of fills (trades) indexed |
+| `total_volume_usdc` | string | Total volume in USDC |
+| `tag_count` | integer | Number of distinct sport/esport tags |
+| `earliest_fill` | integer | Unix timestamp of the oldest fill |
+| `latest_fill` | integer | Unix timestamp of the most recent fill |

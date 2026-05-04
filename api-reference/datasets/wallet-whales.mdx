@@ -1,0 +1,43 @@
+---
+title: "GET /wallets/whales"
+description: "High-volume wallets above a configurable USDC threshold."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/wallets/whales
+```
+
+Returns wallets with total volume above a threshold, ranked by volume.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | number | 100000 | Minimum total volume in USDC. |
+| `limit` | integer | 100 | Max results (max 500). |
+| `offset` | integer | 0 | Pagination offset. |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/whales?threshold=1000000&limit=5"
+```
+
+### Response
+
+```json
+{
+  "wallets": [
+    {
+      "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+      "fills": 374922,
+      "volume_usdc": "72603487.44",
+      "tags": 1,
+      "markets": 52815,
+      "maker_pct": "19.4"
+    }
+  ],
+  "count": 5,
+  "threshold_usdc": 1000000.0
+}
+```

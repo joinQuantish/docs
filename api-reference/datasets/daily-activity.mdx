@@ -1,0 +1,40 @@
+---
+title: "GET /activity/daily"
+description: "Daily active wallets, fills, and volume."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/activity/daily
+```
+
+Daily time series of wallet activity across all sports tags.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `days` | integer | 30 | Number of days to return. |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/activity/daily?days=7"
+```
+
+### Response
+
+```json
+{
+  "days": [
+    {
+      "timestamp": 1777708800,
+      "wallets": 48291,
+      "fills": 312847,
+      "volume_usdc": "71204832"
+    }
+  ],
+  "count": 7
+}
+```
+
+The `timestamp` field is the start of each day (midnight UTC, unix seconds).

@@ -1,0 +1,43 @@
+---
+title: "GET /wallets/market-makers"
+description: "Wallets that primarily provide liquidity (high maker fill ratio)."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/wallets/market-makers
+```
+
+Returns wallets with a high percentage of maker fills, indicating liquidity provision.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `min_maker_pct` | number | 80 | Minimum maker percentage (0-100). |
+| `min_fills` | integer | 50 | Minimum total fills to qualify. |
+| `limit` | integer | 100 | Max results (max 500). |
+| `offset` | integer | 0 | Pagination offset. |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/market-makers?min_maker_pct=90&min_fills=100&limit=5"
+```
+
+### Response
+
+```json
+{
+  "wallets": [
+    {
+      "wallet": "0x6d3c5bd13984b2de47c3a88ddc455309aab3d294",
+      "fills": 278384,
+      "volume_usdc": "64964574.19",
+      "maker_fills": 272842,
+      "maker_pct": "98.0",
+      "tags": 3
+    }
+  ],
+  "count": 5
+}
+```

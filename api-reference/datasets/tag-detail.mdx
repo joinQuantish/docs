@@ -1,0 +1,47 @@
+---
+title: "GET /tags/:slug"
+description: "Single tag stats plus top 50 wallets for that tag."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/tags/{slug}
+```
+
+Returns a single tag's aggregate stats and its top 50 wallets by volume.
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `slug` | string | Tag slug: `sports`, `nfl`, `esports`, `soccer`, `boxing`, `tennis`, `ufc`, `mlb`, `baseball`, `nba`, `counter-strike-2` |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/tags/nfl"
+```
+
+### Response
+
+```json
+{
+  "tag_slug": "nfl",
+  "unique_wallets": 10250,
+  "total_fills": 202748,
+  "total_volume_usdc": "22535343.79",
+  "earliest_fill": 1762006651,
+  "latest_fill": 1777830310,
+  "top_wallets": [
+    {
+      "wallet": "0x6d3c5bd13984b2de47c3a88ddc455309aab3d294",
+      "fill_count": 12847,
+      "volume_usdc": "3201482.19",
+      "maker_fills": 12701,
+      "taker_fills": 146,
+      "markets_traded": 892,
+      "first_seen": 1762448275,
+      "last_seen": 1777408482
+    }
+  ]
+}
+```

@@ -1,15 +1,15 @@
 ---
-title: "Markets"
-description: "Top markets by unique wallets, fills, or volume."
+title: "GET /markets"
+description: "Top markets ranked by unique wallets, fills, or volume."
 ---
 
-## List Markets
-
 ```
-GET /datasets/sports-esports/markets
+GET https://datasets.polynode.dev/api/datasets/sports-esports/markets
 ```
 
-Returns the top markets (by Polymarket condition_id) ranked by unique wallets, fills, or volume.
+Returns top markets (by Polymarket condition_id) ranked by unique wallets, fills, or volume.
+
+### Query Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -17,9 +17,13 @@ Returns the top markets (by Polymarket condition_id) ranked by unique wallets, f
 | `limit` | integer | 50 | Results per page (max 500). |
 | `offset` | integer | 0 | Pagination offset. |
 
+### Example
+
 ```bash
 curl "https://datasets.polynode.dev/api/datasets/sports-esports/markets?sort=wallets&limit=5"
 ```
+
+### Response
 
 ```json
 {
@@ -38,4 +42,4 @@ curl "https://datasets.polynode.dev/api/datasets/sports-esports/markets?sort=wal
 }
 ```
 
-Each `condition_id` is a Polymarket market identifier. You can cross-reference it with Polymarket's Gamma API (`gamma-api.polymarket.com/markets?conditionId=0x...`) to get the market name, slug, and outcomes.
+Cross-reference `condition_id` with Polymarket's Gamma API to get market names: `gamma-api.polymarket.com/markets?conditionId=0x...`

@@ -1,0 +1,54 @@
+---
+title: "GET /tags/:slug/wallets"
+description: "Paginated wallet list for a specific tag with sorting and time filtering."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/tags/{slug}/wallets
+```
+
+Paginated wallet list for a specific tag.
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `slug` | string | Tag slug (e.g. `nfl`, `esports`, `soccer`) |
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `after` | integer | — | Only wallets active after this unix timestamp. |
+| `sort` | string | `volume` | Sort by: `volume`, `fills`, `first_seen`, `last_seen`, `markets`. |
+| `limit` | integer | 50 | Results per page (max 500). |
+| `offset` | integer | 0 | Pagination offset. |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/tags/esports/wallets?sort=fills&limit=10"
+```
+
+### Response
+
+```json
+{
+  "tag_slug": "esports",
+  "wallets": [
+    {
+      "wallet": "0x...",
+      "fill_count": 8421,
+      "volume_usdc": "1203847.23",
+      "maker_fills": 7200,
+      "taker_fills": 1221,
+      "markets_traded": 342,
+      "first_seen": 1762010079,
+      "last_seen": 1777830640
+    }
+  ],
+  "count": 10,
+  "limit": 10,
+  "offset": 0
+}
+```

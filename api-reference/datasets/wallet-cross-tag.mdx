@@ -1,0 +1,41 @@
+---
+title: "GET /wallets/cross-tag"
+description: "Wallets active across multiple sport categories."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/wallets/cross-tag
+```
+
+Returns wallets that trade across multiple sport/esport tags.
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `min_tags` | integer | 3 | Minimum number of distinct tags. |
+| `limit` | integer | 50 | Max results (max 500). |
+| `offset` | integer | 0 | Pagination offset. |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/cross-tag?min_tags=2&limit=10"
+```
+
+### Response
+
+```json
+{
+  "wallets": [
+    {
+      "wallet": "0x6d3c5bd13984b2de47c3a88ddc455309aab3d294",
+      "tags": 4,
+      "fills": 278384,
+      "volume_usdc": "64964574.19"
+    }
+  ],
+  "count": 10,
+  "min_tags": 2
+}
+```

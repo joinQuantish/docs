@@ -1,0 +1,44 @@
+---
+title: "GET /wallets/:address"
+description: "Single wallet profile — activity across all sport/esport tags."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/wallets/{address}
+```
+
+Returns a single wallet's activity broken down by every tag they traded in.
+
+### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `address` | string | Ethereum address (0x-prefixed, 42 characters) |
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14"
+```
+
+### Response
+
+```json
+{
+  "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+  "total_volume_usdc": 72603487.44,
+  "tags_active": 1,
+  "tags": [
+    {
+      "tag_slug": "sports",
+      "fill_count": 374922,
+      "total_volume_usdc": "72603487.44",
+      "maker_fills": 72628,
+      "taker_fills": 302294,
+      "first_seen": 1761955252,
+      "last_seen": 1777408494,
+      "markets_traded": 52815
+    }
+  ]
+}
+```

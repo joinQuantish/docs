@@ -1,0 +1,32 @@
+---
+title: "GET /activity/monthly"
+description: "Monthly aggregate wallet activity and volume."
+---
+
+```
+GET https://datasets.polynode.dev/api/datasets/sports-esports/activity/monthly
+```
+
+Monthly aggregate across the full dataset. No parameters.
+
+### Example
+
+```bash
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/activity/monthly"
+```
+
+### Response
+
+```json
+{
+  "months": [
+    {
+      "timestamp": 1761955200,
+      "wallets": 182043,
+      "fills": 8204712,
+      "volume_usdc": "1840293847"
+    }
+  ],
+  "count": 7
+}
+```
