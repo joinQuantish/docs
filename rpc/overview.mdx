@@ -1,105 +1,170 @@
 ---
-title: "PolyNode RPC"
-description: "Priority transaction delivery on Polygon — drop-in RPC replacement"
+title: "Polygon RPC"
+description: "Authenticated Polygon RPC with priority transaction routing"
 icon: "bolt"
 ---
 
-<Note>
-  **Beta** — PolyNode RPC is in early access. [Contact us](mailto:josh@quantish.live) for API keys and onboarding.
-</Note>
-
-## What is PolyNode RPC?
-
-PolyNode RPC is a high-performance Polygon RPC endpoint with proprietary transaction routing for priority block inclusion. It's a **drop-in replacement** for any standard Ethereum RPC — just change the URL.
+## Endpoint
 
 ```
 https://rpc.polynode.dev
 ```
 
-## Why Use PolyNode RPC?
+Standard Ethereum JSON-RPC over HTTPS. Drop-in replacement for any Polygon RPC — just change the URL and add your API key.
 
-<CardGroup cols={2}>
-  <Card title="Priority Execution" icon="ranking-star">
-    90%+ of transactions land as **TX #1** (first transaction in block).
-  </Card>
-  <Card title="Drop-In Compatible" icon="plug">
-    Standard Ethereum JSON-RPC. Works with MetaMask, ethers.js, web3.py, viem, wagmi, Hardhat, Foundry — no SDK needed.
-  </Card>
-  <Card title="Low-Latency Routing" icon="bolt">
-    Proprietary infrastructure minimizes the time between submission and block inclusion.
-  </Card>
-  <Card title="MEV Protection" icon="shield">
-    Transactions are not broadcast publicly, reducing front-running risk.
-  </Card>
-</CardGroup>
+## Authentication
 
-## How It Works
+Every request requires a valid polynode API key. Pass it as a header:
 
-1. **Your transaction arrives** at our endpoint via standard `eth_sendRawTransaction`
-2. **PolyNode's routing engine** determines the optimal delivery path
-3. **Your transaction is delivered** with priority for fast block inclusion
-4. **Redundant delivery** ensures reliability
+```
+x-api-key: YOUR_API_KEY
+```
 
-The result: your transaction reaches block inclusion faster than transactions submitted through public RPCs.
+Or as a Bearer token:
 
-## Quick Start
+```
+Authorization: Bearer YOUR_API_KEY
+```
 
-<Steps>
-  <Step title="Get an API Key">
-    [Contact us](mailto:josh@quantish.live) for beta access.
-  </Step>
-  <Step title="Configure Your RPC URL">
-    Replace your existing Polygon RPC URL with:
-    ```
-    https://rpc.polynode.dev
-    ```
-  </Step>
-  <Step title="Add Authentication">
-    Include your API key in requests:
-    ```
-    x-api-key: your_api_key
-    ```
-  </Step>
-  <Step title="Send Transactions">
-    Use any Ethereum library — it just works:
-    ```javascript
-    import { createPublicClient, http } from 'viem'
-    import { polygon } from 'viem/chains'
+Requests without a valid key receive a `-32000` error.
 
-    const client = createPublicClient({
-      chain: polygon,
-      transport: http('https://rpc.polynode.dev', {
-        fetchOptions: {
-          headers: { 'x-api-key': 'your_api_key' }
-        }
-      })
-    })
-    ```
-  </Step>
-</Steps>
+## Rate Limit
+
+All keys are rate-limited to **2 requests per second** per IP. Exceeding this returns a `-32005` error. Batch requests count as a single request.
 
 ## Supported Methods
 
-PolyNode RPC supports the standard Ethereum JSON-RPC specification. Transaction submission uses our priority routing engine. Core chain data is served directly from our infrastructure. Read methods are served with standard Polygon node responses.
-
-| Method | Handling | Description |
-|--------|----------|-------------|
-| `eth_sendRawTransaction` | **Priority Engine** | Optimized block inclusion |
+| Method | Source | Description |
+|--------|--------|-------------|
+| `eth_sendRawTransaction` | **Priority routing** | P2P delivery to block-producing validator |
 | `eth_chainId` | Local | Returns `0x89` (137) |
-| `eth_blockNumber` | Local | Latest block number |
-| `eth_gasPrice` | Local | Calibrated from recent blocks |
+| `eth_blockNumber` | Local | Latest block from P2P network |
+| `eth_gasPrice` | Local | Calibrated for optimal block positioning |
 | `net_version` | Local | Returns `137` |
-| `net_peerCount` | Local | Connected peer count |
+| `net_peerCount` | Local | Connected P2P peer count |
 | `web3_clientVersion` | Local | Returns `PolyNode/1.0.0` |
-| `eth_getBalance` | Standard | Account balance queries |
-| `eth_getTransactionCount` | Standard | Nonce queries |
-| `eth_call` | Standard | Contract read calls |
-| `eth_estimateGas` | Standard | Gas estimation |
-| `eth_getBlockByNumber` | Standard | Block data queries |
-| `eth_getTransactionReceipt` | Standard | Receipt queries |
-| `eth_getLogs` | Standard | Log/event queries (requires address filter) |
-| All other methods | Standard | Full JSON-RPC compatibility |
+| `eth_call` | P2P node | Contract read calls |
+| `eth_getBalance` | P2P node | Account balance queries |
+| `eth_getTransactionCount` | P2P node | Nonce queries |
+| `eth_estimateGas` | P2P node | Gas estimation |
+| `eth_getBlockByNumber` | P2P node | Block data |
+| `eth_getTransactionReceipt` | P2P node | Transaction receipts |
+| `eth_getLogs` | P2P node | Log queries (requires address filter) |
 
 <Warning>
-  **Current-state only.** State queries like `eth_getBalance`, `eth_getStorageAt`, and `eth_call` only support the `latest` block tag. Historical state at specific block numbers is not available. Block and transaction data (`eth_getBlockByNumber`, `eth_getTransactionReceipt`) works for all blocks.
+**Current-state only.** `eth_getBalance`, `eth_getStorageAt`, and `eth_call` only support the `latest` block tag. Historical state at old block numbers is not available. Block and transaction data works for all blocks.
 </Warning>
+
+## Common Queries
+
+### Check a wallet's MATIC balance
+
+```bash
+curl -X POST https://rpc.polynode.dev \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "eth_getBalance",
+    "params": ["0xYOUR_WALLET_ADDRESS", "latest"],
+    "id": 1
+  }'
+```
+
+The result is the balance in wei (hex). Divide by 10^18 for MATIC.
+
+### Check a wallet's USDC balance
+
+Use `eth_call` with the ERC-20 `balanceOf(address)` function:
+
+```bash
+curl -X POST https://rpc.polynode.dev \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "eth_call",
+    "params": [{
+      "to": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+      "data": "0x70a08231000000000000000000000000YOUR_WALLET_ADDRESS_WITHOUT_0x"
+    }, "latest"],
+    "id": 1
+  }'
+```
+
+Replace `YOUR_WALLET_ADDRESS_WITHOUT_0x` with the 40-character address (no `0x` prefix), zero-padded to 64 characters. The result is the balance in the token's smallest unit (hex). USDC has 6 decimals.
+
+**Common Polygon token contracts:**
+
+| Token | Address |
+|-------|---------|
+| USDC | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` |
+| USDC.e (bridged) | `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` |
+| USDT | `0xc2132D05D31c914a87C6611C10748AEb04B58e8F` |
+| WMATIC | `0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270` |
+| WETH | `0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619` |
+
+### Read any contract function
+
+The `data` field for `eth_call` is the function selector (first 4 bytes of the keccak256 hash) followed by ABI-encoded arguments.
+
+Common selectors:
+
+| Function | Selector | Arguments |
+|----------|----------|-----------|
+| `balanceOf(address)` | `0x70a08231` | address (32 bytes, left-padded) |
+| `totalSupply()` | `0x18160ddd` | none |
+| `decimals()` | `0x313ce567` | none |
+| `symbol()` | `0x95d89b41` | none |
+| `name()` | `0x06fdde03` | none |
+| `allowance(address,address)` | `0xdd62ed3e` | owner (32 bytes) + spender (32 bytes) |
+
+### Get the current block number
+
+```bash
+curl -X POST https://rpc.polynode.dev \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
+
+### Get a transaction receipt
+
+```bash
+curl -X POST https://rpc.polynode.dev \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "eth_getTransactionReceipt",
+    "params": ["0xYOUR_TX_HASH"],
+    "id": 1
+  }'
+```
+
+## Batch Requests
+
+Send multiple calls in a single HTTP request:
+
+```bash
+curl -X POST https://rpc.polynode.dev \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '[
+    {"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1},
+    {"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":2},
+    {"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":3}
+  ]'
+```
+
+Batch requests count as a single request against the rate limit.
+
+## Error Codes
+
+| Code | Meaning |
+|------|---------|
+| `-32000` | Missing or invalid API key |
+| `-32005` | Rate limit exceeded (max 2 req/s) |
+| `-32601` | Method not available |
+| `-32602` | Invalid parameters |
+| `-32603` | Upstream error |
