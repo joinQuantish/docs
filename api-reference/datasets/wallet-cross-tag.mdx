@@ -14,13 +14,15 @@ Returns wallets that trade across multiple sport/esport tags.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `min_tags` | integer | 3 | Minimum number of distinct tags. |
+| `after` | integer | — | Only wallets active after this unix timestamp. |
+| `before` | integer | — | Only wallets active before this unix timestamp. |
 | `limit` | integer | 50 | Max results (max 500). |
 | `offset` | integer | 0 | Pagination offset. |
 
-### Example
+### Example: Cross-tag wallets active since January 2026
 
 ```bash
-curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/cross-tag?min_tags=2&limit=10"
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/cross-tag?min_tags=2&after=1735689600&limit=10"
 ```
 
 ### Response

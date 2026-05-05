@@ -15,13 +15,15 @@ Returns wallets with a high percentage of maker fills, indicating liquidity prov
 |-----------|------|---------|-------------|
 | `min_maker_pct` | number | 80 | Minimum maker percentage (0-100). |
 | `min_fills` | integer | 50 | Minimum total fills to qualify. |
+| `after` | integer | — | Only wallets active after this unix timestamp. |
+| `before` | integer | — | Only wallets active before this unix timestamp. |
 | `limit` | integer | 100 | Max results (max 500). |
 | `offset` | integer | 0 | Pagination offset. |
 
-### Example
+### Example: Market makers active since March 2026
 
 ```bash
-curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/market-makers?min_maker_pct=90&min_fills=100&limit=5"
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/market-makers?min_maker_pct=90&min_fills=100&after=1740787200&limit=5"
 ```
 
 ### Response

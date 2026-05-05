@@ -81,6 +81,23 @@ Response:
 }
 ```
 
+## Date Filtering
+
+Every wallet endpoint supports `after` and `before` query parameters (unix timestamps) to scope results to a time window. This was the original ask: *"wallets for Sports/Esports that placed trades after a certain date."*
+
+```bash
+# All sports wallets active after January 1, 2026
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets?tag=sports&after=1735689600"
+
+# NBA whales since March 2026
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/whales?threshold=100000&after=1740787200"
+
+# Market makers active in April 2026
+curl "https://datasets.polynode.dev/api/datasets/sports-esports/wallets/market-makers?after=1743465600&before=1746057600"
+```
+
+Supported on: `/wallets`, `/wallets/whales`, `/wallets/market-makers`, `/wallets/high-frequency`, `/wallets/cross-tag`, `/wallets/overlap`, `/wallets/concentration`, `/tags/:slug/wallets`, `/wallets/new` (via `days` param).
+
 ## Explorer & SQL Playground
 
 Browse the data visually at [datasets.polynode.dev](https://datasets.polynode.dev). Click into a dataset to get a full SQL playground with pre-built recipes, table browser, and schema explorer.
