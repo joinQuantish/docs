@@ -7,6 +7,25 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-05 — Magic-link wallet EOA recovery in `/resolve`
+
+`/v1/resolve` now returns the controlling EOA for Polymarket magic-link wallets — accounts created with email or social login. Previously these returned `eoa: null` because Polymarket's profile API does not expose the signer for this wallet type.
+
+```json
+{
+  "safe": "0x16cbe223607a6513ae76d1e3751c78e4eabc2704",
+  "eoa": "0xbe5ba588ab7173b34efc0706b881794951014293",
+  "username": "MRF",
+  "type": "proxy"
+}
+```
+
+**No code changes required.** The response shape is unchanged. The `eoa` field is now populated for the vast majority of `type: "proxy"` wallets. A small number may still return `eoa: null` where the EOA cannot be determined.
+
+Repeat queries are sub-100ms.
+
+---
+
 ## 2026-05-02 — Deposit wallet support
 
 Polymarket is rolling out deposit wallets as a new account type for new users. This release adds full support across the API, all three SDKs, and the copy trading engine. **Existing integrations are fully backward compatible** — no code changes required unless you want to take advantage of the new features.

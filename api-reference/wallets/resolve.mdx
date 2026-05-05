@@ -69,6 +69,24 @@ curl "https://api.polynode.dev/v1/resolve/0xc2783891b1d2287345e30f75e0f1ecd189a9
 }
 ```
 
+## By wallet address (magic-link proxy)
+
+Resolve a Polymarket magic-link wallet — the wallet type used by accounts created with email or social login. The endpoint returns the controlling EOA, recovered automatically.
+
+```bash
+curl "https://api.polynode.dev/v1/resolve/0x16cbe223607a6513ae76d1e3751c78e4eabc2704" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "safe": "0x16cbe223607a6513ae76d1e3751c78e4eabc2704",
+  "eoa": "0xbe5ba588ab7173b34efc0706b881794951014293",
+  "username": "MRF",
+  "type": "proxy"
+}
+```
+
 ## By username
 
 Look up a Polymarket username to find both wallet addresses. Case-insensitive.
@@ -94,7 +112,7 @@ curl "https://api.polynode.dev/v1/resolve/Fredi9999" \
 </ResponseField>
 
 <ResponseField name="eoa" type="string">
-  Externally owned account that controls the trading wallet. This is the signer address. May be `null` in rare cases where the EOA cannot be determined.
+  Externally owned account that controls the trading wallet. This is the signer address. May be `null` for some magic-link wallets where the EOA cannot be determined.
 </ResponseField>
 
 <ResponseField name="username" type="string">
@@ -105,7 +123,7 @@ curl "https://api.polynode.dev/v1/resolve/Fredi9999" \
   Wallet type. One of:
   - `"safe"` — Gnosis Safe proxy wallet (most existing Polymarket accounts)
   - `"deposit_wallet"` — deposit wallet (newer Polymarket accounts)
-  - `"proxy"` — legacy proxy wallet
+  - `"proxy"` — magic-link wallet (accounts created via email or social login)
 </ResponseField>
 
 ## Error responses
