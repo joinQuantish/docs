@@ -27,7 +27,8 @@ GET /v2/onchain/trades
 | `min_total` | number | No | Minimum trade size in USD |
 | `limit` | integer | No | Results per page (1-500, default 100) |
 | `order` | string | No | Sort by timestamp: `desc` (newest first, default) or `asc` (oldest first). Using `asc` without any filter returns an error. |
-| `sort_by` | string | No | Set to `order_hash` to group fills by order. All fills from the same limit order appear adjacent, sorted by time within each group. Groups ordered by most recent fill. Default sort is by timestamp. |
+| `sort_by` | string | No | Set to `order_hash` to cluster fills by order. All fills from the same limit order appear adjacent, sorted by time within each group. Groups ordered by most recent fill. Default sort is by timestamp. |
+| `group_by` | string | No | Set to `order_hash` to aggregate fills into one row per order. Each row contains `total_amount_usd`, `total_shares`, `avg_price`, `fill_count`, `first_fill_at`, `last_fill_at`, and `tx_hashes`. See [Group by order](#group-by-order) below. |
 | `pagination_key` | string | No | Cursor from a previous response to fetch the next page |
 
 ### Identifying markets
@@ -327,7 +328,7 @@ curl "https://api.polynode.dev/v2/onchain/trades?limit=100&pagination_key=CURSOR
   -H "x-api-key: YOUR_KEY"
 ```
 
-### Group by order
+### Sort by order
 
 Use `sort_by=order_hash` to cluster fills from the same limit order together. A single limit order can be filled across many transactions over time. This sort groups all those partial fills adjacently, sorted by timestamp within each order. Orders are ranked by their most recent fill.
 
@@ -337,6 +338,68 @@ Every fill is still returned individually with all fields. No data is collapsed 
 curl "https://api.polynode.dev/v2/onchain/trades?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&sort_by=order_hash&limit=100" \
   -H "x-api-key: YOUR_KEY"
 ```
+
+### Group by order
+
+Use `group_by=order_hash` to aggregate all fills from the same limit order into a single row. Each row contains summed totals, a VWAP price, fill count, time range, and a list of transaction hashes.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&group_by=order_hash&limit=100" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "count": 76,
+  "source": "onchain-v2-grouped",
+  "trades": [
+    {
+      "order_hash": "0x7f69046bdbb2a595667e7ffe24ea285f87f95f7d146333dbc8a7e02948bbe52b",
+      "fill_count": 12,
+      "total_amount_usd": 208.76,
+      "total_shares": 353.82,
+      "avg_price": 0.59,
+      "total_fee_usd": 0.0,
+      "first_fill_at": 1778409433,
+      "last_fill_at": 1778414041,
+      "timestamp": 1778414041,
+      "token_id": "102860925866954003158841129327041711410011624382962867117087237151352260776640",
+      "maker": "0x6ac5bb06a9eb05641fd5e82640268b92f3ab4b6e",
+      "side": "maker",
+      "direction": "BUY",
+      "market": "Pistons vs. Cavaliers",
+      "market_slug": "nba-det-cle-2026-05-11",
+      "outcome": "Cavaliers",
+      "condition_id": "0x52f953bd31997875e5f782fbed7f85b8707aa8fefe95b6854cf5b8c69370b3f0",
+      "tx_hashes": ["0xa7fdeb87...", "0xbb9092bc...", "..."]
+    }
+  ]
+}
+```
+
+#### Grouped trade fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `order_hash` | string | The CLOB order hash (grouping key) |
+| `fill_count` | number | Number of individual fills aggregated into this row |
+| `total_amount_usd` | number | Sum of all fill sizes in USD |
+| `total_shares` | number | Sum of all outcome shares traded |
+| `avg_price` | number | Volume-weighted average price (`total_amount_usd / total_shares`) |
+| `total_fee_usd` | number | Sum of all fees in USD |
+| `first_fill_at` | number | Unix timestamp of the earliest fill |
+| `last_fill_at` | number | Unix timestamp of the most recent fill |
+| `timestamp` | number | Same as `last_fill_at` (for compatibility with default sort) |
+| `tx_hashes` | string[] | List of unique transaction hashes for all fills |
+| `token_id` | string | Outcome token ID |
+| `maker` | string | Maker address (from the first fill) |
+| `side` | string | Exchange role (from the first fill) |
+| `direction` | string | Trade direction (from the first fill) |
+| `market` | string | Market question text |
+| `market_slug` | string | Market URL slug |
+| `outcome` | string | Outcome label |
+| `condition_id` | string | Market condition ID |
+| `image` | string \| null | Market image URL |
 
 ### Oldest first
 

@@ -7,18 +7,25 @@ icon: "clock-rotate-left"
 
 ---
 
-## 2026-05-10 — Sort trades by order hash
+## 2026-05-10 — Sort and group trades by order hash
 
-`/v2/onchain/trades` now supports `sort_by=order_hash`. All fills from the same limit order are grouped together in the response, sorted chronologically within each order. Orders are ranked by their most recent fill.
+`/v2/onchain/trades` now supports two new query parameters for working with limit order fills:
 
-Every fill is still returned individually. No data is collapsed or aggregated.
+**`sort_by=order_hash`** — reorders the response so all fills from the same limit order are adjacent, sorted by time within each order. Every fill is still returned individually. No data is collapsed.
 
 ```bash
 curl "https://api.polynode.dev/v2/onchain/trades?wallet=0x...&sort_by=order_hash&limit=100" \
   -H "x-api-key: YOUR_KEY"
 ```
 
-Useful for tracking how a single limit order was filled across multiple transactions over time.
+**`group_by=order_hash`** — aggregates all fills from the same limit order into a single row with `total_amount_usd`, `total_shares`, `avg_price` (VWAP), `fill_count`, time range (`first_fill_at` / `last_fill_at`), and a `tx_hashes` array.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0x...&group_by=order_hash&limit=100" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+A single limit order can be filled across hundreds of transactions over hours or days. These parameters let you view that activity at either granularity.
 
 ---
 
