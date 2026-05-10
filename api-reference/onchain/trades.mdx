@@ -27,6 +27,7 @@ GET /v2/onchain/trades
 | `min_total` | number | No | Minimum trade size in USD |
 | `limit` | integer | No | Results per page (1-500, default 100) |
 | `order` | string | No | Sort by timestamp: `desc` (newest first, default) or `asc` (oldest first). Using `asc` without any filter returns an error. |
+| `sort_by` | string | No | Set to `order_hash` to group fills by order. All fills from the same limit order appear adjacent, sorted by time within each group. Groups ordered by most recent fill. Default sort is by timestamp. |
 | `pagination_key` | string | No | Cursor from a previous response to fetch the next page |
 
 ### Identifying markets
@@ -323,6 +324,17 @@ curl "https://api.polynode.dev/v2/onchain/trades?limit=100" \
 
 # Next page
 curl "https://api.polynode.dev/v2/onchain/trades?limit=100&pagination_key=CURSOR_FROM_PREVIOUS" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+### Group by order
+
+Use `sort_by=order_hash` to cluster fills from the same limit order together. A single limit order can be filled across many transactions over time. This sort groups all those partial fills adjacently, sorted by timestamp within each order. Orders are ranked by their most recent fill.
+
+Every fill is still returned individually with all fields. No data is collapsed or aggregated.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0xa973ae12882a1c24a75da7a3b52cb01500b2f639&sort_by=order_hash&limit=100" \
   -H "x-api-key: YOUR_KEY"
 ```
 

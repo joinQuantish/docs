@@ -7,6 +7,21 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-10 — Sort trades by order hash
+
+`/v2/onchain/trades` now supports `sort_by=order_hash`. All fills from the same limit order are grouped together in the response, sorted chronologically within each order. Orders are ranked by their most recent fill.
+
+Every fill is still returned individually. No data is collapsed or aggregated.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0x...&sort_by=order_hash&limit=100" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Useful for tracking how a single limit order was filled across multiple transactions over time.
+
+---
+
 ## 2026-05-05 — Magic-link wallet EOA recovery in `/resolve`
 
 `/v1/resolve` now returns the controlling EOA for Polymarket magic-link wallets — accounts created with email or social login. Previously these returned `eoa: null` because Polymarket's profile API does not expose the signer for this wallet type.
