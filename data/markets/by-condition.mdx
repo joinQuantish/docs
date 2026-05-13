@@ -1,10 +1,10 @@
 ---
 title: "Market by Condition"
 openapi: "GET /v3/markets/condition/{condition_id}"
-description: "Get full market info including all outcome tokens, metadata, tags, and resolution status."
+description: "Get market metadata, token IDs, and outcomes by condition ID."
 ---
 
-Look up a market by its condition ID. Returns the full market with all outcome tokens, Gamma metadata, tags, and settlement status.
+Returns full market metadata for a condition, including all token IDs and their outcome labels.
 
 ## Request
 
@@ -12,19 +12,61 @@ Look up a market by its condition ID. Returns the full market with all outcome t
 GET /v3/markets/condition/{condition_id}
 ```
 
-## Related endpoints
+### Path parameters
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /v3/markets/condition/{id}/positions` | All position holders for this market |
-| `GET /v3/markets/{token_id}/trades` | Trades for a specific outcome token |
-| `GET /v3/markets/{token_id}/positions` | Holders of a specific outcome token |
-| `GET /v3/markets/{token_id}/price` | Current price and resolution status |
-| `GET /v3/markets/slug/{slug}/trades` | Trades by market slug |
-| `GET /v3/markets/slug/{slug}/positions` | Holders by market slug |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `condition_id` | string | Market condition ID (0x-prefixed) |
 
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/markets/condition/0x00005c113846891686d99ff1d145ded8bdccfa028df0fdf15d66f11d176c49b1
+curl https://api.polynode.dev/v3/markets/condition/0x126a15ffc84104e2108b2d58f663882b0d181ce87c1b38365f84595e3468a8a5
 ```
+
+```json
+{
+  "condition_id": "0x126a15ffc84104e2108b2d58f663882b0d181ce87c1b38365f84595e3468a8a5",
+  "question": "Will there be 6 or more major space weather events this week?",
+  "slug": "will-there-be-6-or-more-major-space-weather-events-this-week-456",
+  "outcomes": ["Yes", "No"],
+  "category": null,
+  "active": true,
+  "closed": false,
+  "neg_risk": true,
+  "volume_all_time": "69.74",
+  "liquidity": "61.11",
+  "end_date": "2026-05-16 00:00:00+00",
+  "event_slug": "how-many-major-space-weather-events-this-week-may-10-may-16",
+  "event_title": "How many major Space Weather events this week? (May 10 - May 16)",
+  "tag_slugs": ["space", "science", "weather"],
+  "winning_outcome_index": null,
+  "token_ids": [
+    "100692454852111554543566408317343992183089175047294038924849685473863331659441",
+    "48688325334414023818352236528729803878794259844697047777108156846840050119382"
+  ],
+  "token_outcomes": ["Yes", "No"],
+  "elapsed_ms": 5
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `condition_id` | string | Market condition ID |
+| `question` | string | Market question |
+| `slug` | string | URL slug |
+| `outcomes` | array | Outcome labels |
+| `token_ids` | array | Token IDs for each outcome |
+| `token_outcomes` | array | Outcome label for each token |
+| `active` | boolean | Market is active |
+| `closed` | boolean | Market is closed |
+| `neg_risk` | boolean | Multi-outcome (neg-risk) market |
+| `volume_all_time` | string | Total volume |
+| `liquidity` | string | Current liquidity |
+| `end_date` | string | Market end date |
+| `event_slug` | string | Parent event slug |
+| `event_title` | string | Parent event title |
+| `tag_slugs` | array | Category tags |
+| `winning_outcome_index` | integer | Which outcome won (null if unresolved) |

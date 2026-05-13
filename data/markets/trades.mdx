@@ -1,10 +1,10 @@
 ---
 title: "Market Trades"
 openapi: "GET /v3/markets/{token_id}/trades"
-description: "Get all trades for a market by token ID or slug. Filter by time range."
+description: "Get all trades for a specific outcome token or market slug, with full enrichment."
 ---
 
-Returns fills involving a specific outcome token. Can look up by token ID or market slug.
+Returns fills involving a specific outcome token, enriched with market metadata, computed prices, and order hashes. Can look up by token ID or market slug.
 
 ## By token ID
 
@@ -18,19 +18,65 @@ GET /v3/markets/{token_id}/trades
 GET /v3/markets/slug/{slug}/trades
 ```
 
-Automatically resolves the slug to token IDs via the market_tokens table.
+Resolves the slug to all token IDs for that market and returns trades across all outcomes.
 
 ### Query parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range |
+| `after` | integer | -- | Start of time range (Unix timestamp) |
+| `before` | integer | -- | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Example
+## Example (by token ID)
 
 ```bash
-curl https://api.polynode.dev/v3/markets/slug/bitcoin-above-82k-on-january-16/trades?limit=5
+curl https://api.polynode.dev/v3/markets/75783394880030392863380883800697645018418815910449662777195626260206142035810/trades?limit=1
 ```
+
+```json
+{
+  "token_id": "75783394880030392863380883800697645018418815910449662777195626260206142035810",
+  "trades": [
+    {
+      "id": "0xc6708a8b57ab936d8bd50be18b0bb55b64d27b5224b7c48ce487fef16fa0de0a_1077",
+      "maker": "0x3248e74f1dafd9acb332fd6a511fe7e4600baad4",
+      "taker": "0xf8f3c0269b1bff87dba772666864737b168f12a9",
+      "maker_asset_id": "0",
+      "taker_asset_id": "75783394880030392863380883800697645018418815910449662777195626260206142035810",
+      "maker_amount": 31.130816,
+      "taker_amount": 61.040815,
+      "fee": 0.0,
+      "price": 0.51,
+      "size": 61.040815,
+      "timestamp": "1778674995",
+      "transaction_hash": "0xc6708a8b57ab936d8bd50be18b0bb55b64d27b5224b7c48ce487fef16fa0de0a",
+      "order_hash": "0xf91a35be0abe447ed8c7d5e4c7511db22e0707136f3850b6708487bf2e6d834c",
+      "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "side": 0,
+      "role": "maker",
+      "direction": "BUY",
+      "market": "Dota 2: Aurora vs Team Liquid (BO3) - DreamLeague Group A",
+      "slug": "dota2-aur1-liquid-2026-05-13",
+      "outcome": "Aurora",
+      "outcome_index": 0,
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/dota2-7ffacddb21.jpg",
+      "condition_id": "0x4f05dbc6273b89aed46bb79a961c1d8771c01925d92d439e9a81fa6241900661"
+    }
+  ],
+  "rows_returned": 1,
+  "has_more": true,
+  "elapsed_ms": 30
+}
+```
+
+## Example (by slug)
+
+```bash
+curl https://api.polynode.dev/v3/markets/slug/dota2-aur1-liquid-2026-05-13/trades?limit=5
+```
+
+## Response fields
+
+Each trade contains the same fields as [Wallet Trades](/data/wallets/trades), including all market enrichment fields.

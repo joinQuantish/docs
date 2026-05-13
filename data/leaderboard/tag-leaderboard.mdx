@@ -1,12 +1,10 @@
 ---
 title: "Tag Leaderboard"
 openapi: "GET /v3/tags/{slug}/leaderboard"
-description: "P&L leaderboard filtered by tag. See the top traders in crypto, politics, sports, or any category."
+description: "Rank wallets by P&L within a specific market category (tag). Works for niche tags."
 ---
 
-Returns a P&L leaderboard scoped to markets under a specific tag. Aggregates realized P&L across all positions in markets matching the tag.
-
-Works best for tags with fewer than 2,000 tokens. Very large tags (like `sports` with 500K+ markets) return an error with a suggestion to use the global leaderboard instead.
+Returns a P&L leaderboard filtered to markets with a specific tag. Works for smaller/niche tags. Large tags (sports, crypto) return an error suggesting the global leaderboard instead.
 
 ## Request
 
@@ -18,23 +16,41 @@ GET /v3/tags/{slug}/leaderboard
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `sort` | string | `net_pnl` | Sort by: `net_pnl`, `volume`, `profit`, `loss` |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-### Example
+## Example
 
 ```bash
-curl https://api.polynode.dev/v3/tags/ufc-325/leaderboard?limit=5
+curl https://api.polynode.dev/v3/tags/taylor-swift/leaderboard?limit=1
 ```
 
-### Response fields
+```json
+{
+  "columns": ["wallet", "net_pnl", "gross_profit", "gross_loss", "total_volume", "position_count"],
+  "rows": [
+    [
+      "0xa61b2981fe679b2a34608db90bc4057569219d74",
+      "99999966",
+      "99999966",
+      "0",
+      "686999916",
+      2
+    ]
+  ],
+  "rows_returned": 1,
+  "has_more": true,
+  "elapsed_ms": 374
+}
+```
 
-| Field | Type | Description |
-|-------|------|-------------|
+## Response columns
+
+| Column | Type | Description |
+|--------|------|-------------|
 | `wallet` | string | Wallet address |
-| `net_pnl` | string | Net realized P&L in tag markets (6-decimal) |
-| `gross_profit` | string | Sum of winning position P&L |
-| `gross_loss` | string | Sum of losing position P&L |
-| `total_volume` | string | Total volume in tag markets |
-| `position_count` | integer | Number of positions in tag markets |
+| `net_pnl` | string | Net realized P&L in this tag (6-decimal USDC) |
+| `gross_profit` | string | Sum of winning positions |
+| `gross_loss` | string | Sum of losing positions |
+| `total_volume` | string | Total volume traded in this tag |
+| `position_count` | integer | Number of positions in markets with this tag |

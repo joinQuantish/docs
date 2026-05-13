@@ -1,10 +1,10 @@
 ---
 title: "Wallet Activity"
 openapi: "GET /v3/wallets/{address}/activity"
-description: "Combined view of all non-trade events for a wallet: splits, merges, neg-risk conversions, and redemptions."
+description: "Get all non-trade activity for a wallet: splits, merges, neg-risk conversions, and redemptions."
 ---
 
-Returns all position management events for a wallet in chronological order. Combines splits, merges, neg-risk conversions, and redemptions into a single timeline.
+Returns a unified feed of all non-trade events for a wallet, sorted by timestamp. Includes splits, merges, neg-risk conversions, and redemptions.
 
 ## Request
 
@@ -16,30 +16,43 @@ GET /v3/wallets/{address}/activity
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range |
+| `after` | integer | -- | Start of time range (Unix timestamp) |
+| `before` | integer | -- | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Individual event endpoints
+## Example
 
-Each event type is also available separately:
+```bash
+curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/activity?limit=1
+```
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /v3/wallets/{address}/redemptions` | Market payouts after resolution |
-| `GET /v3/wallets/{address}/splits` | Position split events |
-| `GET /v3/wallets/{address}/merges` | Position merge events |
-| `GET /v3/wallets/{address}/nrc` | Neg-risk conversion events |
+```json
+{
+  "columns": ["event_type", "id", "timestamp", "ref_id", "amount", "extra"],
+  "rows": [
+    [
+      "redemption",
+      "0x6db3f0fd9cccd58d4bd59eb5816cc2823f62a85c343e5ff6d1dd177dfb128a6e_0x109",
+      "1731664609",
+      "0x26ee82bee2493a302d21283cb578f7e2fff2dd15743854f53034d12420863b55",
+      "120469388830",
+      "{1,2}"
+    ]
+  ],
+  "rows_returned": 1,
+  "has_more": false,
+  "elapsed_ms": 5
+}
+```
 
-All accept `?after=`, `?before=`, `?limit=`, `?offset=`.
+## Response columns
 
-## Response
-
-Each event includes:
-- `event_type` — `split`, `merge`, `nrc`, or `redemption`
-- `id` — unique event ID
-- `timestamp` — Unix timestamp
-- `ref_id` — condition ID or neg-risk market ID
-- `amount` — USDC amount involved
-- `extra` — additional data (e.g., `question_count` for NRC, `index_sets` for redemptions)
+| Column | Type | Description |
+|--------|------|-------------|
+| `event_type` | string | `split`, `merge`, `nrc` (neg-risk conversion), or `redemption` |
+| `id` | string | Event ID |
+| `timestamp` | string | Unix timestamp |
+| `ref_id` | string | Condition ID or neg-risk market ID |
+| `amount` | string | Amount (6-decimal USDC) |
+| `extra` | string | Additional data (index_sets for redemptions, question_count for NRC) |

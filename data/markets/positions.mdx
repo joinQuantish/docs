@@ -1,29 +1,15 @@
 ---
 title: "Market Positions (Token)"
 openapi: "GET /v3/markets/{token_id}/positions"
-description: "Get all position holders for a market by token ID, condition ID, or slug."
+description: "Get all wallets holding positions in a specific outcome token, sorted by P&L or size."
 ---
 
-Returns all wallets holding positions in a specific market or outcome token.
+Returns all wallets that hold or have held positions in a specific outcome token.
 
-## By token ID
+## Request
 
 ```
 GET /v3/markets/{token_id}/positions
-```
-
-## By condition ID
-
-```
-GET /v3/markets/condition/{condition_id}/positions
-```
-
-Returns positions across all outcome tokens for this market.
-
-## By slug
-
-```
-GET /v3/markets/slug/{slug}/positions
 ```
 
 ### Query parameters
@@ -33,3 +19,37 @@ GET /v3/markets/slug/{slug}/positions
 | `sort` | string | `pnl` | Sort by: `pnl`, `amount`, `volume` |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/markets/75783394880030392863380883800697645018418815910449662777195626260206142035810/positions?limit=1
+```
+
+```json
+{
+  "columns": ["user", "amount", "avg_price", "realized_pnl", "total_bought"],
+  "rows": [
+    [
+      "0x2aa772c631e9e3732c541cb13b5119004cb0003f",
+      "5266",
+      "520000",
+      "95998727",
+      "400000000"
+    ]
+  ],
+  "rows_returned": 1,
+  "has_more": true,
+  "elapsed_ms": 20
+}
+```
+
+## Response columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `user` | string | Wallet address |
+| `amount` | string | Current shares held (6-decimal) |
+| `avg_price` | string | Weighted-average entry price (6-decimal) |
+| `realized_pnl` | string | Realized P&L (6-decimal USDC) |
+| `total_bought` | string | Total volume bought (6-decimal USDC) |

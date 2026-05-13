@@ -4,7 +4,7 @@ openapi: "GET /v3/markets/{token_id}/price"
 description: "Get the current price, resolution status, and price source for any outcome token."
 ---
 
-Returns the latest price for a token along with whether the market has resolved and where the price comes from.
+Returns the latest price for an outcome token, including where the price was sourced from and whether the market has resolved.
 
 ## Request
 
@@ -12,29 +12,44 @@ Returns the latest price for a token along with whether the market has resolved 
 GET /v3/markets/{token_id}/price
 ```
 
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `token_id` | string | Outcome token ID |
+
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/markets/21742633143463906290569050155826241533067272736897614950488156847949938836455/price
+curl https://api.polynode.dev/v3/markets/75783394880030392863380883800697645018418815910449662777195626260206142035810/price
 ```
 
 ```json
 {
-  "token_id": "21742633...36455",
-  "price": "1000000.000000000000",
+  "token_id": "75783394880030392863380883800697645018418815910449662777195626260206142035810",
+  "price": "1000000",
   "resolved": true,
-  "source": "v1_condition",
-  "updated_at": "2026-05-12 13:56:35.75079",
-  "elapsed_ms": 0
+  "source": "settlement",
+  "updated_at": "2026-05-13 12:27:28.558218",
+  "elapsed_ms": 1
 }
 ```
 
-### Price sources
+## Response fields
 
-| Source | Description |
-|--------|-------------|
-| `settlement` | From the WS resolution listener. Final authority. Price = 1,000,000 (winner) or 0 (loser). |
-| `v1_condition` | From V1 condition payout data. Settlement-equivalent for historical markets. |
-| `last_fill` | From the most recent trade. Approximation of current market price. |
+| Field | Type | Description |
+|-------|------|-------------|
+| `token_id` | string | Outcome token ID |
+| `price` | string | Token price (6-decimal USDC). `1000000` = $1.00, `500000` = $0.50 |
+| `resolved` | boolean | Whether the market has settled |
+| `source` | string | Price source: `settlement` (final payout), `clob_mid` (CLOB orderbook midpoint), `v1_condition` (V1 condition payout), `last_fill` (most recent trade price) |
+| `updated_at` | string | When the price was last updated |
 
-Settlement prices are never overwritten by trade prices.
+### Price priority
+
+Prices follow this priority chain (higher sources are never overwritten by lower ones):
+
+1. `settlement` -- final payout after market resolution (0 or 1000000)
+2. `clob_mid` -- live CLOB orderbook midpoint (updated every 5 minutes)
+3. `v1_condition` -- V1 condition payout data
+4. `last_fill` -- price from the most recent trade

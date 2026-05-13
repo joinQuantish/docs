@@ -1,10 +1,10 @@
 ---
 title: "Wallet Merges"
 openapi: "GET /v3/wallets/{address}/merges"
-description: "Get position merge events for a wallet. Merges return a complete set of outcome tokens and receive USDC collateral back."
+description: "Get all merge events for a wallet. Merges occur when outcome tokens are converted back into USDC."
 ---
 
-Returns merge events where the wallet returned outcome tokens and received USDC collateral. The inverse of a split.
+Returns merge events where outcome tokens were converted back into USDC for a market condition.
 
 ## Request
 
@@ -16,44 +16,39 @@ GET /v3/wallets/{address}/merges
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range (Unix timestamp) |
+| `after` | integer | -- | Start of time range (Unix timestamp) |
+| `before` | integer | -- | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0xada100874d00e3331d00f2007a9c336a65009718/merges?limit=2
+curl https://api.polynode.dev/v3/wallets/0xada100874d00e3331d00f2007a9c336a65009718/merges?limit=1
 ```
 
 ```json
 {
+  "columns": ["id", "timestamp", "condition", "amount"],
   "rows": [
     [
-      "0x56e84b69...e4a1f4_0x612",
+      "0x56e84b69492dff41fae8aa932695eec8b90931aa286ce09d9565932d72e4a1f4_0x612",
       "1778482999",
-      "0x649340b2...375e34",
+      "0x649340b2a3e39f7d0de414d6891a14b6e1969293f8fec3ccb481572fd2375e34",
       "20000000"
     ]
   ],
-  "columns": [
-    {"name": "id", "type": "text"},
-    {"name": "timestamp", "type": "text"},
-    {"name": "condition", "type": "text"},
-    {"name": "amount", "type": "text"}
-  ],
-  "rows_returned": 2,
+  "rows_returned": 1,
   "has_more": true,
-  "elapsed_ms": 7
+  "elapsed_ms": 2
 }
 ```
 
-### Response fields
+## Response columns
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique merge event ID |
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | string | Merge event ID |
 | `timestamp` | string | Unix timestamp |
-| `condition` | string | Condition ID of the market |
-| `amount` | string | USDC collateral received (6-decimal). `20000000` = $20.00 |
+| `condition` | string | Market condition ID |
+| `amount` | string | USDC amount received (6-decimal) |

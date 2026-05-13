@@ -1,10 +1,10 @@
 ---
 title: "Builder Trades"
 openapi: "GET /v3/builders/{code}/trades"
-description: "Get all fills attributed to a specific builder. Filter by time range."
+description: "Get trades attributed to a specific builder, with market enrichment."
 ---
 
-Returns individual fills routed through a specific builder.
+Returns fills attributed to a specific builder, enriched with market metadata. A time range filter (`after`/`before`) is required for large builders.
 
 ## Request
 
@@ -12,35 +12,27 @@ Returns individual fills routed through a specific builder.
 GET /v3/builders/{code}/trades
 ```
 
-The `code` is the builder's raw hex identifier.
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `code` | string | Builder hex code (with or without 0x prefix) |
 
 ### Query parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range |
+| `after` | integer | 0 | Start of time range (Unix timestamp). Required for large builders. |
+| `before` | integer | -- | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-### Example
+## Example
 
 ```bash
-curl https://api.polynode.dev/v3/builders/4898df15.../trades?limit=5
+curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?after=1778480000&limit=1"
 ```
 
-### Response fields
+## Response fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique fill ID |
-| `maker` | string | Maker wallet address |
-| `taker` | string | Taker wallet address |
-| `maker_asset_id` | string | Asset the maker sold (0 = USDC) |
-| `taker_asset_id` | string | Asset the taker sold (0 = USDC) |
-| `maker_amount_filled` | string | Maker amount (6-decimal) |
-| `taker_amount_filled` | string | Taker amount (6-decimal) |
-| `fee` | string | Fee (6-decimal) |
-| `timestamp` | string | Unix timestamp |
-| `transaction_hash` | string | On-chain tx hash |
-| `side` | string | V2 side (0=buy, 1=sell) |
+Each trade contains the same enriched fields as [Wallet Trades](/data/wallets/trades), including market context, computed price/size, order_hash, and direction.

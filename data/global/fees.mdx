@@ -1,12 +1,12 @@
 ---
 title: "Fee Events"
 openapi: "GET /v3/fees"
-description: "Browse fee charge events across Polymarket trades. Filter by time range or receiver address."
+description: "Browse fee charged events across all Polymarket trades."
 ---
 
-Returns fee charge events from Polymarket trades.
+Returns fee events from the Polymarket exchange. Each fee event records the receiver, amount, and associated transaction.
 
-## All fees
+## Request
 
 ```
 GET /v3/fees
@@ -16,31 +16,49 @@ GET /v3/fees
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range |
+| `after` | integer | -- | Start of time range (Unix timestamp) |
+| `before` | integer | -- | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Fees by receiver
+### By receiver
 
 ```
 GET /v3/fees/{receiver}
 ```
 
-Returns fees where a specific address received the fee payment.
+Returns fees received by a specific address.
 
-### Example
+## Example
 
 ```bash
-curl https://api.polynode.dev/v3/fees?limit=5
+curl https://api.polynode.dev/v3/fees?limit=1
 ```
 
-### Response fields
+```json
+{
+  "columns": ["id", "timestamp", "receiver", "amount", "transaction_hash"],
+  "rows": [
+    [
+      "0x78d5c7d29d3940bf23f2c96196aecc15f0c44d837ef4041a375b512ded5d57cc_1408",
+      "1778675235",
+      "0x115f48dc2a731aa16251c6d6e1befc42f92accc9",
+      "18320",
+      "0x78d5c7d29d3940bf23f2c96196aecc15f0c44d837ef4041a375b512ded5d57cc"
+    ]
+  ],
+  "rows_returned": 1,
+  "has_more": true,
+  "elapsed_ms": 2
+}
+```
 
-| Field | Type | Description |
-|-------|------|-------------|
+## Response columns
+
+| Column | Type | Description |
+|--------|------|-------------|
 | `id` | string | Unique fee event ID |
 | `timestamp` | string | Unix timestamp |
-| `receiver` | string | Address that received the fee (hex) |
+| `receiver` | string | Fee receiver address |
 | `amount` | string | Fee amount (6-decimal USDC) |
-| `transaction_hash` | string | On-chain tx hash |
+| `transaction_hash` | string | On-chain transaction hash |

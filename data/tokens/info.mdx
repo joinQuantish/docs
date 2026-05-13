@@ -1,10 +1,10 @@
 ---
 title: "Token Info"
 openapi: "GET /v3/tokens/{token_id}"
-description: "Get price, resolution status, and market metadata for any outcome token."
+description: "Get full details for an outcome token: price, resolution status, market metadata, and tags."
 ---
 
-Returns token price joined with market metadata. Shows which market the token belongs to, which outcome it represents, and the current or settlement price.
+Returns price, resolution status, and market context for a specific outcome token.
 
 ## Request
 
@@ -12,10 +12,55 @@ Returns token price joined with market metadata. Shows which market the token be
 GET /v3/tokens/{token_id}
 ```
 
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `token_id` | string | Outcome token ID |
+
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/tokens/21742633143463906290569050155826241533067272736897614950488156847949938836455
+curl https://api.polynode.dev/v3/tokens/75783394880030392863380883800697645018418815910449662777195626260206142035810
 ```
 
-Returns the token's price, whether it's resolved, the source of the price data, and the associated market question, slug, category, and tags.
+```json
+{
+  "columns": ["token_id", "price", "resolved", "source", "updated_at", "condition_id", "outcome", "outcome_index", "question", "slug", "category", "tag_slugs"],
+  "rows": [
+    [
+      "75783394880030392863380883800697645018418815910449662777195626260206142035810",
+      "1000000",
+      true,
+      "settlement",
+      "2026-05-13 12:27:28.558218",
+      "0x4f05dbc6273b89aed46bb79a961c1d8771c01925d92d439e9a81fa6241900661",
+      "Aurora",
+      0,
+      "Dota 2: Aurora vs Team Liquid (BO3) - DreamLeague Group A",
+      "dota2-aur1-liquid-2026-05-13",
+      null,
+      ["esports", "dota-2", "games", "sports"]
+    ]
+  ],
+  "rows_returned": 1,
+  "elapsed_ms": 2
+}
+```
+
+## Response columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `token_id` | string | Outcome token ID |
+| `price` | string | Current price (6-decimal USDC) |
+| `resolved` | boolean | Whether the market has settled |
+| `source` | string | Price source: `settlement`, `clob_mid`, `v1_condition`, `last_fill` |
+| `updated_at` | string | When the price was last updated |
+| `condition_id` | string | Market condition ID |
+| `outcome` | string | Outcome label (e.g. "Aurora", "Yes") |
+| `outcome_index` | integer | Outcome position (0 or 1) |
+| `question` | string | Market question |
+| `slug` | string | Market URL slug |
+| `category` | string | Market category |
+| `tag_slugs` | array | Category tags |

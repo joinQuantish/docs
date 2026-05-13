@@ -1,17 +1,17 @@
 ---
 title: "Tags"
 openapi: "GET /v3/tags"
-description: "Discover all market tags and browse markets under a specific tag. Tags group markets by topic like politics, sports, crypto."
+description: "List all market tags with the number of markets in each category."
 ---
 
-## List all tags
+Returns all market tag categories ranked by market count.
+
+## Request
 
 ```
 GET /v3/tags
 ```
 
-Returns all tags with the number of markets in each. Tags come from the `tag_slugs` array on market metadata, sourced from Gamma.
-
 ### Query parameters
 
 | Parameter | Type | Default | Description |
@@ -19,34 +19,28 @@ Returns all tags with the number of markets in each. Tags come from the `tag_slu
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-### Example
+## Example
 
 ```bash
-curl https://api.polynode.dev/v3/tags?limit=5
+curl https://api.polynode.dev/v3/tags?limit=3
 ```
 
-Response includes `tag` (slug) and `market_count` for each tag.
-
-## Markets by tag
-
-```
-GET /v3/tags/{slug}
-```
-
-Returns all markets under a specific tag, sorted by volume.
-
-### Query parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `sort` | string | `volume` | Sort by: `volume`, `liquidity`, `created` |
-| `limit` | integer | 100 | Max 1000 |
-| `offset` | integer | 0 | Pagination offset |
-
-### Example
-
-```bash
-curl https://api.polynode.dev/v3/tags/crypto?limit=10
+```json
+{
+  "tags": [
+    { "tag": "sports", "market_count": 544398 },
+    { "tag": "games", "market_count": 505513 },
+    { "tag": "hide-from-new", "market_count": 436579 }
+  ],
+  "rows_returned": 3,
+  "has_more": true,
+  "elapsed_ms": 759
+}
 ```
 
-Response includes `condition_id`, `question`, `slug`, `outcomes`, `category`, `active`, `closed`, `neg_risk`, `volume_all_time`, `liquidity`, `end_date`, `event_slug`, `event_title`, `winning_outcome_index`.
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tag` | string | Tag slug |
+| `market_count` | integer | Number of markets with this tag |

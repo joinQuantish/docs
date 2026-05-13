@@ -1,10 +1,10 @@
 ---
 title: "Wallet Positions"
 openapi: "GET /v3/wallets/{address}/positions"
-description: "Get all positions for a wallet with current prices, unrealized P&L, and settlement status. Filter by open, closed, redeemable, or redeemed."
+description: "Get all positions for a wallet with market context, current prices, unrealized P&L, and settlement status."
 ---
 
-Returns every position a wallet has ever held, enriched with live token prices, computed unrealized P&L, and settlement status. Each position is tagged with a status indicating whether it's actively held, settled, or available for redemption.
+Returns every position a wallet has ever held, enriched with market metadata, live token prices, computed unrealized P&L, settlement status, and redemption data. All amounts are in USD.
 
 ## Request
 
@@ -16,14 +16,14 @@ GET /v3/wallets/{address}/positions
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `address` | string | Wallet address (0x-prefixed) |
+| `address` | string | Wallet address (0x-prefixed, case-insensitive) |
 
 ### Query parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `status` | string | all | Filter: `open`, `closed`, `redeemable`, `redeemed` |
-| `sort` | string | `pnl` | Sort by: `pnl`, `amount`, `volume`, `avg_price`, `unrealized`, `total` |
+| `sort` | string | `pnl` | Sort by: `pnl`, `amount`, `volume`, `avg_price` |
 | `order` | string | `desc` | Sort direction: `asc` or `desc` |
 | `limit` | integer | 100 | Results per page (max 1000) |
 | `offset` | integer | 0 | Pagination offset |
@@ -34,88 +34,128 @@ GET /v3/wallets/{address}/positions
 |--------|---------|
 | `open` | Wallet holds shares in an active (unresolved) market |
 | `closed` | Position fully sold before market resolved |
-| `redeemable` | Market resolved, wallet still holds shares that can be redeemed for USDC |
+| `redeemable` | Market resolved, wallet still holds shares that can be redeemed |
 | `redeemed` | Market resolved and shares have been redeemed |
 
 ## Examples
 
-### All positions (sorted by P&L)
+### All positions
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/positions?limit=3
+curl https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/positions?limit=1
 ```
 
 ```json
 {
-  "address": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
+  "address": "0xa9857c7bcb9bcfafd2c132ab053f34f678610058",
   "positions": [
     {
-      "token_id": "42699080635179861375280720242213672850141860123562672932351602811041149946128",
-      "amount": "0",
-      "avg_price": "369502",
-      "realized_pnl": "8303184398760",
-      "total_bought": "13175255227070",
-      "current_price": "1000000.000000000000",
+      "token_id": "56311531524793560667677947517355066819344622894461317832902534277368408457717",
+      "size": 0.003332,
+      "avg_price": 0.479999,
+      "realized_pnl": 0.083202,
+      "unrealized_pnl": 0.0,
+      "total_pnl": 0.083202,
+      "current_price": 0.0,
+      "total_bought": 2.083332,
+      "initial_value": 0.001599,
+      "redeemable_payout": 0.0,
       "resolved": true,
-      "price_source": "v1_condition",
-      "unrealized_pnl": "0",
-      "total_pnl": "8303184398760",
-      "status": "redeemed",
-      "redeemable_payout": "0"
+      "price_source": "settlement",
+      "status": "redeemable",
+      "market": "Bitcoin Up or Down - May 13, 6:55AM-7:00AM ET",
+      "slug": "btc-updown-5m-1778669700",
+      "outcome": "Down",
+      "outcome_index": 1,
+      "opposite_asset": "75458928898922591833639657019011228747535375591777673334858165385124723756977",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/BTC+fullsize.png",
+      "condition_id": "0xa1118bf183058190b9b47529d94eed53d0210c65531990019c09b893cb64b73b",
+      "event_slug": "btc-updown-5m-1778669700",
+      "neg_risk": false,
+      "market_status": "live",
+      "tag_slugs": ["hide-from-new", "recurring", "up-or-down", "crypto-prices", "crypto", "bitcoin", "5M"],
+      "last_trade_at": "1778670064",
+      "resolved_at": "0",
+      "winning_outcome_index": null,
+      "won": null
     }
   ],
-  "rows_returned": 3,
+  "rows_returned": 1,
   "has_more": true,
-  "elapsed_ms": 7
+  "offset": 0,
+  "limit": 1,
+  "elapsed_ms": 45
 }
 ```
 
 ### Only open positions
 
 ```bash
-curl .../v3/wallets/0x.../positions?status=open
+curl https://api.polynode.dev/v3/wallets/0x.../positions?status=open
 ```
 
 ### Only redeemable (resolved but not yet claimed)
 
 ```bash
-curl .../v3/wallets/0x.../positions?status=redeemable
+curl https://api.polynode.dev/v3/wallets/0x.../positions?status=redeemable
 ```
 
-Shows positions where the market has settled and the wallet holds shares worth USDC. The `redeemable_payout` field shows the exact amount they can claim.
+The `redeemable_payout` field shows the exact USD amount the wallet can claim.
 
 ### Sort by unrealized P&L
 
 ```bash
-curl .../v3/wallets/0x.../positions?status=open&sort=unrealized&order=desc
-```
-
-### Sort by largest holdings
-
-```bash
-curl .../v3/wallets/0x.../positions?status=open&sort=amount&order=desc
+curl https://api.polynode.dev/v3/wallets/0x.../positions?status=open&sort=unrealized&order=desc
 ```
 
 ## Response fields
 
+### Position data
+
 | Field | Type | Description |
 |-------|------|-------------|
 | `token_id` | string | Outcome token ID |
-| `amount` | string | Current shares held (0 if closed/redeemed) |
-| `avg_price` | string | Weighted-average entry price (6-decimal) |
-| `realized_pnl` | string | Realized P&L from selling shares |
-| `total_bought` | string | Total USDC spent buying this position |
-| `current_price` | string | Latest token price (from last trade or settlement) |
+| `size` | number | Current shares held in USD (0 if closed/redeemed) |
+| `avg_price` | number | Weighted-average entry price in USD |
+| `realized_pnl` | number | Realized P&L from closed trades (USD) |
+| `unrealized_pnl` | number | Paper P&L: `(current_price - avg_price) * size` |
+| `total_pnl` | number | `realized_pnl + unrealized_pnl` |
+| `current_price` | number | Latest token price (USD, from settlement, CLOB mid, or last fill) |
+| `total_bought` | number | Total USD spent buying this position |
+| `initial_value` | number | `avg_price * size` at current holdings |
+| `redeemable_payout` | number | USD claimable if redeemed now (0 for losing outcomes) |
 | `resolved` | boolean | Whether the market has settled |
-| `price_source` | string | Where the price comes from: `settlement`, `v1_condition`, `last_fill` |
-| `unrealized_pnl` | string | Paper P&L: `(current_price - avg_price) × amount` |
-| `total_pnl` | string | `realized_pnl + unrealized_pnl` |
+| `price_source` | string | Price source: `settlement`, `clob_mid`, `v1_condition`, `last_fill` |
 | `status` | string | `open`, `closed`, `redeemable`, or `redeemed` |
-| `redeemable_payout` | string | USDC claimable if redeemed now (0 for losing outcomes) |
+
+### Market context
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `market` | string | Market question text |
+| `slug` | string | Market URL slug |
+| `outcome` | string | Outcome label (e.g. "Yes", "No", "Trump") |
+| `outcome_index` | integer | Outcome position (0 or 1) |
+| `opposite_asset` | string | Token ID of the other outcome in this market |
+| `image` | string | Market image URL |
+| `condition_id` | string | Market condition ID |
+| `event_slug` | string | Parent event slug |
+| `neg_risk` | boolean | Whether this is a neg-risk (multi-outcome) market |
+| `market_status` | string | `live`, `closed`, `resolved-win`, or `resolved-loss` |
+| `tag_slugs` | array | Category tags for this market |
+
+### Timestamps and resolution
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `last_trade_at` | string | Unix timestamp of the most recent fill for this token |
+| `resolved_at` | string | Unix timestamp when the market was resolved |
+| `winning_outcome_index` | integer | Which outcome won (0 or 1), null if unresolved |
+| `won` | boolean | Whether this position's outcome won, null if unresolved |
 
 ## Use cases
 
-- **Portfolio dashboard** — show a trader's open positions with live P&L
+- **Portfolio dashboard** — show a trader's open positions with live P&L and market context
 - **Redemption alerts** — find wallets with unclaimed payouts using `?status=redeemable`
-- **Performance analysis** — sort by `total_pnl` to see best and worst positions
+- **Performance analysis** — sort by P&L to see best and worst positions
 - **Copy trading** — see what a wallet is currently holding with `?status=open&sort=amount`

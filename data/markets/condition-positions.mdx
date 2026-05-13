@@ -1,16 +1,22 @@
 ---
 title: "Market Positions (Condition)"
 openapi: "GET /v3/markets/condition/{condition_id}/positions"
-description: "Get all position holders for a market by condition ID. Returns wallets holding any outcome token for the condition."
+description: "Get all positions across all outcomes for a market condition."
 ---
 
-Returns all wallets holding positions in a specific market, across all outcome tokens. Looks up token IDs from the market_tokens table using the condition ID.
+Returns all wallets holding positions in any outcome token belonging to this condition.
 
 ## Request
 
 ```
 GET /v3/markets/condition/{condition_id}/positions
 ```
+
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `condition_id` | string | Market condition ID (0x-prefixed) |
 
 ### Query parameters
 
@@ -23,18 +29,15 @@ GET /v3/markets/condition/{condition_id}/positions
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/markets/condition/0x00005c11.../positions?limit=10
+curl https://api.polynode.dev/v3/markets/condition/0xdd22472e552920b8438158ea7238bfadfa4f736aa4cee91a6b86c39ead110917/positions?limit=1
 ```
 
-### Response fields
+## Response columns
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Column | Type | Description |
+|--------|------|-------------|
 | `user` | string | Wallet address |
-| `token_id` | string | Outcome token ID |
-| `amount` | string | Current position size (6-decimal) |
-| `avg_price` | string | Weighted-average entry price |
-| `realized_pnl` | string | Realized P&L |
-| `total_bought` | string | Total volume traded |
-
-Returns 404 if the condition ID doesn't match any market.
+| `amount` | string | Current shares held (6-decimal) |
+| `avg_price` | string | Average entry price (6-decimal) |
+| `realized_pnl` | string | Realized P&L (6-decimal USDC) |
+| `total_bought` | string | Total volume bought (6-decimal USDC) |

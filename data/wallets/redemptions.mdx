@@ -1,10 +1,10 @@
 ---
 title: "Wallet Redemptions"
 openapi: "GET /v3/wallets/{address}/redemptions"
-description: "Get redemption events for a wallet. Redemptions pay out USDC when a resolved market's winning tokens are claimed."
+description: "Get all redemption events for a wallet. Redemptions occur when a wallet claims payouts from resolved markets."
 ---
 
-Returns redemption events where the wallet claimed USDC from resolved markets. Each redemption shows the condition, payout amount, and which outcome index sets were redeemed.
+Returns redemption events where the wallet claimed payouts from resolved market conditions.
 
 ## Request
 
@@ -16,26 +16,20 @@ GET /v3/wallets/{address}/redemptions
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range (Unix timestamp) |
+| `after` | integer | -- | Start of time range (Unix timestamp) |
+| `before` | integer | -- | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/redemptions?limit=2
+curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/redemptions?limit=1
 ```
 
 ```json
 {
-  "columns": [
-    {"name": "id", "type": "text"},
-    {"name": "timestamp", "type": "text"},
-    {"name": "condition", "type": "text"},
-    {"name": "payout", "type": "text"},
-    {"name": "index_sets", "type": "_numeric"}
-  ],
+  "columns": ["id", "timestamp", "condition", "payout", "index_sets"],
   "rows": [
     [
       "0x6db3f0fd9cccd58d4bd59eb5816cc2823f62a85c343e5ff6d1dd177dfb128a6e_0x109",
@@ -45,20 +39,18 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
       ["1", "2"]
     ]
   ],
-  "rows_returned": 2,
-  "has_more": true,
-  "elapsed_ms": 12
+  "rows_returned": 1,
+  "has_more": false,
+  "elapsed_ms": 3
 }
 ```
 
-### Response fields
+## Response columns
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique redemption event ID (tx_hash + log index) |
-| `timestamp` | string | Unix timestamp of the redemption |
-| `condition` | string | Condition ID of the resolved market |
-| `payout` | string | USDC payout received (6-decimal). Divide by 1,000,000 for USD. |
-| `index_sets` | array | Outcome index sets that were redeemed |
-
-The payout of `120469388830` in the example equals **$120,469 USD**.
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | string | Redemption event ID |
+| `timestamp` | string | Unix timestamp |
+| `condition` | string | Market condition ID that was redeemed |
+| `payout` | string | USDC payout amount (6-decimal) |
+| `index_sets` | array | Which outcome index sets were redeemed |

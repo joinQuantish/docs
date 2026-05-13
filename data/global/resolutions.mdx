@@ -1,10 +1,10 @@
 ---
 title: "Market Resolutions"
 openapi: "GET /v3/resolutions"
-description: "Recent market resolutions with payout vectors and market metadata."
+description: "Browse recent market resolutions with payout data and market metadata."
 ---
 
-Returns resolved markets from the `market_resolution` table, joined with market metadata. Shows which markets settled and what the payouts were.
+Returns market resolution events, sorted by most recent. Each resolution includes the payout structure and enriched market metadata.
 
 ## Request
 
@@ -19,22 +19,44 @@ GET /v3/resolutions
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-### Example
+## Example
 
 ```bash
-curl https://api.polynode.dev/v3/resolutions?limit=5
+curl https://api.polynode.dev/v3/resolutions?limit=1
 ```
 
-### Response fields
+```json
+{
+  "columns": ["condition_id", "payout_numerators", "payout_denominator", "resolved_at", "created_at", "question", "slug", "outcomes", "category"],
+  "rows": [
+    [
+      "0x126a15ffc84104e2108b2d58f663882b0d181ce87c1b38365f84595e3468a8a5",
+      ["0", "1"],
+      "1",
+      "1778674836000",
+      "2026-05-13 12:20:50.683869",
+      "Will there be 6 or more major space weather events this week?",
+      "will-there-be-6-or-more-major-space-weather-events-this-week-456",
+      ["Yes", "No"],
+      null
+    ]
+  ],
+  "rows_returned": 1,
+  "has_more": true,
+  "elapsed_ms": 3
+}
+```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `condition_id` | string | Condition that resolved |
-| `payout_numerators` | string | JSON array of payouts per outcome (e.g. `[0,1]` for binary where outcome 2 won) |
-| `payout_denominator` | string | Denominator for payout calculation |
-| `resolved_at` | string | Resolution timestamp (raw numeric, multiply by 1000 if needed for JS Date) |
+## Response columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `condition_id` | string | Market condition ID |
+| `payout_numerators` | array | Payout for each outcome (e.g. `["0", "1"]` means outcome 1 won) |
+| `payout_denominator` | string | Payout denominator (usually `"1"`) |
+| `resolved_at` | string | Resolution timestamp (milliseconds) |
 | `created_at` | string | When the resolution was recorded |
-| `question` | string | Market question text (from metadata, may be null) |
-| `slug` | string | Market slug (may be null) |
-| `outcomes` | array | Outcome labels (may be null) |
-| `category` | string | Market category (may be null) |
+| `question` | string | Market question |
+| `slug` | string | Market slug |
+| `outcomes` | array | Outcome labels (e.g. `["Yes", "No"]`) |
+| `category` | string | Market category |

@@ -1,10 +1,10 @@
 ---
 title: "Wallet P&L"
 openapi: "GET /v3/wallets/{address}/pnl"
-description: "Get a detailed profit and loss breakdown for any wallet. Filter by market tag or specific market. Includes realized P&L, unrealized P&L from open positions, gross profit/loss, and win rate."
+description: "Get profit and loss for a wallet. Supports time-windowed P&L with ?period=1d|7d|30d|1y and tag filtering."
 ---
 
-Computes a full P&L breakdown for a wallet by aggregating across all positions. Every position's realized P&L is computed using weighted-average cost basis math, and unrealized P&L is calculated from live token prices.
+Returns P&L data for a wallet. Without a `period` parameter, returns all-time P&L. With `period`, returns realized P&L for that time window computed from individual trade events.
 
 ## Request
 
@@ -12,125 +12,94 @@ Computes a full P&L breakdown for a wallet by aggregating across all positions. 
 GET /v3/wallets/{address}/pnl
 ```
 
-### Path parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `address` | string | Wallet address (0x-prefixed) |
-
 ### Query parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tags` | string | Filter by market tag (comma-separated). Example: `politics`, `sports,crypto` |
-| `market` | string | Filter by condition ID to see P&L for a single market |
-| `period` | string | Time period shortcut: `1d`, `7d`, `30d`, `1y` |
-| `after` | integer | Start of time range (Unix timestamp) |
-| `before` | integer | End of time range (Unix timestamp) |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `period` | string | -- | Time window: `1d`, `7d`, `30d`, `1y` |
+| `tags` | string | -- | Comma-separated tag slugs to filter by (e.g. `politics,crypto`) |
+| `market` | string | -- | Filter by condition_id |
 
 ## Examples
 
-### Full P&L
+### All-time P&L
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl
+curl https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/pnl
 ```
 
 ```json
 {
-  "address": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
-  "net_realized_pnl": "22053845825455",
-  "gross_profit": "22057977181649",
-  "gross_loss": "-4131356194",
-  "unrealized_pnl": "688.7550000000000000",
-  "total_pnl": "22053845825455",
-  "wins": 18,
+  "address": "0xa9857c7bcb9bcfafd2c132ab053f34f678610058",
+  "net_realized_pnl": "3503956",
+  "gross_profit": "7440775",
+  "gross_loss": "-3936819",
+  "unrealized_pnl": "91432617.7294360000000000",
+  "total_pnl": "3503956",
+  "position_count": 29,
+  "open_positions": 29,
+  "total_volume": "177402508",
+  "wins": 12,
+  "losses": 3,
+  "elapsed_ms": 19
+}
+```
+
+### 7-day P&L
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/pnl?period=7d
+```
+
+```json
+{
+  "address": "0xa9857c7bcb9bcfafd2c132ab053f34f678610058",
+  "realized_pnl": "1726078",
+  "gross_profit": "8970920",
+  "gross_loss": "-7244842",
+  "wins": 14,
   "losses": 4,
-  "position_count": 22,
-  "open_positions": 1,
-  "total_volume": "43013258515682",
-  "elapsed_ms": 18
-}
-```
-
-This wallet has **$22,053,846 in realized profit** from 18 winning positions, with only **$4,131 in losses** from 4 losing positions. One position remains open with minimal unrealized P&L.
-
-### 30-day realized P&L
-
-```bash
-curl https://api.polynode.dev/v3/wallets/0xdb27bf2ac5d428a9c63dbc914611036855a6c56e/pnl?period=30d
-```
-
-```json
-{
-  "address": "0xdb27bf2ac5d428a9c63dbc914611036855a6c56e",
-  "period": "30d",
-  "realized_pnl": "3034408524734",
-  "gross_profit": "3715112876501",
-  "gross_loss": "-680704351767",
-  "wins": 2469,
-  "losses": 593,
-  "events": 3062,
+  "events": 18,
   "source": "pnl_event",
-  "elapsed_ms": 156
+  "period": "7d",
+  "after": 1778069864,
+  "before": 1778674664,
+  "elapsed_ms": 9
 }
 ```
 
-This wallet made **$3,034,409 realized profit** in the last 30 days across 3,062 events. The `period` param accepts `1d`, `7d`, `30d`, or `1y`. Time-range queries return **realized P&L only** — unrealized paper gains from open positions are not included.
-
-### Filtered by tag
+### P&L for a specific tag category
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl?tags=politics
+curl https://api.polynode.dev/v3/wallets/0x.../pnl?tags=politics
 ```
 
-```json
-{
-  "address": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
-  "net_realized_pnl": "22053864600428",
-  "gross_profit": "22057870325791",
-  "gross_loss": "-4005725363",
-  "unrealized_pnl": "0",
-  "total_pnl": "22053864600428",
-  "wins": 16,
-  "losses": 2,
-  "position_count": 18,
-  "open_positions": 0,
-  "tags": ["politics"],
-  "elapsed_ms": 22
-}
-```
-
-Nearly all of this wallet's profit came from **politics markets** (16 wins, 2 losses). The non-politics positions account for only ~$19K of the total P&L.
-
-## Response fields
+## Response fields (all-time)
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `net_realized_pnl` | string | Total realized P&L (profit minus loss) |
-| `gross_profit` | string | Sum of all positive position P&L |
-| `gross_loss` | string | Sum of all negative position P&L |
-| `unrealized_pnl` | string | Paper P&L from open positions at current market prices |
+| `net_realized_pnl` | string | Net realized P&L (6-decimal USDC) |
+| `gross_profit` | string | Sum of winning positions |
+| `gross_loss` | string | Sum of losing positions (negative) |
+| `unrealized_pnl` | string | Paper P&L from open positions |
 | `total_pnl` | string | `net_realized_pnl + unrealized_pnl` |
-| `wins` | integer | Positions closed with profit |
-| `losses` | integer | Positions closed with loss |
-| `position_count` | integer | Total positions matching the filter |
-| `open_positions` | integer | Positions still held |
-| `total_volume` | string | Total USDC volume traded |
-| `tags` | array | Present when `?tags=` filter is used |
+| `wins` | integer | Winning position count |
+| `losses` | integer | Losing position count |
+| `position_count` | integer | Total positions |
+| `open_positions` | integer | Currently held positions |
+| `total_volume` | string | Total USDC traded |
 
-## How P&L is calculated
+## Response fields (with period)
 
-Each position tracks a **weighted-average cost basis**. When shares are bought, the average price adjusts. When shares are sold, the realized P&L is:
-
-```
-realized_pnl = (sell_price - avg_cost_basis) × shares_sold
-```
-
-Unrealized P&L uses the current token price (from the most recent trade or settlement):
-
-```
-unrealized_pnl = (current_price - avg_cost_basis) × shares_held
-```
-
-Settlement prices (from resolved markets) override trade-based prices. A winning outcome settles at 1,000,000 (1 USDC per share), a losing outcome at 0.
+| Field | Type | Description |
+|-------|------|-------------|
+| `realized_pnl` | string | Realized P&L in the time window (6-decimal USDC) |
+| `gross_profit` | string | Sum of winning events in the window |
+| `gross_loss` | string | Sum of losing events in the window (negative) |
+| `wins` | integer | Winning event count |
+| `losses` | integer | Losing event count |
+| `events` | integer | Total P&L events in the window |
+| `period` | string | The requested period |
+| `after` | integer | Start timestamp (Unix) |
+| `before` | integer | End timestamp (Unix) |
+| `source` | string | Always `pnl_event` for time-windowed queries |

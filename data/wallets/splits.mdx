@@ -1,10 +1,10 @@
 ---
 title: "Wallet Splits"
 openapi: "GET /v3/wallets/{address}/splits"
-description: "Get position split events for a wallet. Splits deposit USDC collateral and receive a complete set of outcome tokens for a market."
+description: "Get all split events for a wallet. Splits occur when USDC is converted into outcome tokens."
 ---
 
-Returns split events where the wallet deposited USDC and received outcome tokens. Each split references a condition (market) and the collateral amount.
+Returns split events where USDC was converted into outcome tokens for a market condition.
 
 ## Request
 
@@ -16,44 +16,39 @@ GET /v3/wallets/{address}/splits
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range (Unix timestamp) |
+| `after` | integer | -- | Start of time range (Unix timestamp) |
+| `before` | integer | -- | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0xada200001000ef00d07553cee7006808f895c6f1/splits?limit=2
+curl https://api.polynode.dev/v3/wallets/0xada100874d00e3331d00f2007a9c336a65009718/splits?limit=1
 ```
 
 ```json
 {
+  "columns": ["id", "timestamp", "condition", "amount"],
   "rows": [
     [
-      "0x48c69f12...1b77b5_0x4bc",
-      "1778492423",
-      "0xd0dbdc94...18d5e7",
-      "2830000"
+      "0x48a4ffe402ea660ccb9dea5f802ca4ea5d22ed395ae07d249fca0ec94b79d325_0x566",
+      "1778492385",
+      "0xd863a481323564b64f431d4c8fa8f0237f56075b2bb4b6f3ec9be8986ec292f0",
+      "33927075"
     ]
   ],
-  "columns": [
-    {"name": "id", "type": "text"},
-    {"name": "timestamp", "type": "text"},
-    {"name": "condition", "type": "text"},
-    {"name": "amount", "type": "text"}
-  ],
-  "rows_returned": 2,
+  "rows_returned": 1,
   "has_more": true,
-  "elapsed_ms": 4
+  "elapsed_ms": 2
 }
 ```
 
-### Response fields
+## Response columns
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique split event ID |
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | string | Split event ID |
 | `timestamp` | string | Unix timestamp |
-| `condition` | string | Condition ID of the market |
-| `amount` | string | USDC collateral deposited (6-decimal). `2830000` = $2.83 |
+| `condition` | string | Market condition ID |
+| `amount` | string | USDC amount split (6-decimal) |

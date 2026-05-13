@@ -1,10 +1,10 @@
 ---
 title: "Wallet NRC"
 openapi: "GET /v3/wallets/{address}/nrc"
-description: "Get neg-risk conversion events for a wallet. These convert between standard CTF positions and neg-risk wrapped positions in multi-outcome markets."
+description: "Get neg-risk conversion events for a wallet. NRC events convert between multi-outcome market positions."
 ---
 
-Returns neg-risk conversion events. Neg-risk markets (multi-outcome events like elections with many candidates) use a wrapper contract. This endpoint shows when a wallet converted positions through that contract.
+Returns neg-risk conversion events for a wallet. These occur when positions in multi-outcome (neg-risk) markets are converted between outcome tokens.
 
 ## Request
 
@@ -16,50 +16,43 @@ GET /v3/wallets/{address}/nrc
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range (Unix timestamp) |
+| `after` | integer | -- | Start of time range (Unix timestamp) |
+| `before` | integer | -- | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0x76a1f5f4a6ac99f5de9fba514d609072fc7c4652/nrc?limit=2
+curl https://api.polynode.dev/v3/wallets/0x4ce73141dbfce41e65db3723e31059a730f0abad/nrc?limit=1
 ```
 
 ```json
 {
+  "columns": ["id", "timestamp", "neg_risk_market_id", "amount", "index_set", "question_count"],
   "rows": [
     [
-      "0x1191dabb...e0c29b_0x449",
-      "1777419012",
-      "0x96ca8e5a...09ba00",
-      "5000000",
-      "3",
-      11
+      "0xf3fdcc93a41686b4c8abc4532300c5c28a9340f5397bed097f778cbdb036bb4b_0x1b4",
+      "1731834916",
+      "0x5c64d1e706579e5954682d6ca8f021d4ee84a7eaadc1fab5f640abb3c3c21600",
+      "250000000",
+      "512",
+      12
     ]
   ],
-  "columns": [
-    {"name": "id", "type": "text"},
-    {"name": "timestamp", "type": "text"},
-    {"name": "neg_risk_market_id", "type": "text"},
-    {"name": "amount", "type": "text"},
-    {"name": "index_set", "type": "text"},
-    {"name": "question_count", "type": "int4"}
-  ],
-  "rows_returned": 2,
+  "rows_returned": 1,
   "has_more": true,
-  "elapsed_ms": 220
+  "elapsed_ms": 3
 }
 ```
 
-### Response fields
+## Response columns
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique conversion event ID |
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | string | NRC event ID |
 | `timestamp` | string | Unix timestamp |
-| `neg_risk_market_id` | string | The neg-risk parent market ID |
-| `amount` | string | Amount converted (6-decimal USDC). `5000000` = $5.00 |
-| `index_set` | string | Which outcome index was converted |
-| `question_count` | integer | Number of outcomes in the neg-risk market |
+| `neg_risk_market_id` | string | Parent neg-risk market ID |
+| `amount` | string | Amount converted (6-decimal USDC) |
+| `index_set` | string | Bit-packed index indicating which outcomes were involved |
+| `question_count` | integer | Total number of outcomes in the neg-risk market |

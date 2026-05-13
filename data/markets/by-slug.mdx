@@ -1,10 +1,10 @@
 ---
 title: "Market by Slug"
 openapi: "GET /v3/markets/slug/{slug}/trades"
-description: "Look up trades and positions for a market using its human-readable URL slug."
+description: "Get trades and positions for a market by its URL slug."
 ---
 
-Look up market data using the slug from Polymarket URLs. Resolves the slug to token IDs internally and returns trades or positions across all outcomes.
+Look up a market by its slug (the URL path on Polymarket) and get trades or positions across all outcomes.
 
 ## Trades by slug
 
@@ -16,10 +16,18 @@ GET /v3/markets/slug/{slug}/trades
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range |
+| `after` | integer | -- | Start of time range (Unix timestamp) |
+| `before` | integer | -- | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
+
+### Example
+
+```bash
+curl "https://api.polynode.dev/v3/markets/slug/dota2-aur1-liquid-2026-05-13/trades?limit=1"
+```
+
+Returns the same enriched trade format as [Wallet Trades](/data/wallets/trades).
 
 ## Positions by slug
 
@@ -27,20 +35,4 @@ GET /v3/markets/slug/{slug}/trades
 GET /v3/markets/slug/{slug}/positions
 ```
 
-### Query parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `sort` | string | `pnl` | Sort by: `pnl`, `amount`, `volume` |
-| `limit` | integer | 100 | Max 1000 |
-| `offset` | integer | 0 | Pagination offset |
-
-## Example
-
-```bash
-curl https://api.polynode.dev/v3/markets/slug/bitcoin-above-82k-on-january-16/trades?limit=5
-```
-
-Response includes standard fill columns: `id`, `maker`, `taker`, `maker_asset_id`, `taker_asset_id`, `maker_amount_filled`, `taker_amount_filled`, `fee`, `timestamp`, `transaction_hash`, `builder`, `side`.
-
-Returns 404 if the slug doesn't match any market in the metadata table.
+Returns all wallets holding positions in any outcome of this market.

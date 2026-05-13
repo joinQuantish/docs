@@ -1,7 +1,7 @@
 ---
 title: "Builder Leaderboard"
 openapi: "GET /v3/builders"
-description: "Rank all 1,502 Polymarket builders by fill count, volume, and fees. See who routes the most order flow."
+description: "Rank all Polymarket builders by fill count, volume, and fees."
 ---
 
 Polymarket V2 trades include a `builder` field identifying which order routing service executed the trade. This endpoint ranks all builders by their attributed fills.
@@ -20,30 +20,64 @@ GET /v3/builders
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Single builder
-
-```
-GET /v3/builders/{code}
-```
-
-Returns stats for a specific builder by hex code.
-
-## Builder trades
-
-```
-GET /v3/builders/{code}/trades
-```
-
-Returns fills attributed to this builder. Supports `?after=`, `?before=`, `?limit=`, `?offset=`.
-
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/builders?limit=3&sort=volume
+curl https://api.polynode.dev/v3/builders?limit=2
 ```
 
-## Stats
+```json
+{
+  "builders": [
+    {
+      "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "fill_count": 72023242,
+      "first_fill": "1775220779",
+      "last_fill": "1778488711",
+      "rank": 1,
+      "total_fees": "10921518739340",
+      "total_maker_volume": "3344996649314321",
+      "total_taker_volume": "5025649015227041",
+      "unique_makers": 92465,
+      "unique_takers": 86212
+    },
+    {
+      "builder": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
+      "fill_count": 913811,
+      "first_fill": "1777298664",
+      "last_fill": "1778488703",
+      "rank": 2,
+      "total_fees": "118268898070",
+      "total_maker_volume": "9200826455334",
+      "total_taker_volume": "17670720174663",
+      "unique_makers": 686,
+      "unique_takers": 4004
+    }
+  ],
+  "elapsed_ms": 3,
+  "has_more": true,
+  "rows_returned": 2
+}
+```
 
-- **1,502** unique builders indexed
-- **77 million** fills with builder attribution
-- Updated incrementally (not a matview scan)
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `builder` | string | Builder code (0x-prefixed hex, 32 bytes) |
+| `fill_count` | integer | Total fills attributed to this builder |
+| `first_fill` | string | Unix timestamp of first fill |
+| `last_fill` | string | Unix timestamp of most recent fill |
+| `rank` | integer | Position in the leaderboard |
+| `total_fees` | string | Total fees generated (6-decimal USDC) |
+| `total_maker_volume` | string | Sum of maker-side volume (6-decimal USDC) |
+| `total_taker_volume` | string | Sum of taker-side volume (6-decimal USDC) |
+| `unique_makers` | integer | Distinct maker wallets |
+| `unique_takers` | integer | Distinct taker wallets |
+
+## Related endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v3/builders/{code}` | Stats for a single builder |
+| `GET /v3/builders/{code}/trades` | Trades attributed to a builder (requires `?after=` time filter) |
