@@ -1,10 +1,10 @@
 ---
 title: "Batch Wallet P&L"
 openapi: "POST /v3/wallets/batch"
-description: "Query P&L for up to 100 wallets in a single request. Returns realized P&L, unrealized P&L, win/loss record, and volume for each wallet."
+description: "Query P&L for up to 100 wallets in a single request. All amounts in USD."
 ---
 
-Query multiple wallets at once. Returns the same summary data as the single wallet endpoint, but for up to 100 wallets in one call.
+Query multiple wallets at once. Returns the same summary data as the single wallet endpoint, but for up to 100 wallets in one call. All monetary values are in USD.
 
 ## Request
 
@@ -18,8 +18,7 @@ POST /v3/wallets/batch
 {
   "wallets": [
     "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
-    "0x204f72f35326db932158cba6adff0b9a1da95e14",
-    "0xdb27bf2ac5d428a9c63dbc914611036855a6c56e"
+    "0xa9857c7bcb9bcfafd2c132ab053f34f678610058"
   ]
 }
 ```
@@ -33,49 +32,31 @@ POST /v3/wallets/batch
 ```bash
 curl -X POST https://api.polynode.dev/v3/wallets/batch \
   -H 'Content-Type: application/json' \
-  -d '{"wallets":["0x56687bf447db6ffa42ffe2204a05edaa20f55839","0x204f72f35326db932158cba6adff0b9a1da95e14"]}'
+  -d '{"wallets":["0x56687bf447db6ffa42ffe2204a05edaa20f55839"]}'
 ```
-
-## Response
 
 ```json
 {
-  "count": 2,
-  "elapsed_ms": 2,
+  "count": 1,
+  "elapsed_ms": 1,
   "wallets": [
     {
       "wallet": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
-      "net_realized_pnl": "22053845825455",
-      "gross_profit": "22057977181649",
-      "gross_loss": "-4131356194",
-      "unrealized_pnl": "688.7550000000000000",
-      "total_pnl": "22053845826143.7550000000000000",
+      "net_realized_pnl": 22053845.825455,
+      "gross_profit": 22057977.181649,
+      "gross_loss": -4131.356194,
+      "unrealized_pnl": 0.000688755,
+      "total_pnl": 22053845.826143753,
       "wins": 18,
       "losses": 4,
       "position_count": 22,
       "open_positions": 1,
-      "total_volume": "43013258515682"
-    },
-    {
-      "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
-      "net_realized_pnl": "4470168315094",
-      "gross_profit": "113228697736699",
-      "gross_loss": "-108758529421605",
-      "unrealized_pnl": "3465887599105.119908101111064914000000",
-      "total_pnl": "7936055914199.119908101111064914000000",
-      "wins": 77207,
-      "losses": 69346,
-      "position_count": 167759,
-      "open_positions": 21202,
-      "total_volume": "689235412986678"
+      "total_volume": 43013258.515682
     }
   ]
 }
 ```
 
-## Use cases
+## Response fields
 
-- **Leaderboard building** — pull P&L for a custom watchlist of wallets
-- **Copy trading dashboards** — monitor multiple traders simultaneously
-- **Whale tracking** — check 50+ wallets every few seconds for position changes
-- **Portfolio aggregation** — sum P&L across multiple wallets belonging to the same entity
+Same fields as [Wallet Summary](/data/wallets/summary), with `wallet` instead of `address`. All amounts in USD.

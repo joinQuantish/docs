@@ -1,10 +1,10 @@
 ---
 title: "Wallet Summary"
 openapi: "GET /v3/wallets/{address}"
-description: "Get a complete P&L summary for any Polymarket wallet. Realized and unrealized profit/loss, win rate, position count, and total volume."
+description: "Get a complete P&L summary for any Polymarket wallet in USD. Realized and unrealized profit/loss, win rate, position count, and total volume."
 ---
 
-Returns a full profile for a single wallet, including realized P&L, unrealized P&L from open positions, gross profit and loss, win/loss record, and total trading volume.
+Returns a full profile for a single wallet in USD. Includes realized P&L, unrealized P&L from open positions, gross profit and loss, win/loss record, and total trading volume.
 
 ## Request
 
@@ -21,23 +21,23 @@ GET /v3/wallets/{address}
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058
+curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839
 ```
 
 ```json
 {
-  "address": "0xa9857c7bcb9bcfafd2c132ab053f34f678610058",
-  "net_realized_pnl": "1696247",
-  "gross_profit": "5633066",
-  "gross_loss": "-3936819",
-  "unrealized_pnl": "92208598.4526440000000000",
-  "total_pnl": "93904845.4526440000000000",
-  "wins": 10,
-  "losses": 3,
-  "position_count": 26,
-  "open_positions": 26,
-  "total_volume": "164315716",
-  "elapsed_ms": 2
+  "address": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
+  "net_realized_pnl": 22053845.825455,
+  "gross_profit": 22057977.181649,
+  "gross_loss": -4131.356194,
+  "unrealized_pnl": 0.000688755,
+  "total_pnl": 22053845.826143753,
+  "wins": 18,
+  "losses": 4,
+  "position_count": 22,
+  "open_positions": 1,
+  "total_volume": 43013258.515682,
+  "elapsed_ms": 1
 }
 ```
 
@@ -45,21 +45,13 @@ curl https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `net_realized_pnl` | string | Net realized P&L across all closed positions (6-decimal USDC) |
-| `gross_profit` | string | Sum of all winning position P&L |
-| `gross_loss` | string | Sum of all losing position P&L (negative) |
-| `unrealized_pnl` | string | Unrealized P&L from open positions based on current prices |
-| `total_pnl` | string | `net_realized_pnl + unrealized_pnl` |
+| `net_realized_pnl` | number | Net realized P&L in USD |
+| `gross_profit` | number | Sum of all winning position P&L (USD) |
+| `gross_loss` | number | Sum of all losing position P&L (USD, negative) |
+| `unrealized_pnl` | number | Unrealized P&L from open positions based on current prices (USD) |
+| `total_pnl` | number | `net_realized_pnl + unrealized_pnl` (USD) |
 | `wins` | integer | Number of positions closed with positive P&L |
 | `losses` | integer | Number of positions closed with negative P&L |
 | `position_count` | integer | Total positions (open + closed) |
 | `open_positions` | integer | Positions with shares > 0 |
-| `total_volume` | string | Total USDC volume traded |
-
-### Converting to USD
-
-All string values are in 6-decimal USDC. Divide by `1,000,000` for USD:
-
-```
-$1.70 = 1696247 / 1,000,000
-```
+| `total_volume` | number | Total volume traded (USD) |

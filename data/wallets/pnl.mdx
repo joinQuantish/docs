@@ -1,10 +1,10 @@
 ---
 title: "Wallet P&L"
 openapi: "GET /v3/wallets/{address}/pnl"
-description: "Get profit and loss for a wallet. Supports time-windowed P&L with ?period=1d|7d|30d|1y and tag filtering."
+description: "Get profit and loss for a wallet in USD. Supports time-windowed P&L with ?period=1d|7d|30d|1y and tag filtering."
 ---
 
-Returns P&L data for a wallet. Without a `period` parameter, returns all-time P&L. With `period`, returns realized P&L for that time window computed from individual trade events.
+Returns P&L data for a wallet in USD. Without a `period` parameter, returns all-time P&L. With `period`, returns realized P&L for that time window computed from individual trade events.
 
 ## Request
 
@@ -25,23 +25,23 @@ GET /v3/wallets/{address}/pnl
 ### All-time P&L
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/pnl
+curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl
 ```
 
 ```json
 {
-  "address": "0xa9857c7bcb9bcfafd2c132ab053f34f678610058",
-  "net_realized_pnl": "3503956",
-  "gross_profit": "7440775",
-  "gross_loss": "-3936819",
-  "unrealized_pnl": "91432617.7294360000000000",
-  "total_pnl": "3503956",
-  "position_count": 29,
-  "open_positions": 29,
-  "total_volume": "177402508",
-  "wins": 12,
-  "losses": 3,
-  "elapsed_ms": 19
+  "address": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
+  "net_realized_pnl": 22053845.825455,
+  "gross_profit": 22057977.181649,
+  "gross_loss": -4131.356194,
+  "unrealized_pnl": 0.000688755,
+  "total_pnl": 22053845.826143753,
+  "position_count": 22,
+  "open_positions": 1,
+  "total_volume": 43013258.515682,
+  "wins": 18,
+  "losses": 4,
+  "elapsed_ms": 41
 }
 ```
 
@@ -54,52 +54,46 @@ curl https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610
 ```json
 {
   "address": "0xa9857c7bcb9bcfafd2c132ab053f34f678610058",
-  "realized_pnl": "1726078",
-  "gross_profit": "8970920",
-  "gross_loss": "-7244842",
+  "realized_pnl": 1.726078,
+  "gross_profit": 8.97092,
+  "gross_loss": -7.244842,
   "wins": 14,
   "losses": 4,
   "events": 18,
   "source": "pnl_event",
   "period": "7d",
-  "after": 1778069864,
-  "before": 1778674664,
-  "elapsed_ms": 9
+  "after": 1778073607,
+  "before": 1778678407,
+  "elapsed_ms": 1
 }
-```
-
-### P&L for a specific tag category
-
-```bash
-curl https://api.polynode.dev/v3/wallets/0x.../pnl?tags=politics
 ```
 
 ## Response fields (all-time)
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `net_realized_pnl` | string | Net realized P&L (6-decimal USDC) |
-| `gross_profit` | string | Sum of winning positions |
-| `gross_loss` | string | Sum of losing positions (negative) |
-| `unrealized_pnl` | string | Paper P&L from open positions |
-| `total_pnl` | string | `net_realized_pnl + unrealized_pnl` |
+| `net_realized_pnl` | number | Net realized P&L (USD) |
+| `gross_profit` | number | Sum of winning positions (USD) |
+| `gross_loss` | number | Sum of losing positions (USD, negative) |
+| `unrealized_pnl` | number | Paper P&L from open positions (USD) |
+| `total_pnl` | number | `net_realized_pnl + unrealized_pnl` (USD) |
 | `wins` | integer | Winning position count |
 | `losses` | integer | Losing position count |
 | `position_count` | integer | Total positions |
 | `open_positions` | integer | Currently held positions |
-| `total_volume` | string | Total USDC traded |
+| `total_volume` | number | Total volume traded (USD) |
 
 ## Response fields (with period)
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `realized_pnl` | string | Realized P&L in the time window (6-decimal USDC) |
-| `gross_profit` | string | Sum of winning events in the window |
-| `gross_loss` | string | Sum of losing events in the window (negative) |
+| `realized_pnl` | number | Realized P&L in the time window (USD) |
+| `gross_profit` | number | Sum of winning events in the window (USD) |
+| `gross_loss` | number | Sum of losing events in the window (USD, negative) |
 | `wins` | integer | Winning event count |
 | `losses` | integer | Losing event count |
 | `events` | integer | Total P&L events in the window |
 | `period` | string | The requested period |
-| `after` | integer | Start timestamp (Unix) |
-| `before` | integer | End timestamp (Unix) |
+| `after` | integer | Start timestamp (Unix seconds) |
+| `before` | integer | End timestamp (Unix seconds) |
 | `source` | string | Always `pnl_event` for time-windowed queries |

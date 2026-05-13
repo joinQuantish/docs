@@ -1,10 +1,10 @@
 ---
 title: "Leaderboard"
 openapi: "GET /v3/leaderboard"
-description: "Rank all Polymarket wallets by P&L, volume, profit, or win count."
+description: "Rank all Polymarket wallets by P&L, volume, profit, or win count. All amounts in USD."
 ---
 
-Ranks wallets by realized P&L, total P&L (realized + unrealized), gross profit, volume, or win count. Sourced from the `wallet_stats` materialized view.
+Ranks wallets by realized P&L, total P&L (realized + unrealized), gross profit, volume, or win count. All monetary values are in USD.
 
 ## Request
 
@@ -32,34 +32,20 @@ curl https://api.polynode.dev/v3/leaderboard?limit=2&sort=total
   "leaderboard": [
     {
       "rank": 1,
-      "wallet": "0xbddf61af533ff524d27154e589d2d7a81510c684",
-      "net_realized_pnl": "22591775131604",
-      "gross_profit": "23159666917773",
-      "gross_loss": "-567891786169",
-      "unrealized_pnl": "436120404042.38926400000000000000",
-      "total_pnl": "23027895535646.38926400000000000000",
-      "wins": 381,
-      "losses": 16,
-      "position_count": 883,
-      "open_positions": 524,
-      "total_volume": "208358665461368"
-    },
-    {
-      "rank": 2,
       "wallet": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
-      "net_realized_pnl": "22053845825455",
-      "gross_profit": "22057977181649",
-      "gross_loss": "-4131356194",
-      "unrealized_pnl": "688.7550000000000000",
-      "total_pnl": "22053845826143.7550000000000000",
+      "net_realized_pnl": 22053845.825455,
+      "gross_profit": 22057977.181649,
+      "gross_loss": -4131.356194,
+      "unrealized_pnl": 0.000688755,
+      "total_pnl": 22053845.826143753,
       "wins": 18,
       "losses": 4,
       "position_count": 22,
       "open_positions": 1,
-      "total_volume": "43013258515682"
+      "total_volume": 43013258.515682
     }
   ],
-  "rows_returned": 2,
+  "rows_returned": 1,
   "has_more": true,
   "offset": 0,
   "limit": 2,
@@ -73,21 +59,13 @@ curl https://api.polynode.dev/v3/leaderboard?limit=2&sort=total
 |-------|------|-------------|
 | `rank` | integer | Position in the leaderboard |
 | `wallet` | string | Wallet address |
-| `net_realized_pnl` | string | Net realized P&L (6-decimal USDC) |
-| `gross_profit` | string | Sum of winning positions |
-| `gross_loss` | string | Sum of losing positions (negative) |
-| `unrealized_pnl` | string | Paper P&L from open positions |
-| `total_pnl` | string | `net_realized_pnl + unrealized_pnl` |
+| `net_realized_pnl` | number | Net realized P&L (USD) |
+| `gross_profit` | number | Sum of winning positions (USD) |
+| `gross_loss` | number | Sum of losing positions (USD, negative) |
+| `unrealized_pnl` | number | Paper P&L from open positions (USD) |
+| `total_pnl` | number | `net_realized_pnl + unrealized_pnl` (USD) |
 | `wins` | integer | Winning position count |
 | `losses` | integer | Losing position count |
 | `position_count` | integer | Total positions |
 | `open_positions` | integer | Currently held positions |
-| `total_volume` | string | Total USDC traded |
-
-### Converting to USD
-
-String values are in 6-decimal USDC. Divide by `1,000,000` for USD:
-
-```
-$22,053,846 = 22053845825455 / 1,000,000
-```
+| `total_volume` | number | Total volume traded (USD) |

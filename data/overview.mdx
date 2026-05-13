@@ -44,13 +44,16 @@ Query `GET /v3/stats` for live counts. Current scale:
 
 ## Amounts and precision
 
-All monetary amounts are denominated in **USDC with 6-decimal precision** (Polymarket's `pUSD` collateral token). To convert to USD, divide by `1,000,000`.
+All monetary amounts are returned in **USD** as JSON numbers. No conversion needed.
 
-```
-amount_usd = raw_value / 1_000_000
+```json
+{
+  "net_realized_pnl": 22053845.825455,
+  "total_volume": 43013258.515682
+}
 ```
 
-For example, a `realized_pnl` of `22053845825455` equals **$22,053,846** USD.
+Values like `net_realized_pnl: 22053845.825455` mean **$22,053,845.83 USD**.
 
 ## Rate limits
 
