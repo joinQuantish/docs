@@ -24,7 +24,8 @@ GET /v3/wallets/{address}/pnl
 |-----------|------|-------------|
 | `tags` | string | Filter by market tag (comma-separated). Example: `politics`, `sports,crypto` |
 | `market` | string | Filter by condition ID to see P&L for a single market |
-| `after` | integer | Start of time range (Unix timestamp). Requires `pnl_event` table. |
+| `period` | string | Time period shortcut: `1d`, `7d`, `30d`, `1y` |
+| `after` | integer | Start of time range (Unix timestamp) |
 | `before` | integer | End of time range (Unix timestamp) |
 
 ## Examples
@@ -53,6 +54,29 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
 ```
 
 This wallet has **$22,053,846 in realized profit** from 18 winning positions, with only **$4,131 in losses** from 4 losing positions. One position remains open with minimal unrealized P&L.
+
+### 30-day realized P&L
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0xdb27bf2ac5d428a9c63dbc914611036855a6c56e/pnl?period=30d
+```
+
+```json
+{
+  "address": "0xdb27bf2ac5d428a9c63dbc914611036855a6c56e",
+  "period": "30d",
+  "realized_pnl": "3034408524734",
+  "gross_profit": "3715112876501",
+  "gross_loss": "-680704351767",
+  "wins": 2469,
+  "losses": 593,
+  "events": 3062,
+  "source": "pnl_event",
+  "elapsed_ms": 156
+}
+```
+
+This wallet made **$3,034,409 realized profit** in the last 30 days across 3,062 events. The `period` param accepts `1d`, `7d`, `30d`, or `1y`. Time-range queries return **realized P&L only** — unrealized paper gains from open positions are not included.
 
 ### Filtered by tag
 
