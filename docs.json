@@ -112,6 +112,7 @@
             "pages": [
               "data/global/stats",
               "data/global/trades",
+              "data/global/positions",
               "data/global/fees",
               "data/global/resolutions",
               "data/global/conditions"

@@ -1,0 +1,76 @@
+---
+title: "Global Positions"
+openapi: "GET /v3/positions"
+description: "Browse the latest positions across all Polymarket wallets. Filter by market, status, or size."
+---
+
+Returns the most recent position changes across all wallets, enriched with market metadata and current prices. Defaults to most recent positions first.
+
+## Request
+
+```
+GET /v3/positions
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | -- | Filter: `open`, `closed`, `redeemable`, `redeemed` |
+| `sort` | string | recent | Sort by: `pnl`, `size`, `volume`. Default is most recent first. |
+| `order` | string | `desc` | `asc` or `desc` |
+| `token_id` | string | -- | Filter by outcome token ID |
+| `condition_id` | string | -- | Filter by market condition ID |
+| `market_slug` | string | -- | Filter by market slug |
+| `min_size` | number | -- | Minimum position size in USD |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Examples
+
+### Latest position changes
+
+```bash
+curl https://api.polynode.dev/v3/positions?limit=5
+```
+
+### Biggest open positions
+
+```bash
+curl https://api.polynode.dev/v3/positions?sort=size&status=open&limit=5
+```
+
+### Who holds positions in a specific market
+
+```bash
+curl "https://api.polynode.dev/v3/positions?condition_id=0xdd22472e...&sort=pnl&limit=10"
+```
+
+### Unclaimed redeemable positions
+
+```bash
+curl "https://api.polynode.dev/v3/positions?status=redeemable&min_size=100&sort=size&limit=10"
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallet` | string | Wallet address |
+| `token_id` | string | Outcome token ID |
+| `size` | number | Current shares held (USD) |
+| `avg_price` | number | Average entry price (USD) |
+| `realized_pnl` | number | Realized P&L (USD) |
+| `unrealized_pnl` | number | Unrealized P&L (USD) |
+| `total_pnl` | number | `realized_pnl + unrealized_pnl` (USD) |
+| `current_price` | number | Current token price (USD) |
+| `total_bought` | number | Total volume bought (USD) |
+| `resolved` | boolean | Whether the market has settled |
+| `status` | string | `open`, `closed`, `redeemable`, or `redeemed` |
+| `market` | string | Market question text |
+| `slug` | string | Market URL slug |
+| `outcome` | string | Outcome label |
+| `outcome_index` | integer | Outcome position (0 or 1) |
+| `image` | string | Market image URL |
+| `condition_id` | string | Market condition ID |
+| `neg_risk` | boolean | Whether this is a neg-risk market |
