@@ -107,9 +107,9 @@ curl https://api.polynode.dev/v3/wallets/0x.../trades?after=1778000000&before=17
 | `transaction_hash` | string | On-chain transaction hash |
 | `order_hash` | string | Unique order hash for this fill |
 | `builder` | string | Builder attribution code (hex) |
-| `side` | integer | V2 side indicator (0 = buy side, 1 = sell side, null for V1 trades) |
-| `role` | string | `maker` or `taker` -- which side the queried wallet was on |
-| `direction` | string | `BUY` or `SELL` -- whether the queried wallet bought or sold outcome tokens |
+| `side` | integer | Maker's limit order direction: `0` = maker was buying tokens, `1` = maker was selling tokens, `null` for V1 trades. This is the maker's side, not the queried wallet's action. Use `direction` instead for the wallet's perspective. |
+| `role` | string | `maker` or `taker` -- which side the queried wallet was on in this fill |
+| `direction` | string | `BUY` or `SELL` -- whether the queried wallet bought or sold outcome tokens. This is the field you want for understanding what the wallet did. |
 
 ### Market context
 

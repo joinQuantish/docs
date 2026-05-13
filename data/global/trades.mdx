@@ -71,3 +71,5 @@ curl https://api.polynode.dev/v3/trades?limit=1
 ## Response fields
 
 Each trade contains the same fields as [Wallet Trades](/data/wallets/trades), including market enrichment (market, slug, outcome, image, condition_id), computed price and size in USD, order_hash, and direction.
+
+On global trades (no wallet context), `role` is always `"maker"` and `direction` reflects the maker's action. Use the [Wallet Trades](/data/wallets/trades) endpoint for wallet-specific perspective.

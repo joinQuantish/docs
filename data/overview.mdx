@@ -55,6 +55,14 @@ All monetary amounts are returned in **USD** as JSON numbers. No conversion need
 
 Values like `net_realized_pnl: 22053845.825455` mean **$22,053,845.83 USD**.
 
+## Authentication
+
+The V3 Data API is currently open access with rate limiting per IP. No API key is required.
+
+## Timestamps
+
+All Unix timestamps in responses are in **seconds** (e.g., `"1778674056"`). The `resolved_at` field in resolutions uses **milliseconds** (e.g., `"1778674836000"`). Datetime strings like `updated_at` are in UTC.
+
 ## Rate limits
 
 | Limit | Value |
