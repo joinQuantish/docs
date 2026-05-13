@@ -1,0 +1,32 @@
+---
+title: "Condition Detail"
+description: "Look up a condition by ID. Returns payout status, outcome tokens, and linked market metadata."
+---
+
+Returns details for a specific condition including its payout status, associated outcome tokens, and linked market metadata when available.
+
+## Request
+
+```
+GET /v3/conditions/{condition_id}
+```
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/conditions/0x1234...
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `condition_id` | string | Condition identifier |
+| `oracle` | string | Oracle address that resolves this condition |
+| `question_id` | string | Question ID for the oracle |
+| `outcome_slot_count` | integer | Number of possible outcomes |
+| `payouts` | number[] | Payout vector (null if unresolved) |
+| `resolved` | boolean | Whether the condition has been resolved |
+| `slug` | string | Market slug (if metadata available) |
+| `question` | string | Market question text (if metadata available) |
+| `tokens` | object[] | Outcome tokens with `token_id` and `outcome` fields |

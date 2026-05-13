@@ -1,0 +1,43 @@
+---
+title: "Builder Trades"
+description: "Get all fills attributed to a specific builder. Filter by time range and paginate through results."
+---
+
+Returns individual fills routed through a specific builder. Same fill schema as the global trades endpoint, filtered to a single builder code.
+
+## Request
+
+```
+GET /v3/builders/{code}/trades
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `after` | integer | — | Start of time range (Unix timestamp) |
+| `before` | integer | — | End of time range (Unix timestamp) |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/builders/0x61.../trades?limit=10
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique fill ID |
+| `maker` | string | Maker wallet address |
+| `taker` | string | Taker wallet address |
+| `maker_asset_id` | string | Asset the maker sold (0 = USDC) |
+| `taker_asset_id` | string | Asset the taker sold (0 = USDC) |
+| `maker_amount_filled` | string | Amount the maker provided (6-decimal) |
+| `taker_amount_filled` | string | Amount the taker provided (6-decimal) |
+| `fee` | string | Fee charged (6-decimal) |
+| `timestamp` | string | Unix timestamp |
+| `transaction_hash` | string | On-chain transaction hash |
+| `builder` | string | Builder code (hex-encoded) |

@@ -1,0 +1,47 @@
+---
+title: "Wallet Neg-Risk Conversions"
+description: "Get all neg-risk conversion events for a wallet. These convert between standard CTF positions and neg-risk wrapped positions."
+---
+
+Returns neg-risk conversion events for a wallet. Neg-risk markets (multi-outcome events like elections) use a wrapper contract that converts standard CTF tokens into neg-risk positions and vice versa.
+
+## Request
+
+```
+GET /v3/wallets/{address}/nrc
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `after` | integer | — | Start of time range (Unix timestamp) |
+| `before` | integer | — | End of time range (Unix timestamp) |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Examples
+
+### Recent conversions
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0x56687bf4.../nrc?limit=5
+```
+
+### Conversions in a time window
+
+```bash
+curl .../v3/wallets/0x.../nrc?after=1778000000&before=1778604000
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique conversion event ID |
+| `address` | string | Wallet address |
+| `condition_id` | string | Condition involved |
+| `amount` | string | Amount converted (6-decimal) |
+| `direction` | string | Conversion direction (wrap or unwrap) |
+| `timestamp` | string | Unix timestamp |
+| `transaction_hash` | string | On-chain transaction hash |

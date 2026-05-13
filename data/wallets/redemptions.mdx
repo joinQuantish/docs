@@ -1,0 +1,47 @@
+---
+title: "Wallet Redemptions"
+description: "Get all CTF token redemptions for a wallet. Redemptions occur when a market resolves and the wallet holds winning outcome tokens."
+---
+
+Returns redemption events where the wallet redeemed winning outcome tokens for USDC after market resolution.
+
+## Request
+
+```
+GET /v3/wallets/{address}/redemptions
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `after` | integer | — | Start of time range (Unix timestamp) |
+| `before` | integer | — | End of time range (Unix timestamp) |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Examples
+
+### Recent redemptions
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0x56687bf4.../redemptions?limit=5
+```
+
+### Redemptions in a time window
+
+```bash
+curl .../v3/wallets/0x.../redemptions?after=1778000000&before=1778604000
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique redemption ID |
+| `redeemer` | string | Wallet address |
+| `condition_id` | string | Condition that resolved |
+| `index_sets` | string[] | Outcome index sets redeemed |
+| `payout` | string | USDC payout amount (6-decimal) |
+| `timestamp` | string | Unix timestamp |
+| `transaction_hash` | string | On-chain transaction hash |

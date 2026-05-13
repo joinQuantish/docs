@@ -1,0 +1,31 @@
+---
+title: "Builder Detail"
+description: "Get stats for a single Polymarket builder by hex code. Fill count, volume, fees, and unique maker/taker counts."
+---
+
+Returns aggregate stats for a specific builder identified by its hex code. Builders are order routing services that attribute fills on Polymarket V2.
+
+## Request
+
+```
+GET /v3/builders/{code}
+```
+
+The `code` parameter is the builder's hex-encoded identifier (e.g. `0x61...`).
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/builders/0x61...
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `builder` | string | Builder hex code |
+| `fills` | integer | Total number of fills attributed |
+| `volume` | string | Total fill volume (6-decimal USDC) |
+| `fees` | string | Total fees generated (6-decimal USDC) |
+| `makers` | integer | Unique maker addresses |
+| `takers` | integer | Unique taker addresses |

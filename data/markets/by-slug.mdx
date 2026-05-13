@@ -1,0 +1,50 @@
+---
+title: "Market by Slug"
+description: "Look up a market by its human-readable slug and fetch trades or positions. No need to know the condition ID."
+---
+
+Look up market data using the human-readable slug from Polymarket URLs (e.g. `will-trump-win-2024`). Returns trades or positions for all tokens in the market.
+
+## Trades by slug
+
+```
+GET /v3/markets/slug/{slug}/trades
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `after` | integer | — | Start of time range (Unix timestamp) |
+| `before` | integer | — | End of time range (Unix timestamp) |
+| `min_amount` | integer | — | Minimum fill amount (raw 6-decimal) |
+| `order` | string | `desc` | `asc` or `desc` |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Positions by slug
+
+```
+GET /v3/markets/slug/{slug}/positions
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Examples
+
+### Recent trades for a market
+
+```bash
+curl https://api.polynode.dev/v3/markets/slug/will-trump-win-2024/trades?limit=5
+```
+
+### All holders of a market
+
+```bash
+curl https://api.polynode.dev/v3/markets/slug/will-trump-win-2024/positions?limit=50
+```

@@ -1,0 +1,46 @@
+---
+title: "Wallet Merges"
+description: "Get all CTF token merge events for a wallet. Merges convert a complete set of outcome tokens back into USDC collateral."
+---
+
+Returns merge events where the wallet returned a complete set of outcome tokens and received USDC collateral back. The inverse of a split.
+
+## Request
+
+```
+GET /v3/wallets/{address}/merges
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `after` | integer | — | Start of time range (Unix timestamp) |
+| `before` | integer | — | End of time range (Unix timestamp) |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Examples
+
+### Recent merges
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0x56687bf4.../merges?limit=5
+```
+
+### Merges in a time window
+
+```bash
+curl .../v3/wallets/0x.../merges?after=1778000000&before=1778604000
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique merge event ID |
+| `stakeholder` | string | Wallet address |
+| `condition_id` | string | Condition merged from |
+| `amount` | string | USDC collateral received (6-decimal) |
+| `timestamp` | string | Unix timestamp |
+| `transaction_hash` | string | On-chain transaction hash |

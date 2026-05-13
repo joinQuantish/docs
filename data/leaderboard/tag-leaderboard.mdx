@@ -1,0 +1,35 @@
+---
+title: "Tag Leaderboard"
+description: "PnL leaderboard filtered by tag. See who profits most on crypto markets, politics, sports, or any other category."
+---
+
+Returns a PnL leaderboard scoped to markets under a specific tag. Ranks wallets by realized PnL across all markets matching the tag.
+
+## Request
+
+```
+GET /v3/tags/{slug}/leaderboard
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/tags/crypto/leaderboard?limit=10
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `rank` | integer | Position on the leaderboard |
+| `user` | string | Wallet address |
+| `realized_pnl` | string | Total realized PnL across tag markets (6-decimal) |
+| `num_positions` | integer | Number of positions in tag markets |
+| `volume` | string | Total volume traded in tag markets (6-decimal) |

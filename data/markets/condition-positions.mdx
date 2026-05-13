@@ -1,0 +1,36 @@
+---
+title: "Condition Positions"
+description: "Get all position holders for a market by condition ID. Shows every wallet holding outcome tokens."
+---
+
+Returns all wallets holding positions in a specific market condition. Useful for seeing who holds what before a resolution, or analyzing market concentration.
+
+## Request
+
+```
+GET /v3/markets/condition/{condition_id}/positions
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/markets/condition/0x1234.../positions?limit=50
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `user` | string | Wallet address |
+| `token_id` | string | Outcome token ID |
+| `condition_id` | string | Market condition ID |
+| `amount` | string | Current position size (6-decimal) |
+| `realized_pnl` | string | Realized PnL on this position (6-decimal) |
+| `avg_cost` | string | Weighted average entry price |

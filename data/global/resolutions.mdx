@@ -1,0 +1,38 @@
+---
+title: "Market Resolutions"
+description: "Recent market resolutions with payout vectors and market metadata. See which markets resolved and how."
+---
+
+Returns recently resolved markets with their payout vectors and associated metadata. Useful for tracking which markets have settled and what the winning outcomes were.
+
+## Request
+
+```
+GET /v3/resolutions
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `after` | integer | — | Start of time range (Unix timestamp) |
+| `before` | integer | — | End of time range (Unix timestamp) |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/resolutions?limit=10
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `condition_id` | string | Resolved condition ID |
+| `payouts` | number[] | Payout vector per outcome (e.g. [1, 0] for binary) |
+| `timestamp` | string | Resolution timestamp |
+| `transaction_hash` | string | On-chain resolution transaction |
+| `slug` | string | Market slug (if metadata available) |
+| `question` | string | Market question text (if metadata available) |

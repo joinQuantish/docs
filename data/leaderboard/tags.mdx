@@ -1,0 +1,43 @@
+---
+title: "Tags"
+description: "Discover market tags and list all markets under a specific tag. Tags group related markets by topic."
+---
+
+Tags are topic labels assigned to Polymarket markets (e.g. "Politics", "Crypto", "Sports"). Use these endpoints to discover available tags and list markets within them.
+
+## List all tags
+
+```
+GET /v3/tags
+```
+
+Returns all available tags with market counts.
+
+## Markets by tag
+
+```
+GET /v3/tags/{slug}
+```
+
+Returns all markets under a specific tag slug.
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Examples
+
+### List all tags
+
+```bash
+curl https://api.polynode.dev/v3/tags
+```
+
+### Markets tagged "crypto"
+
+```bash
+curl https://api.polynode.dev/v3/tags/crypto?limit=20
+```

@@ -51,40 +51,78 @@
         ]
       },
       {
-        "tab": "Guides",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "Getting Started",
+            "group": "Data \u2014 V3 Historical",
             "pages": [
-              "introduction",
-              "quickstart",
-              "authentication"
+              "data/overview"
             ]
           },
           {
-            "group": "Guides",
+            "group": "Wallet P&L",
             "pages": [
-              "guides/deposit-wallets",
-              "guides/v2-migration",
-              "guides/v2-details",
-              "guides/polyusd",
-              "guides/trade-tracking",
-              "guides/nonce-exploit",
-              "guides/best-practices",
-              "guides/position-management",
-              "guides/errors",
-              "guides/rate-limits",
-              "guides/fee-escrow",
-              "guides/copy-trading-api",
-              "guides/trade-index",
-              "guides/copy-trading"
+              "data/wallets/summary",
+              "data/wallets/pnl",
+              "data/wallets/batch",
+              "data/wallets/positions"
             ]
-          }
-        ]
-      },
-      {
-        "tab": "API Reference",
-        "groups": [
+          },
+          {
+            "group": "Wallet Activity",
+            "pages": [
+              "data/wallets/trades",
+              "data/wallets/redemptions",
+              "data/wallets/splits",
+              "data/wallets/merges",
+              "data/wallets/nrc",
+              "data/wallets/activity"
+            ]
+          },
+          {
+            "group": "Markets",
+            "pages": [
+              "data/markets/search",
+              "data/markets/by-condition",
+              "data/markets/condition-positions",
+              "data/markets/trades",
+              "data/markets/positions",
+              "data/markets/price",
+              "data/markets/by-slug"
+            ]
+          },
+          {
+            "group": "Leaderboard & Tags",
+            "pages": [
+              "data/leaderboard/global",
+              "data/leaderboard/tags",
+              "data/leaderboard/tag-leaderboard"
+            ]
+          },
+          {
+            "group": "Builders",
+            "pages": [
+              "data/builders/list",
+              "data/builders/detail",
+              "data/builders/trades"
+            ]
+          },
+          {
+            "group": "Global",
+            "pages": [
+              "data/global/stats",
+              "data/global/trades",
+              "data/global/fees",
+              "data/global/resolutions",
+              "data/global/conditions"
+            ]
+          },
+          {
+            "group": "Tokens",
+            "pages": [
+              "data/tokens/info"
+            ]
+          },
           {
             "group": "Markets",
             "pages": [
@@ -105,7 +143,7 @@
             ]
           },
           {
-            "group": "Wallets / Positions / Onchain",
+            "group": "Onchain V2 (deprecating)",
             "pages": [
               "api-reference/wallets/resolve",
               "api-reference/onchain/trades",
@@ -198,165 +236,6 @@
             "tag": "BETA",
             "pages": [
               "api-reference/x-search"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Datasets API",
-        "badge": "New",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "api-reference/datasets/overview",
-              "api-reference/datasets/list-datasets",
-              "api-reference/datasets/dataset-stats"
-            ]
-          },
-          {
-            "group": "Wallets",
-            "pages": [
-              "api-reference/datasets/list-wallets",
-              "api-reference/datasets/wallet-detail",
-              "api-reference/datasets/wallet-whales",
-              "api-reference/datasets/wallet-market-makers",
-              "api-reference/datasets/wallet-new",
-              "api-reference/datasets/wallet-high-frequency",
-              "api-reference/datasets/wallet-cross-tag",
-              "api-reference/datasets/wallet-overlap",
-              "api-reference/datasets/wallet-concentration"
-            ]
-          },
-          {
-            "group": "Tags",
-            "pages": [
-              "api-reference/datasets/list-tags",
-              "api-reference/datasets/tag-detail",
-              "api-reference/datasets/tag-wallets",
-              "api-reference/datasets/tags-compare"
-            ]
-          },
-          {
-            "group": "Activity",
-            "pages": [
-              "api-reference/datasets/daily-activity",
-              "api-reference/datasets/monthly-activity"
-            ]
-          },
-          {
-            "group": "Markets",
-            "pages": [
-              "api-reference/datasets/list-markets"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Data",
-        "badge": "New",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "data/overview"
-            ]
-          },
-          {
-            "group": "Wallet P&L",
-            "pages": [
-              "data/wallets/summary",
-              "data/wallets/pnl",
-              "data/wallets/batch",
-              "data/wallets/positions"
-            ]
-          },
-          {
-            "group": "Wallet Activity",
-            "pages": [
-              "data/wallets/trades",
-              "data/wallets/activity"
-            ]
-          },
-          {
-            "group": "Markets",
-            "pages": [
-              "data/markets/search",
-              "data/markets/by-condition",
-              "data/markets/positions",
-              "data/markets/trades",
-              "data/markets/price"
-            ]
-          },
-          {
-            "group": "Leaderboard",
-            "pages": [
-              "data/leaderboard/global"
-            ]
-          },
-          {
-            "group": "Builders",
-            "pages": [
-              "data/builders/list"
-            ]
-          },
-          {
-            "group": "Global",
-            "pages": [
-              "data/global/stats"
-            ]
-          },
-          {
-            "group": "Tokens",
-            "pages": [
-              "data/tokens/info"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "CLOB v2 API",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "api-reference/clobv2/overview"
-            ]
-          },
-          {
-            "group": "Fills",
-            "pages": [
-              "api-reference/clobv2/trades",
-              "api-reference/clobv2/wallet-trades",
-              "api-reference/clobv2/market-trades"
-            ]
-          },
-          {
-            "group": "Positions",
-            "pages": [
-              "api-reference/clobv2/positions"
-            ]
-          },
-          {
-            "group": "Market aggregates",
-            "pages": [
-              "api-reference/clobv2/market-volume",
-              "api-reference/clobv2/market-orderbook",
-              "api-reference/clobv2/candles",
-              "api-reference/clobv2/volume-hourly"
-            ]
-          },
-          {
-            "group": "Builders",
-            "pages": [
-              "api-reference/clobv2/builders"
-            ]
-          },
-          {
-            "group": "Neg-risk events",
-            "pages": [
-              "api-reference/clobv2/neg-risk-events",
-              "api-reference/clobv2/neg-risk-children"
             ]
           }
         ]
@@ -515,24 +394,44 @@
         ]
       },
       {
-        "tab": "Dome Migration",
-        "badge": "New",
-        "groups": [
-          {
-            "group": "Dome Migration",
-            "pages": [
-              "dome-migration"
-            ]
-          }
-        ]
-      },
-      {
         "tab": "Changelog",
         "groups": [
           {
             "group": "Changelog",
             "pages": [
               "changelog"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "authentication"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/deposit-wallets",
+              "guides/v2-migration",
+              "guides/v2-details",
+              "guides/polyusd",
+              "guides/trade-tracking",
+              "guides/nonce-exploit",
+              "guides/best-practices",
+              "guides/position-management",
+              "guides/errors",
+              "guides/rate-limits",
+              "guides/fee-escrow",
+              "guides/copy-trading-api",
+              "guides/trade-index",
+              "guides/copy-trading"
             ]
           }
         ]
