@@ -1,0 +1,42 @@
+---
+title: "Platform Stats"
+description: "Global aggregates for the entire Polymarket database. Total fills, wallets, volume, and P&L."
+---
+
+Returns platform-wide aggregates from the `global_stats` materialized view. Instant response.
+
+## Request
+
+```
+GET /v3/stats
+```
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/stats
+```
+
+```json
+{
+  "total_fills": 1227599616,
+  "total_redemptions": 160535696,
+  "total_wallets": 2676595,
+  "total_positions": "227857354",
+  "total_realized_pnl": "2240414321986960",
+  "total_gross_profit": "13881389085858405",
+  "total_gross_loss": "-11640974763871445",
+  "total_volume": "2149019620148621138",
+  "elapsed_ms": 0
+}
+```
+
+## Related global endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v3/trades` | Global trade feed. `?after=`, `?before=`, `?min_amount=`, `?order=` |
+| `GET /v3/fees` | Fee events. `?after=`, `?before=` |
+| `GET /v3/fees/{receiver}` | Fees by receiver address |
+| `GET /v3/resolutions` | Recent market resolutions with metadata |
+| `GET /v3/conditions/{id}` | Condition with payouts and market metadata |

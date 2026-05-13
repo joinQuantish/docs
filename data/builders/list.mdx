@@ -1,0 +1,48 @@
+---
+title: "Builder Leaderboard"
+description: "Rank all 1,502 Polymarket builders by fill count, volume, and fees. See who routes the most order flow."
+---
+
+Polymarket V2 trades include a `builder` field identifying which order routing service executed the trade. This endpoint ranks all builders by their attributed fills.
+
+## Request
+
+```
+GET /v3/builders
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `sort` | string | `fills` | Sort by: `fills`, `volume`, `fees`, `makers`, `takers` |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Single builder
+
+```
+GET /v3/builders/{code}
+```
+
+Returns stats for a specific builder by hex code.
+
+## Builder trades
+
+```
+GET /v3/builders/{code}/trades
+```
+
+Returns fills attributed to this builder. Supports `?after=`, `?before=`, `?limit=`, `?offset=`.
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/builders?limit=3&sort=volume
+```
+
+## Stats
+
+- **1,502** unique builders indexed
+- **77 million** fills with builder attribution
+- Updated incrementally (not a matview scan)

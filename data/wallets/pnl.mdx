@@ -1,0 +1,111 @@
+---
+title: "Wallet P&L"
+description: "Get a detailed profit and loss breakdown for any wallet. Filter by market tag or specific market. Includes realized P&L, unrealized P&L from open positions, gross profit/loss, and win rate."
+---
+
+Computes a full P&L breakdown for a wallet by aggregating across all positions. Every position's realized P&L is computed using weighted-average cost basis math, and unrealized P&L is calculated from live token prices.
+
+## Request
+
+```
+GET /v3/wallets/{address}/pnl
+```
+
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `address` | string | Wallet address (0x-prefixed) |
+
+### Query parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `tags` | string | Filter by market tag (comma-separated). Example: `politics`, `sports,crypto` |
+| `market` | string | Filter by condition ID to see P&L for a single market |
+| `after` | integer | Start of time range (Unix timestamp). Requires `pnl_event` table. |
+| `before` | integer | End of time range (Unix timestamp) |
+
+## Examples
+
+### Full P&L
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl
+```
+
+```json
+{
+  "address": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
+  "net_realized_pnl": "22053845825455",
+  "gross_profit": "22057977181649",
+  "gross_loss": "-4131356194",
+  "unrealized_pnl": "688.7550000000000000",
+  "total_pnl": "22053845825455",
+  "wins": 18,
+  "losses": 4,
+  "position_count": 22,
+  "open_positions": 1,
+  "total_volume": "43013258515682",
+  "elapsed_ms": 18
+}
+```
+
+This wallet has **$22,053,846 in realized profit** from 18 winning positions, with only **$4,131 in losses** from 4 losing positions. One position remains open with minimal unrealized P&L.
+
+### Filtered by tag
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl?tags=politics
+```
+
+```json
+{
+  "address": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
+  "net_realized_pnl": "22053864600428",
+  "gross_profit": "22057870325791",
+  "gross_loss": "-4005725363",
+  "unrealized_pnl": "0",
+  "total_pnl": "22053864600428",
+  "wins": 16,
+  "losses": 2,
+  "position_count": 18,
+  "open_positions": 0,
+  "tags": ["politics"],
+  "elapsed_ms": 22
+}
+```
+
+Nearly all of this wallet's profit came from **politics markets** (16 wins, 2 losses). The non-politics positions account for only ~$19K of the total P&L.
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `net_realized_pnl` | string | Total realized P&L (profit minus loss) |
+| `gross_profit` | string | Sum of all positive position P&L |
+| `gross_loss` | string | Sum of all negative position P&L |
+| `unrealized_pnl` | string | Paper P&L from open positions at current market prices |
+| `total_pnl` | string | `net_realized_pnl + unrealized_pnl` |
+| `wins` | integer | Positions closed with profit |
+| `losses` | integer | Positions closed with loss |
+| `position_count` | integer | Total positions matching the filter |
+| `open_positions` | integer | Positions still held |
+| `total_volume` | string | Total USDC volume traded |
+| `tags` | array | Present when `?tags=` filter is used |
+
+## How P&L is calculated
+
+Each position tracks a **weighted-average cost basis**. When shares are bought, the average price adjusts. When shares are sold, the realized P&L is:
+
+```
+realized_pnl = (sell_price - avg_cost_basis) × shares_sold
+```
+
+Unrealized P&L uses the current token price (from the most recent trade or settlement):
+
+```
+unrealized_pnl = (current_price - avg_cost_basis) × shares_held
+```
+
+Settlement prices (from resolved markets) override trade-based prices. A winning outcome settles at 1,000,000 (1 USDC per share), a losing outcome at 0.

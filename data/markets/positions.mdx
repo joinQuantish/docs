@@ -1,0 +1,34 @@
+---
+title: "Market Positions"
+description: "Get all position holders for a market by token ID, condition ID, or slug."
+---
+
+Returns all wallets holding positions in a specific market or outcome token.
+
+## By token ID
+
+```
+GET /v3/markets/{token_id}/positions
+```
+
+## By condition ID
+
+```
+GET /v3/markets/condition/{condition_id}/positions
+```
+
+Returns positions across all outcome tokens for this market.
+
+## By slug
+
+```
+GET /v3/markets/slug/{slug}/positions
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `sort` | string | `pnl` | Sort by: `pnl`, `amount`, `volume` |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |

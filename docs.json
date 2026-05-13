@@ -253,6 +253,68 @@
         ]
       },
       {
+        "tab": "Data",
+        "badge": "New",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "data/overview"
+            ]
+          },
+          {
+            "group": "Wallet P&L",
+            "pages": [
+              "data/wallets/summary",
+              "data/wallets/pnl",
+              "data/wallets/batch",
+              "data/wallets/positions"
+            ]
+          },
+          {
+            "group": "Wallet Activity",
+            "pages": [
+              "data/wallets/trades",
+              "data/wallets/activity"
+            ]
+          },
+          {
+            "group": "Markets",
+            "pages": [
+              "data/markets/search",
+              "data/markets/by-condition",
+              "data/markets/positions",
+              "data/markets/trades",
+              "data/markets/price"
+            ]
+          },
+          {
+            "group": "Leaderboard",
+            "pages": [
+              "data/leaderboard/global"
+            ]
+          },
+          {
+            "group": "Builders",
+            "pages": [
+              "data/builders/list"
+            ]
+          },
+          {
+            "group": "Global",
+            "pages": [
+              "data/global/stats"
+            ]
+          },
+          {
+            "group": "Tokens",
+            "pages": [
+              "data/tokens/info"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "CLOB v2 API",
         "groups": [
           {

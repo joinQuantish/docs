@@ -1,0 +1,72 @@
+---
+title: "Wallet Summary"
+description: "Get a complete P&L summary for any Polymarket wallet. Realized and unrealized profit/loss, win rate, position count, and total volume."
+---
+
+Returns a full profile for a single wallet, including realized P&L, unrealized P&L from open positions, gross profit and loss, win/loss record, and total trading volume. Data is sourced from a materialized view that refreshes every 30 minutes.
+
+## Request
+
+```
+GET /v3/wallets/{address}
+```
+
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `address` | string | Wallet address (0x-prefixed, case-insensitive) |
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839
+```
+
+## Response
+
+```json
+{
+  "address": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
+  "net_realized_pnl": "22053845825455",
+  "gross_profit": "22057977181649",
+  "gross_loss": "-4131356194",
+  "unrealized_pnl": "688.7550000000000000",
+  "total_pnl": "22053845826143.7550000000000000",
+  "wins": 18,
+  "losses": 4,
+  "position_count": 22,
+  "open_positions": 1,
+  "total_volume": "43013258515682",
+  "elapsed_ms": 4
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `net_realized_pnl` | string | Net realized P&L across all closed positions (6-decimal USDC) |
+| `gross_profit` | string | Sum of all winning position P&L |
+| `gross_loss` | string | Sum of all losing position P&L (negative) |
+| `unrealized_pnl` | string | Unrealized P&L from open positions based on current market prices |
+| `total_pnl` | string | `net_realized_pnl + unrealized_pnl` |
+| `wins` | integer | Number of positions closed with positive P&L |
+| `losses` | integer | Number of positions closed with negative P&L |
+| `position_count` | integer | Total positions (open + closed) |
+| `open_positions` | integer | Positions with amount > 0 |
+| `total_volume` | string | Total USDC volume traded |
+
+### Converting to USD
+
+All string values are in 6-decimal USDC. Divide by `1,000,000` for USD:
+
+```
+$22,053,846 = 22053845825455 / 1,000,000
+```
+
+## Use cases
+
+- **Wallet lookup** — quickly check any trader's performance
+- **Whale tracking** — monitor high-volume wallets
+- **Copy trading screening** — evaluate a trader's win rate and P&L before following their positions

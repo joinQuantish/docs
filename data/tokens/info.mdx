@@ -1,0 +1,20 @@
+---
+title: "Token Info"
+description: "Get price, resolution status, and market metadata for any outcome token."
+---
+
+Returns token price joined with market metadata. Shows which market the token belongs to, which outcome it represents, and the current or settlement price.
+
+## Request
+
+```
+GET /v3/tokens/{token_id}
+```
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/tokens/21742633143463906290569050155826241533067272736897614950488156847949938836455
+```
+
+Returns the token's price, whether it's resolved, the source of the price data, and the associated market question, slug, category, and tags.

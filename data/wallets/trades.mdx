@@ -1,0 +1,75 @@
+---
+title: "Wallet Trades"
+description: "Get all trades for a wallet. Filter by side (maker/taker), token, time range, and minimum amount."
+---
+
+Returns fills where the wallet participated as maker, taker, or both. Uses composite indexes for fast lookups on wallets with millions of trades.
+
+## Request
+
+```
+GET /v3/wallets/{address}/trades
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `side` | string | `both` | `maker`, `taker`, or `both` (UNION of both sides) |
+| `token_id` | string | — | Filter trades involving this token |
+| `min_amount` | integer | — | Minimum `maker_amount_filled` (raw 6-decimal) |
+| `after` | integer | — | Start of time range (Unix timestamp) |
+| `before` | integer | — | End of time range (Unix timestamp) |
+| `order` | string | `desc` | `asc` or `desc` |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Examples
+
+### Recent trades (both sides)
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0x56687bf4.../trades?limit=5
+```
+
+### Maker-only trades
+
+```bash
+curl .../v3/wallets/0x.../trades?side=maker&limit=10
+```
+
+### Trades for a specific token
+
+```bash
+curl .../v3/wallets/0x.../trades?token_id=21742633...&limit=10
+```
+
+### Large trades only ($100+ USDC)
+
+```bash
+curl .../v3/wallets/0x.../trades?min_amount=100000000&limit=20
+```
+
+### Trades in a time window
+
+```bash
+curl .../v3/wallets/0x.../trades?after=1778000000&before=1778604000
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique fill ID |
+| `maker` | string | Maker wallet address |
+| `taker` | string | Taker wallet address |
+| `maker_asset_id` | string | Asset the maker sold (0 = USDC) |
+| `taker_asset_id` | string | Asset the taker sold (0 = USDC) |
+| `maker_amount_filled` | string | Amount the maker provided (6-decimal) |
+| `taker_amount_filled` | string | Amount the taker provided (6-decimal) |
+| `fee` | string | Fee charged (6-decimal) |
+| `timestamp` | string | Unix timestamp |
+| `transaction_hash` | string | On-chain transaction hash |
+| `builder` | string | Builder code (bytea, hex-encoded) |
+| `side` | string | V2 side indicator (0 = buy, 1 = sell) |
+| `role` | string | `maker` or `taker` (which side this wallet was on) |

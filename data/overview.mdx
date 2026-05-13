@@ -1,0 +1,93 @@
+---
+title: "Data API Overview"
+description: "Query the complete Polymarket V1 + V2 database. 1.2 billion fills, 228 million positions, 2.7 million wallets. Real-time P&L, position tracking, builder analytics, and market data."
+---
+
+The Data API gives you direct access to the most complete Polymarket database in existence. Every trade, position, redemption, split, merge, and builder attribution across both V1 and V2 of the exchange, indexed from on-chain data and enriched with market metadata, token prices, and computed P&L.
+
+## Base URL
+
+```
+https://api.polynode.dev/v3
+```
+
+## What's in the database
+
+| Metric | Count |
+|--------|-------|
+| Fills (trades) | 1.23 billion |
+| Positions | 228 million |
+| Unique wallets | 2.7 million |
+| Redemptions | 160 million |
+| Splits | 31 million |
+| Merges | 14.7 million |
+| Markets indexed | 1.07 million |
+| Token prices | 2 million |
+
+## Key features
+
+- **Dual P&L** — realized and unrealized profit/loss for every wallet, computed from the full event history using weighted-average cost basis math
+- **Position status** — every position is tagged as `open`, `closed`, `redeemable`, or `redeemed` based on live settlement data
+- **Redeemable payouts** — see exactly how much USDC a wallet can claim from resolved markets
+- **Builder attribution** — 77 million fills attributed to 1,502 unique builders
+- **Batch queries** — query up to 100 wallets in a single call
+- **Time-range filters** — filter trades, redemptions, and activity by Unix timestamp
+- **Market search** — full-text search across 1 million+ market questions
+
+## Amounts and precision
+
+All monetary amounts are denominated in **USDC with 6-decimal precision** (Polymarket's `pUSD` collateral token). To convert to USD, divide by `1,000,000`.
+
+```
+amount_usd = raw_value / 1_000_000
+```
+
+For example, a `realized_pnl` of `22053845825455` equals **$22,053,846** USD.
+
+## Rate limits
+
+| Limit | Value |
+|-------|-------|
+| Requests per minute per IP | 200 |
+| Max concurrent queries per IP | 5 |
+| Max page size | 1,000 rows |
+| Query timeout | 10 seconds |
+
+## Pagination
+
+All list endpoints support:
+- `?limit=N` — results per page (default 100, max 1000)
+- `?offset=N` — skip N results
+
+Responses include `has_more: true/false` to indicate if more pages exist.
+
+## Response format
+
+Every response includes `elapsed_ms` showing server-side query time in milliseconds.
+
+```json
+{
+  "data": [...],
+  "rows_returned": 100,
+  "has_more": true,
+  "offset": 0,
+  "limit": 100,
+  "elapsed_ms": 12
+}
+```
+
+## Endpoint categories
+
+| Category | Endpoints | What you can do |
+|----------|-----------|-----------------|
+| [Wallet P&L](/data/wallets/summary) | 4 | Wallet summary, dual P&L breakdown, batch queries, enriched positions |
+| [Wallet Activity](/data/wallets/trades) | 6 | Trades, redemptions, splits, merges, NRC, combined activity |
+| [Markets](/data/markets/search) | 7 | Search, lookup by condition/token/slug, trades, positions, prices |
+| [Leaderboard](/data/leaderboard/global) | 3 | Global P&L rankings, tag discovery, tag leaderboards |
+| [Builders](/data/builders/list) | 3 | Builder rankings, stats, attributed trades |
+| [Global](/data/global/stats) | 5 | Platform stats, trade feed, fees, resolutions, conditions |
+| [Tokens](/data/tokens/info) | 1 | Token price and market metadata |
+
+## Explorer
+
+Browse the data interactively with pre-built SQL recipes at [explorer.polynode.dev](https://explorer.polynode.dev).

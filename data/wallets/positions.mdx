@@ -1,0 +1,120 @@
+---
+title: "Wallet Positions"
+description: "Get all positions for a wallet with current prices, unrealized P&L, and settlement status. Filter by open, closed, redeemable, or redeemed."
+---
+
+Returns every position a wallet has ever held, enriched with live token prices, computed unrealized P&L, and settlement status. Each position is tagged with a status indicating whether it's actively held, settled, or available for redemption.
+
+## Request
+
+```
+GET /v3/wallets/{address}/positions
+```
+
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `address` | string | Wallet address (0x-prefixed) |
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | all | Filter: `open`, `closed`, `redeemable`, `redeemed` |
+| `sort` | string | `pnl` | Sort by: `pnl`, `amount`, `volume`, `avg_price`, `unrealized`, `total` |
+| `order` | string | `desc` | Sort direction: `asc` or `desc` |
+| `limit` | integer | 100 | Results per page (max 1000) |
+| `offset` | integer | 0 | Pagination offset |
+
+### Position statuses
+
+| Status | Meaning |
+|--------|---------|
+| `open` | Wallet holds shares in an active (unresolved) market |
+| `closed` | Position fully sold before market resolved |
+| `redeemable` | Market resolved, wallet still holds shares that can be redeemed for USDC |
+| `redeemed` | Market resolved and shares have been redeemed |
+
+## Examples
+
+### All positions (sorted by P&L)
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/positions?limit=3
+```
+
+```json
+{
+  "address": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
+  "positions": [
+    {
+      "token_id": "42699080635179861375280720242213672850141860123562672932351602811041149946128",
+      "amount": "0",
+      "avg_price": "369502",
+      "realized_pnl": "8303184398760",
+      "total_bought": "13175255227070",
+      "current_price": "1000000.000000000000",
+      "resolved": true,
+      "price_source": "v1_condition",
+      "unrealized_pnl": "0",
+      "total_pnl": "8303184398760",
+      "status": "redeemed",
+      "redeemable_payout": "0"
+    }
+  ],
+  "rows_returned": 3,
+  "has_more": true,
+  "elapsed_ms": 7
+}
+```
+
+### Only open positions
+
+```bash
+curl .../v3/wallets/0x.../positions?status=open
+```
+
+### Only redeemable (resolved but not yet claimed)
+
+```bash
+curl .../v3/wallets/0x.../positions?status=redeemable
+```
+
+Shows positions where the market has settled and the wallet holds shares worth USDC. The `redeemable_payout` field shows the exact amount they can claim.
+
+### Sort by unrealized P&L
+
+```bash
+curl .../v3/wallets/0x.../positions?status=open&sort=unrealized&order=desc
+```
+
+### Sort by largest holdings
+
+```bash
+curl .../v3/wallets/0x.../positions?status=open&sort=amount&order=desc
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `token_id` | string | Outcome token ID |
+| `amount` | string | Current shares held (0 if closed/redeemed) |
+| `avg_price` | string | Weighted-average entry price (6-decimal) |
+| `realized_pnl` | string | Realized P&L from selling shares |
+| `total_bought` | string | Total USDC spent buying this position |
+| `current_price` | string | Latest token price (from last trade or settlement) |
+| `resolved` | boolean | Whether the market has settled |
+| `price_source` | string | Where the price comes from: `settlement`, `v1_condition`, `last_fill` |
+| `unrealized_pnl` | string | Paper P&L: `(current_price - avg_price) × amount` |
+| `total_pnl` | string | `realized_pnl + unrealized_pnl` |
+| `status` | string | `open`, `closed`, `redeemable`, or `redeemed` |
+| `redeemable_payout` | string | USDC claimable if redeemed now (0 for losing outcomes) |
+
+## Use cases
+
+- **Portfolio dashboard** — show a trader's open positions with live P&L
+- **Redemption alerts** — find wallets with unclaimed payouts using `?status=redeemable`
+- **Performance analysis** — sort by `total_pnl` to see best and worst positions
+- **Copy trading** — see what a wallet is currently holding with `?status=open&sort=amount`

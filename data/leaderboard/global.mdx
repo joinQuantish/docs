@@ -1,0 +1,73 @@
+---
+title: "Leaderboard"
+description: "Rank all 2.7 million Polymarket wallets by P&L, volume, profit, or win count. Includes realized and unrealized P&L."
+---
+
+Returns a ranked list of wallets from the `wallet_stats` materialized view. Refreshes every 30 minutes. Includes both realized and unrealized P&L.
+
+## Request
+
+```
+GET /v3/leaderboard
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `sort` | string | `pnl` | Sort by: `pnl`, `volume`, `profit`, `loss`, `total`, `unrealized`, `wins`, `positions` |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+### Sort options
+
+| Value | What it ranks by |
+|-------|-----------------|
+| `pnl` | Net realized P&L (default) |
+| `total` | Realized + unrealized combined |
+| `unrealized` | Unrealized P&L from open positions |
+| `volume` | Total trading volume |
+| `profit` | Gross profit (all winning positions) |
+| `loss` | Gross loss (all losing positions) |
+| `wins` | Number of winning positions |
+| `positions` | Total position count |
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/leaderboard?sort=total&limit=5
+```
+
+## Response
+
+```json
+{
+  "leaderboard": [
+    {
+      "rank": 1,
+      "wallet": "0xdb27bf2ac5d428a9c63dbc914611036855a6c56e",
+      "net_realized_pnl": "43841882847365",
+      "gross_profit": "46171123929213",
+      "gross_loss": "-2329241081848",
+      "unrealized_pnl": "...",
+      "total_pnl": "...",
+      "wins": 738,
+      "losses": 117,
+      "position_count": 1572,
+      "total_volume": "228748471468956",
+      "open_positions": 776
+    }
+  ],
+  "rows_returned": 5,
+  "has_more": true,
+  "elapsed_ms": 800
+}
+```
+
+## Related endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v3/tags` | All market tags with counts |
+| `GET /v3/tags/{slug}` | Markets under a tag, sorted by volume |
+| `GET /v3/tags/{slug}/leaderboard` | P&L leaderboard filtered by tag |

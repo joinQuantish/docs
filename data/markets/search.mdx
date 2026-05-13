@@ -1,0 +1,28 @@
+---
+title: "Search Markets"
+description: "Full-text search across 1 million+ Polymarket questions. Returns markets ranked by volume."
+---
+
+Search markets by question text. Case-insensitive partial matching across all indexed market questions.
+
+## Request
+
+```
+GET /v3/markets/search?q={query}
+```
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `q` | string | Yes | Search text (e.g., `trump`, `bitcoin`, `nba`) |
+| `limit` | integer | No | Max results (default 100) |
+| `offset` | integer | No | Pagination offset |
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/markets/search?q=trump&limit=3
+```
+
+Returns markets matching "trump" sorted by all-time volume (highest first).

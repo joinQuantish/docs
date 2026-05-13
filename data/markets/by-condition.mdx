@@ -1,0 +1,29 @@
+---
+title: "Market by Condition ID"
+description: "Get full market info including all outcome tokens, metadata, tags, and resolution status."
+---
+
+Look up a market by its condition ID. Returns the full market with all outcome tokens, Gamma metadata, tags, and settlement status.
+
+## Request
+
+```
+GET /v3/markets/condition/{condition_id}
+```
+
+## Related endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v3/markets/condition/{id}/positions` | All position holders for this market |
+| `GET /v3/markets/{token_id}/trades` | Trades for a specific outcome token |
+| `GET /v3/markets/{token_id}/positions` | Holders of a specific outcome token |
+| `GET /v3/markets/{token_id}/price` | Current price and resolution status |
+| `GET /v3/markets/slug/{slug}/trades` | Trades by market slug |
+| `GET /v3/markets/slug/{slug}/positions` | Holders by market slug |
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/markets/condition/0x00005c113846891686d99ff1d145ded8bdccfa028df0fdf15d66f11d176c49b1
+```

@@ -1,0 +1,35 @@
+---
+title: "Market Trades"
+description: "Get all trades for a market by token ID or slug. Filter by time range."
+---
+
+Returns fills involving a specific outcome token. Can look up by token ID or market slug.
+
+## By token ID
+
+```
+GET /v3/markets/{token_id}/trades
+```
+
+## By market slug
+
+```
+GET /v3/markets/slug/{slug}/trades
+```
+
+Automatically resolves the slug to token IDs via the market_tokens table.
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `after` | integer | — | Start of time range (Unix timestamp) |
+| `before` | integer | — | End of time range |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/markets/slug/bitcoin-above-82k-on-january-16/trades?limit=5
+```

@@ -1,0 +1,39 @@
+---
+title: "Token Price"
+description: "Get the current price, resolution status, and price source for any outcome token."
+---
+
+Returns the latest price for a token along with whether the market has resolved and where the price comes from.
+
+## Request
+
+```
+GET /v3/markets/{token_id}/price
+```
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/markets/21742633143463906290569050155826241533067272736897614950488156847949938836455/price
+```
+
+```json
+{
+  "token_id": "21742633...36455",
+  "price": "1000000.000000000000",
+  "resolved": true,
+  "source": "v1_condition",
+  "updated_at": "2026-05-12 13:56:35.75079",
+  "elapsed_ms": 0
+}
+```
+
+### Price sources
+
+| Source | Description |
+|--------|-------------|
+| `settlement` | From the WS resolution listener. Final authority. Price = 1,000,000 (winner) or 0 (loser). |
+| `v1_condition` | From V1 condition payout data. Settlement-equivalent for historical markets. |
+| `last_fill` | From the most recent trade. Approximation of current market price. |
+
+Settlement prices are never overwritten by trade prices.

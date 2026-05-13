@@ -1,0 +1,80 @@
+---
+title: "Batch Wallet P&L"
+description: "Query P&L for up to 100 wallets in a single request. Returns realized P&L, unrealized P&L, win/loss record, and volume for each wallet."
+---
+
+Query multiple wallets at once. Returns the same summary data as the single wallet endpoint, but for up to 100 wallets in one call. Responses typically return in under 5ms regardless of how many wallets you query.
+
+## Request
+
+```
+POST /v3/wallets/batch
+```
+
+### Request body
+
+```json
+{
+  "wallets": [
+    "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
+    "0x204f72f35326db932158cba6adff0b9a1da95e14",
+    "0xdb27bf2ac5d428a9c63dbc914611036855a6c56e"
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | Up to 100 wallet addresses |
+
+## Example
+
+```bash
+curl -X POST https://api.polynode.dev/v3/wallets/batch \
+  -H 'Content-Type: application/json' \
+  -d '{"wallets":["0x56687bf447db6ffa42ffe2204a05edaa20f55839","0x204f72f35326db932158cba6adff0b9a1da95e14"]}'
+```
+
+## Response
+
+```json
+{
+  "count": 2,
+  "elapsed_ms": 2,
+  "wallets": [
+    {
+      "wallet": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
+      "net_realized_pnl": "22053845825455",
+      "gross_profit": "22057977181649",
+      "gross_loss": "-4131356194",
+      "unrealized_pnl": "688.7550000000000000",
+      "total_pnl": "22053845826143.7550000000000000",
+      "wins": 18,
+      "losses": 4,
+      "position_count": 22,
+      "open_positions": 1,
+      "total_volume": "43013258515682"
+    },
+    {
+      "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+      "net_realized_pnl": "4470168315094",
+      "gross_profit": "113228697736699",
+      "gross_loss": "-108758529421605",
+      "unrealized_pnl": "3465887599105.119908101111064914000000",
+      "total_pnl": "7936055914199.119908101111064914000000",
+      "wins": 77207,
+      "losses": 69346,
+      "position_count": 167759,
+      "open_positions": 21202,
+      "total_volume": "689235412986678"
+    }
+  ]
+}
+```
+
+## Use cases
+
+- **Leaderboard building** — pull P&L for a custom watchlist of wallets
+- **Copy trading dashboards** — monitor multiple traders simultaneously
+- **Whale tracking** — check 50+ wallets every few seconds for position changes
+- **Portfolio aggregation** — sum P&L across multiple wallets belonging to the same entity

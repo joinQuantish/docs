@@ -1,0 +1,44 @@
+---
+title: "Wallet Activity"
+description: "Combined view of all non-trade events for a wallet: splits, merges, neg-risk conversions, and redemptions."
+---
+
+Returns all position management events for a wallet in chronological order. Combines splits, merges, neg-risk conversions, and redemptions into a single timeline.
+
+## Request
+
+```
+GET /v3/wallets/{address}/activity
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `after` | integer | — | Start of time range (Unix timestamp) |
+| `before` | integer | — | End of time range |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Individual event endpoints
+
+Each event type is also available separately:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v3/wallets/{address}/redemptions` | Market payouts after resolution |
+| `GET /v3/wallets/{address}/splits` | Position split events |
+| `GET /v3/wallets/{address}/merges` | Position merge events |
+| `GET /v3/wallets/{address}/nrc` | Neg-risk conversion events |
+
+All accept `?after=`, `?before=`, `?limit=`, `?offset=`.
+
+## Response
+
+Each event includes:
+- `event_type` — `split`, `merge`, `nrc`, or `redemption`
+- `id` — unique event ID
+- `timestamp` — Unix timestamp
+- `ref_id` — condition ID or neg-risk market ID
+- `amount` — USDC amount involved
+- `extra` — additional data (e.g., `question_count` for NRC, `index_sets` for redemptions)
