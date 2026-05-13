@@ -1,9 +1,9 @@
 ---
 title: "Builder Detail"
-description: "Get stats for a single Polymarket builder by hex code. Fill count, volume, fees, and unique maker/taker counts."
+description: "Get stats for a single builder. Fill count, maker/taker volume, fees, and unique wallet counts."
 ---
 
-Returns aggregate stats for a specific builder identified by its hex code. Builders are order routing services that attribute fills on Polymarket V2.
+Returns aggregate stats for a specific builder from the `builder_stats` table. Builders are order routing services that attribute fills on Polymarket V2.
 
 ## Request
 
@@ -11,21 +11,26 @@ Returns aggregate stats for a specific builder identified by its hex code. Build
 GET /v3/builders/{code}
 ```
 
-The `code` parameter is the builder's hex-encoded identifier (e.g. `0x61...`).
+The `code` is the builder's raw hex identifier (without `\x` prefix).
 
-## Example
+### Example
 
 ```bash
-curl https://api.polynode.dev/v3/builders/0x61...
+curl https://api.polynode.dev/v3/builders/4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df
 ```
 
-## Response fields
+### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `builder` | string | Builder hex code |
-| `fills` | integer | Total number of fills attributed |
-| `volume` | string | Total fill volume (6-decimal USDC) |
-| `fees` | string | Total fees generated (6-decimal USDC) |
-| `makers` | integer | Unique maker addresses |
-| `takers` | integer | Unique taker addresses |
+| `fill_count` | integer | Total attributed fills |
+| `total_maker_volume` | string | Total maker-side volume (6-decimal) |
+| `total_taker_volume` | string | Total taker-side volume (6-decimal) |
+| `total_fees` | string | Total fees (6-decimal) |
+| `unique_makers` | integer | Unique maker wallet addresses |
+| `unique_takers` | integer | Unique taker wallet addresses |
+| `first_fill` | string | Timestamp of earliest attributed fill |
+| `last_fill` | string | Timestamp of most recent attributed fill |
+
+Returns 404 if the builder code is not found.

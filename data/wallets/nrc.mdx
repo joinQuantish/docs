@@ -1,9 +1,9 @@
 ---
 title: "Wallet Neg-Risk Conversions"
-description: "Get all neg-risk conversion events for a wallet. These convert between standard CTF positions and neg-risk wrapped positions."
+description: "Get neg-risk conversion events for a wallet. These convert between standard CTF positions and neg-risk wrapped positions in multi-outcome markets."
 ---
 
-Returns neg-risk conversion events for a wallet. Neg-risk markets (multi-outcome events like elections) use a wrapper contract that converts standard CTF tokens into neg-risk positions and vice versa.
+Returns neg-risk conversion events. Neg-risk markets (multi-outcome events like elections with many candidates) use a wrapper contract. This endpoint shows when a wallet converted positions through that contract.
 
 ## Request
 
@@ -20,28 +20,45 @@ GET /v3/wallets/{address}/nrc
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Examples
-
-### Recent conversions
+## Example
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0x56687bf4.../nrc?limit=5
+curl https://api.polynode.dev/v3/wallets/0x76a1f5f4a6ac99f5de9fba514d609072fc7c4652/nrc?limit=2
 ```
 
-### Conversions in a time window
-
-```bash
-curl .../v3/wallets/0x.../nrc?after=1778000000&before=1778604000
+```json
+{
+  "rows": [
+    [
+      "0x1191dabb...e0c29b_0x449",
+      "1777419012",
+      "0x96ca8e5a...09ba00",
+      "5000000",
+      "3",
+      11
+    ]
+  ],
+  "columns": [
+    {"name": "id", "type": "text"},
+    {"name": "timestamp", "type": "text"},
+    {"name": "neg_risk_market_id", "type": "text"},
+    {"name": "amount", "type": "text"},
+    {"name": "index_set", "type": "text"},
+    {"name": "question_count", "type": "int4"}
+  ],
+  "rows_returned": 2,
+  "has_more": true,
+  "elapsed_ms": 220
+}
 ```
 
-## Response fields
+### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique conversion event ID |
-| `address` | string | Wallet address |
-| `condition_id` | string | Condition involved |
-| `amount` | string | Amount converted (6-decimal) |
-| `direction` | string | Conversion direction (wrap or unwrap) |
 | `timestamp` | string | Unix timestamp |
-| `transaction_hash` | string | On-chain transaction hash |
+| `neg_risk_market_id` | string | The neg-risk parent market ID |
+| `amount` | string | Amount converted (6-decimal USDC). `5000000` = $5.00 |
+| `index_set` | string | Which outcome index was converted |
+| `question_count` | integer | Number of outcomes in the neg-risk market |

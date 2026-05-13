@@ -1,9 +1,9 @@
 ---
 title: "Wallet Splits"
-description: "Get all CTF token split events for a wallet. Splits convert USDC collateral into a complete set of outcome tokens."
+description: "Get position split events for a wallet. Splits deposit USDC collateral and receive a complete set of outcome tokens for a market."
 ---
 
-Returns split events where the wallet deposited USDC collateral and received a full set of outcome tokens for a condition.
+Returns split events where the wallet deposited USDC and received outcome tokens. Each split references a condition (market) and the collateral amount.
 
 ## Request
 
@@ -20,27 +20,39 @@ GET /v3/wallets/{address}/splits
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Examples
-
-### Recent splits
+## Example
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0x56687bf4.../splits?limit=5
+curl https://api.polynode.dev/v3/wallets/0xada200001000ef00d07553cee7006808f895c6f1/splits?limit=2
 ```
 
-### Splits in a time window
-
-```bash
-curl .../v3/wallets/0x.../splits?after=1778000000&before=1778604000
+```json
+{
+  "rows": [
+    [
+      "0x48c69f12...1b77b5_0x4bc",
+      "1778492423",
+      "0xd0dbdc94...18d5e7",
+      "2830000"
+    ]
+  ],
+  "columns": [
+    {"name": "id", "type": "text"},
+    {"name": "timestamp", "type": "text"},
+    {"name": "condition", "type": "text"},
+    {"name": "amount", "type": "text"}
+  ],
+  "rows_returned": 2,
+  "has_more": true,
+  "elapsed_ms": 4
+}
 ```
 
-## Response fields
+### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique split event ID |
-| `stakeholder` | string | Wallet address |
-| `condition_id` | string | Condition split into |
-| `amount` | string | USDC collateral deposited (6-decimal) |
 | `timestamp` | string | Unix timestamp |
-| `transaction_hash` | string | On-chain transaction hash |
+| `condition` | string | Condition ID of the market |
+| `amount` | string | USDC collateral deposited (6-decimal). `2830000` = $2.83 |

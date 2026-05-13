@@ -1,9 +1,9 @@
 ---
 title: "Wallet Redemptions"
-description: "Get all CTF token redemptions for a wallet. Redemptions occur when a market resolves and the wallet holds winning outcome tokens."
+description: "Get redemption events for a wallet. Redemptions pay out USDC when a resolved market's winning tokens are claimed."
 ---
 
-Returns redemption events where the wallet redeemed winning outcome tokens for USDC after market resolution.
+Returns redemption events where the wallet claimed USDC from resolved markets. Each redemption shows the condition, payout amount, and which outcome index sets were redeemed.
 
 ## Request
 
@@ -20,28 +20,44 @@ GET /v3/wallets/{address}/redemptions
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Examples
-
-### Recent redemptions
+## Example
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0x56687bf4.../redemptions?limit=5
+curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/redemptions?limit=2
 ```
 
-### Redemptions in a time window
-
-```bash
-curl .../v3/wallets/0x.../redemptions?after=1778000000&before=1778604000
+```json
+{
+  "columns": [
+    {"name": "id", "type": "text"},
+    {"name": "timestamp", "type": "text"},
+    {"name": "condition", "type": "text"},
+    {"name": "payout", "type": "text"},
+    {"name": "index_sets", "type": "_numeric"}
+  ],
+  "rows": [
+    [
+      "0x6db3f0fd9cccd58d4bd59eb5816cc2823f62a85c343e5ff6d1dd177dfb128a6e_0x109",
+      "1731664609",
+      "0x26ee82bee2493a302d21283cb578f7e2fff2dd15743854f53034d12420863b55",
+      "120469388830",
+      ["1", "2"]
+    ]
+  ],
+  "rows_returned": 2,
+  "has_more": true,
+  "elapsed_ms": 12
+}
 ```
 
-## Response fields
+### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | string | Unique redemption ID |
-| `redeemer` | string | Wallet address |
-| `condition_id` | string | Condition that resolved |
-| `index_sets` | string[] | Outcome index sets redeemed |
-| `payout` | string | USDC payout amount (6-decimal) |
-| `timestamp` | string | Unix timestamp |
-| `transaction_hash` | string | On-chain transaction hash |
+| `id` | string | Unique redemption event ID (tx_hash + log index) |
+| `timestamp` | string | Unix timestamp of the redemption |
+| `condition` | string | Condition ID of the resolved market |
+| `payout` | string | USDC payout received (6-decimal). Divide by 1,000,000 for USD. |
+| `index_sets` | array | Outcome index sets that were redeemed |
+
+The payout of `120469388830` in the example equals **$120,469 USD**.

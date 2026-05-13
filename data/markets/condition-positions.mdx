@@ -1,9 +1,9 @@
 ---
-title: "Condition Positions"
-description: "Get all position holders for a market by condition ID. Shows every wallet holding outcome tokens."
+title: "Market Positions by Condition"
+description: "Get all position holders for a market by condition ID. Returns wallets holding any outcome token for the condition."
 ---
 
-Returns all wallets holding positions in a specific market condition. Useful for seeing who holds what before a resolution, or analyzing market concentration.
+Returns all wallets holding positions in a specific market, across all outcome tokens. Looks up token IDs from the market_tokens table using the condition ID.
 
 ## Request
 
@@ -15,22 +15,25 @@ GET /v3/markets/condition/{condition_id}/positions
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
+| `sort` | string | `pnl` | Sort by: `pnl`, `amount`, `volume` |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/markets/condition/0x1234.../positions?limit=50
+curl https://api.polynode.dev/v3/markets/condition/0x00005c11.../positions?limit=10
 ```
 
-## Response fields
+### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `user` | string | Wallet address |
 | `token_id` | string | Outcome token ID |
-| `condition_id` | string | Market condition ID |
 | `amount` | string | Current position size (6-decimal) |
-| `realized_pnl` | string | Realized PnL on this position (6-decimal) |
-| `avg_cost` | string | Weighted average entry price |
+| `avg_price` | string | Weighted-average entry price |
+| `realized_pnl` | string | Realized P&L |
+| `total_bought` | string | Total volume traded |
+
+Returns 404 if the condition ID doesn't match any market.

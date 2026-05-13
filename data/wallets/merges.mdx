@@ -1,9 +1,9 @@
 ---
 title: "Wallet Merges"
-description: "Get all CTF token merge events for a wallet. Merges convert a complete set of outcome tokens back into USDC collateral."
+description: "Get position merge events for a wallet. Merges return a complete set of outcome tokens and receive USDC collateral back."
 ---
 
-Returns merge events where the wallet returned a complete set of outcome tokens and received USDC collateral back. The inverse of a split.
+Returns merge events where the wallet returned outcome tokens and received USDC collateral. The inverse of a split.
 
 ## Request
 
@@ -20,27 +20,39 @@ GET /v3/wallets/{address}/merges
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Examples
-
-### Recent merges
+## Example
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0x56687bf4.../merges?limit=5
+curl https://api.polynode.dev/v3/wallets/0xada100874d00e3331d00f2007a9c336a65009718/merges?limit=2
 ```
 
-### Merges in a time window
-
-```bash
-curl .../v3/wallets/0x.../merges?after=1778000000&before=1778604000
+```json
+{
+  "rows": [
+    [
+      "0x56e84b69...e4a1f4_0x612",
+      "1778482999",
+      "0x649340b2...375e34",
+      "20000000"
+    ]
+  ],
+  "columns": [
+    {"name": "id", "type": "text"},
+    {"name": "timestamp", "type": "text"},
+    {"name": "condition", "type": "text"},
+    {"name": "amount", "type": "text"}
+  ],
+  "rows_returned": 2,
+  "has_more": true,
+  "elapsed_ms": 7
+}
 ```
 
-## Response fields
+### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique merge event ID |
-| `stakeholder` | string | Wallet address |
-| `condition_id` | string | Condition merged from |
-| `amount` | string | USDC collateral received (6-decimal) |
 | `timestamp` | string | Unix timestamp |
-| `transaction_hash` | string | On-chain transaction hash |
+| `condition` | string | Condition ID of the market |
+| `amount` | string | USDC collateral received (6-decimal). `20000000` = $20.00 |

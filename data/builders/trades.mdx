@@ -1,9 +1,9 @@
 ---
 title: "Builder Trades"
-description: "Get all fills attributed to a specific builder. Filter by time range and paginate through results."
+description: "Get all fills attributed to a specific builder. Filter by time range."
 ---
 
-Returns individual fills routed through a specific builder. Same fill schema as the global trades endpoint, filtered to a single builder code.
+Returns individual fills routed through a specific builder.
 
 ## Request
 
@@ -11,22 +11,24 @@ Returns individual fills routed through a specific builder. Same fill schema as 
 GET /v3/builders/{code}/trades
 ```
 
+The `code` is the builder's raw hex identifier.
+
 ### Query parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range (Unix timestamp) |
+| `before` | integer | — | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Example
+### Example
 
 ```bash
-curl https://api.polynode.dev/v3/builders/0x61.../trades?limit=10
+curl https://api.polynode.dev/v3/builders/4898df15.../trades?limit=5
 ```
 
-## Response fields
+### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -35,9 +37,9 @@ curl https://api.polynode.dev/v3/builders/0x61.../trades?limit=10
 | `taker` | string | Taker wallet address |
 | `maker_asset_id` | string | Asset the maker sold (0 = USDC) |
 | `taker_asset_id` | string | Asset the taker sold (0 = USDC) |
-| `maker_amount_filled` | string | Amount the maker provided (6-decimal) |
-| `taker_amount_filled` | string | Amount the taker provided (6-decimal) |
-| `fee` | string | Fee charged (6-decimal) |
+| `maker_amount_filled` | string | Maker amount (6-decimal) |
+| `taker_amount_filled` | string | Taker amount (6-decimal) |
+| `fee` | string | Fee (6-decimal) |
 | `timestamp` | string | Unix timestamp |
-| `transaction_hash` | string | On-chain transaction hash |
-| `builder` | string | Builder code (hex-encoded) |
+| `transaction_hash` | string | On-chain tx hash |
+| `side` | string | V2 side (0=buy, 1=sell) |

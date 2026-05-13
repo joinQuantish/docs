@@ -1,9 +1,11 @@
 ---
 title: "Tag Leaderboard"
-description: "PnL leaderboard filtered by tag. See who profits most on crypto markets, politics, sports, or any other category."
+description: "P&L leaderboard filtered by tag. See the top traders in crypto, politics, sports, or any category."
 ---
 
-Returns a PnL leaderboard scoped to markets under a specific tag. Ranks wallets by realized PnL across all markets matching the tag.
+Returns a P&L leaderboard scoped to markets under a specific tag. Aggregates realized P&L across all positions in markets matching the tag.
+
+Works best for tags with fewer than 2,000 tokens. Very large tags (like `sports` with 500K+ markets) return an error with a suggestion to use the global leaderboard instead.
 
 ## Request
 
@@ -15,21 +17,23 @@ GET /v3/tags/{slug}/leaderboard
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
+| `sort` | string | `net_pnl` | Sort by: `net_pnl`, `volume`, `profit`, `loss` |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Example
+### Example
 
 ```bash
-curl https://api.polynode.dev/v3/tags/crypto/leaderboard?limit=10
+curl https://api.polynode.dev/v3/tags/ufc-325/leaderboard?limit=5
 ```
 
-## Response fields
+### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `rank` | integer | Position on the leaderboard |
-| `user` | string | Wallet address |
-| `realized_pnl` | string | Total realized PnL across tag markets (6-decimal) |
-| `num_positions` | integer | Number of positions in tag markets |
-| `volume` | string | Total volume traded in tag markets (6-decimal) |
+| `wallet` | string | Wallet address |
+| `net_pnl` | string | Net realized P&L in tag markets (6-decimal) |
+| `gross_profit` | string | Sum of winning position P&L |
+| `gross_loss` | string | Sum of losing position P&L |
+| `total_volume` | string | Total volume in tag markets |
+| `position_count` | integer | Number of positions in tag markets |

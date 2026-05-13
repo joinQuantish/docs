@@ -1,9 +1,9 @@
 ---
 title: "Market Resolutions"
-description: "Recent market resolutions with payout vectors and market metadata. See which markets resolved and how."
+description: "Recent market resolutions with payout vectors and market metadata."
 ---
 
-Returns recently resolved markets with their payout vectors and associated metadata. Useful for tracking which markets have settled and what the winning outcomes were.
+Returns resolved markets from the `market_resolution` table, joined with market metadata. Shows which markets settled and what the payouts were.
 
 ## Request
 
@@ -15,24 +15,25 @@ GET /v3/resolutions
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range (Unix timestamp) |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Example
+### Example
 
 ```bash
-curl https://api.polynode.dev/v3/resolutions?limit=10
+curl https://api.polynode.dev/v3/resolutions?limit=5
 ```
 
-## Response fields
+### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `condition_id` | string | Resolved condition ID |
-| `payouts` | number[] | Payout vector per outcome (e.g. [1, 0] for binary) |
-| `timestamp` | string | Resolution timestamp |
-| `transaction_hash` | string | On-chain resolution transaction |
-| `slug` | string | Market slug (if metadata available) |
-| `question` | string | Market question text (if metadata available) |
+| `condition_id` | string | Condition that resolved |
+| `payout_numerators` | string | JSON array of payouts per outcome (e.g. `[0,1]` for binary where outcome 2 won) |
+| `payout_denominator` | string | Denominator for payout calculation |
+| `resolved_at` | string | Resolution timestamp (raw numeric, multiply by 1000 if needed for JS Date) |
+| `created_at` | string | When the resolution was recorded |
+| `question` | string | Market question text (from metadata, may be null) |
+| `slug` | string | Market slug (may be null) |
+| `outcomes` | array | Outcome labels (may be null) |
+| `category` | string | Market category (may be null) |

@@ -1,9 +1,9 @@
 ---
 title: "Market by Slug"
-description: "Look up a market by its human-readable slug and fetch trades or positions. No need to know the condition ID."
+description: "Look up trades and positions for a market using its human-readable URL slug."
 ---
 
-Look up market data using the human-readable slug from Polymarket URLs (e.g. `will-trump-win-2024`). Returns trades or positions for all tokens in the market.
+Look up market data using the slug from Polymarket URLs. Resolves the slug to token IDs internally and returns trades or positions across all outcomes.
 
 ## Trades by slug
 
@@ -16,9 +16,7 @@ GET /v3/markets/slug/{slug}/trades
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range (Unix timestamp) |
-| `min_amount` | integer | — | Minimum fill amount (raw 6-decimal) |
-| `order` | string | `desc` | `asc` or `desc` |
+| `before` | integer | — | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
@@ -32,19 +30,16 @@ GET /v3/markets/slug/{slug}/positions
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
+| `sort` | string | `pnl` | Sort by: `pnl`, `amount`, `volume` |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Examples
-
-### Recent trades for a market
+## Example
 
 ```bash
-curl https://api.polynode.dev/v3/markets/slug/will-trump-win-2024/trades?limit=5
+curl https://api.polynode.dev/v3/markets/slug/bitcoin-above-82k-on-january-16/trades?limit=5
 ```
 
-### All holders of a market
+Response includes standard fill columns: `id`, `maker`, `taker`, `maker_asset_id`, `taker_asset_id`, `maker_amount_filled`, `taker_amount_filled`, `fee`, `timestamp`, `transaction_hash`, `builder`, `side`.
 
-```bash
-curl https://api.polynode.dev/v3/markets/slug/will-trump-win-2024/positions?limit=50
-```
+Returns 404 if the slug doesn't match any market in the metadata table.

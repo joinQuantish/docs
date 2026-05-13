@@ -1,9 +1,9 @@
 ---
 title: "Fee Events"
-description: "Browse fee charge events across all Polymarket trades. Filter by receiver address to see fees earned by a specific entity."
+description: "Browse fee charge events across Polymarket trades. Filter by time range or receiver address."
 ---
 
-Returns fee charge events from Polymarket trades. Use the receiver-specific endpoint to see fees earned by a particular address (e.g. a builder or protocol treasury).
+Returns fee charge events from Polymarket trades.
 
 ## All fees
 
@@ -16,7 +16,7 @@ GET /v3/fees
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `after` | integer | — | Start of time range (Unix timestamp) |
-| `before` | integer | — | End of time range (Unix timestamp) |
+| `before` | integer | — | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
@@ -26,28 +26,20 @@ GET /v3/fees
 GET /v3/fees/{receiver}
 ```
 
-Returns fee events where the specified address received the fee. Same query parameters as above.
+Returns fees where a specific address received the fee payment.
 
-## Examples
-
-### Recent fees
+### Example
 
 ```bash
-curl https://api.polynode.dev/v3/fees?limit=10
+curl https://api.polynode.dev/v3/fees?limit=5
 ```
 
-### Fees earned by a specific address
-
-```bash
-curl https://api.polynode.dev/v3/fees/0x1234...?limit=20
-```
-
-## Response fields
+### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique fee event ID |
-| `receiver` | string | Address that received the fee |
-| `amount` | string | Fee amount (6-decimal USDC) |
 | `timestamp` | string | Unix timestamp |
-| `transaction_hash` | string | On-chain transaction hash |
+| `receiver` | string | Address that received the fee (hex) |
+| `amount` | string | Fee amount (6-decimal USDC) |
+| `transaction_hash` | string | On-chain tx hash |

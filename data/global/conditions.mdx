@@ -1,9 +1,9 @@
 ---
 title: "Condition Detail"
-description: "Look up a condition by ID. Returns payout status, outcome tokens, and linked market metadata."
+description: "Look up a condition by ID. Returns payout status, position IDs, and linked market metadata including tags and resolution."
 ---
 
-Returns details for a specific condition including its payout status, associated outcome tokens, and linked market metadata when available.
+Returns a condition joined with market metadata from Gamma. Includes payout vectors for resolved conditions, outcome labels, tags, and volume.
 
 ## Request
 
@@ -11,22 +11,54 @@ Returns details for a specific condition including its payout status, associated
 GET /v3/conditions/{condition_id}
 ```
 
-## Example
+### Example
 
 ```bash
-curl https://api.polynode.dev/v3/conditions/0x1234...
+curl https://api.polynode.dev/v3/conditions/0x00005c113846891686d99ff1d145ded8bdccfa028df0fdf15d66f11d176c49b1
 ```
 
-## Response fields
+### Response
+
+```json
+{
+  "id": "0x00005c11...",
+  "position_ids": [3.919e+76, 2.464e+76],
+  "payout_numerators": [0, 1],
+  "payout_denominator": "1",
+  "question": "Will Jonathan Micallef win by KO or TKO?",
+  "slug": "will-jonathan-micallef-win-by-ko-or-tko",
+  "outcomes": ["Yes", "No"],
+  "category": null,
+  "active": false,
+  "closed": true,
+  "neg_risk": false,
+  "volume": "1234567",
+  "liquidity": "0",
+  "end_date": "2026-05-10...",
+  "event_slug": "ufc-325",
+  "event_title": "UFC 325",
+  "tags": ["sports", "ufc", "games", "ufc-325"],
+  "winning_outcome_index": 1,
+  "elapsed_ms": 5
+}
+```
+
+### Response fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `condition_id` | string | Condition identifier |
-| `oracle` | string | Oracle address that resolves this condition |
-| `question_id` | string | Question ID for the oracle |
-| `outcome_slot_count` | integer | Number of possible outcomes |
-| `payouts` | number[] | Payout vector (null if unresolved) |
-| `resolved` | boolean | Whether the condition has been resolved |
-| `slug` | string | Market slug (if metadata available) |
-| `question` | string | Market question text (if metadata available) |
-| `tokens` | object[] | Outcome tokens with `token_id` and `outcome` fields |
+| `id` | string | Condition ID |
+| `position_ids` | array | Position token IDs per outcome |
+| `payout_numerators` | array | Payout per outcome (0=loser, 1=winner) |
+| `payout_denominator` | string | Denominator for payout math |
+| `question` | string | Market question |
+| `slug` | string | URL slug |
+| `outcomes` | array | Outcome labels |
+| `category` | string | Category (may be null) |
+| `active` | boolean | Market is active |
+| `closed` | boolean | Market is closed |
+| `neg_risk` | boolean | Neg-risk market |
+| `volume` | string | All-time volume (USD from Gamma) |
+| `liquidity` | string | Current liquidity |
+| `tags` | array | Tag slugs |
+| `winning_outcome_index` | integer | Which outcome won (null if unresolved) |

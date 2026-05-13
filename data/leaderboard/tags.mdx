@@ -1,9 +1,7 @@
 ---
 title: "Tags"
-description: "Discover market tags and list all markets under a specific tag. Tags group related markets by topic."
+description: "Discover all market tags and browse markets under a specific tag. Tags group markets by topic like politics, sports, crypto."
 ---
-
-Tags are topic labels assigned to Polymarket markets (e.g. "Politics", "Crypto", "Sports"). Use these endpoints to discover available tags and list markets within them.
 
 ## List all tags
 
@@ -11,15 +9,7 @@ Tags are topic labels assigned to Polymarket markets (e.g. "Politics", "Crypto",
 GET /v3/tags
 ```
 
-Returns all available tags with market counts.
-
-## Markets by tag
-
-```
-GET /v3/tags/{slug}
-```
-
-Returns all markets under a specific tag slug.
+Returns all tags with the number of markets in each. Tags come from the `tag_slugs` array on market metadata, sourced from Gamma.
 
 ### Query parameters
 
@@ -28,16 +18,34 @@ Returns all markets under a specific tag slug.
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
-## Examples
-
-### List all tags
+### Example
 
 ```bash
-curl https://api.polynode.dev/v3/tags
+curl https://api.polynode.dev/v3/tags?limit=5
 ```
 
-### Markets tagged "crypto"
+Response includes `tag` (slug) and `market_count` for each tag.
+
+## Markets by tag
+
+```
+GET /v3/tags/{slug}
+```
+
+Returns all markets under a specific tag, sorted by volume.
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `sort` | string | `volume` | Sort by: `volume`, `liquidity`, `created` |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+### Example
 
 ```bash
-curl https://api.polynode.dev/v3/tags/crypto?limit=20
+curl https://api.polynode.dev/v3/tags/crypto?limit=10
 ```
+
+Response includes `condition_id`, `question`, `slug`, `outcomes`, `category`, `active`, `closed`, `neg_risk`, `volume_all_time`, `liquidity`, `end_date`, `event_slug`, `event_title`, `winning_outcome_index`.
