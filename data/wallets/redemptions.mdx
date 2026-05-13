@@ -29,25 +29,24 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
 
 ```json
 {
-  "columns": ["id", "timestamp", "condition", "payout", "index_sets"],
-  "rows": [
-    [
-      "0x6db3f0fd9cccd58d4bd59eb5816cc2823f62a85c343e5ff6d1dd177dfb128a6e_0x109",
-      "1731664609",
-      "0x26ee82bee2493a302d21283cb578f7e2fff2dd15743854f53034d12420863b55",
-      "120469388830",
-      ["1", "2"]
-    ]
+  "data": [
+    {
+      "id": "0x6db3f0fd9cccd58d4bd59eb5816cc2823f62a85c343e5ff6d1dd177dfb128a6e_0x109",
+      "timestamp": "1731664609",
+      "condition": "0x26ee82bee2493a302d21283cb578f7e2fff2dd15743854f53034d12420863b55",
+      "payout": "120469388830",
+      "index_sets": ["1", "2"]
+    }
   ],
   "rows_returned": 1,
-  "has_more": false,
+  "has_more": true,
   "elapsed_ms": 3
 }
 ```
 
-## Response columns
+## Response fields
 
-| Column | Type | Description |
+| Field | Type | Description |
 |--------|------|-------------|
 | `id` | string | Redemption event ID |
 | `timestamp` | string | Unix timestamp |
