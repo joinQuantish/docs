@@ -1,11 +1,17 @@
 ---
-title: "Data API Overview"
-description: "Query the complete Polymarket V1 + V2 database. 1.2 billion fills, 228 million positions, 2.7 million wallets. Real-time P&L, position tracking, builder analytics, and market data."
+title: "API Overview"
+description: "polynode API reference. Real-time streaming, historical data, P&L analytics, market data, and more."
 ---
 
-The Data API gives you direct access to the most complete Polymarket database in existence. Every trade, position, redemption, split, merge, and builder attribution across both V1 and V2 of the exchange, indexed from on-chain data and enriched with market metadata, token prices, and computed P&L.
+The polynode API provides two main surfaces:
 
-## Base URL
+1. **V3 Historical Data** — query the complete Polymarket V1 + V2 database. 1.2 billion fills, 228 million positions, 2.7 million wallets. Dual P&L (realized + unrealized), position tracking with settlement status, builder analytics, market search, and leaderboards.
+
+2. **Real-time Streaming** — live WebSocket feeds for settlements, trades, price updates, position changes, and more. See the [WebSocket tab](/websocket/overview).
+
+The V3 endpoints replace the older Onchain V2 endpoints, which are being deprecated. Existing integrations will continue to work during the transition.
+
+## V3 Data API — Base URL
 
 ```
 https://api.polynode.dev/v3

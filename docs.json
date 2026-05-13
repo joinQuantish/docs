@@ -54,7 +54,7 @@
         "tab": "API Reference",
         "groups": [
           {
-            "group": "Data \u2014 V3 Historical",
+            "group": "Overview",
             "pages": [
               "data/overview"
             ]
@@ -80,7 +80,7 @@
             ]
           },
           {
-            "group": "Markets",
+            "group": "Markets & Search",
             "pages": [
               "data/markets/search",
               "data/markets/by-condition",
@@ -124,48 +124,11 @@
             ]
           },
           {
-            "group": "Markets",
-            "pages": [
-              "api-reference/markets/top-markets",
-              "api-reference/markets/market-detail",
-              "api-reference/markets/market-by-slug",
-              "api-reference/markets/market-by-condition-id",
-              "api-reference/markets/filtered-market-listing",
-              "api-reference/markets/search-markets"
-            ]
-          },
-          {
             "group": "Orderbook",
             "pages": [
               "api-reference/orderbook/order-book",
               "api-reference/orderbook/midpoint",
               "api-reference/orderbook/spread"
-            ]
-          },
-          {
-            "group": "Onchain V2 (deprecating)",
-            "pages": [
-              "api-reference/wallets/resolve",
-              "api-reference/onchain/trades",
-              "api-reference/onchain/positions",
-              "api-reference/wallets/onchain-positions",
-              "api-reference/onchain/wallet-trades",
-              "api-reference/onchain/wallet-trades-all",
-              "api-reference/onchain/wallet-redemptions",
-              "api-reference/onchain/wallet-activity",
-              "api-reference/onchain/market-trades",
-              "api-reference/onchain/market-trades-all",
-              "api-reference/wallets/market-positions",
-              "api-reference/onchain/candles",
-              "api-reference/onchain/market-volume",
-              "api-reference/onchain/market-oi",
-              "api-reference/onchain/global-oi"
-            ]
-          },
-          {
-            "group": "Tags",
-            "pages": [
-              "api-reference/onchain/tags"
             ]
           },
           {
@@ -236,6 +199,38 @@
             "tag": "BETA",
             "pages": [
               "api-reference/x-search"
+            ]
+          },
+          {
+            "group": "Markets (deprecating)",
+            "pages": [
+              "data/markets/search",
+              "data/markets/by-condition",
+              "data/markets/condition-positions",
+              "data/markets/trades",
+              "data/markets/positions",
+              "data/markets/price",
+              "data/markets/by-slug"
+            ]
+          },
+          {
+            "group": "Onchain V2 (deprecating)",
+            "pages": [
+              "api-reference/wallets/resolve",
+              "api-reference/onchain/trades",
+              "api-reference/onchain/positions",
+              "api-reference/wallets/onchain-positions",
+              "api-reference/onchain/wallet-trades",
+              "api-reference/onchain/wallet-trades-all",
+              "api-reference/onchain/wallet-redemptions",
+              "api-reference/onchain/wallet-activity",
+              "api-reference/onchain/market-trades",
+              "api-reference/onchain/market-trades-all",
+              "api-reference/wallets/market-positions",
+              "api-reference/onchain/candles",
+              "api-reference/onchain/market-volume",
+              "api-reference/onchain/market-oi",
+              "api-reference/onchain/global-oi"
             ]
           }
         ]
