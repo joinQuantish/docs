@@ -25,6 +25,9 @@ GET /v3/wallets/{address}/positions
 | `status` | string | all | Filter: `open`, `closed`, `redeemable`, `redeemed` |
 | `sort` | string | `pnl` | Sort by: `pnl`, `amount`, `volume`, `avg_price` |
 | `order` | string | `desc` | Sort direction: `asc` or `desc` |
+| `condition_id` | string | -- | Filter by market condition ID |
+| `market_slug` | string | -- | Filter by market slug |
+| `min_size` | number | -- | Minimum position size in USD (e.g. `min_size=10.0`) |
 | `limit` | integer | 100 | Results per page (max 1000) |
 | `offset` | integer | 0 | Pagination offset |
 
