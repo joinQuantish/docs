@@ -64,6 +64,23 @@ curl https://api.polynode.dev/v3/leaderboard?sort=total&limit=5
 }
 ```
 
+### Response fields (per wallet)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `rank` | integer | Position on the leaderboard |
+| `wallet` | string | Wallet address |
+| `net_realized_pnl` | string | Net realized P&L (6-decimal) |
+| `gross_profit` | string | Sum of winning positions |
+| `gross_loss` | string | Sum of losing positions |
+| `unrealized_pnl` | string | Paper P&L from open positions |
+| `total_pnl` | string | Realized + unrealized combined |
+| `wins` | integer | Winning positions |
+| `losses` | integer | Losing positions |
+| `position_count` | integer | Total positions |
+| `total_volume` | string | Total trading volume |
+| `open_positions` | integer | Currently held positions |
+
 ## Related endpoints
 
 | Endpoint | Description |

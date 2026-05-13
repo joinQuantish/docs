@@ -71,5 +71,7 @@ curl .../v3/wallets/0x.../trades?after=1778000000&before=1778604000
 | `timestamp` | string | Unix timestamp |
 | `transaction_hash` | string | On-chain transaction hash |
 | `builder` | string | Builder code (bytea, hex-encoded) |
-| `side` | string | V2 side indicator (0 = buy, 1 = sell) |
+| `side` | string | V2 side indicator (0 = buy, 1 = sell, null for V1) |
+| `role` | string | `maker` or `taker` — which side the queried wallet was on |
+| `direction` | string | `BUY` or `SELL` — whether the queried wallet bought or sold tokens in this fill |
 | `role` | string | `maker` or `taker` (which side this wallet was on) |
