@@ -7,6 +7,22 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-14 — SDK fix: deposit wallet deploy + approve
+
+Fixed the deposit wallet (V2 / POLY_1271) onboarding flow across all three SDKs. The relayer's `/submit` endpoint now requires builder authentication for WALLET-type submissions. All SDKs have been updated to include the required auth headers.
+
+If you previously hit `401 invalid authorization` or `API key and signer mismatch` errors when deploying a deposit wallet or setting approvals, update to the latest SDK version:
+
+```bash
+npm install polynode-sdk@0.10.7    # TypeScript
+cargo update -p polynode            # Rust (0.13.4)
+pip install polynode==0.10.4        # Python
+```
+
+`ensureReady()` handles the full flow automatically — deploy, approve, create credentials. If your wallet is already deployed, it skips to approvals. If approvals are already set, it skips to credentials.
+
+---
+
 ## 2026-05-10 — Sort and group trades by order hash
 
 `/v2/onchain/trades` now supports two new query parameters for working with limit order fills:
