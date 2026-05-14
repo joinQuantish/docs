@@ -17,8 +17,11 @@ GET /v3/wallets/{address}/pnl
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `period` | string | -- | Time window: `1d`, `7d`, `30d`, `1y` |
-| `tags` | string | -- | Comma-separated tag slugs to filter by (e.g. `politics,crypto`) |
+| `after` | integer | -- | Start timestamp (Unix seconds) |
+| `before` | integer | -- | End timestamp (Unix seconds) |
+| `tags` | string | -- | Comma-separated tag slugs to filter by, case-insensitive (e.g. `politics,crypto`, `nfl`, `Iran`) |
 | `market` | string | -- | Filter by condition_id |
+| `include_unrealized` | string | `false` | Set to `true` to include unrealized P&L at the end of the time window. Reconstructs which positions were open at that date and prices them at the last fill price. Only applies to time-filtered queries. |
 
 ## Examples
 
@@ -45,26 +48,54 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
 }
 ```
 
-### 7-day P&L
+### 30-day P&L
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/pnl?period=7d
+curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/pnl?period=30d
 ```
 
 ```json
 {
-  "address": "0xa9857c7bcb9bcfafd2c132ab053f34f678610058",
-  "realized_pnl": 1.726078,
-  "gross_profit": 8.97092,
-  "gross_loss": -7.244842,
-  "wins": 14,
-  "losses": 4,
-  "events": 18,
+  "address": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+  "realized_pnl": 1815261.28,
+  "gross_profit": 1918402.27,
+  "gross_loss": -103140.98,
+  "wins": 33039,
+  "losses": 58867,
+  "events": 91906,
   "source": "pnl_event",
-  "period": "7d",
-  "after": 1778073607,
-  "before": 1778678407,
-  "elapsed_ms": 1
+  "period": "30d",
+  "after": 1776134996,
+  "before": 1778726996,
+  "elapsed_ms": 5902
+}
+```
+
+### 30-day P&L with unrealized
+
+Pass `include_unrealized=true` to reconstruct which positions were open at the end of the time window, price them at the last fill before that date, and compute unrealized P&L.
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/pnl?period=30d&include_unrealized=true
+```
+
+```json
+{
+  "address": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+  "realized_pnl": 1815261.28,
+  "gross_profit": 1918402.27,
+  "gross_loss": -103140.98,
+  "unrealized_pnl": 14714.71,
+  "total_pnl": 1829975.99,
+  "open_positions_at_date": 363,
+  "wins": 33039,
+  "losses": 58867,
+  "events": 91906,
+  "source": "pnl_event",
+  "period": "30d",
+  "after": 1776135002,
+  "before": 1778727002,
+  "elapsed_ms": 3803
 }
 ```
 
@@ -97,3 +128,11 @@ curl https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610
 | `after` | integer | Start timestamp (Unix seconds) |
 | `before` | integer | End timestamp (Unix seconds) |
 | `source` | string | Always `pnl_event` for time-windowed queries |
+
+### Additional fields (with `include_unrealized=true`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `unrealized_pnl` | number | Unrealized P&L of positions that were open at the end of the time window (USD). Computed by reconstructing position state from fills and pricing at the last fill before the cutoff date. |
+| `total_pnl` | number | `realized_pnl + unrealized_pnl` (USD) |
+| `open_positions_at_date` | integer | Number of positions that were open at the end of the time window |
