@@ -21,7 +21,8 @@ GET /v3/wallets/{address}/trades
 | `condition_id` | string | -- | Filter by market condition ID (resolves to token IDs) |
 | `market_slug` | string | -- | Filter by market slug (resolves to token IDs) |
 | `min_amount` | integer | -- | Minimum `maker_amount_filled` (raw 6-decimal) |
-| `sort_by` | string | -- | `order_hash` groups fills by limit order, sorted by most recent fill per order |
+| `sort_by` | string | -- | `order_hash` groups fills by limit order visually (individual fill rows, sorted by most recent order) |
+| `group_by` | string | -- | `order_hash` aggregates fills per order into one row with totals, avg price, fill count |
 | `after` | integer | -- | Start of time range (Unix timestamp) |
 | `before` | integer | -- | End of time range (Unix timestamp) |
 | `order` | string | `desc` | `asc` or `desc` |
@@ -125,13 +126,67 @@ curl https://api.polynode.dev/v3/wallets/0x.../trades?after=1778000000&before=17
 | `image` | string | Market image URL |
 | `condition_id` | string | Market condition ID |
 
-### Group fills by order hash
+### Sort fills by order hash
 
 ```bash
 curl https://api.polynode.dev/v3/wallets/0xa9857c.../trades?sort_by=order_hash&limit=10
 ```
 
-Groups all fills belonging to the same limit order together, sorted by most recent order first.
+Groups all fills belonging to the same limit order together visually, sorted by most recent order first. Returns individual fill rows.
+
+### Aggregate fills by order hash
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0x61b0ea32aff59e9893e867a2ab196476ab22dd96/trades?group_by=order_hash
+```
+
+Returns one row per order with aggregated totals:
+
+```json
+{
+  "trades": [
+    {
+      "order_hash": "0xea91f0d67086be...",
+      "fill_count": 5,
+      "avg_price": 0.57,
+      "total_usd": 669.11,
+      "total_shares": 1173.88,
+      "total_fee": 0.0,
+      "total_maker_amount": 669.11,
+      "total_taker_amount": 1173.88,
+      "first_fill_at": 1778100000,
+      "last_fill_at": 1778200000,
+      "tx_hashes": ["0xabc...", "0xdef..."],
+      "market": "MegaETH market cap (FDV) >$1.5B one day after TGE?",
+      "slug": "megaeth-fdv-1-5b-one-day-after-tge",
+      "outcome": "Yes",
+      "direction": "BUY"
+    }
+  ],
+  "rows_returned": 6,
+  "grouped_by": "order_hash"
+}
+```
+
+#### Grouped response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `order_hash` | string | The limit order hash |
+| `fill_count` | integer | Number of fills in this order |
+| `avg_price` | number | Volume-weighted average price (`total_usd / total_shares`) |
+| `total_usd` | number | Total USD value across all fills |
+| `total_shares` | number | Total outcome tokens across all fills |
+| `total_fee` | number | Total fees (USD) |
+| `total_maker_amount` | number | Raw sum of maker amounts (side-dependent) |
+| `total_taker_amount` | number | Raw sum of taker amounts (side-dependent) |
+| `first_fill_at` | integer | Earliest fill timestamp (Unix) |
+| `last_fill_at` | integer | Latest fill timestamp (Unix) |
+| `tx_hashes` | array | Unique transaction hashes |
+| `market` | string | Market question |
+| `slug` | string | Market slug |
+| `outcome` | string | Outcome label |
+| `direction` | string | `BUY` or `SELL` |
 
 ### Filter by market condition
 
