@@ -15,38 +15,6 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Webhooks",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "webhooks/overview"
-            ]
-          },
-          {
-            "group": "Event Types",
-            "pages": [
-              "webhooks/events/trade",
-              "webhooks/events/large-trade",
-              "webhooks/events/builder-trade",
-              "webhooks/events/first-trade",
-              "webhooks/events/price-change",
-              "webhooks/events/market-resolved",
-              "webhooks/events/market-created",
-              "webhooks/events/pnl-change",
-              "webhooks/events/position-status-change",
-              "webhooks/events/redemption",
-              "webhooks/events/split",
-              "webhooks/events/merge",
-              "webhooks/events/neg-risk-conversion",
-              "webhooks/events/fee-earned",
-              "webhooks/events/wallet-activity",
-              "webhooks/events/order-complete"
-            ]
-          }
-        ]
-      },
-      {
         "tab": "WebSocket",
         "groups": [
           {
@@ -78,6 +46,38 @@
             "group": "More",
             "pages": [
               "websocket/examples"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Webhooks",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "webhooks/overview"
+            ]
+          },
+          {
+            "group": "Event Types",
+            "pages": [
+              "webhooks/events/trade",
+              "webhooks/events/large-trade",
+              "webhooks/events/builder-trade",
+              "webhooks/events/first-trade",
+              "webhooks/events/price-change",
+              "webhooks/events/market-resolved",
+              "webhooks/events/market-created",
+              "webhooks/events/pnl-change",
+              "webhooks/events/position-status-change",
+              "webhooks/events/redemption",
+              "webhooks/events/split",
+              "webhooks/events/merge",
+              "webhooks/events/neg-risk-conversion",
+              "webhooks/events/fee-earned",
+              "webhooks/events/wallet-activity",
+              "webhooks/events/order-complete"
             ]
           }
         ]
