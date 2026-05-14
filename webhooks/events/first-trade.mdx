@@ -1,0 +1,20 @@
+---
+title: "first_trade"
+description: "Fires when a wallet makes its first-ever Polymarket trade. Detect new market participants."
+---
+
+## Filters
+
+| Filter | Type | Description |
+|---|---|---|
+| `min_amount_usd` | `number` | Minimum trade size for the first trade. |
+
+## Payload
+
+Same schema as [`trade`](/webhooks/events/trade), with `"type": "first_trade"`.
+
+## Use Cases
+
+- Growth analytics: track new user onboarding rate
+- Welcome flows: trigger onboarding automations for new traders
+- Smart money detection: flag large first trades (potential whale entry)

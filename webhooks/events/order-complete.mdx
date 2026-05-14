@@ -1,0 +1,56 @@
+---
+title: "order_complete"
+description: "Fires when a multi-fill order finishes. One aggregated event per order instead of N individual fills."
+---
+
+<Note>**polynode exclusive** — no other Polymarket data provider aggregates partial fills into order-level events.</Note>
+
+## Filters
+
+| Filter | Type | Description |
+|---|---|---|
+| `wallet_addresses` | `string[]` | Wallets to watch (maker or taker on any fill). Max 500. |
+| `min_total_usd` | `number` | Minimum total order size in USD. |
+
+## How It Works
+
+When an order is filled across multiple transactions, polynode buffers the individual fills. After 30 seconds with no new fills for that `order_hash`, the buffered fills are aggregated and delivered as a single event.
+
+## Payload
+
+```json
+{
+  "id": "evt_f6a7b8c9-0d1e-2f3a-4b5c-6d7e8f9a0b1c",
+  "type": "order_complete",
+  "created_at": "2026-05-14T15:19:00.000000000+00:00",
+  "data": {
+    "order_hash": "0x608029a5926da1fc3496ba08062c7e64f66b41a2c7383b5125f3867a68ca0b08",
+    "fill_count": 12,
+    "total_usd": 4850.75,
+    "fills": [
+      {
+        "amount_usd": 500.0,
+        "price": 0.62,
+        "market": "Will Bitcoin hit $100k by 2026?",
+        "outcome": "Yes",
+        "timestamp": "1778770502"
+      }
+    ]
+  }
+}
+```
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `order_hash` | `string` | The CLOB order hash |
+| `fill_count` | `number` | Number of partial fills aggregated |
+| `total_usd` | `number` | Total USD value across all fills |
+| `fills` | `array` | Individual fill details |
+
+## Use Cases
+
+- Order tracking: get one notification per order, not per fill
+- Execution analysis: see total fill count, slippage, and average price
+- Copy-trading: detect when a leader's order is fully filled

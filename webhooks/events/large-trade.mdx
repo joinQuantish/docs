@@ -1,0 +1,70 @@
+---
+title: "large_trade"
+description: "Fires when any trade exceeds your USD threshold. No wallet filter required — catches whale trades across all markets."
+---
+
+## Filters
+
+| Filter | Type | Required | Description |
+|---|---|---|---|
+| `min_amount_usd` | `number` | **Yes** | Minimum trade size in USD |
+| `condition_ids` | `string[]` | No | Restrict to specific markets |
+| `event_slugs` | `string[]` | No | Restrict to specific events |
+| `tags` | `string[]` | No | Restrict to tagged markets |
+
+## Payload
+
+Same schema as [`trade`](/webhooks/events/trade), with `"type": "large_trade"`.
+
+```json
+{
+  "id": "evt_b3f2a1c0-8d4e-4f2a-9c1b-2e3f4a5b6c7d",
+  "type": "large_trade",
+  "created_at": "2026-05-14T14:56:30.123456789+00:00",
+  "data": {
+    "amount_usd": 1205.28,
+    "price": 0.87,
+    "direction": "BUY",
+    "market": "Will Hyperliquid reach $48 in May?",
+    "slug": "will-hyperliquid-reach-48-in-may",
+    "outcome": "No",
+    "maker": "0x337b7fca244bf2ef3272469ee02a2bd541097e26",
+    "taker": "0x04b6d7e930cf9e493c5e6ef24b496294f95594c8",
+    "condition_id": "0x...",
+    "transaction_hash": "0x...",
+    "order_hash": "0x...",
+    "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "fee_usd": 0.0,
+    "timestamp": "1778770590"
+  }
+}
+```
+
+## Use Cases
+
+- Whale alert bots (Discord, Telegram)
+- Smart money tracking
+- Unusual activity detection
+- Market sentiment signals
+
+## Example
+
+```bash
+curl -X POST https://api.polynode.dev/v3/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-bot.com/whale-alerts",
+    "event_types": ["large_trade"],
+    "filters": {
+      "min_amount_usd": 500,
+      "tags": ["politics"]
+    }
+  }'
+```
+
+## Verified Behavior
+
+- Threshold is inclusive: a $500.00 trade fires on `min_amount_usd: 500`
+- Trades below the threshold are silently skipped
+- Enrichment (market, outcome, slug) included on every delivery

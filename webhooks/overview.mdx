@@ -1,0 +1,143 @@
+---
+title: "Webhooks"
+description: "Push notifications for Polymarket events — trades, price changes, market resolutions, and more."
+---
+
+## Overview
+
+polynode webhooks deliver real-time event notifications to your HTTP endpoint. Instead of polling the API, register a webhook and receive a POST request whenever matching events occur.
+
+- **16 event types** covering trades, prices, markets, positions, and lifecycle events
+- **Enriched payloads** — every delivery includes market names, outcomes, slugs, and condition IDs
+- **HMAC-SHA256 signed** — verify every delivery with your webhook secret
+- **3-second polling** — events delivered within seconds of on-chain confirmation
+- **Delivery transparency** — full history of every delivery attempt, status code, and latency
+
+## Quick Start
+
+### 1. Create a webhook
+
+```bash
+curl -X POST https://api.polynode.dev/v3/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/hooks/polymarket",
+    "event_types": ["trade", "market_resolved"],
+    "filters": {
+      "wallet_addresses": ["0x6d3c5bd13984b2de47c3a88ddc455309aab3d294"],
+      "min_amount_usd": 100
+    },
+    "description": "Track whale trades"
+  }'
+```
+
+### 2. Receive deliveries
+
+Every delivery is a POST to your URL with this structure:
+
+```json
+{
+  "id": "evt_a60234f0-fe5d-4223-bc6a-75f1e4263eda",
+  "type": "trade",
+  "created_at": "2026-05-14T14:55:08.448161187+00:00",
+  "data": {
+    "maker": "0x6d3c5bd13984b2de47c3a88ddc455309aab3d294",
+    "taker": "0xd5bba58c09d18f48a71a3aefc4ff3a66954c0fe1",
+    "amount_usd": 39.99,
+    "price": 0.81,
+    "direction": "BUY",
+    "market": "Will Al Fateh Saudi Club vs. Al Najmah Saudi Club end in a draw?",
+    "slug": "spl-fat-njm-2026-05-14-draw",
+    "outcome": "No",
+    "condition_id": "0x3b7ad6a803daeb1994c840027b95d711d634e79a09ff3b02625600dc9d31a8bc",
+    "event_slug": "spl-fat-njm-2026-05-14",
+    "transaction_hash": "0x4f606b3d4c58c723e4aeb3051e3ba92100f9b0d9116e5d60f7668c34087c8167",
+    "order_hash": "0x608029a5926da1fc3496ba08062c7e64f66b41a2c7383b5125f3867a68ca0b08",
+    "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "fee_usd": 0.0,
+    "timestamp": "1778770502"
+  }
+}
+```
+
+### 3. Verify the signature
+
+Every delivery includes HMAC-SHA256 headers:
+
+```
+X-Webhook-ID: wh_451e06ca0534
+X-Webhook-Event: trade
+X-Webhook-Timestamp: 1778770328
+X-Webhook-Signature: sha256=3357c641560d55fb46edccb85d3daad3c8099806b7d5d5f60088afb759c0db29
+```
+
+Verify with:
+
+```python
+import hmac, hashlib
+
+expected = hmac.new(
+    secret.encode(),
+    f"{timestamp}.{body}".encode(),
+    hashlib.sha256
+).hexdigest()
+assert hmac.compare_digest(f"sha256={expected}", signature_header)
+```
+
+## Event Types
+
+| Event | Description | Polling | Exclusive |
+|---|---|---|---|
+| [`trade`](/webhooks/events/trade) | Fill involving watched wallets or markets | 3s | |
+| [`large_trade`](/webhooks/events/large-trade) | Fill exceeding USD threshold | 3s | |
+| [`builder_trade`](/webhooks/events/builder-trade) | Fill routed through a specific builder | 3s | polynode only |
+| [`first_trade`](/webhooks/events/first-trade) | Wallet's first-ever Polymarket trade | 3s | |
+| [`price_change`](/webhooks/events/price-change) | Token price moves beyond threshold | 10s | |
+| [`market_resolved`](/webhooks/events/market-resolved) | Market resolved with payouts | 10s | |
+| [`market_created`](/webhooks/events/market-created) | New market appears | 30s | |
+| [`pnl_change`](/webhooks/events/pnl-change) | Wallet PnL changes beyond threshold | 15s | |
+| [`position_status_change`](/webhooks/events/position-status-change) | Position transitions state | 15s | polynode only |
+| [`redemption`](/webhooks/events/redemption) | Wallet redeems shares | 15s | polynode only |
+| [`split`](/webhooks/events/split) | Wallet splits conditional tokens | 15s | polynode only |
+| [`merge`](/webhooks/events/merge) | Wallet merges conditional tokens | 15s | polynode only |
+| [`neg_risk_conversion`](/webhooks/events/neg-risk-conversion) | Neg-risk conversion event | 15s | polynode only |
+| [`fee_earned`](/webhooks/events/fee-earned) | Fee receiver gets paid | 15s | polynode only |
+| [`wallet_activity`](/webhooks/events/wallet-activity) | Any action by a watched wallet | 3-15s | polynode only |
+| [`order_complete`](/webhooks/events/order-complete) | Multi-fill order finishes | ~33s | polynode only |
+
+Events marked **polynode only** are exclusive to polynode — no other Polymarket data provider offers them.
+
+## Management API
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/v3/webhooks` | [Create webhook](/webhooks/management/create) |
+| `GET` | `/v3/webhooks` | [List webhooks](/webhooks/management/list) |
+| `GET` | `/v3/webhooks/:id` | [Get webhook](/webhooks/management/get) |
+| `PUT` | `/v3/webhooks/:id` | [Update webhook](/webhooks/management/update) |
+| `DELETE` | `/v3/webhooks/:id` | [Delete webhook](/webhooks/management/delete) |
+| `POST` | `/v3/webhooks/:id/test` | [Send test delivery](/webhooks/management/test) |
+| `POST` | `/v3/webhooks/:id/rotate-secret` | [Rotate secret](/webhooks/management/rotate-secret) |
+| `GET` | `/v3/webhooks/:id/deliveries` | [Delivery history](/webhooks/management/deliveries) |
+| `GET` | `/v3/webhooks/event-types` | [List event types](/webhooks/management/event-types) |
+
+## Retry Policy
+
+| Attempt | Delay |
+|---|---|
+| 1 | Immediate |
+| 2 | 10 seconds |
+| 3 | 60 seconds |
+| 4 | 5 minutes |
+| 5 | 1 hour |
+
+A delivery is successful if your endpoint returns HTTP 2xx within 5 seconds. Failed deliveries are visible in the [delivery history](/webhooks/management/deliveries) endpoint.
+
+## Limits
+
+| Tier | Max Webhooks | Max Deliveries/day |
+|---|---|---|
+| Starter | 10 | 50,000 |
+| Pro | 50 | 500,000 |
+| Enterprise | 500 | Unlimited |

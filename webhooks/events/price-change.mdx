@@ -1,0 +1,55 @@
+---
+title: "price_change"
+description: "Fires when a token's price changes. Track price movements across any market."
+---
+
+## Filters
+
+| Filter | Type | Required | Description |
+|---|---|---|---|
+| `token_ids` | `string[]` | No | Specific tokens to watch. Max 100. |
+| `condition_ids` | `string[]` | No | Markets to watch (all tokens in market). Max 100. |
+| `min_delta_pct` | `number` | Recommended | Minimum price change percentage to trigger. |
+
+<Warning>Without `min_delta_pct`, this event fires on every price update — potentially thousands per minute. Set a threshold to avoid overwhelming your endpoint.</Warning>
+
+## Payload
+
+```json
+{
+  "id": "evt_a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+  "type": "price_change",
+  "created_at": "2026-05-14T15:12:00.000000000+00:00",
+  "data": {
+    "token_id": "83970135942868582996575481879514955574496723508450032076038091728966335782753",
+    "price": 0.81,
+    "updated_at": "2026-05-14 15:11:55.123456",
+    "market": "Will Al Fateh Saudi Club vs. Al Najmah Saudi Club end in a draw?",
+    "slug": "spl-fat-njm-2026-05-14-draw",
+    "outcome": "No",
+    "condition_id": "0x3b7ad6a803daeb1994c840027b95d711d634e79a09ff3b02625600dc9d31a8bc"
+  }
+}
+```
+
+## Use Cases
+
+- Price alert bots: notify when a market moves significantly
+- Arbitrage monitoring: detect price discrepancies
+- Portfolio dashboards: real-time position value updates
+
+## Example
+
+```bash
+curl -X POST https://api.polynode.dev/v3/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/hooks/prices",
+    "event_types": ["price_change"],
+    "filters": {
+      "condition_ids": ["0x9622da56d800d10c93c58fe2f6fc19521b3152bc7f9e21fe97979b39749bc58b"],
+      "min_delta_pct": 5.0
+    }
+  }'
+```

@@ -1,0 +1,17 @@
+---
+title: "merge"
+description: "Fires when a wallet merges conditional tokens. Inverse of split — tokens combined back into collateral."
+---
+
+<Note>**polynode exclusive** — no other Polymarket data provider offers merge event webhooks.</Note>
+
+## Filters
+
+| Filter | Type | Description |
+|---|---|---|
+| `wallet_addresses` | `string[]` | Wallets to watch. Max 500. |
+| `condition_ids` | `string[]` | Markets to watch. Max 100. |
+
+## Payload
+
+Same schema as [`split`](/webhooks/events/split), with `"type": "merge"`.

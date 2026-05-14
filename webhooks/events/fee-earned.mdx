@@ -1,0 +1,61 @@
+---
+title: "fee_earned"
+description: "Fires when a fee receiver gets paid. Track builder revenue, market maker fees, or protocol fee flows."
+---
+
+<Note>**polynode exclusive** — no other Polymarket data provider offers this event type.</Note>
+
+## Filters
+
+| Filter | Type | Description |
+|---|---|---|
+| `receiver_addresses` | `string[]` | Fee receiver addresses to watch. Max 500. Empty = all receivers. |
+| `min_fee_usd` | `number` | Minimum fee amount in USD. |
+
+## Payload
+
+```json
+{
+  "id": "evt_c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
+  "type": "fee_earned",
+  "created_at": "2026-05-14T15:09:13.123456789+00:00",
+  "data": {
+    "receiver": "0x115f48dc2a731aa16251c6d6e1befc42f92accc9",
+    "fee_usd": 0.00069,
+    "transaction_hash": "0x8a76e72ea10587303469998405da67323d33cbab8bda053db3091b3935011b42",
+    "timestamp": "1778770048"
+  }
+}
+```
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `receiver` | `string` | Fee receiver wallet address |
+| `fee_usd` | `number` | Fee amount in USD |
+| `transaction_hash` | `string` | On-chain transaction hash |
+| `timestamp` | `string` | Unix timestamp |
+
+## Use Cases
+
+- Builders monitoring their own fee revenue in real-time
+- Market makers tracking fee income across markets
+- Protocol analytics tracking fee distribution
+- Revenue dashboards with instant updates
+
+## Example
+
+```bash
+curl -X POST https://api.polynode.dev/v3/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/hooks/fees",
+    "event_types": ["fee_earned"],
+    "filters": {
+      "receiver_addresses": ["0x115f48dc2a731aa16251c6d6e1befc42f92accc9"],
+      "min_fee_usd": 1.0
+    }
+  }'
+```

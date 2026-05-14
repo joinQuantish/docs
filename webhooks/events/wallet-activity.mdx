@@ -1,0 +1,79 @@
+---
+title: "wallet_activity"
+description: "Fires on any action by a watched wallet — trades, redemptions, splits, merges, and neg-risk conversions. One webhook replaces five."
+---
+
+<Note>**polynode exclusive** — no other Polymarket data provider offers this event type.</Note>
+
+## Filters
+
+| Filter | Type | Required | Description |
+|---|---|---|---|
+| `wallet_addresses` | `string[]` | **Yes** | Wallet addresses to watch. Max 500. |
+
+## Payload
+
+The payload matches the underlying event type, with an additional `activity_type` field.
+
+```json
+{
+  "id": "evt_f8a21c4d-3e5b-4a2f-b1c0-9d8e7f6a5b4c",
+  "type": "wallet_activity",
+  "created_at": "2026-05-14T14:55:08.123456789+00:00",
+  "data": {
+    "activity_type": "trade",
+    "id": "0x6c70140012dea826e1d0d9e5371b85387f6307da03166f5c0146efbfa2636644_1005",
+    "maker": "0x6d3c5bd13984b2de47c3a88ddc455309aab3d294",
+    "taker": "0x84cfffc3f16dcc353094de30d4a45226eccd2f63",
+    "amount_usd": 1.45,
+    "price": 0.36,
+    "direction": "BUY",
+    "market": "Will US Lecce win on 2026-05-17?",
+    "slug": "sea-sas-lec-2026-05-17-lec",
+    "outcome": "Yes",
+    "condition_id": "0x9622da56d800d10c93c58fe2f6fc19521b3152bc7f9e21fe97979b39749bc58b",
+    "event_slug": "sea-sas-lec-2026-05-17",
+    "transaction_hash": "0x6c70140012dea826e1d0d9e5371b85387f6307da03166f5c0146efbfa2636644",
+    "order_hash": "0x7631f2317323ce2cdb1c2851d8f5ea898cd0e8711f03c2e1c1698ce7eb77b0db",
+    "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "fee_usd": 0.0,
+    "timestamp": "1778770705"
+  }
+}
+```
+
+## Activity Types
+
+The `activity_type` field tells you which underlying event fired:
+
+| Value | Source | Description |
+|---|---|---|
+| `trade` | order_filled_event | Wallet was maker or taker |
+| `redemption` | redemption | Wallet redeemed shares |
+| `split` | split | Wallet split tokens |
+| `merge` | merge | Wallet merged tokens |
+| `neg_risk_conversion` | neg_risk_conversion | NRC event |
+
+## Use Cases
+
+- Copy-trading bots that need a single feed per leader wallet
+- Portfolio trackers monitoring all wallet activity
+- Alert systems that fire on any wallet movement
+
+## Example
+
+```bash
+curl -X POST https://api.polynode.dev/v3/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/hooks/wallet",
+    "event_types": ["wallet_activity"],
+    "filters": {
+      "wallet_addresses": [
+        "0x6d3c5bd13984b2de47c3a88ddc455309aab3d294",
+        "0xdb27bf2ac5d428a9c63dbc910c5e6e75560c0ae5"
+      ]
+    }
+  }'
+```

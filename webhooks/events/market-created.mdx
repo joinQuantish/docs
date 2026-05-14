@@ -1,0 +1,53 @@
+---
+title: "market_created"
+description: "Fires when a new prediction market appears on Polymarket."
+---
+
+## Filters
+
+| Filter | Type | Description |
+|---|---|---|
+| `tags` | `string[]` | Only markets with these tags. Max 20. |
+| `event_slugs` | `string[]` | Only markets in these events. Max 50. |
+
+Empty filters = all new markets.
+
+## Payload
+
+```json
+{
+  "id": "evt_f6a7b8c9-0d1e-2f3a-4b5c-6d7e8f9a0b1c",
+  "type": "market_created",
+  "created_at": "2026-05-14T15:11:00.000000000+00:00",
+  "data": {
+    "condition_id": "0x9622da56d800d10c93c58fe2f6fc19521b3152bc7f9e21fe97979b39749bc58b",
+    "question": "Will Ethereum reach $5000 by June 2026?",
+    "slug": "will-ethereum-reach-5000-june-2026",
+    "event_slug": "crypto-june-2026",
+    "tags": "{crypto,ethereum}",
+    "image_url": "https://polymarket-upload.s3.us-east-2.amazonaws.com/...",
+    "created_at": "2026-05-14 15:10:45.123456"
+  }
+}
+```
+
+## Use Cases
+
+- Market discovery: automatically list new markets on your trading UI
+- Analytics: track market creation patterns and categories
+- Alert bots: notify users when markets matching their interests appear
+
+## Example
+
+```bash
+curl -X POST https://api.polynode.dev/v3/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/hooks/new-markets",
+    "event_types": ["market_created"],
+    "filters": {
+      "tags": ["crypto"]
+    }
+  }'
+```

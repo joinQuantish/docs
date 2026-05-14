@@ -1,0 +1,23 @@
+---
+title: "builder_trade"
+description: "Fires when a trade is routed through a specific builder. Monitor builder volume, attribution, and fee flow."
+---
+
+<Note>**polynode exclusive** — no other Polymarket data provider exposes builder attribution on webhooks.</Note>
+
+## Filters
+
+| Filter | Type | Required | Description |
+|---|---|---|---|
+| `builder_codes` | `string[]` | **Yes** | Builder addresses to watch. |
+| `min_amount_usd` | `number` | No | Minimum trade size in USD. |
+
+## Payload
+
+Same schema as [`trade`](/webhooks/events/trade), with `"type": "builder_trade"`.
+
+## Use Cases
+
+- Builders monitoring their own attributed trade volume
+- Builder competition analysis
+- Fee revenue tracking per builder

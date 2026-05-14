@@ -1,0 +1,36 @@
+---
+title: "split"
+description: "Fires when a wallet splits conditional tokens. Track collateral movements and position restructuring."
+---
+
+<Note>**polynode exclusive** — no other Polymarket data provider offers split event webhooks.</Note>
+
+## Filters
+
+| Filter | Type | Description |
+|---|---|---|
+| `wallet_addresses` | `string[]` | Wallets to watch. Max 500. |
+| `condition_ids` | `string[]` | Markets to watch. Max 100. |
+
+## Payload
+
+```json
+{
+  "id": "evt_d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+  "type": "split",
+  "created_at": "2026-05-14T15:17:00.000000000+00:00",
+  "data": {
+    "wallet": "0xdb27bf2ac5d428a9c63dbc910c5e6e75560c0ae5",
+    "condition_id": "0x7fb0835c4c761fa690ec4603eb444d080e472193ae477aa3c57f273d44dbddd9",
+    "amount": 5000.0,
+    "timestamp": "1778771000",
+    "market": "Will Bitcoin hit $100k by 2026?"
+  }
+}
+```
+
+## Use Cases
+
+- Position tracking: splits indicate position restructuring
+- Portfolio reconciliation: track collateral movements
+- Copy-trading: detect complex position management by leaders

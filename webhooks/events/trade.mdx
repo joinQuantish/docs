@@ -1,0 +1,85 @@
+---
+title: "trade"
+description: "Fires when a fill occurs involving wallets or markets you're watching."
+---
+
+## Filters
+
+| Filter | Type | Description |
+|---|---|---|
+| `wallet_addresses` | `string[]` | Wallet addresses to watch (maker or taker). Max 500. |
+| `token_ids` | `string[]` | Outcome token IDs. Max 100. |
+| `condition_ids` | `string[]` | Market condition IDs. Max 100. |
+| `event_slugs` | `string[]` | Event slugs (e.g. `us-presidential-election`). Max 50. |
+| `tags` | `string[]` | Tag filters (e.g. `politics`, `crypto`). Max 20. |
+| `min_amount_usd` | `number` | Minimum trade size in USD. |
+| `side` | `string` | Filter by side: `"BUY"` or `"SELL"`. |
+
+If a filter is empty or omitted, it matches all values for that dimension. Multiple filters are AND'd together.
+
+## Payload
+
+```json
+{
+  "id": "evt_a60234f0-fe5d-4223-bc6a-75f1e4263eda",
+  "type": "trade",
+  "created_at": "2026-05-14T14:55:08.448161187+00:00",
+  "data": {
+    "id": "0x4f606b3d4c58c723e4aeb3051e3ba92100f9b0d9116e5d60f7668c34087c8167_621",
+    "maker": "0x6d3c5bd13984b2de47c3a88ddc455309aab3d294",
+    "taker": "0xd5bba58c09d18f48a71a3aefc4ff3a66954c0fe1",
+    "amount_usd": 39.99,
+    "price": 0.81,
+    "fee_usd": 0.0,
+    "direction": "BUY",
+    "token_id": "83970135942868582996575481879514955574496723508450032076038091728966335782753",
+    "market": "Will Al Fateh Saudi Club vs. Al Najmah Saudi Club end in a draw?",
+    "slug": "spl-fat-njm-2026-05-14-draw",
+    "outcome": "No",
+    "condition_id": "0x3b7ad6a803daeb1994c840027b95d711d634e79a09ff3b02625600dc9d31a8bc",
+    "event_slug": "spl-fat-njm-2026-05-14",
+    "transaction_hash": "0x4f606b3d4c58c723e4aeb3051e3ba92100f9b0d9116e5d60f7668c34087c8167",
+    "order_hash": "0x608029a5926da1fc3496ba08062c7e64f66b41a2c7383b5125f3867a68ca0b08",
+    "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "timestamp": "1778770502"
+  }
+}
+```
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Fill ID (`{tx_hash}_{log_index}`) |
+| `maker` | `string` | Maker wallet address |
+| `taker` | `string` | Taker wallet address |
+| `amount_usd` | `number` | Trade size in USD |
+| `price` | `number` | Token price (0.0 to 1.0) |
+| `fee_usd` | `number` | Fee in USD |
+| `direction` | `string` | `"BUY"` or `"SELL"` (maker's limit order direction) |
+| `token_id` | `string` | ERC-1155 outcome token ID |
+| `market` | `string` | Market question (enriched) |
+| `slug` | `string` | Market slug (enriched) |
+| `outcome` | `string` | Outcome name — `"Yes"`, `"No"`, or specific outcome (enriched) |
+| `condition_id` | `string` | Market condition ID |
+| `event_slug` | `string` | Parent event slug |
+| `transaction_hash` | `string` | On-chain transaction hash |
+| `order_hash` | `string` | CLOB order hash |
+| `builder` | `string` | Builder address (all zeros if no builder) |
+| `timestamp` | `string` | Unix timestamp |
+
+## Example
+
+```bash
+curl -X POST https://api.polynode.dev/v3/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/hooks/trades",
+    "event_types": ["trade"],
+    "filters": {
+      "wallet_addresses": ["0x6d3c5bd13984b2de47c3a88ddc455309aab3d294"],
+      "min_amount_usd": 50
+    }
+  }'
+```

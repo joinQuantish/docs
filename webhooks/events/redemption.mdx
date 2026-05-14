@@ -1,0 +1,51 @@
+---
+title: "redemption"
+description: "Fires when a wallet redeems shares from a resolved market. Know instantly when a leader cashes out."
+---
+
+<Note>**polynode exclusive** — no other Polymarket data provider offers this event type.</Note>
+
+## Filters
+
+| Filter | Type | Description |
+|---|---|---|
+| `wallet_addresses` | `string[]` | Wallet addresses to watch. Max 500. |
+| `condition_ids` | `string[]` | Market condition IDs. Max 100. |
+
+## Payload
+
+```json
+{
+  "id": "evt_d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+  "type": "redemption",
+  "created_at": "2026-05-14T15:10:00.000000000+00:00",
+  "data": {
+    "wallet": "0xdb27bf2ac5d428a9c63dbc910c5e6e75560c0ae5",
+    "condition_id": "0x7fb0835c4c761fa690ec4603eb444d080e472193ae477aa3c57f273d44dbddd9",
+    "timestamp": "1778771000",
+    "market": "Will Bitcoin hit $100k by 2026?",
+    "outcome": "Yes"
+  }
+}
+```
+
+## Use Cases
+
+- Copy-trading bots: know when a leader redeems (position fully closed at settlement)
+- Settlement tracking: monitor which wallets are claiming payouts
+- Capital flow analysis: redemptions unlock USDC that may be reinvested
+
+## Example
+
+```bash
+curl -X POST https://api.polynode.dev/v3/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/hooks/redemptions",
+    "event_types": ["redemption"],
+    "filters": {
+      "wallet_addresses": ["0xdb27bf2ac5d428a9c63dbc910c5e6e75560c0ae5"]
+    }
+  }'
+```
