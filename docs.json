@@ -105,68 +105,18 @@
             ]
           },
           {
-            "group": "Wallet P&L",
+            "group": "Enriched Data",
             "pages": [
-              "data/wallets/summary",
-              "data/wallets/pnl",
-              "data/wallets/batch",
-              "data/wallets/positions"
-            ]
-          },
-          {
-            "group": "Wallet Activity",
-            "pages": [
-              "data/wallets/trades",
-              "data/wallets/redemptions",
-              "data/wallets/splits",
-              "data/wallets/merges",
-              "data/wallets/nrc",
-              "data/wallets/activity"
-            ]
-          },
-          {
-            "group": "Markets & Search",
-            "pages": [
-              "data/markets/search",
-              "data/markets/by-condition",
-              "data/markets/condition-positions",
-              "data/markets/trades",
-              "data/markets/positions",
-              "data/markets/price",
-              "data/markets/by-slug"
-            ]
-          },
-          {
-            "group": "Leaderboard & Tags",
-            "pages": [
-              "data/leaderboard/global",
-              "data/leaderboard/tags",
-              "data/leaderboard/tag-leaderboard"
-            ]
-          },
-          {
-            "group": "Builders",
-            "pages": [
-              "data/builders/list",
-              "data/builders/detail",
-              "data/builders/trades"
-            ]
-          },
-          {
-            "group": "Global",
-            "pages": [
-              "data/global/stats",
-              "data/global/trades",
-              "data/global/positions",
-              "data/global/fees",
-              "data/global/resolutions",
-              "data/global/conditions"
-            ]
-          },
-          {
-            "group": "Tokens",
-            "pages": [
-              "data/tokens/info"
+              "api-reference/enriched/leaderboard",
+              "api-reference/enriched/trader-profile",
+              "api-reference/enriched/trader-pnl",
+              "api-reference/enriched/equity-curve",
+              "api-reference/enriched/trending",
+              "api-reference/enriched/activity",
+              "api-reference/enriched/event",
+              "api-reference/enriched/event-search",
+              "api-reference/enriched/movers",
+              "api-reference/enriched/markets"
             ]
           },
           {
@@ -201,21 +151,6 @@
             ]
           },
           {
-            "group": "Enriched Data",
-            "pages": [
-              "api-reference/enriched/leaderboard",
-              "api-reference/enriched/trader-profile",
-              "api-reference/enriched/trader-pnl",
-              "api-reference/enriched/equity-curve",
-              "api-reference/enriched/trending",
-              "api-reference/enriched/activity",
-              "api-reference/enriched/event",
-              "api-reference/enriched/event-search",
-              "api-reference/enriched/movers",
-              "api-reference/enriched/markets"
-            ]
-          },
-          {
             "group": "Crypto",
             "pages": [
               "api-reference/crypto/markets",
@@ -229,6 +164,71 @@
             "group": "Market Card",
             "pages": [
               "api-reference/pricing/market-statistics"
+            ]
+          },
+          {
+            "group": "Wallet P&L — Coming Soon",
+            "pages": [
+              "data/wallets/summary",
+              "data/wallets/pnl",
+              "data/wallets/batch",
+              "data/wallets/positions"
+            ]
+          },
+          {
+            "group": "Wallet Activity — Coming Soon",
+            "pages": [
+              "data/wallets/trades",
+              "data/wallets/redemptions",
+              "data/wallets/splits",
+              "data/wallets/merges",
+              "data/wallets/nrc",
+              "data/wallets/activity"
+            ]
+          },
+          {
+            "group": "Markets & Search — Coming Soon",
+            "pages": [
+              "data/markets/search",
+              "data/markets/by-condition",
+              "data/markets/condition-positions",
+              "data/markets/trades",
+              "data/markets/positions",
+              "data/markets/price",
+              "data/markets/by-slug"
+            ]
+          },
+          {
+            "group": "Leaderboard & Tags — Coming Soon",
+            "pages": [
+              "data/leaderboard/global",
+              "data/leaderboard/tags",
+              "data/leaderboard/tag-leaderboard"
+            ]
+          },
+          {
+            "group": "Builders — Coming Soon",
+            "pages": [
+              "data/builders/list",
+              "data/builders/detail",
+              "data/builders/trades"
+            ]
+          },
+          {
+            "group": "Global — Coming Soon",
+            "pages": [
+              "data/global/stats",
+              "data/global/trades",
+              "data/global/positions",
+              "data/global/fees",
+              "data/global/resolutions",
+              "data/global/conditions"
+            ]
+          },
+          {
+            "group": "Tokens — Coming Soon",
+            "pages": [
+              "data/tokens/info"
             ]
           },
           {
