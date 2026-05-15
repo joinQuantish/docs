@@ -1,0 +1,79 @@
+---
+title: "Create Webhook"
+description: "Register a new webhook to receive event notifications."
+---
+
+## Endpoint
+
+```
+POST /v3/webhooks
+```
+
+## Request Body
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `url` | `string` | **Yes** | Delivery URL (must start with `https://`) |
+| `event_types` | `string[]` | **Yes** | Event types to subscribe to (see [event types](/webhooks/overview#event-types)) |
+| `filters` | `object` | No | Filter criteria (see below) |
+| `secret` | `string` | No | HMAC signing secret. Auto-generated if omitted. |
+| `description` | `string` | No | Human-readable label |
+
+### Filter Object
+
+All filter fields are optional. Empty or omitted filters match everything for that dimension. Multiple filters are AND'd together.
+
+```json
+{
+  "wallet_addresses": ["0x1234..."],
+  "token_ids": ["12345..."],
+  "condition_ids": ["0xabcd..."],
+  "event_slugs": ["us-presidential-election"],
+  "tags": ["politics", "crypto"],
+  "builder_codes": ["0x5678..."],
+  "receiver_addresses": ["0x9abc..."],
+  "min_amount_usd": 100,
+  "min_fee_usd": 1.0,
+  "min_delta_pct": 5.0,
+  "min_pnl_change_usd": 50.0,
+  "min_total_usd": 500,
+  "side": "BUY"
+}
+```
+
+## Example
+
+```bash
+curl -X POST https://api.polynode.dev/v3/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/hooks/polymarket",
+    "event_types": ["trade", "redemption"],
+    "filters": {
+      "wallet_addresses": ["0x6d3c5bd13984b2de47c3a88ddc455309aab3d294"],
+      "min_amount_usd": 100
+    },
+    "description": "Track whale trades and redemptions"
+  }'
+```
+
+## Response (201 Created)
+
+```json
+{
+  "id": "wh_451e06ca0534",
+  "url": "https://your-app.com/hooks/polymarket",
+  "event_types": ["trade", "redemption"],
+  "filters": {
+    "wallet_addresses": ["0x6d3c5bd13984b2de47c3a88ddc455309aab3d294"],
+    "min_amount_usd": 100
+  },
+  "secret": "whsec_0e4535d1565e4e4d9e24debf3e40f836",
+  "active": true,
+  "description": "Track whale trades and redemptions",
+  "created_at": "2026-05-14T14:54:08.019035820+00:00"
+}
+```
+
+<Warning>Save the `secret` value — it is only returned on creation. You'll need it to verify webhook signatures.</Warning>

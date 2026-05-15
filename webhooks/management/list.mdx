@@ -1,0 +1,34 @@
+---
+title: "List Webhooks"
+description: "List all webhooks registered to your API key."
+---
+
+## Endpoint
+
+```
+GET /v3/webhooks
+```
+
+## Response
+
+```json
+{
+  "webhooks": [
+    {
+      "id": "wh_451e06ca0534",
+      "url": "https://your-app.com/hooks/polymarket",
+      "event_types": ["trade", "redemption"],
+      "filters": {
+        "wallet_addresses": ["0x6d3c..."],
+        "min_amount_usd": 100
+      },
+      "active": true,
+      "description": "Track whale trades",
+      "has_secret": true,
+      "created_at": "2026-05-14T14:54:08+00:00",
+      "updated_at": "2026-05-14T14:54:08+00:00"
+    }
+  ],
+  "count": 1
+}
+```

@@ -1,0 +1,49 @@
+---
+title: "Update Webhook"
+description: "Update a webhook's URL, filters, event types, or active status."
+---
+
+## Endpoint
+
+```
+PUT /v3/webhooks/:id
+```
+
+## Request Body
+
+All fields are optional. Only provided fields are updated.
+
+| Field | Type | Description |
+|---|---|---|
+| `url` | `string` | New delivery URL |
+| `event_types` | `string[]` | Replace event type subscriptions |
+| `filters` | `object` | Replace filter criteria |
+| `active` | `boolean` | Pause (`false`) or resume (`true`) |
+| `description` | `string` | Update label |
+
+## Example — Pause a webhook
+
+```bash
+curl -X PUT https://api.polynode.dev/v3/webhooks/wh_451e06ca0534 \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"active": false}'
+```
+
+## Example — Change filters
+
+```bash
+curl -X PUT https://api.polynode.dev/v3/webhooks/wh_451e06ca0534 \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filters": {
+      "wallet_addresses": ["0xnewwallet..."],
+      "min_amount_usd": 500
+    }
+  }'
+```
+
+## Response
+
+Returns the full updated webhook object (same schema as [List](/webhooks/management/list)).

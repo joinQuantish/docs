@@ -1,0 +1,69 @@
+---
+title: "Delivery History"
+description: "View the delivery history for a webhook — status codes, latency, errors, and retry attempts."
+---
+
+## Endpoint
+
+```
+GET /v3/webhooks/:id/deliveries?limit=50&offset=0
+```
+
+## Query Parameters
+
+| Param | Default | Description |
+|---|---|---|
+| `limit` | 50 | Max results (up to 200) |
+| `offset` | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/webhooks/wh_451e06ca0534/deliveries \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## Response
+
+```json
+{
+  "deliveries": [
+    {
+      "event_type": "trade",
+      "event_id": "evt_a1b2c3d4",
+      "status_code": 200,
+      "latency_ms": 142,
+      "attempt": 1,
+      "success": true,
+      "error": null,
+      "delivered_at": "2026-05-14T14:59:58+00:00"
+    },
+    {
+      "event_type": "trade",
+      "event_id": "evt_b2c3d4e5",
+      "status_code": null,
+      "latency_ms": 5001,
+      "attempt": 2,
+      "success": false,
+      "error": "error sending request for url (https://your-app.com/hooks): timeout",
+      "delivered_at": "2026-05-14T14:59:45+00:00"
+    }
+  ],
+  "count": 2
+}
+```
+
+## Fields
+
+| Field | Type | Description |
+|---|---|---|
+| `event_type` | `string` | The event type that triggered this delivery |
+| `event_id` | `string` | Unique event identifier |
+| `status_code` | `number\|null` | HTTP response status. `null` if the request failed before getting a response (timeout, connection refused). |
+| `latency_ms` | `number` | Round-trip time in milliseconds |
+| `attempt` | `number` | Delivery attempt number (1 = first try, 2+ = retries) |
+| `success` | `boolean` | `true` if HTTP 2xx received within 5 seconds |
+| `error` | `string\|null` | Error message on failure |
+| `delivered_at` | `string` | ISO timestamp of delivery attempt |
+
+Delivery history is retained for 7 days.

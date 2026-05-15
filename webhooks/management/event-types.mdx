@@ -1,0 +1,40 @@
+---
+title: "List Event Types"
+description: "Retrieve all available webhook event types with descriptions and supported filters."
+---
+
+## Endpoint
+
+```
+GET /v3/webhooks/event-types
+```
+
+## Example
+
+```bash
+curl https://api.polynode.dev/v3/webhooks/event-types \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## Response
+
+```json
+{
+  "event_types": [
+    {
+      "name": "trade",
+      "description": "Fill involving watched wallets or markets",
+      "filters": ["wallet_addresses", "token_ids", "condition_ids", "event_slugs", "tags", "min_amount_usd", "side"],
+      "exclusive": false
+    },
+    {
+      "name": "redemption",
+      "description": "Wallet redeems shares from resolved market",
+      "filters": ["wallet_addresses", "condition_ids"],
+      "exclusive": true
+    }
+  ]
+}
+```
+
+Events with `"exclusive": true` are only available through polynode.

@@ -1,0 +1,25 @@
+---
+title: "Delete Webhook"
+description: "Permanently delete a webhook and its delivery history."
+---
+
+## Endpoint
+
+```
+DELETE /v3/webhooks/:id
+```
+
+## Example
+
+```bash
+curl -X DELETE https://api.polynode.dev/v3/webhooks/wh_451e06ca0534 \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## Response
+
+```json
+{
+  "deleted": true
+}
+```

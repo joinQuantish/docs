@@ -79,6 +79,19 @@
               "webhooks/events/wallet-activity",
               "webhooks/events/order-complete"
             ]
+          },
+          {
+            "group": "Management API",
+            "pages": [
+              "webhooks/management/create",
+              "webhooks/management/list",
+              "webhooks/management/update",
+              "webhooks/management/delete",
+              "webhooks/management/test",
+              "webhooks/management/rotate-secret",
+              "webhooks/management/deliveries",
+              "webhooks/management/event-types"
+            ]
           }
         ]
       },
