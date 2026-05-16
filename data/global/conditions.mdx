@@ -21,52 +21,59 @@ GET /v3/conditions/{condition_id}
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/conditions/0x126a15ffc84104e2108b2d58f663882b0d181ce87c1b38365f84595e3468a8a5
+curl "https://api.polynode.dev/v3/conditions/0x6c4d221b3cf2c8d17467c70a8aa3c714e30299b6e57cd3e4269dc8a41d2b0cd8?key=YOUR_KEY"
 ```
 
 ```json
 {
-  "id": "0x126a15ffc84104e2108b2d58f663882b0d181ce87c1b38365f84595e3468a8a5",
-  "position_ids": [7.538e+76, 3.709e+76],
-  "payout_numerators": [0, 0],
-  "payout_denominator": "0",
-  "question": "Will there be 6 or more major space weather events this week?",
-  "slug": "will-there-be-6-or-more-major-space-weather-events-this-week-456",
+  "id": "0x6c4d221b3cf2c8d17467c70a8aa3c714e30299b6e57cd3e4269dc8a41d2b0cd8",
+  "position_ids": [
+    "30698649476690694814108493145041085718609914990967907518412053225237708492787",
+    "43362318061877762261164265810725209343672429810065542703856317173848260953021"
+  ],
+  "payout_numerators": [0, 1],
+  "payout_denominator": "1",
+  "question": "Will Trump pardon Joe Exotic \"The Tiger King\" in 2025?",
+  "slug": "will-trump-pardon-joe-exotic-the-tiger-king-in-2025-784-928-365",
   "outcomes": ["Yes", "No"],
-  "end_date": "2026-05-16 00:00:00+00",
+  "end_date": "2025-12-31 12:00:00+00",
   "active": true,
-  "closed": false,
-  "neg_risk": true,
-  "event_slug": "how-many-major-space-weather-events-this-week-may-10-may-16",
-  "event_title": "How many major Space Weather events this week? (May 10 - May 16)",
+  "closed": true,
+  "neg_risk": false,
+  "event_slug": "who-will-trump-pardon-in-2025",
+  "event_title": "Who will Trump pardon in 2025?",
   "category": null,
-  "liquidity": "61.11",
-  "volume": "69.74",
-  "tags": ["space", "science", "weather"],
-  "winning_outcome_index": null,
-  "elapsed_ms": 4
+  "liquidity": "0",
+  "volume": "99993.937724000003072433173656463623046875",
+  "tags": ["Politics", "Trump", "SBF", "cz", "Trump Presidency", "Ghislaine Maxwell"],
+  "winning_outcome_index": 1,
+  "elapsed_ms": 6
 }
 ```
 
+`position_ids` are **decimal strings**, not JSON numbers. Polymarket token IDs are 78-digit values that exceed IEEE 754 float precision — any JSON parser that decodes them as floats will corrupt the lower digits. Always treat them as strings.
+
+`volume` and `liquidity` are returned at full database precision (up to ~50 digits after the decimal). Round them on the client; do not store as a JS `Number`.
+
 ## Response fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Condition ID |
-| `position_ids` | array | Token IDs for each outcome |
-| `payout_numerators` | array | Payout numerators per outcome (non-zero after resolution) |
-| `payout_denominator` | string | Payout denominator |
-| `question` | string | Market question |
-| `slug` | string | Market URL slug |
-| `outcomes` | array | Outcome labels |
-| `end_date` | string | Market end date |
-| `active` | boolean | Whether the market is active |
-| `closed` | boolean | Whether the market is closed |
-| `neg_risk` | boolean | Whether this is a neg-risk (multi-outcome) market |
-| `event_slug` | string | Parent event slug |
-| `event_title` | string | Parent event title |
-| `category` | string | Market category |
-| `liquidity` | string | Current liquidity |
-| `volume` | string | All-time volume |
-| `tags` | array | Category tags |
-| `winning_outcome_index` | integer | Which outcome won (null if unresolved) |
+| Field | Type | Nullable | Description |
+|-------|------|---------|-------------|
+| `id` | string | no | Condition ID |
+| `position_ids` | array&lt;string&gt; | no | Outcome token IDs (decimal-string-encoded — see note above) |
+| `payout_numerators` | array&lt;integer&gt; | no | Payout numerators per outcome (non-zero after resolution) |
+| `payout_denominator` | string | no | Payout denominator |
+| `question` | string | no | Market question |
+| `slug` | string | no | Market URL slug |
+| `outcomes` | array&lt;string&gt; | no | Outcome labels |
+| `end_date` | string | yes | Market end date (Postgres timestamp with offset) |
+| `active` | boolean | no | Currently active |
+| `closed` | boolean | no | No longer accepting orders |
+| `neg_risk` | boolean | no | Multi-outcome (neg-risk) market |
+| `event_slug` | string | yes | Parent event slug |
+| `event_title` | string | yes | Parent event title |
+| `category` | string | yes | Optional category label |
+| `liquidity` | string (decimal) | no | Current liquidity, full-precision string |
+| `volume` | string (decimal) | no | All-time volume, full-precision string |
+| `tags` | array&lt;string&gt; | yes | Category tags in their canonical (Title Case) form |
+| `winning_outcome_index` | integer | yes | Winning outcome (null if unresolved) |

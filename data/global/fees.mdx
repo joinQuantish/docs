@@ -37,21 +37,24 @@ curl https://api.polynode.dev/v3/fees?limit=1
 
 ```json
 {
-  "columns": ["id", "timestamp", "receiver", "amount", "transaction_hash"],
-  "rows": [
-    [
-      "0x78d5c7d29d3940bf23f2c96196aecc15f0c44d837ef4041a375b512ded5d57cc_1408",
-      "1778675235",
-      "0x115f48dc2a731aa16251c6d6e1befc42f92accc9",
-      "18320",
-      "0x78d5c7d29d3940bf23f2c96196aecc15f0c44d837ef4041a375b512ded5d57cc"
-    ]
+  "data": [
+    {
+      "id": "0x1e20bc6a2107b61fa179b3ab17047b43569031e238f2b4ac92d9fa25a2822e3d_633",
+      "timestamp": "1778962419",
+      "receiver": "0x115f48dc2a731aa16251c6d6e1befc42f92accc9",
+      "amount": "318480",
+      "transaction_hash": "0x1e20bc6a2107b61fa179b3ab17047b43569031e238f2b4ac92d9fa25a2822e3d"
+    }
   ],
   "rows_returned": 1,
   "has_more": true,
-  "elapsed_ms": 2
+  "offset": 0,
+  "limit": 1,
+  "elapsed_ms": 3
 }
 ```
+
+When fetching `GET /v3/fees/{receiver}`, the `receiver` field is omitted from each row (it's redundant — every row matches the path parameter).
 
 ## Response fields
 

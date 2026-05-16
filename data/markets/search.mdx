@@ -16,9 +16,16 @@ GET /v3/markets/search
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `q` | string | required | Search query (matched against market question) |
+| `q` | string | required | Search query. Case-insensitive substring match against the `question`, `slug`, and `event_title` fields. Multiple words are AND-matched. |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
+
+### How matching works
+
+- `?q=bitcoin` matches any market whose question, slug, or event title contains the substring `bitcoin` (any case).
+- `?q=trump pardon` matches questions containing both substrings, in any order.
+- Punctuation in the query is preserved (`?q=$72,000` matches the literal characters).
+- Results are ordered by `volume_all_time DESC` so higher-traded markets surface first.
 
 ## Example
 
@@ -28,36 +35,45 @@ curl "https://api.polynode.dev/v3/markets/search?q=bitcoin&limit=1"
 
 ```json
 {
-  "columns": ["condition_id", "question", "slug", "category", "volume_all_time", "active", "closed", "winning_outcome_index", "tag_slugs"],
-  "rows": [
-    [
-      "0x58c931c00e31fd20d02aade0c1e287e46a15b6da514c3ac3624e956e41bc45d0",
-      "Will the price of Bitcoin be above $72,000 on February 13?",
-      "bitcoin-above-72k-on-february-13",
-      null,
-      "999989.65550899994559586048126220703125",
-      true,
-      true,
-      1,
-      ["bitcoin", "weekly", "multi-strikes", "crypto", "crypto-prices", "recurring", "hide-from-new"]
-    ]
+  "data": [
+    {
+      "active": true,
+      "category": null,
+      "closed": true,
+      "condition_id": "0x58c931c00e31fd20d02aade0c1e287e46a15b6da514c3ac3624e956e41bc45d0",
+      "question": "Will the price of Bitcoin be above $72,000 on February 13?",
+      "slug": "bitcoin-above-72k-on-february-13",
+      "tag_slugs": [
+        "Crypto",
+        "Bitcoin",
+        "Crypto Prices",
+        "Recurring",
+        "Hide From New",
+        "Weekly",
+        "Multi Strikes"
+      ],
+      "volume_all_time": "999989.65550899994559586048126220703125",
+      "winning_outcome_index": 1
+    }
   ],
-  "rows_returned": 1,
+  "elapsed_ms": 668,
   "has_more": true,
-  "elapsed_ms": 12
+  "limit": 1,
+  "offset": 0,
+  "rows_returned": 1
 }
 ```
 
-## Response fields
+## Response fields (per row in `data`)
 
-| Field | Type | Description |
-|--------|------|-------------|
-| `condition_id` | string | Market condition ID |
-| `question` | string | Market question text |
-| `slug` | string | URL slug |
-| `category` | string | Market category |
-| `volume_all_time` | string | Total volume traded |
-| `active` | boolean | Whether the market is active |
-| `closed` | boolean | Whether the market is closed |
-| `winning_outcome_index` | integer | Which outcome won (null if unresolved) |
-| `tag_slugs` | array | Category tags |
+| Field | Type | Nullable | Description |
+|--------|------|---------|-------------|
+| `condition_id` | string | no | Market condition ID |
+| `question` | string | no | Market question text |
+| `slug` | string | no | URL slug |
+| `category` | string | yes | Optional category label |
+| `volume_all_time` | string (decimal) | no | Total volume in USD at full precision |
+| `active` | boolean | no | Currently active |
+| `closed` | boolean | no | No longer accepting orders |
+| `winning_outcome_index` | integer | yes | Which outcome won (null if unresolved) |
+| `tag_slugs` | array&lt;string&gt; | yes | Tags in canonical (Title Case) form |

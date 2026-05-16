@@ -9,13 +9,27 @@ The polynode API provides two main surfaces:
 
 2. **Real-time Streaming** — live WebSocket feeds for settlements, trades, price updates, position changes, and more. See the [WebSocket tab](/websocket/overview).
 
-The V3 endpoints are coming soon and will provide the most comprehensive Polymarket dataset available. In the meantime, all existing API endpoints are fully live and operational.
+The V3 endpoints are **live** and provide the most comprehensive Polymarket dataset available, served entirely from our own infrastructure (no upstream subgraph dependency).
 
 ## V3 Data API — Base URL
 
 ```
 https://api.polynode.dev/v3
 ```
+
+## Authentication
+
+Every `/v3/*` endpoint requires an API key. Pass it either as a `key` query parameter or as a bearer token in the `Authorization` header:
+
+```bash
+# Query string
+curl "https://api.polynode.dev/v3/stats?key=pn_live_..."
+
+# Bearer header
+curl -H "Authorization: Bearer pn_live_..." https://api.polynode.dev/v3/stats
+```
+
+Get a key from the [dashboard](https://polynode.dev/dashboard). All examples in this section assume `?key=YOUR_KEY` is appended (omitted only for brevity in the code blocks).
 
 ## What's in the database
 
@@ -44,20 +58,57 @@ Query `GET /v3/stats` for live counts. Current scale:
 
 ## Amounts and precision
 
-All monetary amounts are returned in **USD** as JSON numbers. No conversion needed.
+Monetary fields come in two conventions depending on the endpoint:
+
+**Decimal USD (JSON number).** Used by aggregated P&L responses — wallet summary, batch, pnl, positions:
 
 ```json
-{
-  "net_realized_pnl": 22053845.825455,
-  "total_volume": 43013258.515682
-}
+{ "net_realized_pnl": 22053845.825455, "total_volume": 43013258.515682 }
 ```
 
-Values like `net_realized_pnl: 22053845.825455` mean **$22,053,845.83 USD**.
+`net_realized_pnl: 22053845.825455` means **$22,053,845.83 USD**.
 
-## Authentication
+**Raw 6-decimal USDC (JSON string).** Used by event-level rows — fees, splits, merges, redemptions, NRC, activity, tag-leaderboard rollups, market-positions rows:
 
-The V3 Data API is currently open access with rate limiting per IP. No API key is required.
+```json
+{ "amount": "120469388830" }
+```
+
+Divide by `1_000_000` to get USD. `"120469388830"` is **120,469.38883 USDC**.
+
+**Full-precision decimal (JSON string).** Used by raw subgraph fields like `volume_all_time`, `liquidity`, `price`:
+
+```json
+{ "volume_all_time": "99993.937724000003072433173656463623046875" }
+```
+
+These are stored at full Postgres `numeric` precision (up to ~50 digits). Round on the client; do not parse as a JS `Number`.
+
+Each endpoint's response-fields table explicitly notes which convention applies.
+
+## Identifiers and large numbers
+
+Polymarket `token_id` and `position_id` values are 78-digit decimal integers (uint256). They are returned as **JSON strings** so they survive standard JSON parsers — IEEE 754 doubles cannot represent them. Treat them as opaque strings; do not parse them as numbers.
+
+## Nullable fields
+
+Many fields can be `null` in real responses even when the example shows a populated value — typically when a row was created before the metadata pipeline backfilled it, or when a market hasn't resolved yet. Each endpoint's response-fields table has a **Nullable** column. Defensive clients should accept `null` for any field marked nullable, plus for any field whose row predates indexing.
+
+## Response envelopes
+
+Endpoints fall into three envelope shapes:
+
+| Shape | Endpoints | Top-level data key |
+|---|---|---|
+| Single-object | `GET /v3/wallets/{addr}`, `GET /v3/wallets/{addr}/pnl`, `GET /v3/markets/{token_id}/price`, `GET /v3/conditions/{cid}`, `GET /v3/builders/{code}`, `GET /v3/stats` | Fields at top level (no wrapper) |
+| Named list | `/v3/trades`, `/v3/wallets/{addr}/trades`, `/v3/markets/{token_id}/trades`, `/v3/markets/slug/{slug}/trades`, `/v3/builders/{code}/trades` | `"trades": [...]` |
+| Named list | `/v3/positions`, `/v3/wallets/{addr}/positions` | `"positions": [...]` |
+| Named list | `/v3/leaderboard` | `"leaderboard": [...]` |
+| Named list | `/v3/tags`, `/v3/builders` | `"tags": [...]`, `"builders": [...]` |
+| Named list | `POST /v3/wallets/batch` | `"wallets": [...]` |
+| Generic list | Everything else (fees, resolutions, splits, merges, NRC, activity, redemptions, tag-leaderboard, tag-markets, market-positions, condition-positions, market-by-condition, market-search, tokens/info) | `"data": [...]` |
+
+All list responses also include `rows_returned`, `has_more`, `offset`, `limit`, `elapsed_ms`.
 
 ## Timestamps
 

@@ -52,25 +52,27 @@ curl "https://api.polynode.dev/v3/positions?condition_id=0xdd22472e...&sort=pnl&
 curl "https://api.polynode.dev/v3/positions?status=redeemable&min_size=100&sort=size&limit=10"
 ```
 
-## Response fields
+## Response fields (per row in `positions`)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `wallet` | string | Wallet address |
-| `token_id` | string | Outcome token ID |
-| `size` | number | Current shares held (USD) |
-| `avg_price` | number | Average entry price (USD) |
-| `realized_pnl` | number | Realized P&L (USD) |
-| `unrealized_pnl` | number | Unrealized P&L (USD) |
-| `total_pnl` | number | `realized_pnl + unrealized_pnl` (USD) |
-| `current_price` | number | Current token price (USD) |
-| `total_bought` | number | Total volume bought (USD) |
-| `resolved` | boolean | Whether the market has settled |
-| `status` | string | `open`, `closed`, `redeemable`, or `redeemed` |
-| `market` | string | Market question text |
-| `slug` | string | Market URL slug |
-| `outcome` | string | Outcome label |
-| `outcome_index` | integer | Outcome position (0 or 1) |
-| `image` | string | Market image URL |
-| `condition_id` | string | Market condition ID |
-| `neg_risk` | boolean | Whether this is a neg-risk market |
+This endpoint returns a leaner field set than [`/v3/wallets/{addr}/positions`](/data/wallets/positions). For full enrichment (`last_trade_at`, `tag_slugs`, `event_slug`, `market_status`, `opposite_asset`, `price_source`, `redeemable_payout`, `won`, etc.), use the per-wallet endpoint.
+
+| Field | Type | Nullable | Description |
+|-------|------|---------|-------------|
+| `wallet` | string | no | Wallet address |
+| `token_id` | string | no | Outcome token ID (decimal-string-encoded — see [Identifiers](/data/overview#identifiers-and-large-numbers)) |
+| `size` | number | no | Current shares held (USD) |
+| `avg_price` | number | no | Weighted-average entry price (USD per outcome token) |
+| `realized_pnl` | number | no | Realized P&L (USD) |
+| `unrealized_pnl` | number | no | Unrealized P&L (USD) — `(current_price - avg_price) * size` |
+| `total_pnl` | number | no | `realized_pnl + unrealized_pnl` (USD) |
+| `current_price` | number | no | Latest token price (USD). Falls back to `0` if no price is known yet. |
+| `total_bought` | number | no | Total USD spent buying this position |
+| `resolved` | boolean | no | Whether the market has settled |
+| `status` | string | no | `open`, `closed`, `redeemable`, or `redeemed` |
+| `market` | string | yes | Market question (null if the token's metadata hasn't been backfilled) |
+| `slug` | string | yes | Market URL slug |
+| `outcome` | string | yes | Outcome label |
+| `outcome_index` | integer | yes | Outcome position (0 or 1) |
+| `image` | string | yes | Market image URL |
+| `condition_id` | string | yes | Market condition ID |
+| `neg_risk` | boolean | yes | Neg-risk (multi-outcome) market flag |

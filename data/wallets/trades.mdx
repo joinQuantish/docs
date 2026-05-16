@@ -180,13 +180,21 @@ Returns one row per order with aggregated totals:
 | `total_fee` | number | Total fees (USD) |
 | `total_maker_amount` | number | Raw sum of maker amounts (side-dependent) |
 | `total_taker_amount` | number | Raw sum of taker amounts (side-dependent) |
-| `first_fill_at` | integer | Earliest fill timestamp (Unix) |
-| `last_fill_at` | integer | Latest fill timestamp (Unix) |
-| `tx_hashes` | array | Unique transaction hashes |
-| `market` | string | Market question |
-| `slug` | string | Market slug |
-| `outcome` | string | Outcome label |
-| `direction` | string | `BUY` or `SELL` |
+| `first_fill_at` | integer | Earliest fill timestamp (Unix seconds) |
+| `last_fill_at` | integer | Latest fill timestamp (Unix seconds) |
+| `timestamp` | string | Same as `last_fill_at` but as a string. Present for consistency with ungrouped trade rows. |
+| `tx_hashes` | array&lt;string&gt; | Unique transaction hashes contributing to this order |
+| `market` | string \| null | Market question |
+| `slug` | string \| null | Market slug |
+| `outcome` | string \| null | Outcome label |
+| `outcome_index` | integer \| null | Outcome position (0 or 1) |
+| `image` | string \| null | Market image URL |
+| `condition_id` | string \| null | Market condition ID |
+| `direction` | string | `BUY` or `SELL` (queried wallet's perspective) |
+| `role` | string | `maker` or `taker` (which side the queried wallet was on) |
+| `side` | integer \| null | Maker's limit-order direction (raw on-chain value). Use `direction` instead. |
+| `maker` | string | Maker wallet address |
+| `taker` | string | Taker wallet address |
 
 ### Filter by market condition
 

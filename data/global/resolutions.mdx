@@ -27,23 +27,30 @@ curl https://api.polynode.dev/v3/resolutions?limit=1
 
 ```json
 {
-  "columns": ["condition_id", "payout_numerators", "payout_denominator", "resolved_at", "created_at", "question", "slug", "outcomes", "category"],
-  "rows": [
-    [
-      "0x126a15ffc84104e2108b2d58f663882b0d181ce87c1b38365f84595e3468a8a5",
-      ["0", "1"],
-      "1",
-      "1778674836000",
-      "2026-05-13 12:20:50.683869",
-      "Will there be 6 or more major space weather events this week?",
-      "will-there-be-6-or-more-major-space-weather-events-this-week-456",
-      ["Yes", "No"],
-      null
-    ]
+  "data": [
+    {
+      "category": null,
+      "condition_id": "0xbd7f5df4a14a1b0ec35354ed910acf8c538d5e556c8389fcb58bb6a45c32e5b6",
+      "created_at": "2026-05-15 22:16:02.633047",
+      "outcomes": [
+        "Over",
+        "Under"
+      ],
+      "payout_denominator": "1",
+      "payout_numerators": [
+        "0",
+        "1"
+      ],
+      "question": "Chicago Cubs vs. Chicago White Sox: O/U 11.5",
+      "resolved_at": "1778883350000",
+      "slug": "mlb-chc-cws-2026-05-15-total-11pt5"
+    }
   ],
-  "rows_returned": 1,
+  "elapsed_ms": 6,
   "has_more": true,
-  "elapsed_ms": 3
+  "limit": 1,
+  "offset": 0,
+  "rows_returned": 1
 }
 ```
 

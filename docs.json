@@ -187,7 +187,7 @@
             ]
           },
           {
-            "group": "Wallet P&L — Coming Soon",
+            "group": "Wallet P&L",
             "pages": [
               "data/wallets/summary",
               "data/wallets/pnl",
@@ -196,7 +196,7 @@
             ]
           },
           {
-            "group": "Wallet Activity — Coming Soon",
+            "group": "Wallet Activity",
             "pages": [
               "data/wallets/trades",
               "data/wallets/redemptions",
@@ -207,7 +207,7 @@
             ]
           },
           {
-            "group": "Markets & Search — Coming Soon",
+            "group": "Markets & Search",
             "pages": [
               "data/markets/search",
               "data/markets/by-condition",
@@ -219,15 +219,16 @@
             ]
           },
           {
-            "group": "Leaderboard & Tags — Coming Soon",
+            "group": "Leaderboard & Tags",
             "pages": [
               "data/leaderboard/global",
               "data/leaderboard/tags",
+              "data/leaderboard/tag-markets",
               "data/leaderboard/tag-leaderboard"
             ]
           },
           {
-            "group": "Builders — Coming Soon",
+            "group": "Builders",
             "pages": [
               "data/builders/list",
               "data/builders/detail",
@@ -235,7 +236,7 @@
             ]
           },
           {
-            "group": "Global — Coming Soon",
+            "group": "Global",
             "pages": [
               "data/global/stats",
               "data/global/trades",
@@ -246,7 +247,7 @@
             ]
           },
           {
-            "group": "Tokens — Coming Soon",
+            "group": "Tokens",
             "pages": [
               "data/tokens/info"
             ]

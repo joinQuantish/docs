@@ -23,7 +23,7 @@ GET /v3/wallets/{address}/positions
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `status` | string | all | Filter: `open`, `closed`, `redeemable`, `redeemed` |
-| `sort` | string | `pnl` | Sort by: `pnl`, `amount`, `volume`, `avg_price` |
+| `sort` | string | `realized_pnl` | Sort by: `realized_pnl` (default), `amount` (current shares), `volume` / `total_bought`, `avg_price`, `recent` (last trade time) |
 | `order` | string | `desc` | Sort direction: `asc` or `desc` |
 | `condition_id` | string | -- | Filter by market condition ID |
 | `market_slug` | string | -- | Filter by market slug |
@@ -105,10 +105,16 @@ curl https://api.polynode.dev/v3/wallets/0x.../positions?status=redeemable
 
 The `redeemable_payout` field shows the exact USD amount the wallet can claim.
 
-### Sort by unrealized P&L
+### Sort by most recent trade
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0x.../positions?status=open&sort=unrealized&order=desc
+curl "https://api.polynode.dev/v3/wallets/0x.../positions?sort=recent"
+```
+
+### Sort by current position size
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x.../positions?sort=amount"
 ```
 
 ## Response fields

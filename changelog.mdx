@@ -7,6 +7,22 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-16 — V3 API goes live + performance fixes
+
+All `/v3/*` endpoints are now generally available (no longer "Coming Soon"). Several queries that timed out or ran slowly have been rewritten to use index-friendly query plans:
+
+- `/v3/wallets/{addr}/positions` — default sort no longer times out, returns in &lt;100ms
+- `/v3/markets/slug/{slug}/trades` — fixed timeout, now &lt;100ms
+- `/v3/tags/{slug}/leaderboard` — small/medium tags are now sub-second; tags larger than 4,000 markets return a structured "too large" hint pointing to the global leaderboard
+- `/v3/tags/{slug}` — drops from 4.8s to ~1s
+- `/v3/wallets/{addr}/trades` — drops from 2.3s to ~200ms
+
+Tag slugs are now matched case-insensitively and accept URL-style hyphens: `/v3/tags/us-election/leaderboard` resolves to the stored tag `US Election`.
+
+Several doc examples that previously showed a `columns/rows` envelope have been corrected to the `data: [{...}]` shape that the API actually returns.
+
+---
+
 ## 2026-05-14 — SDK fix: deposit wallet deploy + approve
 
 Fixed the deposit wallet (V2 / POLY_1271) onboarding flow across all three SDKs. The relayer's `/submit` endpoint now requires builder authentication for WALLET-type submissions. All SDKs have been updated to include the required auth headers.

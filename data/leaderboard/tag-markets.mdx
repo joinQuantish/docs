@@ -1,0 +1,90 @@
+---
+title: "Tag Markets"
+openapi: "GET /v3/tags/{slug}"
+description: "List markets that belong to a specific tag (category), ordered by all-time volume or other metrics."
+---
+
+Returns every market tagged with the given slug. Useful for building category landing pages or filtering search results.
+
+## Request
+
+```
+GET /v3/tags/{slug}
+```
+
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `slug` | string | Tag slug. Matched case-insensitively. URL-style hyphens are converted to spaces, so `us-election` resolves to the stored tag `US Election`. |
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `sort` | string | `volume_all_time` | Sort by `volume_all_time`, `liquidity`, or `created_at`. |
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/tags/ufc?limit=2&key=YOUR_KEY"
+```
+
+```json
+{
+  "data": [
+    {
+      "condition_id": "0x61ef853c0ecc72a583da722cf6434681f9b92d10652cded44d8f889beb923418",
+      "question": "Dvalishvili vs. Sandhagen",
+      "slug": "ufc-dvalishvili-vs-sandhagen-2025-10-04",
+      "outcomes": ["Dvalishvili", "Sandhagen"],
+      "category": null,
+      "active": true,
+      "closed": true,
+      "neg_risk": false,
+      "volume_all_time": "999731.6550259999930858612060546875",
+      "liquidity": "0",
+      "end_date": "2025-10-11 18:00:00+00",
+      "event_slug": "ufc-320-ankalaev-vs-pereira-2",
+      "event_title": "UFC 320: Ankalaev vs. Pereira 2",
+      "winning_outcome_index": 0
+    }
+  ],
+  "rows_returned": 1,
+  "has_more": true,
+  "offset": 0,
+  "limit": 1,
+  "elapsed_ms": 42
+}
+```
+
+## Response fields (per row in `data`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `condition_id` | string | Market condition ID |
+| `question` | string | Market question text |
+| `slug` | string | Market URL slug |
+| `outcomes` | array&lt;string&gt; | Outcome labels |
+| `category` | string \| null | Optional category label |
+| `active` | boolean | Market is currently active |
+| `closed` | boolean | Market is closed (no longer accepting orders) |
+| `neg_risk` | boolean | Neg-risk (multi-outcome) market |
+| `volume_all_time` | string (decimal) | All-time USD volume |
+| `liquidity` | string (decimal) | Current liquidity in USD |
+| `end_date` | string \| null | Market resolution deadline (ISO timestamp with offset) |
+| `event_slug` | string \| null | Parent event slug |
+| `event_title` | string \| null | Parent event title |
+| `winning_outcome_index` | integer \| null | Winning outcome (null if unresolved) |
+
+## Errors
+
+If no tag matches the slug (case-insensitive, hyphen-converted), the endpoint returns `404` with:
+
+```json
+{"error": "tag not found", "tag": "notarealtag"}
+```
+
+For a wallet-level P&L leaderboard scoped to a tag, see [Tag Leaderboard](/data/leaderboard/tag-leaderboard).

@@ -26,25 +26,35 @@ curl https://api.polynode.dev/v3/tokens/7578339488003039286338088380069764501841
 
 ```json
 {
-  "columns": ["token_id", "price", "resolved", "source", "updated_at", "condition_id", "outcome", "outcome_index", "question", "slug", "category", "tag_slugs"],
-  "rows": [
-    [
-      "75783394880030392863380883800697645018418815910449662777195626260206142035810",
-      "1000000",
-      true,
-      "settlement",
-      "2026-05-13 12:27:28.558218",
-      "0x4f05dbc6273b89aed46bb79a961c1d8771c01925d92d439e9a81fa6241900661",
-      "Aurora",
-      0,
-      "Dota 2: Aurora vs Team Liquid (BO3) - DreamLeague Group A",
-      "dota2-aur1-liquid-2026-05-13",
-      null,
-      ["esports", "dota-2", "games", "sports"]
-    ]
+  "data": [
+    {
+      "category": null,
+      "condition_id": "0xaa08b43f2e39a28c52278738d456dfce516fcd966d43f157aab3727457cd4b6c",
+      "outcome": "Down",
+      "outcome_index": 1,
+      "price": "1000000.000000000000",
+      "question": "Bitcoin Up or Down - March 29, 1:10AM-1:15AM ET",
+      "resolved": true,
+      "slug": "btc-updown-5m-1774761000",
+      "source": "v1_condition",
+      "tag_slugs": [
+        "Crypto",
+        "Bitcoin",
+        "Crypto Prices",
+        "Recurring",
+        "Up or Down",
+        "Hide From New",
+        "5M"
+      ],
+      "token_id": "40671034664065625078050343379339320067070367341089437265715901074008336896448",
+      "updated_at": "2026-05-16 11:42:10.666489"
+    }
   ],
-  "rows_returned": 1,
-  "elapsed_ms": 2
+  "elapsed_ms": 3,
+  "has_more": false,
+  "limit": 1,
+  "offset": 0,
+  "rows_returned": 1
 }
 ```
 

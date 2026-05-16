@@ -22,19 +22,19 @@ GET /v3/tags
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/tags?limit=3
+curl "https://api.polynode.dev/v3/tags?limit=3&key=YOUR_KEY"
 ```
 
 ```json
 {
   "tags": [
-    { "tag": "sports", "market_count": 544398 },
-    { "tag": "games", "market_count": 505513 },
-    { "tag": "hide-from-new", "market_count": 436579 }
+    { "tag": "Sports", "market_count": 575318 },
+    { "tag": "Games", "market_count": 522716 },
+    { "tag": "Hide From New", "market_count": 447811 }
   ],
   "rows_returned": 3,
   "has_more": true,
-  "elapsed_ms": 759
+  "elapsed_ms": 1241
 }
 ```
 
@@ -42,5 +42,17 @@ curl https://api.polynode.dev/v3/tags?limit=3
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `tag` | string | Tag slug |
+| `tag` | string | Canonical tag label as stored in the database. Title Case, spaces preserved (e.g. `"US Election"`, `"Trump Presidency"`). |
 | `market_count` | integer | Number of markets with this tag |
+
+## Using tag values in URLs
+
+The `tag` value above is the canonical (Title Case) form. When passing a tag in a URL path (e.g. [`/v3/tags/{slug}`](/data/leaderboard/tag-markets) or [`/v3/tags/{slug}/leaderboard`](/data/leaderboard/tag-leaderboard)), use a lowercase, hyphen-separated form — the API resolves it back to the canonical tag:
+
+| URL form | Resolves to |
+|---|---|
+| `sports` | `Sports` |
+| `us-election` | `US Election` |
+| `primary-elections` | `primary elections` |
+
+The match is case-insensitive and converts hyphens to spaces. If no tag matches, you get `404 {"error":"tag not found","tag":...}`.

@@ -29,20 +29,21 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
 
 ```json
 {
-  "columns": ["event_type", "id", "timestamp", "ref_id", "amount", "extra"],
-  "rows": [
-    [
-      "redemption",
-      "0x6db3f0fd9cccd58d4bd59eb5816cc2823f62a85c343e5ff6d1dd177dfb128a6e_0x109",
-      "1731664609",
-      "0x26ee82bee2493a302d21283cb578f7e2fff2dd15743854f53034d12420863b55",
-      "120469388830",
-      "{1,2}"
-    ]
+  "data": [
+    {
+      "amount": "706561610",
+      "event_type": "redemption",
+      "extra": "{1,2}",
+      "id": "0x7a7494699af0d7bf9734db8c803fc9ecad0330df97ebc7893bb05a81bc3c93bf_0x353",
+      "ref_id": "0xfbf0af69aa98b4662b95ff5ffb6dde560ec2e3da723a1980a6ef3f919cbeddea",
+      "timestamp": "1777356700"
+    }
   ],
-  "rows_returned": 1,
-  "has_more": false,
-  "elapsed_ms": 5
+  "elapsed_ms": 8,
+  "has_more": true,
+  "limit": 1,
+  "offset": 0,
+  "rows_returned": 1
 }
 ```
 

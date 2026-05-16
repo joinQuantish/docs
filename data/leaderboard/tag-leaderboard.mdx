@@ -16,8 +16,29 @@ GET /v3/tags/{slug}/leaderboard
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
+| `sort` | string | `net_pnl` | Sort by `net_pnl` (default), `volume`, `profit`, or `loss` |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
+
+### Slug handling
+
+The tag slug is matched case-insensitively. URL-style hyphens are also converted to spaces, so `/v3/tags/us-election/leaderboard` resolves to the stored tag `US Election`.
+
+### Tag size cap
+
+Tags with more than 4,000 markets (`Sports`, `Crypto`, `Politics`, etc.) return a structured error instead of running the real-time aggregation:
+
+```json
+{
+  "error": "tag too large for real-time leaderboard",
+  "tag": "sports",
+  "market_count": 575318,
+  "hint": "use /v3/leaderboard for global rankings, or filter by a more specific tag",
+  "elapsed_ms": 1
+}
+```
+
+Use [`GET /v3/leaderboard`](/data/leaderboard/global) for global rankings or pick a more specific tag.
 
 ## Example
 
@@ -27,30 +48,31 @@ curl https://api.polynode.dev/v3/tags/taylor-swift/leaderboard?limit=1
 
 ```json
 {
-  "columns": ["wallet", "net_pnl", "gross_profit", "gross_loss", "total_volume", "position_count"],
-  "rows": [
-    [
-      "0xa61b2981fe679b2a34608db90bc4057569219d74",
-      "99999966",
-      "99999966",
-      "0",
-      "686999916",
-      2
-    ]
+  "data": [
+    {
+      "wallet": "0x4aec3e3c555ecbeec58adba532e8ea8b1c76e9b6",
+      "net_pnl": "60212.914000000000",
+      "gross_profit": "60212.914000000000",
+      "gross_loss": "0.000000000000000000",
+      "total_volume": "62721.000000000000",
+      "position_count": 3
+    }
   ],
   "rows_returned": 1,
   "has_more": true,
-  "elapsed_ms": 374
+  "offset": 0,
+  "limit": 1,
+  "elapsed_ms": 26
 }
 ```
 
-## Response fields
+## Response fields (per row in `data`)
 
 | Field | Type | Description |
 |--------|------|-------------|
 | `wallet` | string | Wallet address |
-| `net_pnl` | string | Net realized P&L in this tag (6-decimal USDC) |
-| `gross_profit` | string | Sum of winning positions |
-| `gross_loss` | string | Sum of losing positions |
-| `total_volume` | string | Total volume traded in this tag |
+| `net_pnl` | string (decimal) | Net realized P&L in this tag (USD) |
+| `gross_profit` | string (decimal) | Sum of winning positions (USD) |
+| `gross_loss` | string (decimal) | Sum of losing positions (USD, negative or zero) |
+| `total_volume` | string (decimal) | Total volume traded in this tag (USD) |
 | `position_count` | integer | Number of positions in markets with this tag |
