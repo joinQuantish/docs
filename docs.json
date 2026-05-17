@@ -105,23 +105,70 @@
             ]
           },
           {
-            "group": "Onchain V2",
+            "group": "Wallet P&L",
             "pages": [
               "api-reference/wallets/resolve",
-              "api-reference/onchain/trades",
-              "api-reference/onchain/positions",
-              "api-reference/wallets/onchain-positions",
-              "api-reference/onchain/wallet-trades",
-              "api-reference/onchain/wallet-trades-all",
-              "api-reference/onchain/wallet-redemptions",
-              "api-reference/onchain/wallet-activity",
-              "api-reference/onchain/market-trades",
-              "api-reference/onchain/market-trades-all",
-              "api-reference/wallets/market-positions",
-              "api-reference/onchain/candles",
-              "api-reference/onchain/market-volume",
-              "api-reference/onchain/market-oi",
-              "api-reference/onchain/global-oi"
+              "data/wallets/summary",
+              "data/wallets/pnl",
+              "data/wallets/batch",
+              "data/wallets/positions"
+            ]
+          },
+          {
+            "group": "Wallet Activity",
+            "pages": [
+              "data/wallets/trades",
+              "data/wallets/redemptions",
+              "data/wallets/splits",
+              "data/wallets/merges",
+              "data/wallets/nrc",
+              "data/wallets/activity"
+            ]
+          },
+          {
+            "group": "Markets & Search",
+            "pages": [
+              "data/markets/search",
+              "data/markets/by-condition",
+              "data/markets/condition-positions",
+              "data/markets/trades",
+              "data/markets/positions",
+              "data/markets/price",
+              "data/markets/by-slug"
+            ]
+          },
+          {
+            "group": "Leaderboard & Tags",
+            "pages": [
+              "data/leaderboard/global",
+              "data/leaderboard/tags",
+              "data/leaderboard/tag-markets",
+              "data/leaderboard/tag-leaderboard"
+            ]
+          },
+          {
+            "group": "Builders",
+            "pages": [
+              "data/builders/list",
+              "data/builders/detail",
+              "data/builders/trades"
+            ]
+          },
+          {
+            "group": "Global",
+            "pages": [
+              "data/global/stats",
+              "data/global/trades",
+              "data/global/positions",
+              "data/global/fees",
+              "data/global/resolutions",
+              "data/global/conditions"
+            ]
+          },
+          {
+            "group": "Tokens",
+            "pages": [
+              "data/tokens/info"
             ]
           },
           {
@@ -187,72 +234,6 @@
             ]
           },
           {
-            "group": "Wallet P&L",
-            "pages": [
-              "data/wallets/summary",
-              "data/wallets/pnl",
-              "data/wallets/batch",
-              "data/wallets/positions"
-            ]
-          },
-          {
-            "group": "Wallet Activity",
-            "pages": [
-              "data/wallets/trades",
-              "data/wallets/redemptions",
-              "data/wallets/splits",
-              "data/wallets/merges",
-              "data/wallets/nrc",
-              "data/wallets/activity"
-            ]
-          },
-          {
-            "group": "Markets & Search",
-            "pages": [
-              "data/markets/search",
-              "data/markets/by-condition",
-              "data/markets/condition-positions",
-              "data/markets/trades",
-              "data/markets/positions",
-              "data/markets/price",
-              "data/markets/by-slug"
-            ]
-          },
-          {
-            "group": "Leaderboard & Tags",
-            "pages": [
-              "data/leaderboard/global",
-              "data/leaderboard/tags",
-              "data/leaderboard/tag-markets",
-              "data/leaderboard/tag-leaderboard"
-            ]
-          },
-          {
-            "group": "Builders",
-            "pages": [
-              "data/builders/list",
-              "data/builders/detail",
-              "data/builders/trades"
-            ]
-          },
-          {
-            "group": "Global",
-            "pages": [
-              "data/global/stats",
-              "data/global/trades",
-              "data/global/positions",
-              "data/global/fees",
-              "data/global/resolutions",
-              "data/global/conditions"
-            ]
-          },
-          {
-            "group": "Tokens",
-            "pages": [
-              "data/tokens/info"
-            ]
-          },
-          {
             "group": "System",
             "pages": [
               "api-reference/system/system-status",
@@ -266,6 +247,25 @@
             "tag": "BETA",
             "pages": [
               "api-reference/x-search"
+            ]
+          },
+          {
+            "group": "Onchain V2 (legacy)",
+            "pages": [
+              "api-reference/onchain/trades",
+              "api-reference/onchain/positions",
+              "api-reference/wallets/onchain-positions",
+              "api-reference/onchain/wallet-trades",
+              "api-reference/onchain/wallet-trades-all",
+              "api-reference/onchain/wallet-redemptions",
+              "api-reference/onchain/wallet-activity",
+              "api-reference/onchain/market-trades",
+              "api-reference/onchain/market-trades-all",
+              "api-reference/wallets/market-positions",
+              "api-reference/onchain/candles",
+              "api-reference/onchain/market-volume",
+              "api-reference/onchain/market-oi",
+              "api-reference/onchain/global-oi"
             ]
           }
         ]
