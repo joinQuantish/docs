@@ -7,6 +7,21 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-18 — New endpoint: wallet P&L time series
+
+Added `GET /v3/wallets/{address}/pnl/events` — returns realized P&L bucketed by `hour`, `day`, `week`, or `month` so you can plot a wallet's P&L over time without pulling every trade. Each bucket includes `realized_pnl`, a running `cumulative_pnl`, gross profit/loss, win/loss counts, and event count. Supports `?period=1d|7d|30d|1y` shortcuts or explicit `after` / `before` Unix-second timestamps.
+
+Indexed scan over `pnl_event` — most full-history queries return sub-second.
+
+Other quality-of-life:
+
+- `?after` / `?before` outside the wallet's active window now correctly return zero buckets instead of an error.
+- All `/v3/*` paths now accept an optional trailing slash (`/v3/positions/` is equivalent to `/v3/positions`).
+- Unknown `/v3/*` paths return a structured 404 with a `hint` pointing to the docs, rather than HTML.
+- Invalid `sort` and `order` values now return `400` with the list of valid options instead of silently falling back to a default — typos surface immediately.
+
+---
+
 ## 2026-05-16 — V3 API goes live + performance fixes
 
 All `/v3/*` endpoints are now generally available (no longer "Coming Soon"). Several queries that timed out or ran slowly have been rewritten to use index-friendly query plans:

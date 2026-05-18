@@ -1,0 +1,128 @@
+---
+title: "Wallet P&L Time Series"
+openapi: "GET /v3/wallets/{address}/pnl/events"
+description: "Realized P&L bucketed by hour, day, week, or month — chart-ready time series for a wallet."
+---
+
+Returns a per-bucket time series of realized P&L for a wallet. Each row is a fixed time window (hour, day, week, or month) with the sum of realized P&L, gross profit, gross loss, wins, losses, and event count for that bucket. A running `cumulative_pnl` is included so the response can be plotted directly.
+
+Backed by an indexed scan over `pnl_event` — sub-second on full-history windows in most cases.
+
+## Request
+
+```
+GET /v3/wallets/{address}/pnl/events
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `group` | string | `day` | Bucket size: `hour`, `day`, `week`, `month` |
+| `period` | string | -- | Shortcut for `after`: `1d`, `7d`, `30d`, `1y` |
+| `after` | integer | `0` | Start timestamp (Unix seconds, inclusive) |
+| `before` | integer | now | End timestamp (Unix seconds, inclusive) |
+| `limit` | integer | `5000` | Max buckets returned, clamped 1-10000 |
+
+If `after` and `period` are both set, `after` wins.
+
+## Examples
+
+### Daily P&L for the last 7 days
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x44c1dfe43260c94ed4f1d00de2e1f80fb113ebc1/pnl/events?period=7d&group=day"
+```
+
+```json
+{
+  "address": "0x44c1dfe43260c94ed4f1d00de2e1f80fb113ebc1",
+  "granularity": "day",
+  "after": 1778478745,
+  "before": 1779083545,
+  "bucket_count": 3,
+  "buckets": [
+    {
+      "bucket": 1778889600,
+      "realized_pnl": 0.000525,
+      "cumulative_pnl": 0.000525,
+      "gross_profit": 0.000525,
+      "gross_loss": 0,
+      "wins": 1,
+      "losses": 0,
+      "events": 1
+    },
+    {
+      "bucket": 1778976000,
+      "realized_pnl": 611.069702,
+      "cumulative_pnl": 611.070227,
+      "gross_profit": 618.41811,
+      "gross_loss": -7.348408,
+      "wins": 23,
+      "losses": 3,
+      "events": 26
+    },
+    {
+      "bucket": 1779062400,
+      "realized_pnl": 11.774724,
+      "cumulative_pnl": 622.844951,
+      "gross_profit": 11.774724,
+      "gross_loss": 0,
+      "wins": 2,
+      "losses": 0,
+      "events": 2
+    }
+  ],
+  "total_realized_pnl": 622.844951,
+  "total_events": 29,
+  "total_wins": 26,
+  "total_losses": 3,
+  "source": "pnl_event",
+  "elapsed_ms": 4
+}
+```
+
+### Hourly P&L for an explicit window
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x44c1dfe43260c94ed4f1d00de2e1f80fb113ebc1/pnl/events?after=1778976000&before=1779062400&group=hour"
+```
+
+### Weekly P&L for the last year
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x44c1dfe43260c94ed4f1d00de2e1f80fb113ebc1/pnl/events?period=1y&group=week"
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `address` | string | The wallet address (lowercased) |
+| `granularity` | string | Resolved bucket size (`hour`, `day`, `week`, `month`) |
+| `after` | integer | Start of the window (Unix seconds, inclusive) |
+| `before` | integer | End of the window (Unix seconds, inclusive) |
+| `bucket_count` | integer | Number of buckets returned |
+| `buckets` | array | Time-series rows, ordered oldest → newest |
+| `buckets[].bucket` | integer | Bucket start timestamp (Unix seconds, UTC, truncated to bucket boundary) |
+| `buckets[].realized_pnl` | number | Realized P&L in that bucket (USD) |
+| `buckets[].cumulative_pnl` | number | Running sum of `realized_pnl` over the returned series (USD) |
+| `buckets[].gross_profit` | number | Sum of winning events in that bucket (USD) |
+| `buckets[].gross_loss` | number | Sum of losing events in that bucket (USD, negative) |
+| `buckets[].wins` | integer | Count of winning events in that bucket |
+| `buckets[].losses` | integer | Count of losing events in that bucket |
+| `buckets[].events` | integer | Total P&L events in that bucket |
+| `total_realized_pnl` | number | Sum of `realized_pnl` across all returned buckets (USD) |
+| `total_events` | integer | Sum of `events` across all returned buckets |
+| `total_wins` | integer | Sum of `wins` across all returned buckets |
+| `total_losses` | integer | Sum of `losses` across all returned buckets |
+| `source` | string | Always `pnl_event` |
+| `elapsed_ms` | integer | Server-side query time in milliseconds |
+
+## Errors
+
+| HTTP | When |
+|------|------|
+| `400` | Invalid wallet address (must be `0x` + 40 hex) |
+| `400` | Invalid `group` value (must be `hour`, `day`, `week`, or `month`) |
+| `400` | `after` greater than `before` |

@@ -110,6 +110,7 @@
               "api-reference/wallets/resolve",
               "data/wallets/summary",
               "data/wallets/pnl",
+              "data/wallets/pnl-events",
               "data/wallets/batch",
               "data/wallets/positions"
             ]
