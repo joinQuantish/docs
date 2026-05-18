@@ -20,6 +20,16 @@ Other quality-of-life:
 - Unknown `/v3/*` paths return a structured 404 with a `hint` pointing to the docs, rather than HTML.
 - Invalid `sort` and `order` values now return `400` with the list of valid options instead of silently falling back to a default — typos surface immediately.
 
+### Doc / API parity pass (later same day)
+
+Round 2 of the parity work — pure alignment between the API and the public reference, no breaking changes:
+
+- **`/v3/markets/condition/{condition_id}/positions`** — response field names now match `/v3/markets/{token_id}/positions`. Was returning abbreviated keys (`amt`, `avgp`, `bought`, `rpnl`, `tid`); now returns the long, documented names (`amount`, `avg_price`, `total_bought`, `realized_pnl`, `token_id`). Old keys are gone — update any client code using them.
+- **`/v3/resolutions`** — `payout_numerators` is now a JSON array of integers (e.g. `[0, 1]`), matching `/v3/conditions/{cid}`. Was returning quoted strings. `payout_denominator` is also an integer now.
+- **`/v3/builders`, `/v3/tags`, `/v3/tokens/{token_id}`** — response envelopes now include `offset` and `limit` like every other list endpoint.
+- **Param validation tightened** — invalid `?order=`, `?side=`, `?status=`, `?group_by=`, `?sort_by=` on trades / fees / resolutions / positions endpoints now return `400` with the valid-values list, instead of silently falling back to a default. Valid values still pass through unchanged.
+- **Token price scale** — `/v3/markets/{token_id}/price.price` and `/v3/tokens/{token_id}.data[].price` are JSON numbers in USD (range `0`–`1`), not 6-decimal strings. Reference page text updated accordingly.
+
 ---
 
 ## 2026-05-16 — V3 API goes live + performance fixes
