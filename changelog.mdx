@@ -7,6 +7,20 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-18 — PnL methodology note
+
+For users comparing our PnL numbers to what the Polymarket frontend displays: the two are computed differently and will diverge for wallets that hold a lot of settled-but-not-redeemed positions.
+
+**Polymarket's `pnl`** (leaderboard, profile chart) is a **mark-to-market equity curve delta**: `equity(end_of_window) − equity(start_of_window)`. Resolved markets are booked into the curve at settlement, regardless of whether the wallet has called `redeemPositions`.
+
+**Our `net_realized_pnl`** counts realized closes only — CLOB sells (the wallet sold their shares back) plus V2 adapter events (redemptions, merges, NRC conversions). Unrealized gains on settled-but-unredeemed positions stay in `unrealized_pnl`, not `net_realized_pnl`.
+
+**Empirically verified** against PM's `/closed-positions[].realizedPnl` on a representative wallet: per-position realized matches PM within 1%. The "lifetime pnl" headline diverges by the value of settled-not-redeemed positions in the wallet.
+
+`total_pnl` (= `net_realized_pnl + unrealized_pnl`) is the closer comparison to PM's curve delta — it includes both closed and still-open positions priced at current market.
+
+---
+
 ## 2026-05-18 — New endpoint: wallet P&L time series
 
 Added `GET /v3/wallets/{address}/pnl/events` — returns realized P&L bucketed by `hour`, `day`, `week`, or `month` so you can plot a wallet's P&L over time without pulling every trade. Each bucket includes `realized_pnl`, a running `cumulative_pnl`, gross profit/loss, win/loss counts, and event count. Supports `?period=1d|7d|30d|1y` shortcuts or explicit `after` / `before` Unix-second timestamps.
