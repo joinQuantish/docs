@@ -60,13 +60,14 @@ Query `GET /v3/stats` for live counts. Current scale:
 
 Monetary fields come in two conventions depending on the endpoint:
 
-**Decimal USD (JSON number).** Used by aggregated P&L responses — wallet summary, batch, pnl, positions:
+**Decimal USD (JSON number).** Used by aggregated P&L responses (wallet summary, batch, pnl, positions) and by token-price responses (`/v3/markets/{token_id}/price`, `/v3/tokens/{token_id}`):
 
 ```json
 { "net_realized_pnl": 22053845.825455, "total_volume": 43013258.515682 }
+{ "price": 0.42 }
 ```
 
-`net_realized_pnl: 22053845.825455` means **$22,053,845.83 USD**.
+`net_realized_pnl: 22053845.825455` means **$22,053,845.83 USD**. `price: 0.42` means **$0.42 per share** (Polymarket outcome prices are always in the range 0–1).
 
 **Raw 6-decimal USDC (JSON string).** Used by event-level rows — fees, splits, merges, redemptions, NRC, activity, tag-leaderboard rollups, market-positions rows:
 
@@ -121,7 +122,7 @@ All Unix timestamps in responses are in **seconds** (e.g., `"1778674056"`). The 
 | Requests per minute per IP | 200 |
 | Max concurrent queries per IP | 5 |
 | Max page size | 1,000 rows |
-| Query timeout | 10 seconds |
+| Query timeout | 30 seconds |
 
 ## Pagination
 

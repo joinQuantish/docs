@@ -32,12 +32,35 @@ GET /v3/markets/condition/{condition_id}/positions
 curl https://api.polynode.dev/v3/markets/condition/0xdd22472e552920b8438158ea7238bfadfa4f736aa4cee91a6b86c39ead110917/positions?limit=1
 ```
 
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "user": "0xd235973291b2b75ff4070e9c0b01728c520b0f29",
+      "token_id": "21742633143463906290569050155826241533067272736897614950488156847949938836455",
+      "amount": "0",
+      "avg_price": "611582",
+      "realized_pnl": "11447872022497",
+      "total_bought": "29473072881529"
+    }
+  ],
+  "rows_returned": 1,
+  "has_more": true,
+  "offset": 0,
+  "limit": 1,
+  "elapsed_ms": 12
+}
+```
+
 ## Response columns
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `user` | string | Wallet address |
-| `amount` | string | Current shares held (6-decimal) |
-| `avg_price` | string | Average entry price (6-decimal) |
-| `realized_pnl` | string | Realized P&L (6-decimal USDC) |
-| `total_bought` | string | Total volume bought (6-decimal USDC) |
+| `user` | string | Wallet address (lowercased) |
+| `token_id` | string | Outcome token this row covers (each condition has multiple outcomes; a wallet can appear once per outcome it has touched) |
+| `amount` | string | Current shares held in raw 6-decimal USDC (`0` if exited) |
+| `avg_price` | string | Time-weighted average entry price in raw 6-decimal USDC (`500000` = $0.50) |
+| `realized_pnl` | string | Realized P&L on closed portion in raw 6-decimal USDC |
+| `total_bought` | string | Cumulative cost-basis of all purchases in raw 6-decimal USDC |

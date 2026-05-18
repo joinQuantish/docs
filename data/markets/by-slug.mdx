@@ -35,4 +35,50 @@ Returns the same enriched trade format as [Wallet Trades](/data/wallets/trades).
 GET /v3/markets/slug/{slug}/positions
 ```
 
-Returns all wallets holding positions in any outcome of this market.
+Returns every wallet holding (or that has ever held) any outcome of this market, across V1 + V2, with realized P&L computed from the V2 adapter pipeline.
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | integer | 100 | Max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+| `sort` | string | `realized_pnl` | One of `amount`, `volume`, `realized_pnl`, `pnl` |
+| `status` | string | -- | `open` (current holders only) or `closed` (zeroed-out positions only). Omit to return all. |
+
+### Example
+
+```bash
+curl "https://api.polynode.dev/v3/markets/slug/dota2-aur1-liquid-2026-05-13/positions?limit=1"
+```
+
+```json
+{
+  "data": [
+    {
+      "user": "0xca70278943df14029a0f819f9baf060f67860908",
+      "token_id": "2241710011255999173993483096156975147842635212627942653724495466212043852479",
+      "amount": "0",
+      "avg_price": "500000",
+      "total_bought": "2000000",
+      "realized_pnl": "998000"
+    }
+  ],
+  "rows_returned": 1,
+  "has_more": true,
+  "offset": 0,
+  "limit": 1,
+  "elapsed_ms": 179
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `user` | string | Wallet address (lowercased) |
+| `token_id` | string | Outcome token ID this row is about |
+| `amount` | string | Current balance in raw 6-decimal USDC (`0` if fully exited) |
+| `avg_price` | string | Time-weighted average buy price in raw 6-decimal USDC (`500000` = $0.50) |
+| `total_bought` | string | Cumulative cost-basis of all purchases in raw 6-decimal USDC |
+| `realized_pnl` | string | Realized P&L on closed-out portion of the position in raw 6-decimal USDC |

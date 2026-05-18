@@ -27,7 +27,7 @@ curl https://api.polynode.dev/v3/markets/757833948800303928633808838006976450184
 ```json
 {
   "token_id": "75783394880030392863380883800697645018418815910449662777195626260206142035810",
-  "price": "1000000",
+  "price": 1.0,
   "resolved": true,
   "source": "settlement",
   "updated_at": "2026-05-13 12:27:28.558218",
@@ -40,7 +40,7 @@ curl https://api.polynode.dev/v3/markets/757833948800303928633808838006976450184
 | Field | Type | Description |
 |-------|------|-------------|
 | `token_id` | string | Outcome token ID |
-| `price` | string | Token price (6-decimal USDC). `1000000` = $1.00, `500000` = $0.50 |
+| `price` | number | Token price in USD. Range `0`–`1` for unresolved markets, exactly `0` or `1` for resolved. |
 | `resolved` | boolean | Whether the market has settled |
 | `source` | string | Price source: `settlement` (final payout), `clob_mid` (CLOB orderbook midpoint), `v1_condition` (V1 condition payout), `last_fill` (most recent trade price) |
 | `updated_at` | string | When the price was last updated |
@@ -49,7 +49,7 @@ curl https://api.polynode.dev/v3/markets/757833948800303928633808838006976450184
 
 Prices follow this priority chain (higher sources are never overwritten by lower ones):
 
-1. `settlement` -- final payout after market resolution (0 or 1000000)
+1. `settlement` -- final payout after market resolution (`0` or `1`)
 2. `clob_mid` -- live CLOB orderbook midpoint (updated every 5 minutes)
 3. `v1_condition` -- V1 condition payout data
 4. `last_fill` -- price from the most recent trade

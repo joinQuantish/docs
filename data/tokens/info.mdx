@@ -32,7 +32,7 @@ curl https://api.polynode.dev/v3/tokens/7578339488003039286338088380069764501841
       "condition_id": "0xaa08b43f2e39a28c52278738d456dfce516fcd966d43f157aab3727457cd4b6c",
       "outcome": "Down",
       "outcome_index": 1,
-      "price": "1000000.000000000000",
+      "price": 1.0,
       "question": "Bitcoin Up or Down - March 29, 1:10AM-1:15AM ET",
       "resolved": true,
       "slug": "btc-updown-5m-1774761000",
@@ -63,7 +63,7 @@ curl https://api.polynode.dev/v3/tokens/7578339488003039286338088380069764501841
 | Column | Type | Description |
 |--------|------|-------------|
 | `token_id` | string | Outcome token ID |
-| `price` | string | Current price (6-decimal USDC) |
+| `price` | number | Current price in USD (`0`–`1` for unresolved, exactly `0` or `1` for resolved) |
 | `resolved` | boolean | Whether the market has settled |
 | `source` | string | Price source: `settlement`, `clob_mid`, `v1_condition`, `last_fill` |
 | `updated_at` | string | When the price was last updated |
