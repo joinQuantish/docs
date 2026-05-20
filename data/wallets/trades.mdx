@@ -22,7 +22,7 @@ GET /v3/wallets/{address}/trades
 | `market_slug` | string | -- | Filter by market slug (resolves to token IDs) |
 | `min_amount` | integer | -- | Minimum `maker_amount_filled` (raw 6-decimal) |
 | `sort_by` | string | -- | `order_hash` groups fills by limit order visually (individual fill rows, sorted by most recent order) |
-| `group_by` | string | -- | `order_hash` aggregates fills per order into one row with totals, avg price, fill count |
+| `group_by` | string | -- | `user_trade` returns Polymarket-style user-visible trade rows; `transaction_hash` is an alias; `order_hash` aggregates fills per order |
 | `after` | integer | -- | Start of time range (Unix timestamp) |
 | `before` | integer | -- | End of time range (Unix timestamp) |
 | `order` | string | `desc` | `asc` or `desc` |
@@ -105,6 +105,9 @@ curl https://api.polynode.dev/v3/wallets/0x.../trades?after=1778000000&before=17
 | `maker_amount` | number | USD amount the maker provided |
 | `taker_amount` | number | USD amount the taker provided |
 | `fee` | number | Fee charged (USD) |
+| `token_id` | string | Outcome token ID for the visible trade leg |
+| `asset` | string | Alias for `token_id`, included for Polymarket compatibility |
+| `amount` | number | Alias for `size`, included for Polymarket compatibility |
 | `price` | number | Computed price per outcome token (maker_amount / taker_amount or inverse) |
 | `size` | number | Number of outcome tokens traded (USD) |
 | `timestamp` | string | Unix timestamp |
@@ -134,13 +137,23 @@ curl https://api.polynode.dev/v3/wallets/0xa9857c.../trades?sort_by=order_hash&l
 
 Groups all fills belonging to the same limit order together visually, sorted by most recent order first. Returns individual fill rows.
 
+### User-visible trades
+
+```bash
+curl https://api.polynode.dev/v3/wallets/0xa9857c.../trades?market_slug=dota2-aur1-liquid-2026-05-13&group_by=user_trade
+```
+
+Returns one row per user-visible trade, matching the Polymarket-style wallet trade feed. This removes complementary order-side rows that can appear in raw CTF fills and merges fills that represent the same user action. Use this grouping for UI trade history and user-facing volume math.
+
+`group_by=transaction_hash` is accepted as an alias for this behavior.
+
 ### Aggregate fills by order hash
 
 ```bash
 curl https://api.polynode.dev/v3/wallets/0x61b0ea32aff59e9893e867a2ab196476ab22dd96/trades?group_by=order_hash
 ```
 
-Returns one row per order with aggregated totals:
+Returns one row per order with aggregated totals. This is order-level data, not necessarily one user-visible trade. A single user-visible trade can include multiple order-side rows or complementary outcome rows, so use `group_by=user_trade` when matching Polymarket's wallet trade display.
 
 ```json
 {
