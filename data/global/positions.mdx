@@ -26,6 +26,17 @@ GET /v3/positions
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
 
+### Position statuses
+
+Global positions use the same lifecycle statuses as wallet positions:
+
+| Status | Meaning |
+|--------|---------|
+| `open` | Wallet holds shares in an active (unresolved) market |
+| `closed` | Position fully sold before market resolved |
+| `redeemable` | Market resolved, wallet still holds shares that can be redeemed |
+| `redeemed` | Market resolved and shares have been redeemed |
+
 ## Examples
 
 ### Latest position changes

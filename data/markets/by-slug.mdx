@@ -46,6 +46,8 @@ Returns every wallet holding (or that has ever held) any outcome of this market,
 | `sort` | string | `realized_pnl` | One of `amount`, `volume`, `realized_pnl`, `pnl` |
 | `status` | string | -- | `open` (current holders only) or `closed` (zeroed-out positions only). Omit to return all. |
 
+For this market-scoped endpoint, `status` is a holder-state filter on the current raw balance. `open` means `amount > 0`; `closed` means `amount = 0`. It is not the wallet/global lifecycle status split, where resolved nonzero positions are `redeemable` and resolved zero-balance positions are `redeemed`.
+
 ### Example
 
 ```bash
