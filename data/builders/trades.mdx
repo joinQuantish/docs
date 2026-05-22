@@ -1,10 +1,10 @@
 ---
 title: "Builder Trades"
 openapi: "GET /v3/builders/{code}/trades"
-description: "Get trades attributed to a specific builder, with market enrichment."
+description: "Get trades attributed to a specific builder, with builder profile and market enrichment."
 ---
 
-Returns fills attributed to a specific builder, enriched with market metadata. A time range filter (`after`/`before`) is required for large builders.
+Returns fills attributed to a specific builder, enriched with builder profile metadata and market context. Use token, market, event, side, size, and time filters to narrow the trade feed.
 
 ## Request
 
@@ -22,7 +22,15 @@ GET /v3/builders/{code}/trades
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `after` | integer | 0 | Start of time range (Unix timestamp). Required for large builders. |
+| `token_id` | string | -- | Filter trades involving this outcome token |
+| `condition_id` | string | -- | Filter by market condition ID (resolves to token IDs) |
+| `market_slug` | string | -- | Filter by market slug (resolves to token IDs) |
+| `event_slug` | string | -- | Filter by event slug (resolves to token IDs across the event) |
+| `side` | string | -- | `buy` or `sell`, based on the maker order side |
+| `min_amount` | integer | -- | Minimum `maker_amount_filled` (raw 6-decimal) |
+| `category` | string | -- | Filter by market category. Broad categories may return `400` asking for a narrower filter. |
+| `tag_slug` | string | -- | Filter by market tag slug. Broad tags may return `400` asking for a narrower filter. |
+| `after` | integer | 0 | Start of time range (Unix timestamp) |
 | `before` | integer | -- | End of time range |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
@@ -30,9 +38,126 @@ GET /v3/builders/{code}/trades
 ## Example
 
 ```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?after=1778480000&limit=1"
+curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&limit=1"
+```
+
+```json
+{
+  "builder": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
+  "builder_code": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
+  "builder_logo": "https://polymarket-upload.s3.us-east-2.amazonaws.com/profile-image-4043800-ced7ecde-0754-46a1-8a16-bb6c338fbf39.png",
+  "builder_name": "PolyCop",
+  "builder_verified": true,
+  "elapsed_ms": 12,
+  "has_more": true,
+  "limit": 1,
+  "offset": 0,
+  "rows_returned": 1,
+  "trades": [
+    {
+      "amount": 1.101,
+      "amount_usd": 1.08999,
+      "asset": "21578184864194020862792310253337084708609281967112790860038966988826118995357",
+      "builder": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
+      "builder_code": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
+      "builder_logo": "https://polymarket-upload.s3.us-east-2.amazonaws.com/profile-image-4043800-ced7ecde-0754-46a1-8a16-bb6c338fbf39.png",
+      "builder_name": "PolyCop",
+      "builder_verified": true,
+      "condition_id": "0x97269cbb95bd572b3dde34cdd619be278c8f13ba5e43e2e6c2d8639411128a86",
+      "direction": "BUY",
+      "fee": 0.00032,
+      "id": "0x0d57b8bd2cad026ccac902cee781becb358387c6fed98558802e0464434d4c9c_1060",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/dota2-7ffacddb21.jpg",
+      "maker": "0x952d11ebff81d6bd3185e608ed3515b94618ab8a",
+      "maker_amount": 1.08999,
+      "maker_asset_id": "0",
+      "market": "Dota 2: Tundra Esports vs Xtreme Gaming - Game 1 Winner",
+      "order_hash": "0x52d42aa621bd4c451151e97eb9b8a9ec4154f76da440ba31b73cebe918331ac2",
+      "outcome": "Tundra Esports",
+      "outcome_index": 0,
+      "price": 0.99,
+      "role": "maker",
+      "side": 0,
+      "size": 1.101,
+      "slug": "dota2-tundra-xtreme-2026-05-22-game1",
+      "taker": "0xe111180000d2663c0091e4f400237545b87b996b",
+      "taker_amount": 1.101,
+      "taker_asset_id": "21578184864194020862792310253337084708609281967112790860038966988826118995357",
+      "timestamp": "1779448364",
+      "token_id": "21578184864194020862792310253337084708609281967112790860038966988826118995357",
+      "transaction_hash": "0x0d57b8bd2cad026ccac902cee781becb358387c6fed98558802e0464434d4c9c"
+    }
+  ]
+}
 ```
 
 ## Response fields
 
-Each trade contains the same enriched fields as [Wallet Trades](/data/wallets/trades), including market context, computed price/size, order_hash, and direction.
+### Response envelope
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `builder` | string | Builder code requested in the path |
+| `builder_code` | string | Same builder code, included for profile-style naming consistency |
+| `builder_name` | string \| null | Public builder profile name when available |
+| `builder_logo` | string \| null | Public builder profile image URL when available |
+| `builder_verified` | boolean \| null | Whether the builder profile is verified, when available |
+| `trades` | array | Trade rows attributed to this builder |
+| `rows_returned` | integer | Number of trade rows returned |
+| `has_more` | boolean | Whether another page is available |
+| `offset` | integer | Pagination offset used |
+| `limit` | integer | Page size used |
+| `elapsed_ms` | integer | Server-side query time in milliseconds |
+
+### Trade data
+
+Each trade contains the same enriched fields as [Wallet Trades](/data/wallets/trades), including market context, computed price/size, order hash, and direction. Builder metadata is also repeated on each row for clients that stream or store trade rows independently.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `builder_code` | string | Builder code for this trade row |
+| `builder_name` | string \| null | Public builder profile name when available |
+| `builder_logo` | string \| null | Public builder profile image URL when available |
+| `builder_verified` | boolean \| null | Whether the builder profile is verified, when available |
+
+## Filter examples
+
+### Trades for a specific token
+
+```bash
+curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?token_id=21578184864194020862792310253337084708609281967112790860038966988826118995357&limit=10"
+```
+
+### Trades for a specific market
+
+```bash
+curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&limit=10"
+```
+
+### Maker-side buys or sells
+
+```bash
+curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?side=buy&limit=10"
+curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?side=sell&limit=10"
+```
+
+### Combine tag/category with a narrow market filter
+
+```bash
+curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&tag_slug=sports&limit=10"
+```
+
+Broad `category` and `tag_slug` filters can be too large to run directly. Add `market_slug`, `condition_id`, `token_id`, or time bounds to narrow the request.
+
+```json
+{
+  "error": "tag_slug filter too broad for builder trades; add market_slug, condition_id, token_id, or time bounds"
+}
+```
+
+## Related endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v3/builders` | Builder leaderboard |
+| `GET /v3/builders/{code}` | Stats and profile metadata for this builder |

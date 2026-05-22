@@ -8,6 +8,33 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-22 — Builder metadata and filtered builder trades
+
+Builder analytics now include public builder profile metadata on all builder endpoints:
+
+- `GET /v3/builders`
+- `GET /v3/builders/{code}`
+- `GET /v3/builders/{code}/trades`
+
+New additive fields:
+
+- `builder_code`
+- `builder_name`
+- `builder_logo`
+- `builder_verified`
+
+`/v3/builders/{code}/trades` also now supports builder-specific filters for `token_id`, `condition_id`, `market_slug`, `event_slug`, `side=buy|sell`, `min_amount`, `after`, `before`, `limit`, and `offset`.
+
+`category` and `tag_slug` filters are available with guardrails. Very broad category/tag requests return a structured `400` asking you to add `market_slug`, `condition_id`, `token_id`, or time bounds.
+
+```bash
+curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&tag_slug=sports&limit=10"
+```
+
+Existing fields and existing pagination behavior are unchanged.
+
+---
+
 ## 2026-05-18 — PnL methodology note
 
 For users comparing our PnL numbers to what the Polymarket frontend displays: the two are computed differently and will diverge for wallets that hold a lot of settled-but-not-redeemed positions.
@@ -2239,4 +2266,3 @@ npm install polynode-sdk@0.4.1
 - **Orderbook streaming** via `ob.polynode.dev`
 - **RPC endpoint** via `rpc.polynode.dev` — JSON-RPC with TX #1 delivery
 - **CLI** (`pn`) — stream events, query markets, manage API keys from the terminal
-

@@ -159,9 +159,9 @@ curl ".../equity?from=2026-04-01&max_markets=100"
 
 | Query shape | Typical first-hit latency | Cached |
 |---|---|---|
-| Default (any wallet) | 50ms – 2s | <50ms |
-| `include_unrealized=1`, large open-position count | 1s – 8s | <50ms |
-| Composed filters (`from` + `max_markets`) | <1s | <50ms |
+| Default (any wallet) | 50ms – 2s | &lt;50ms |
+| `include_unrealized=1`, large open-position count | 1s – 8s | &lt;50ms |
+| Composed filters (`from` + `max_markets`) | &lt;1s | &lt;50ms |
 
 Responses are cached for 5 minutes per unique parameter combination. The cache key separates every filter, so two callers using different filters won't collide.
 
