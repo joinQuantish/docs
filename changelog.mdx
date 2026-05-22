@@ -8,6 +8,19 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-22 — V3 grouped trade total alias
+
+Added `total_amount_usd` to v3 `group_by=order_hash` trade responses. It is an additive alias of `total_usd` / `amount_usd`, so clients that already use the v2 grouped trade field can read the same total field on v3.
+
+Affected endpoints:
+
+- `GET /v3/wallets/{address}/trades?group_by=order_hash`
+- `GET /v3/trades?group_by=order_hash`
+
+Existing fields are unchanged.
+
+---
+
 ## 2026-05-22 — Builder metadata and filtered builder trades
 
 Builder analytics now include public builder profile metadata on all builder endpoints:

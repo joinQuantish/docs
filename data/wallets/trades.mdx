@@ -22,7 +22,7 @@ GET /v3/wallets/{address}/trades
 | `market_slug` | string | -- | Filter by market slug (resolves to token IDs) |
 | `min_amount` | integer | -- | Minimum `maker_amount_filled` (raw 6-decimal) |
 | `sort_by` | string | -- | `order_hash` groups fills by limit order visually (individual fill rows, sorted by most recent order) |
-| `group_by` | string | -- | `user_trade` returns Polymarket-style user-visible trade rows; `transaction_hash` is an alias; `order_hash` aggregates fills per order |
+| `group_by` | string | -- | `user_trade` returns Polymarket-style user-visible trade rows; `transaction_hash` is an alias; `order_hash` aggregates wallet-visible fills per order |
 | `after` | integer | -- | Start of time range (Unix timestamp) |
 | `before` | integer | -- | End of time range (Unix timestamp) |
 | `order` | string | `desc` | `asc` or `desc` |
@@ -153,7 +153,7 @@ Returns one row per user-visible trade, matching the Polymarket-style wallet tra
 curl https://api.polynode.dev/v3/wallets/0x61b0ea32aff59e9893e867a2ab196476ab22dd96/trades?group_by=order_hash
 ```
 
-Returns one row per order with aggregated totals. This is order-level data, not necessarily one user-visible trade. A single user-visible trade can include multiple order-side rows or complementary outcome rows, so use `group_by=user_trade` when matching Polymarket's wallet trade display.
+Returns one row per wallet-visible order with aggregated totals. Complementary order-side rows are collapsed from the queried wallet's perspective before order aggregation, so UI volume and share counts do not double-count both sides of the same user action. Use `group_by=user_trade` when you want one row per user-visible fill without order-level rollup.
 
 ```json
 {
@@ -162,6 +162,7 @@ Returns one row per order with aggregated totals. This is order-level data, not 
       "order_hash": "0xea91f0d67086be...",
       "fill_count": 5,
       "avg_price": 0.57,
+      "total_amount_usd": 669.11,
       "total_usd": 669.11,
       "total_shares": 1173.88,
       "total_fee": 0.0,
@@ -187,7 +188,8 @@ Returns one row per order with aggregated totals. This is order-level data, not 
 |-------|------|-------------|
 | `order_hash` | string | The limit order hash |
 | `fill_count` | integer | Number of fills in this order |
-| `avg_price` | number | Volume-weighted average price (`total_usd / total_shares`) |
+| `avg_price` | number | Volume-weighted average price (`total_amount_usd / total_shares`) |
+| `total_amount_usd` | number | Total USD value across all fills. Alias of `total_usd`, included for compatibility with grouped onchain trade responses. |
 | `total_usd` | number | Total USD value across all fills |
 | `total_shares` | number | Total outcome tokens across all fills |
 | `total_fee` | number | Total fees (USD) |
