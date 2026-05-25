@@ -45,6 +45,34 @@ with PolyNode(api_key="pn_live_...") as pn:
     print(f"Tracking {status.state.market_count} markets")
 ```
 
+### Sports and Online Context
+
+Available in `polynode>=0.10.5`.
+
+```python
+from polynode import PolyNode
+
+with PolyNode(api_key="pn_live_...") as pn:
+    state = pn.sports_game_state(
+        "nba-cle-nyk-2026-05-31",
+        price_limit_tokens=20,
+    )
+
+    context = pn.sports_game_context(
+        "nba-cle-nyk-2026-05-31",
+        sources=["online"],
+        query_set="injuries",
+        max_queries=2,
+        max_per_query=5,
+        include_state=True,
+    )
+
+    web = pn.search_online(
+        "Cavaliers Knicks injury news",
+        max_results=5,
+    )
+```
+
 ### Async Client
 
 Every method is available in both sync and async variants:
