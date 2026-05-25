@@ -29,7 +29,7 @@ curl "https://api.polynode.dev/v2/search/online?q=Cavaliers%20Knicks%20injury%20
 | --- | --- |
 | `q` | Search query. Required. |
 | `max_results` | Number of normalized organic results. Defaults to `10`, capped at `20`. |
-| `engines` | Comma-separated engine adapters. Defaults to `brave,bing,duckduckgo`. |
+| `engines` | Comma-separated engine adapters. Defaults to `bing,duckduckgo`. `brave` is available as an opt-in adapter. |
 | `language` | Search language. Defaults to `en-US`. |
 | `time_range` | Optional freshness filter when supported: `day`, `week`, `month`, `year`. |
 | `safe_search` | Safe-search mode: `0`, `1`, or `2`. Defaults to `0`. |
@@ -46,7 +46,7 @@ Rate limit: `3` requests per `10` seconds per API key, in addition to your norma
   "adapter": "searxng",
   "status": "ok",
   "cached": false,
-  "engines_requested": ["brave", "bing", "duckduckgo"],
+  "engines_requested": ["bing", "duckduckgo"],
   "unresponsive_engines": [],
   "result_count": 2,
   "results": [
@@ -69,4 +69,3 @@ Rate limit: `3` requests per `10` seconds per API key, in addition to your norma
 ```
 
 `status` may be `partial` when one engine fails but other engines still return results.
-

@@ -591,10 +591,10 @@
           {
             "name": "engines",
             "in": "query",
-            "description": "Comma-separated engine adapters. Defaults to brave,bing,duckduckgo.",
+            "description": "Comma-separated engine adapters. Defaults to bing,duckduckgo. brave is available as an opt-in adapter.",
             "schema": {
               "type": "string",
-              "default": "brave,bing,duckduckgo"
+              "default": "bing,duckduckgo"
             }
           },
           {
