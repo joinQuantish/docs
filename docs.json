@@ -196,6 +196,12 @@
             ]
           },
           {
+            "group": "Sports",
+            "pages": [
+              "api-reference/sports/sports-markets"
+            ]
+          },
+          {
             "group": "BYOL",
             "pages": [
               "api-reference/byol/overview",

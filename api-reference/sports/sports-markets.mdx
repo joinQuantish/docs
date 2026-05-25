@@ -1,0 +1,93 @@
+---
+title: "Sports Markets"
+---
+
+PolyNode sports endpoints expose Polymarket-native sports market data: leagues, teams, games, markets, token IDs, current CLOB prices, and historical price series.
+
+These endpoints replace the old sportsbook/OddsJam experiment. They do not return sportsbook odds. They return Polymarket market prices and metadata, normalized around sports games.
+
+## Endpoints
+
+| Endpoint | Description |
+| --- | --- |
+| `GET /v2/sports/leagues` | Sports and esports league metadata from Polymarket Gamma |
+| `GET /v2/sports/summary` | League-level active/live/date summary |
+| `GET /v2/sports/live` | Backward-compatible live overview derived from `/sports/summary` |
+| `GET /v2/sports/leagues/{league}/teams` | Teams for a league, with logos and records when available |
+| `GET /v2/sports/leagues/{league}/games` | Games/events for a league, including markets and token IDs |
+| `GET /v2/sports/games/{slug}` | Full game/event detail with normalized markets |
+| `GET /v2/sports/games/{slug}/prices` | Current bid, ask, midpoint, and spread for game tokens |
+| `GET /v2/sports/games/{slug}/history` | Batch CLOB price history for game tokens |
+| `GET /v2/sports/market-types` | Polymarket sports market type codes with PolyNode labels/categories |
+| `GET /v2/sports/search?q={query}` | Search sports events and teams |
+
+## Current prices
+
+```bash
+curl "https://api.polynode.dev/v2/sports/games/nba-nyk-cle-2026-05-25/prices?limit_tokens=10" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "slug": "nba-nyk-cle-2026-05-25",
+  "title": "Knicks vs. Cavaliers",
+  "source": "polymarket_clob",
+  "count": 10,
+  "total_tokens": 106,
+  "truncated": true,
+  "tokens": [
+    {
+      "token_id": "36872217940161491972120830074682109141065398170878601426051147635064624582652",
+      "outcome": "Knicks",
+      "question": "Knicks vs. Cavaliers",
+      "market_type": "moneyline",
+      "best_bid": "0.56",
+      "best_ask": "0.57",
+      "midpoint": "0.565",
+      "spread": "0.01"
+    }
+  ],
+  "subscribe": {
+    "ws": "wss://ws.polynode.dev/ws",
+    "action": "subscribe",
+    "type": "orderbook",
+    "token_ids": ["..."]
+  }
+}
+```
+
+## Price history
+
+```bash
+curl "https://api.polynode.dev/v2/sports/games/nba-nyk-cle-2026-05-25/history?interval=1d&limit_tokens=2" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+`limit_tokens` defaults to `20` and is capped at `20` because Polymarket's batch history endpoint caps requests at 20 market asset IDs.
+
+```json
+{
+  "slug": "nba-nyk-cle-2026-05-25",
+  "source": "polymarket_clob",
+  "count": 2,
+  "total_tokens": 106,
+  "truncated": true,
+  "tokens": [
+    {
+      "token_id": "36872217940161491972120830074682109141065398170878601426051147635064624582652",
+      "outcome": "Knicks",
+      "history": [
+        { "t": 1779615604, "p": 0.555 }
+      ]
+    }
+  ]
+}
+```
+
+## Notes
+
+- `prices` fans out to Polymarket CLOB batch price, midpoint, and spread endpoints.
+- `history` uses Polymarket CLOB batch price history.
+- Scores are included only where Polymarket Gamma has score fields on the event. Use score fields as best-effort metadata, not guaranteed live scoreboard state.
+- For live orderbook updates, use the returned `subscribe.token_ids` with PolyNode orderbook WebSocket.
