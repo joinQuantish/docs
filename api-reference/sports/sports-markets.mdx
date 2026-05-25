@@ -16,10 +16,70 @@ These endpoints replace the old sportsbook/OddsJam experiment. They do not retur
 | `GET /v2/sports/leagues/{league}/teams` | Teams for a league, with logos and records when available |
 | `GET /v2/sports/leagues/{league}/games` | Games/events for a league, including markets and token IDs |
 | `GET /v2/sports/games/{slug}` | Full game/event detail with normalized markets |
+| `GET /v2/sports/games/{slug}/state` | Canonical game state: metadata, score fields, markets, current prices, and subscribe payload |
 | `GET /v2/sports/games/{slug}/prices` | Current bid, ask, midpoint, and spread for game tokens |
 | `GET /v2/sports/games/{slug}/history` | Batch CLOB price history for game tokens |
 | `GET /v2/sports/market-types` | Polymarket sports market type codes with PolyNode labels/categories |
 | `GET /v2/sports/search?q={query}` | Search sports events and teams |
+
+## Game state
+
+Use this when you want one game-centric object instead of manually joining game metadata, CLOB prices, markets, and websocket subscription details.
+
+```bash
+curl "https://api.polynode.dev/v2/sports/games/nba-cle-nyk-2026-05-31/state?price_limit_tokens=20" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "slug": "nba-cle-nyk-2026-05-31",
+  "title": "Cavaliers vs. Knicks",
+  "status": "scheduled",
+  "source": {
+    "metadata": "polymarket_gamma",
+    "prices": "polymarket_clob",
+    "history": null,
+    "score": "polymarket_gamma"
+  },
+  "score": {
+    "source": "gamma:event",
+    "score": null,
+    "period": "NS",
+    "live": null,
+    "freshness": "unknown"
+  },
+  "markets": [
+    {
+      "question": "Cavaliers vs. Knicks",
+      "sportsMarketType": "moneyline",
+      "clobTokenIds": ["..."],
+      "prices": [
+        {
+          "outcome": "Cavaliers",
+          "best_bid": "0.31",
+          "best_ask": "0.47",
+          "midpoint": "0.39",
+          "spread": "0.16"
+        }
+      ]
+    }
+  ],
+  "subscribe": {
+    "ws": "wss://ws.polynode.dev/ws",
+    "action": "subscribe",
+    "type": "orderbook",
+    "token_ids": ["..."]
+  }
+}
+```
+
+Add `include_history=true` to include CLOB price history in the same response:
+
+```bash
+curl "https://api.polynode.dev/v2/sports/games/nba-cle-nyk-2026-05-31/state?include_history=true&history_limit_tokens=2&interval=1d" \
+  -H "x-api-key: YOUR_KEY"
+```
 
 ## Current prices
 

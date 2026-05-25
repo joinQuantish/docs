@@ -3602,6 +3602,104 @@
         ]
       }
     },
+    "/v2/sports/games/{slug}/state": {
+      "get": {
+        "tags": [
+          "Sports & Esports"
+        ],
+        "summary": "Game State",
+        "description": "Canonical game-centric state: game metadata, score fields, markets enriched with current CLOB prices, orderbook subscribe payload, and optional CLOB price history.",
+        "operationId": "sports_game_state",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Game slug (e.g. nba-cle-nyk-2026-05-31)",
+            "schema": {
+              "type": "string",
+              "default": "nba-cle-nyk-2026-05-31"
+            }
+          },
+          {
+            "name": "include_history",
+            "in": "query",
+            "description": "Include batch CLOB price history in the response. Defaults to false.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "price_limit_tokens",
+            "in": "query",
+            "description": "Maximum game tokens to price. Defaults to 200, capped at 200.",
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "history_limit_tokens",
+            "in": "query",
+            "description": "Maximum game tokens to include in history. Defaults to 20, capped at 20.",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 20
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "Polymarket CLOB history interval, e.g. 1d, 1w, max.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fidelity",
+            "in": "query",
+            "description": "History fidelity in minutes, passed through to CLOB.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "start_ts",
+            "in": "query",
+            "description": "History start timestamp, unix seconds or YYYY-MM-DD.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_ts",
+            "in": "query",
+            "description": "History end timestamp, unix seconds or YYYY-MM-DD.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical game state"
+          },
+          "404": {
+            "description": "Game not found"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v2/sports/leagues/{code}/teams": {
       "get": {
         "tags": [
