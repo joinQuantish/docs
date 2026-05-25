@@ -87,7 +87,7 @@ curl "https://api.polynode.dev/v2/sports/games/nba-cle-nyk-2026-05-31/state?incl
 Use this for agent workflows that need game-specific search context next to the normalized sports object. PolyNode generates a small set of matchup, injury, lineup, news, or market-specific queries from the Polymarket game record, then runs the requested sources.
 
 ```bash
-curl "https://api.polynode.dev/v2/sports/games/nba-cle-nyk-2026-05-31/context?sources=x,ddg_instant&query_set=injuries&max_queries=2&max_per_query=5&include_state=true&price_limit_tokens=20" \
+curl "https://api.polynode.dev/v2/sports/games/nba-cle-nyk-2026-05-31/context?sources=x,online&query_set=injuries&max_queries=2&max_per_query=5&include_state=true&price_limit_tokens=20" \
   -H "x-api-key: YOUR_KEY"
 ```
 
@@ -103,7 +103,7 @@ curl "https://api.polynode.dev/v2/sports/games/nba-cle-nyk-2026-05-31/context?so
       "reason": "Availability and injury context for both teams."
     }
   ],
-  "sources_requested": ["x", "ddg_instant"],
+  "sources_requested": ["x", "online"],
   "sources": {
     "x": {
       "status": "ok",
@@ -115,9 +115,10 @@ curl "https://api.polynode.dev/v2/sports/games/nba-cle-nyk-2026-05-31/context?so
         }
       ]
     },
-    "ddg_instant": {
+    "online": {
       "status": "ok",
-      "note": "DuckDuckGo Instant Answer is not a full search-results API; live sports queries often return no instant answer.",
+      "source": "search_online",
+      "adapter": "searxng",
       "queries": []
     }
   },
@@ -132,14 +133,14 @@ Parameters:
 
 | Parameter | Description |
 | --- | --- |
-| `sources` | Comma-separated sources. Defaults to `x`. Supported: `x`, `ddg_instant`. `ddg` and `web` alias to `ddg_instant`. |
+| `sources` | Comma-separated sources. Defaults to `x`. Supported: `x`, `online`. `web`, `search`, `ddg`, and `ddg_instant` alias to `online`. |
 | `query_set` | Query strategy. Supported: `default`, `injuries`, `lineups`, `news`, `social`, `markets`. |
 | `max_queries` | Number of generated queries to run. Defaults to `3`, capped at `5`. |
 | `max_per_query` | Per-source result count per query. Defaults to `5`, capped at `10`. |
 | `include_state` | Include the `/state` response in the same payload. Defaults to `false`. |
 | `price_limit_tokens` | Token cap used when `include_state=true`. Defaults to `20`, capped at `200`. |
 
-The `x` source uses the same X Search beta quota and 1 request/second key-level rate limit as `/v2/x/search`. Each generated X query consumes one X Search quota unit. The `ddg_instant` source is DuckDuckGo Instant Answer, not a full search results API, so live sports queries may return no external results.
+The `x` source uses the same X Search beta quota and 1 request/second key-level rate limit as `/v2/x/search`. Each generated X query consumes one X Search quota unit. The `online` source uses `/v2/search/online` and returns normalized public web results from PolyNode's internal metasearch adapter.
 
 ## Current prices
 

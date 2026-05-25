@@ -1,0 +1,72 @@
+---
+title: "Online Search API"
+sidebarTitle: "Online Search"
+description: "Search the public web and return normalized organic results for agent context, market research, and enrichment workflows."
+icon: "search"
+tag: "BETA"
+---
+
+<Note>
+**Beta.** This endpoint is designed for low-volume context enrichment. Results are best-effort, cached, and may be partial when upstream search engines throttle or fail.
+</Note>
+
+## Endpoint
+
+```http
+GET /v2/search/online
+```
+
+Search the public web and return normalized organic results. PolyNode runs this through an internal metasearch adapter and caches responses to keep the endpoint lightweight.
+
+```bash
+curl "https://api.polynode.dev/v2/search/online?q=Cavaliers%20Knicks%20injury%20news&max_results=5" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+## Query parameters
+
+| Parameter | Description |
+| --- | --- |
+| `q` | Search query. Required. |
+| `max_results` | Number of normalized organic results. Defaults to `10`, capped at `20`. |
+| `engines` | Comma-separated engine adapters. Defaults to `brave,bing,duckduckgo`. |
+| `language` | Search language. Defaults to `en-US`. |
+| `time_range` | Optional freshness filter when supported: `day`, `week`, `month`, `year`. |
+| `safe_search` | Safe-search mode: `0`, `1`, or `2`. Defaults to `0`. |
+| `cache_ttl_seconds` | Cache TTL for this query. Defaults to `600`, capped at `3600`. |
+
+Rate limit: `3` requests per `10` seconds per API key, in addition to your normal tier limit.
+
+## Response
+
+```json
+{
+  "query": "Cavaliers Knicks injury news",
+  "source": "search_online",
+  "adapter": "searxng",
+  "status": "ok",
+  "cached": false,
+  "engines_requested": ["brave", "bing", "duckduckgo"],
+  "unresponsive_engines": [],
+  "result_count": 2,
+  "results": [
+    {
+      "title": "Cleveland Cavaliers Injury Status - ESPN",
+      "url": "https://www.espn.com/nba/team/injuries/_/name/cle/cleveland-cavaliers",
+      "domain": "espn.com",
+      "snippet": "Visit ESPN for the current injury situation...",
+      "engines": ["duckduckgo"],
+      "score": 1,
+      "category": "general",
+      "published_at": null
+    }
+  ],
+  "answers": [],
+  "suggestions": [],
+  "fetched_at": "2026-05-25T11:10:00.000Z",
+  "elapsed_ms": 1200
+}
+```
+
+`status` may be `partial` when one engine fails but other engines still return results.
+

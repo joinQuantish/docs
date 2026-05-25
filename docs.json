@@ -250,9 +250,10 @@
             ]
           },
           {
-            "group": "X Search",
+            "group": "Search & Context",
             "tag": "BETA",
             "pages": [
+              "api-reference/search-online",
               "api-reference/x-search"
             ]
           },

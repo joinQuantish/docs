@@ -559,6 +559,114 @@
         ]
       }
     },
+    "/v2/search/online": {
+      "get": {
+        "tags": [
+          "Search & Context"
+        ],
+        "summary": "Online Search",
+        "description": "Search the public web through PolyNode's internal metasearch adapter and return normalized organic results. Intended for low-volume agent context, research, and enrichment workflows.",
+        "operationId": "search_online",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search query.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "max_results",
+            "in": "query",
+            "description": "Number of normalized organic results. Defaults to 10, capped at 20.",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 20
+            }
+          },
+          {
+            "name": "engines",
+            "in": "query",
+            "description": "Comma-separated engine adapters. Defaults to brave,bing,duckduckgo.",
+            "schema": {
+              "type": "string",
+              "default": "brave,bing,duckduckgo"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "description": "Search language.",
+            "schema": {
+              "type": "string",
+              "default": "en-US"
+            }
+          },
+          {
+            "name": "time_range",
+            "in": "query",
+            "description": "Optional freshness filter when supported.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month",
+                "year"
+              ]
+            }
+          },
+          {
+            "name": "safe_search",
+            "in": "query",
+            "description": "Safe-search mode.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "enum": [
+                0,
+                1,
+                2
+              ]
+            }
+          },
+          {
+            "name": "cache_ttl_seconds",
+            "in": "query",
+            "description": "Cache TTL for the query. Defaults to 600, capped at 3600.",
+            "schema": {
+              "type": "integer",
+              "default": 600,
+              "minimum": 1,
+              "maximum": 3600
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Online search results"
+          },
+          "400": {
+            "description": "Invalid query"
+          },
+          "429": {
+            "description": "Search online rate limited"
+          },
+          "502": {
+            "description": "Search adapter unavailable"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v1/stats/{token_id}": {
       "get": {
         "tags": [
@@ -3706,7 +3814,7 @@
           "Sports & Esports"
         ],
         "summary": "Game Context",
-        "description": "Agent-friendly sports context. Generates matchup, injury, lineup, news, social, or market-specific queries from a Polymarket game, then runs optional external sources such as X Search and DuckDuckGo Instant Answer. Additive endpoint; no context data is persisted.",
+        "description": "Agent-friendly sports context. Generates matchup, injury, lineup, news, social, or market-specific queries from a Polymarket game, then runs optional external sources such as X Search and Online Search. Additive endpoint; no context data is persisted.",
         "operationId": "sports_game_context",
         "parameters": [
           {
@@ -3722,7 +3830,7 @@
           {
             "name": "sources",
             "in": "query",
-            "description": "Comma-separated context sources. Supported: x, ddg_instant. Aliases: ddg, web. Defaults to x.",
+            "description": "Comma-separated context sources. Supported: x, online. Aliases: web, search, ddg, ddg_instant. Defaults to x.",
             "schema": {
               "type": "string",
               "default": "x"
