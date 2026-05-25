@@ -404,10 +404,8 @@ Response to a client ping.
 
 ```json
 {
-  "error": "token_limit",
-  "message": "Your starter tier allows max 200 tokens. Requested 500. Upgrade at https://polynode.dev/pricing",
-  "max": 200,
-  "requested": 500
+  "error": "input_too_large",
+  "message": "Too many markets in one request. Use markets: [\"*\"] for the full firehose, or split very large explicit lists across requests."
 }
 ```
 

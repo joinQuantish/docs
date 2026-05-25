@@ -62,4 +62,4 @@ Key generation is rate limited to **1 per IP per day**.
 |--------|-------|-----|
 | 401 | Missing or invalid API key | Include your key as `x-api-key` header or `?key=` param |
 | 403 | Invalid or inactive API key | Verify your key is correct, or generate a new one |
-| 429 | Rate limit exceeded | Reduce request frequency. Default: 120 req/min |
+| 429 | Rate limit exceeded | Reduce request frequency. Free tier: 60 req/min |

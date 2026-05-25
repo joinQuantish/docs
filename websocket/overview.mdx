@@ -196,6 +196,21 @@ wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
 
 The API key is passed as a query parameter. Keys starting with `pn_live_` or `qm_live_` are accepted.
 
+## Connection limits
+
+Most apps only need one Event WebSocket connection. A single connection can carry multiple filtered subscriptions at once, including fills, settlements, trades, blocks, wallet filters, market filters, oracle events, and Chainlink price feeds.
+
+| Tier | Concurrent Event WebSockets | Filter items per subscription | Session limit |
+|------|-----------------------------|-------------------------------|---------------|
+| **Free** | 1 | 10,000 | 1 hour/day |
+| **Starter** ($50/mo) | 10 | 10,000 | Unlimited |
+| **Growth** ($200/mo) | 50 | 10,000 | Unlimited |
+| **Enterprise** ($750/mo) | Unlimited | Custom | Unlimited |
+
+<Note>
+  Event WebSocket limits apply to `ws.polynode.dev`. Orderbook WebSocket limits for `ob.polynode.dev` are listed separately in the [Orderbook Stream](/orderbook/overview) docs.
+</Note>
+
 ## Multiple streams, one connection
 
 PolyNode supports multiple subscription types on the same WebSocket:
