@@ -1,0 +1,131 @@
+---
+title: "Create Username Challenge"
+description: "Create the wallet-signing challenge for a Polymarket username create or update."
+---
+
+```text
+POST /v3/polymarket/profiles/username/challenge
+```
+
+Creates a one-time challenge for a user-owned EOA. The response contains:
+
+- a Polymarket SIWE message to sign with `personal_sign`
+- a PolyNode consent typed-data payload to sign with `eth_signTypedData_v4`
+- derived deposit wallet and Safe addresses
+
+The challenge expires after 10 minutes.
+
+## Request
+
+```json
+{
+  "address": "0xC3579b0C908F43d50C63951A30C6f72fCEA4F6A0",
+  "username": "alice123",
+  "action": "set_username"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `address` | string | Yes | User EOA address |
+| `username` | string | Yes | Desired username |
+| `action` | string | No | Must be `set_username`. Defaults to `set_username`. |
+
+## Example
+
+```bash
+curl -X POST "https://api.polynode.dev/v3/polymarket/profiles/username/challenge" \
+  -H "content-type: application/json" \
+  -H "x-api-key: pn_live_..." \
+  -d '{
+    "address": "0xC3579b0C908F43d50C63951A30C6f72fCEA4F6A0",
+    "username": "alice123",
+    "action": "set_username"
+  }'
+```
+
+## Response
+
+```json
+{
+  "challenge_id": "pmprof_652e85a9839fe3e97348a72ff5018ef5",
+  "address": "0xC3579b0C908F43d50C63951A30C6f72fCEA4F6A0",
+  "username": "alice123",
+  "action": "set_username",
+  "expires_at": "2026-05-26T13:03:06Z",
+  "polymarket": {
+    "signature_type": "personal_sign",
+    "message": "polymarket.com wants you to sign in with your Ethereum account:\n0xC3579b0C908F43d50C63951A30C6f72fCEA4F6A0\n\nWelcome to Polymarket! Sign to connect.\n\nURI: https://polymarket.com\nVersion: 1\nChain ID: 137\nNonce: 4b7d...\nIssued At: 2026-05-26T12:53:06.000Z\nExpiration Time: 2026-06-02T12:53:06.000Z",
+    "fields": {
+      "domain": "polymarket.com",
+      "address": "0xC3579b0C908F43d50C63951A30C6f72fCEA4F6A0",
+      "statement": "Welcome to Polymarket! Sign to connect.",
+      "uri": "https://polymarket.com",
+      "version": "1",
+      "chainId": 137,
+      "nonce": "4b7d...",
+      "issuedAt": "2026-05-26T12:53:06.000Z",
+      "expirationTime": "2026-06-02T12:53:06.000Z"
+    }
+  },
+  "consent": {
+    "signature_type": "typed_data_v4",
+    "domain": {
+      "name": "Polynode",
+      "version": "1",
+      "chainId": 137
+    },
+    "types": {
+      "EIP712Domain": [
+        { "name": "name", "type": "string" },
+        { "name": "version", "type": "string" },
+        { "name": "chainId", "type": "uint256" }
+      ],
+      "PolymarketProfileAction": [
+        { "name": "action", "type": "string" },
+        { "name": "address", "type": "address" },
+        { "name": "username", "type": "string" },
+        { "name": "challengeId", "type": "string" },
+        { "name": "expiresAt", "type": "uint256" }
+      ]
+    },
+    "primaryType": "PolymarketProfileAction",
+    "message": {
+      "action": "set_username",
+      "address": "0xc3579b0c908f43d50c63951a30c6f72fcea4f6a0",
+      "username": "alice123",
+      "challengeId": "pmprof_652e85a9839fe3e97348a72ff5018ef5",
+      "expiresAt": 1779800586
+    }
+  },
+  "derived": {
+    "deposit_wallet": "0xf6d30d58add6c6814d1b086ec543a16ab6cc9a31",
+    "safe_address": "0xba2ef45d0fe68cee6351420b60fb554bbe91bf02",
+    "safe_deployed": false
+  }
+}
+```
+
+## Server checks
+
+The endpoint:
+
+- validates address and username format
+- checks Polymarket username availability
+- fetches a Gamma nonce
+- builds the exact Polymarket SIWE message
+- builds PolyNode consent typed data
+- derives deposit wallet and Safe addresses
+- checks whether the derived Safe is deployed on Polygon
+- stores a one-time challenge under a 10 minute TTL
+
+## Errors
+
+| Status | Code | Meaning |
+|---|---|---|
+| `400` | `invalid_address` or `invalid_username` | Request validation failed |
+| `400` | `challenge_mismatch` | Unsupported action |
+| `409` | `username_taken` | Username is not available |
+| `429` | `rate_limited` | Profile-specific rate limit exceeded |
+| `502` | `upstream_unavailable` | Polymarket, Gamma, or Polygon RPC failed |
+

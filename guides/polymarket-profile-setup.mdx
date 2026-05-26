@@ -1,0 +1,331 @@
+---
+title: "Polymarket Profile Setup"
+sidebarTitle: "Profile Setup"
+description: "Let your users create or change their Polymarket username from an EOA wallet without handling private keys."
+icon: "user-round-cog"
+---
+
+The Polymarket Profile API lets your app set a user's Polymarket username from their EOA wallet.
+
+The flow is built for platforms that already have a wallet-connected frontend and a backend that can call PolyNode with an API key. The user signs two payloads in their wallet. Your backend sends the signatures to PolyNode. PolyNode handles the Polymarket profile create or username update.
+
+<Warning>
+Never send user private keys to PolyNode. Never expose your PolyNode API key in a browser app. Your backend calls PolyNode. Your frontend only asks the user wallet to sign the returned messages.
+</Warning>
+
+## What this does
+
+This API can:
+
+- check whether a username is available
+- create a profile for a new EOA-backed Polymarket user
+- change the username for an existing EOA-backed Polymarket profile
+- return public profile state for an address
+
+This API does not:
+
+- upload profile images
+- link X accounts
+- enable trading
+- bypass Polymarket compliance, eligibility, captcha, geoblock, or terms flows
+- accept private keys or long-lived Polymarket session credentials
+
+## Endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/v3/polymarket/profiles/username-available` | Check whether Polymarket will accept a username |
+| `POST` | `/v3/polymarket/profiles/username/challenge` | Create the wallet-signing challenge |
+| `POST` | `/v3/polymarket/profiles/username/complete` | Submit signatures and create or update the username |
+| `GET` | `/v3/polymarket/profiles/{address}` | Read public profile state |
+
+All endpoints require a paid PolyNode API key.
+
+```bash
+curl "https://api.polynode.dev/v3/polymarket/profiles/username-available?username=alice123" \
+  -H "x-api-key: pn_live_..."
+```
+
+## The integration flow
+
+1. Your frontend collects the user's EOA address and desired username.
+2. Your backend calls `POST /v3/polymarket/profiles/username/challenge`.
+3. Your frontend asks the user wallet to sign `challenge.polymarket.message` with `personal_sign`.
+4. Your frontend asks the user wallet to sign `challenge.consent` with `eth_signTypedData_v4`.
+5. Your backend calls `POST /v3/polymarket/profiles/username/complete` with both signatures.
+6. PolyNode logs in to Polymarket with the user-signed SIWE message, creates the profile if needed, and sets the username.
+
+The two signatures are intentional:
+
+- The Polymarket SIWE signature authorizes sign-in to Polymarket.
+- The PolyNode consent signature authorizes this specific profile action: address, username, action, challenge id, chain id, and expiration.
+
+That prevents a generic login signature from being reused later to mutate a username.
+
+## Backend: create a challenge
+
+Your backend owns the PolyNode API key.
+
+```ts
+// POST /api/polymarket-profile/challenge in your own backend
+export async function createPolymarketProfileChallenge(input: {
+  address: string;
+  username: string;
+}) {
+  const resp = await fetch(
+    "https://api.polynode.dev/v3/polymarket/profiles/username/challenge",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": process.env.POLYNODE_KEY!,
+      },
+      body: JSON.stringify({
+        address: input.address,
+        username: input.username,
+        action: "set_username",
+      }),
+    }
+  );
+
+  const body = await resp.json();
+  if (!resp.ok) {
+    throw new Error(`${body.error}: ${body.message}`);
+  }
+  return body;
+}
+```
+
+Challenge response shape:
+
+```json
+{
+  "challenge_id": "pmprof_652e85a9839fe3e97348a72ff5018ef5",
+  "address": "0xC3579b0C908F43d50C63951A30C6f72fCEA4F6A0",
+  "username": "alice123",
+  "action": "set_username",
+  "expires_at": "2026-05-26T13:03:06Z",
+  "polymarket": {
+    "signature_type": "personal_sign",
+    "message": "polymarket.com wants you to sign in with your Ethereum account:\n0xC3579b0C908F43d50C63951A30C6f72fCEA4F6A0\n\nWelcome to Polymarket! Sign to connect.\n\nURI: https://polymarket.com\nVersion: 1\nChain ID: 137\nNonce: 4b7d...\nIssued At: 2026-05-26T12:53:06.000Z\nExpiration Time: 2026-06-02T12:53:06.000Z",
+    "fields": {
+      "domain": "polymarket.com",
+      "address": "0xC3579b0C908F43d50C63951A30C6f72fCEA4F6A0",
+      "statement": "Welcome to Polymarket! Sign to connect.",
+      "uri": "https://polymarket.com",
+      "version": "1",
+      "chainId": 137,
+      "nonce": "4b7d...",
+      "issuedAt": "2026-05-26T12:53:06.000Z",
+      "expirationTime": "2026-06-02T12:53:06.000Z"
+    }
+  },
+  "consent": {
+    "signature_type": "typed_data_v4",
+    "domain": {
+      "name": "Polynode",
+      "version": "1",
+      "chainId": 137
+    },
+    "types": {
+      "EIP712Domain": [
+        { "name": "name", "type": "string" },
+        { "name": "version", "type": "string" },
+        { "name": "chainId", "type": "uint256" }
+      ],
+      "PolymarketProfileAction": [
+        { "name": "action", "type": "string" },
+        { "name": "address", "type": "address" },
+        { "name": "username", "type": "string" },
+        { "name": "challengeId", "type": "string" },
+        { "name": "expiresAt", "type": "uint256" }
+      ]
+    },
+    "primaryType": "PolymarketProfileAction",
+    "message": {
+      "action": "set_username",
+      "address": "0xc3579b0c908f43d50c63951a30c6f72fcea4f6a0",
+      "username": "alice123",
+      "challengeId": "pmprof_652e85a9839fe3e97348a72ff5018ef5",
+      "expiresAt": 1779800586
+    }
+  },
+  "derived": {
+    "deposit_wallet": "0xf6d30d58add6c6814d1b086ec543a16ab6cc9a31",
+    "safe_address": "0xba2ef45d0fe68cee6351420b60fb554bbe91bf02",
+    "safe_deployed": false
+  }
+}
+```
+
+<Note>
+`expires_at` is an ISO string for display. `consent.message.expiresAt` is a Unix timestamp because it is signed as `uint256` in EIP-712.
+</Note>
+
+## Frontend: ask the wallet to sign
+
+With viem:
+
+```ts
+const challenge = await fetch("/api/polymarket-profile/challenge", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ address, username }),
+}).then((r) => r.json());
+
+const polymarketSignature = await walletClient.signMessage({
+  account: address,
+  message: challenge.polymarket.message,
+});
+
+const consentSignature = await walletClient.signTypedData({
+  account: address,
+  domain: challenge.consent.domain,
+  types: challenge.consent.types,
+  primaryType: challenge.consent.primaryType,
+  message: challenge.consent.message,
+});
+```
+
+With ethers v6:
+
+```ts
+const signer = await browserProvider.getSigner();
+const address = await signer.getAddress();
+
+const polymarketSignature = await signer.signMessage(
+  challenge.polymarket.message
+);
+
+const { EIP712Domain, ...types } = challenge.consent.types;
+const consentSignature = await signer.signTypedData(
+  challenge.consent.domain,
+  types,
+  challenge.consent.message
+);
+```
+
+## Backend: complete the action
+
+The complete request must be sent from your backend with the same PolyNode API key that created the challenge.
+
+```ts
+// POST /api/polymarket-profile/complete in your own backend
+export async function completePolymarketProfile(input: {
+  challenge_id: string;
+  address: string;
+  username: string;
+  polymarket_signature: string;
+  consent_signature: string;
+}) {
+  const resp = await fetch(
+    "https://api.polynode.dev/v3/polymarket/profiles/username/complete",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": process.env.POLYNODE_KEY!,
+      },
+      body: JSON.stringify(input),
+    }
+  );
+
+  const body = await resp.json();
+  if (!resp.ok) {
+    throw new Error(`${body.error}: ${body.message}`);
+  }
+  return body;
+}
+```
+
+Complete response:
+
+```json
+{
+  "status": "success",
+  "action": "set_username",
+  "username": "alice123",
+  "address": "0xc3579b0c908f43d50c63951a30c6f72fcea4f6a0",
+  "deposit_wallet": "0xf6d30d58add6c6814d1b086ec543a16ab6cc9a31",
+  "safe_address": "0xba2ef45d0fe68cee6351420b60fb554bbe91bf02",
+  "gamma_user_id": "8313180",
+  "gamma_profile_id": "8391726",
+  "created_profile": true,
+  "changed_username": true,
+  "profile_url": "https://polymarket.com/profile/0xf6d30d58add6c6814d1b086ec543a16ab6cc9a31"
+}
+```
+
+## Username rules
+
+PolyNode validates the username before calling Polymarket:
+
+```text
+^[A-Za-z0-9_]{3,32}$
+```
+
+Polymarket is still the final authority. A username can pass local validation and still return `available: false`.
+
+Recommended UX:
+
+1. Call `username-available` as the user types, with debounce.
+2. Disable submit until it returns `available: true`.
+3. Re-check availability when creating the challenge.
+4. Handle `username_taken` on complete, because another user can claim the username between challenge and completion.
+
+## Security checklist
+
+- Keep `POLYNODE_KEY` only on your backend.
+- Never ask the user for a private key.
+- Treat `challenge_id` as one-time use.
+- Submit complete within 10 minutes.
+- Send complete with the same API key that created the challenge.
+- Verify on your side that the connected wallet address matches the address in the challenge before asking the wallet to sign.
+- Do not cache or log raw signatures, SIWE tokens, cookies, or Authorization headers.
+
+## Error codes
+
+| Code | Meaning |
+|---|---|
+| `invalid_address` | Address is not a valid EVM address |
+| `invalid_username` | Username failed local validation |
+| `username_taken` | Polymarket says the username is unavailable |
+| `challenge_not_found` | Challenge expired, was consumed, or never existed |
+| `challenge_expired` | Challenge is older than 10 minutes |
+| `challenge_mismatch` | API key, address, username, action, or challenge id does not match |
+| `signature_invalid` | One of the wallet signatures cannot be recovered to the challenge EOA |
+| `safe_already_deployed` | The derived Safe is already deployed but Gamma did not return a user for the session |
+| `polymarket_login_failed` | Polymarket login rejected the SIWE token |
+| `polymarket_profile_create_failed` | Profile creation failed upstream |
+| `polymarket_profile_update_failed` | Username or preference update failed upstream |
+| `polymarket_compliance_blocked` | Polymarket returned a compliance, auth, or eligibility block |
+| `upstream_unavailable` | Polymarket, Gamma, or Polygon RPC could not be reached |
+| `rate_limited` | Profile-specific rate limit exceeded |
+
+Error responses use:
+
+```json
+{
+  "error": "username_taken",
+  "message": "Username is not available"
+}
+```
+
+## Rate limits
+
+Profile endpoints have stricter limits than normal data endpoints:
+
+| Endpoint | Limit |
+|---|---|
+| `username-available` | 5 req/sec per API key, 1 req/sec per username |
+| `challenge` | 1 req/sec per API key, 5 req/min per EOA |
+| `complete` | 1 req/sec per API key, 3 req/min per EOA |
+
+Responses include the standard PolyNode rate-limit headers:
+
+```text
+x-ratelimit-limit
+x-ratelimit-remaining
+x-ratelimit-reset
+```
+

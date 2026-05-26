@@ -1,0 +1,61 @@
+---
+title: "Get Public Profile"
+description: "Read public Polymarket profile state for an EOA address."
+---
+
+```text
+GET /v3/polymarket/profiles/{address}
+```
+
+Returns normalized public profile information from Polymarket for an EOA address.
+
+## Path parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `address` | string | Yes | EOA address |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/polymarket/profiles/0xC3579b0C908F43d50C63951A30C6f72fCEA4F6A0" \
+  -H "x-api-key: pn_live_..."
+```
+
+```json
+{
+  "address": "0xc3579b0c908f43d50c63951a30c6f72fcea4f6a0",
+  "proxy_wallet": "0xf6d30d58add6c6814d1b086ec543a16ab6cc9a31",
+  "username": "alice123",
+  "pseudonym": "Glistening-Risk",
+  "display_username_public": true,
+  "profile_image": null,
+  "x_username": null,
+  "verified_badge": false,
+  "source": "polymarket"
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|---|---|---|
+| `address` | string | EOA address requested, lowercase |
+| `proxy_wallet` | string or null | Polymarket wallet address returned by Gamma |
+| `username` | string or null | Public profile username |
+| `pseudonym` | string or null | Polymarket-generated pseudonym |
+| `display_username_public` | boolean or null | Whether the username is public |
+| `profile_image` | string or null | Profile image URL if present |
+| `x_username` | string or null | Linked X username if present |
+| `verified_badge` | boolean or null | Polymarket verified badge state |
+| `source` | string | `polymarket` |
+
+## Errors
+
+| Status | Code | Meaning |
+|---|---|---|
+| `400` | `invalid_address` | Address is not a valid EVM address |
+| `404` | `profile_not_found` | Polymarket did not return a public profile |
+| `429` | `rate_limited` | Profile-specific rate limit exceeded |
+| `502` | `upstream_unavailable` | Polymarket/Gamma profile lookup failed |
+

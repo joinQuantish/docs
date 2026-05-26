@@ -85,6 +85,7 @@
             "pages": [
               "webhooks/management/create",
               "webhooks/management/list",
+              "webhooks/management/get",
               "webhooks/management/update",
               "webhooks/management/delete",
               "webhooks/management/test",
@@ -102,6 +103,17 @@
             "group": "Overview",
             "pages": [
               "data/overview"
+            ]
+          },
+          {
+            "group": "Polymarket Profiles",
+            "tag": "Beta",
+            "pages": [
+              "api-reference/polymarket-profiles/overview",
+              "api-reference/polymarket-profiles/username-available",
+              "api-reference/polymarket-profiles/create-challenge",
+              "api-reference/polymarket-profiles/complete-username",
+              "api-reference/polymarket-profiles/get-profile"
             ]
           },
           {
@@ -456,6 +468,7 @@
           {
             "group": "Guides",
             "pages": [
+              "guides/polymarket-profile-setup",
               "guides/deposit-wallets",
               "guides/v2-migration",
               "guides/v2-details",

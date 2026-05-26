@@ -1,0 +1,69 @@
+---
+title: "Polymarket Profiles"
+description: "Create or change a Polymarket username from a user-owned EOA wallet."
+---
+
+The Polymarket Profiles API is a secure username provisioning flow for apps that manage their own users and wallets.
+
+Use it when your user has an EOA wallet and you want to let them set up a Polymarket username without sending private keys or long-lived Polymarket credentials to PolyNode.
+
+## Base URL
+
+```text
+https://api.polynode.dev
+```
+
+## Authentication
+
+Every request requires a paid PolyNode API key.
+
+```bash
+curl "https://api.polynode.dev/v3/polymarket/profiles/username-available?username=alice123" \
+  -H "x-api-key: pn_live_..."
+```
+
+Your backend should call these endpoints. Do not expose your API key to browser clients.
+
+## Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | [`/v3/polymarket/profiles/username-available`](/api-reference/polymarket-profiles/username-available) | Check whether a username is available |
+| `POST` | [`/v3/polymarket/profiles/username/challenge`](/api-reference/polymarket-profiles/create-challenge) | Create the two wallet-signing payloads |
+| `POST` | [`/v3/polymarket/profiles/username/complete`](/api-reference/polymarket-profiles/complete-username) | Submit signatures and create or change the username |
+| `GET` | [`/v3/polymarket/profiles/{address}`](/api-reference/polymarket-profiles/get-profile) | Read public profile state |
+
+## Flow
+
+1. Check the username.
+2. Create a challenge for `{address, username, action}`.
+3. User signs the Polymarket SIWE message with `personal_sign`.
+4. User signs the PolyNode consent typed data with `eth_signTypedData_v4`.
+5. Complete the action from your backend.
+
+See the [Polymarket Profile Setup guide](/guides/polymarket-profile-setup) for a complete frontend and backend integration.
+
+## Error shape
+
+```json
+{
+  "error": "challenge_mismatch",
+  "message": "challenge fields do not match completion request"
+}
+```
+
+Common error codes:
+
+| Code | Meaning |
+|---|---|
+| `invalid_address` | Invalid EVM address |
+| `invalid_username` | Username failed local validation |
+| `username_taken` | Username is unavailable |
+| `challenge_not_found` | Challenge expired, already consumed, or missing |
+| `challenge_expired` | Challenge is older than 10 minutes |
+| `challenge_mismatch` | Challenge fields or API key do not match |
+| `signature_invalid` | Wallet signature did not recover to the requested EOA |
+| `polymarket_compliance_blocked` | Polymarket rejected the action for compliance or eligibility reasons |
+| `upstream_unavailable` | Polymarket, Gamma, or Polygon RPC failed |
+| `rate_limited` | Profile-specific rate limit exceeded |
+

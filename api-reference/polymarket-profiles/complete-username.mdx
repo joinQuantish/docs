@@ -1,0 +1,109 @@
+---
+title: "Complete Username Action"
+description: "Submit wallet signatures and create or change the user's Polymarket username."
+---
+
+```text
+POST /v3/polymarket/profiles/username/complete
+```
+
+Completes a previously created username challenge. This endpoint consumes the challenge atomically, verifies both wallet signatures, logs in to Polymarket, creates the profile if needed, and sets the username.
+
+<Warning>
+Call this from your backend with the same PolyNode API key that created the challenge. Do not call it directly from the browser.
+</Warning>
+
+## Request
+
+```json
+{
+  "challenge_id": "pmprof_652e85a9839fe3e97348a72ff5018ef5",
+  "address": "0xC3579b0C908F43d50C63951A30C6f72fCEA4F6A0",
+  "username": "alice123",
+  "polymarket_signature": "0x...",
+  "consent_signature": "0x..."
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `challenge_id` | string | Yes | Challenge id returned by the challenge endpoint |
+| `address` | string | Yes | Same EOA address used in the challenge |
+| `username` | string | Yes | Same username used in the challenge |
+| `polymarket_signature` | string | Yes | Signature of `challenge.polymarket.message` using `personal_sign` |
+| `consent_signature` | string | Yes | Signature of `challenge.consent` using `eth_signTypedData_v4` |
+
+## Example
+
+```bash
+curl -X POST "https://api.polynode.dev/v3/polymarket/profiles/username/complete" \
+  -H "content-type: application/json" \
+  -H "x-api-key: pn_live_..." \
+  -d '{
+    "challenge_id": "pmprof_652e85a9839fe3e97348a72ff5018ef5",
+    "address": "0xC3579b0C908F43d50C63951A30C6f72fCEA4F6A0",
+    "username": "alice123",
+    "polymarket_signature": "0x...",
+    "consent_signature": "0x..."
+  }'
+```
+
+## Response
+
+```json
+{
+  "status": "success",
+  "action": "set_username",
+  "username": "alice123",
+  "address": "0xc3579b0c908f43d50c63951a30c6f72fcea4f6a0",
+  "deposit_wallet": "0xf6d30d58add6c6814d1b086ec543a16ab6cc9a31",
+  "safe_address": "0xba2ef45d0fe68cee6351420b60fb554bbe91bf02",
+  "gamma_user_id": "8313180",
+  "gamma_profile_id": "8391726",
+  "created_profile": true,
+  "changed_username": true,
+  "profile_url": "https://polymarket.com/profile/0xf6d30d58add6c6814d1b086ec543a16ab6cc9a31"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `status` | string | `success` |
+| `action` | string | `set_username` |
+| `username` | string | Final requested username |
+| `address` | string | EOA address, lowercase |
+| `deposit_wallet` | string | Deterministic Polymarket deposit wallet |
+| `safe_address` | string | Deterministic Safe address checked during challenge |
+| `gamma_user_id` | string or null | Polymarket Gamma user id if returned |
+| `gamma_profile_id` | string or null | Polymarket Gamma profile id if returned |
+| `created_profile` | boolean | `true` if PolyNode created a new Gamma profile |
+| `changed_username` | boolean | `true` if PolyNode changed the profile name |
+| `profile_url` | string | Polymarket profile URL using the deposit wallet address |
+
+## Server checks
+
+The endpoint:
+
+- loads and consumes the challenge atomically
+- requires the same PolyNode API key hash that created the challenge
+- requires exact address, username, action, and challenge id match
+- verifies the challenge is not expired
+- recovers the signer from the Polymarket SIWE signature
+- recovers the signer from the PolyNode consent typed-data signature
+- requires both recovered addresses to equal the challenge EOA
+- re-checks username availability unless the current profile already has that username
+
+## Errors
+
+| Status | Code | Meaning |
+|---|---|---|
+| `400` | `challenge_mismatch` | API key, address, username, action, or challenge id did not match |
+| `400` | `challenge_expired` | Challenge is older than 10 minutes |
+| `400` | `signature_invalid` | A signature was malformed or recovered to the wrong address |
+| `404` | `challenge_not_found` | Challenge was missing, already consumed, or expired from Redis |
+| `409` | `username_taken` | Username became unavailable before completion |
+| `409` | `safe_already_deployed` | Derived Safe is deployed but Gamma did not return a user for the session |
+| `403` | `polymarket_compliance_blocked` | Polymarket rejected the action for compliance or eligibility reasons |
+| `429` | `rate_limited` | Profile-specific rate limit exceeded |
+| `502` | `polymarket_login_failed`, `polymarket_profile_create_failed`, `polymarket_profile_update_failed`, or `upstream_unavailable` | Upstream action failed |
+

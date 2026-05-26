@@ -1,0 +1,52 @@
+---
+title: "Check Username Availability"
+description: "Check whether Polymarket will accept a username."
+---
+
+```text
+GET /v3/polymarket/profiles/username-available
+```
+
+Use this endpoint before creating a challenge. It calls Polymarket's username availability check and returns the upstream result.
+
+## Query parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `username` | string | Yes | Desired username. Local validation is `^[A-Za-z0-9_]{3,32}$`. Polymarket is still the final authority. |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/polymarket/profiles/username-available?username=alice123" \
+  -H "x-api-key: pn_live_..."
+```
+
+```json
+{
+  "username": "alice123",
+  "available": true,
+  "source": "polymarket"
+}
+```
+
+Unavailable usernames return `200` with `available: false`:
+
+```json
+{
+  "username": "alice_123",
+  "available": false,
+  "source": "polymarket"
+}
+```
+
+## Errors
+
+| Status | Code | Meaning |
+|---|---|---|
+| `400` | `invalid_username` | Missing username or invalid local format |
+| `401` | varies | Missing or invalid PolyNode API key |
+| `402` | varies | Paid plan required |
+| `429` | `rate_limited` | Profile-specific rate limit exceeded |
+| `502` | `upstream_unavailable` | Polymarket availability check failed |
+
