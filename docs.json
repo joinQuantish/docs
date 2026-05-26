@@ -389,6 +389,7 @@
             "pages": [
               "sdks/ts/overview",
               "sdks/ts/rest-api",
+              "sdks/ts/v3-data",
               "sdks/ts/websocket",
               "sdks/ts/orderbook",
               "sdks/ts/orderbook-engine",

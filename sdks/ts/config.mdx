@@ -10,7 +10,9 @@ sidebarTitle: "Configuration"
 const pn = new PolyNode({
   apiKey: 'pn_live_...',                    // required
   baseUrl: 'https://api.polynode.dev',      // default
+  v3BaseUrl: 'https://api.polynode.dev',    // optional override for pn.v3
   wsUrl: 'wss://ws.polynode.dev/ws',        // default
+  obUrl: 'wss://ob.polynode.dev/ws',        // default
   rpcUrl: 'https://rpc.polynode.dev',       // default
   timeout: 10000,                            // ms, default 10s
 });

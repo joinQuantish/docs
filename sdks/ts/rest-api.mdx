@@ -5,8 +5,7 @@ sidebarTitle: "REST API"
 
 ## REST Methods
 
-
-Every REST endpoint has a typed method on the `PolyNode` client:
+The TypeScript SDK preserves the original top-level REST methods on their legacy V1/V2 paths. New historical data, builder analytics, and Polymarket profile methods live under the opt-in `pn.v3` namespace.
 
 ```typescript
 // System
@@ -33,6 +32,11 @@ await pn.walletSettlements(address, { count: 10 });
 
 // Wallets
 await pn.wallet(address);
+await pn.resolve('0xabc...'); // wallet, EOA, or username
+await pn.walletOnchainPositions(address, {
+  since: 1778000000,
+  tagSlug: 'Crypto',
+});
 
 // Enriched Data (1 req/sec rate limit)
 await pn.leaderboard({ period: 'monthly', sort: 'profit' });
@@ -48,4 +52,75 @@ await pn.marketsByCategory('crypto');
 // RPC (rpc.polynode.dev)
 await pn.rpc('eth_blockNumber');
 await pn.rpc('eth_getBlockByNumber', ['latest', false]);
+```
+
+## V3 Data API
+
+Use `pn.v3` for the newer paginated historical endpoints. This keeps existing integrations stable while letting new code opt into V3 explicitly.
+
+```typescript
+// Global data
+await pn.v3.stats();
+await pn.v3.trades({ limit: 100, minAmount: 1_000_000 });
+await pn.v3.positions({ status: 'open', sort: 'size', tokenId });
+await pn.v3.fees({ after: 1778000000 });
+await pn.v3.resolutions({ limit: 25 });
+
+// Wallet analytics
+await pn.v3.wallet(address);
+await pn.v3.walletPnl(address, { period: '30d', includeUnrealized: true });
+await pn.v3.walletPnlEvents(address, { period: '7d', group: 'day' });
+await pn.v3.walletTrades(address, {
+  side: 'both',
+  marketSlug: 'bitcoin-100k',
+  groupBy: 'user_trade',
+});
+await pn.v3.walletPositions(address, {
+  status: 'redeemable',
+  sort: 'recent',
+});
+
+// Market lookups
+await pn.v3.searchMarkets({ query: 'bitcoin', limit: 10 });
+await pn.v3.marketByCondition(conditionId);
+await pn.v3.marketPrice(tokenId);
+await pn.v3.marketTrades(tokenId, { limit: 50 });
+await pn.v3.marketPositionsBySlug('bitcoin-100k', { status: 'open' });
+await pn.v3.token(tokenId);
+
+// Builders
+await pn.v3.builders({ sort: 'volume', limit: 20 });
+await pn.v3.builder(builderCode);
+await pn.v3.builderTrades(builderCode, {
+  eventSlug: 'who-will-win-the-2026-world-cup',
+  side: 'buy',
+  limit: 100,
+});
+```
+
+## Polymarket Profiles
+
+The profile helpers wrap the V3 username flow. Create the challenge on your backend, have the user sign both payloads in your frontend, then submit the signatures from your backend.
+
+```typescript
+const available = await pn.v3.polymarketUsernameAvailable('alice123');
+
+const challenge = await pn.v3.createPolymarketUsernameChallenge({
+  address: userEoa,
+  username: 'alice123',
+});
+
+// Browser wallet signs:
+// - challenge.polymarket.message with personal_sign
+// - challenge.consent with eth_signTypedData_v4
+
+const result = await pn.v3.completePolymarketUsername({
+  challenge_id: challenge.challenge_id,
+  address: userEoa,
+  username: 'alice123',
+  polymarket_signature: polymarketSignature,
+  consent_signature: consentSignature,
+});
+
+const profile = await pn.v3.polymarketProfile(result.deposit_wallet);
 ```

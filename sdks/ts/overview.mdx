@@ -34,3 +34,27 @@ console.log(`${markets.count} markets, ${markets.total} total`);
 const results = await pn.search('bitcoin');
 console.log(results.results[0].question);
 ```
+
+## V3 Quick Start
+
+The original `pn.market`, `pn.wallet`, and other top-level methods keep their legacy behavior. Use `pn.v3` when you want the newer paginated historical data endpoints.
+
+```typescript
+// Wallet P&L and enriched positions
+const summary = await pn.v3.wallet('0xa9857c7bcb9bcfafd2c132ab053f34f678610058');
+const positions = await pn.v3.walletPositions(summary.address, {
+  status: 'open',
+  sort: 'size',
+  limit: 25,
+});
+
+// Builder-attributed fills
+const trades = await pn.v3.builderTrades('0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df', {
+  marketSlug: 'dota2-tundra-xtreme-2026-05-22-game1',
+  limit: 50,
+});
+
+// Resolve wallet identifiers
+const resolved = await pn.resolve('alice123');
+console.log(resolved.safe, resolved.eoa, resolved.username, resolved.type);
+```

@@ -66,6 +66,28 @@ That prevents a generic login signature from being reused later to mutate a user
 
 Your backend owns the PolyNode API key.
 
+With the TypeScript SDK:
+
+```ts
+import { PolyNode } from "polynode-sdk";
+
+const pn = new PolyNode({ apiKey: process.env.POLYNODE_KEY! });
+
+// POST /api/polymarket-profile/challenge in your own backend
+export async function createPolymarketProfileChallenge(input: {
+  address: string;
+  username: string;
+}) {
+  return pn.v3.createPolymarketUsernameChallenge({
+    address: input.address,
+    username: input.username,
+    action: "set_username",
+  });
+}
+```
+
+With raw HTTP:
+
 ```ts
 // POST /api/polymarket-profile/challenge in your own backend
 export async function createPolymarketProfileChallenge(input: {
@@ -164,6 +186,40 @@ Challenge response shape:
 
 ## Frontend: ask the wallet to sign
 
+With an EIP-1193 wallet provider:
+
+```ts
+type EthereumProvider = {
+  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
+};
+
+declare const ethereum: EthereumProvider;
+
+const challenge = await fetch("/api/polymarket-profile/challenge", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ address, username }),
+}).then((r) => r.json());
+
+const polymarketSignature = await ethereum.request({
+  method: "personal_sign",
+  params: [challenge.polymarket.message, address],
+});
+
+const consentSignature = await ethereum.request({
+  method: "eth_signTypedData_v4",
+  params: [
+    address,
+    JSON.stringify({
+      domain: challenge.consent.domain,
+      types: challenge.consent.types,
+      primaryType: challenge.consent.primaryType,
+      message: challenge.consent.message,
+    }),
+  ],
+});
+```
+
 With viem:
 
 ```ts
@@ -178,10 +234,12 @@ const polymarketSignature = await walletClient.signMessage({
   message: challenge.polymarket.message,
 });
 
+const { EIP712Domain: _EIP712Domain, ...types } = challenge.consent.types;
+
 const consentSignature = await walletClient.signTypedData({
   account: address,
   domain: challenge.consent.domain,
-  types: challenge.consent.types,
+  types,
   primaryType: challenge.consent.primaryType,
   message: challenge.consent.message,
 });
@@ -208,6 +266,22 @@ const consentSignature = await signer.signTypedData(
 ## Backend: complete the action
 
 The complete request must be sent from your backend with the same PolyNode API key that created the challenge.
+
+With the TypeScript SDK:
+
+```ts
+export async function completePolymarketProfile(input: {
+  challenge_id: string;
+  address: string;
+  username: string;
+  polymarket_signature: string;
+  consent_signature: string;
+}) {
+  return pn.v3.completePolymarketUsername(input);
+}
+```
+
+With raw HTTP:
 
 ```ts
 // POST /api/polymarket-profile/complete in your own backend
@@ -328,4 +402,3 @@ x-ratelimit-limit
 x-ratelimit-remaining
 x-ratelimit-reset
 ```
-

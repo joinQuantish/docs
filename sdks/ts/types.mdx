@@ -43,5 +43,38 @@ import type {
   EventSearchResult,
   EventSearchMarket,
   MarketsByCategoryResponse,
+
+  // Wallet helpers
+  ResolveResult,
+  WalletOnchainPositionsParams,
+  WalletOnchainPositionsResponse,
+  WalletOnchainPosition,
+
+  // V3 data API
+  V3Trade,
+  V3GroupedOrderTrade,
+  V3TradesResponse,
+  V3Position,
+  V3PositionsResponse,
+  V3WalletSummary,
+  V3WalletPnl,
+  V3WalletPnlEventsResponse,
+  V3MarketMetadata,
+  V3MarketSearchRow,
+  V3MarketPosition,
+  V3MarketPrice,
+  V3TokenInfo,
+  V3Builder,
+  V3BuilderTradesResponse,
+  V3FeeEvent,
+  V3ResolutionEvent,
+
+  // V3 Polymarket profiles
+  V3PolymarketUsernameAvailableResponse,
+  V3PolymarketUsernameChallengeResponse,
+  V3PolymarketUsernameCompleteResponse,
+  V3PolymarketProfile,
 } from 'polynode-sdk';
 ```
+
+V3 response envelopes use the same pagination fields as the REST API: `rows_returned`, `has_more`, `offset`, `limit`, and `elapsed_ms`.

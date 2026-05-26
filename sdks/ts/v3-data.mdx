@@ -1,0 +1,279 @@
+---
+title: "TypeScript — V3 Data & Profiles"
+sidebarTitle: "V3 Data & Profiles"
+---
+
+V3 endpoints are available from the same `PolyNode` client under `pn.v3`.
+
+Top-level methods such as `pn.market()`, `pn.wallet()`, and `pn.leaderboard()` keep their legacy behavior. Use `pn.v3` when you want the newer paginated historical data API, builder analytics, and Polymarket profile helpers.
+
+```typescript
+import { PolyNode } from 'polynode-sdk';
+
+const pn = new PolyNode({ apiKey: process.env.POLYNODE_KEY! });
+```
+
+## Wallets
+
+```typescript
+const wallet = '0xa9857c7bcb9bcfafd2c132ab053f34f678610058';
+
+const summary = await pn.v3.wallet(wallet);
+
+const pnl = await pn.v3.walletPnl(wallet, {
+  period: '30d',
+  includeUnrealized: true,
+});
+
+const pnlEvents = await pn.v3.walletPnlEvents(wallet, {
+  period: '7d',
+  group: 'day',
+});
+
+const positions = await pn.v3.walletPositions(wallet, {
+  status: 'open',
+  sort: 'size',
+  order: 'desc',
+  limit: 25,
+});
+
+const trades = await pn.v3.walletTrades(wallet, {
+  side: 'both',
+  groupBy: 'user_trade',
+  marketSlug: 'dota2-aur1-liquid-2026-05-13',
+  limit: 100,
+});
+```
+
+`walletPositions()` returns lifecycle statuses: `open`, `closed`, `redeemable`, and `redeemed`. Use `redeemable` for resolved positions that still hold claimable payout.
+
+## Global Feeds
+
+```typescript
+const recentTrades = await pn.v3.trades({
+  after: 1778000000,
+  minAmount: 1_000_000,
+  order: 'desc',
+  limit: 100,
+});
+
+const globalPositions = await pn.v3.positions({
+  status: 'open',
+  sort: 'size',
+  tokenId: '75783394880030392863380883800697645018418815910449662777195626260206142035810',
+  limit: 50,
+});
+
+const resolutions = await pn.v3.resolutions({ limit: 25 });
+const feeEvents = await pn.v3.fees({ after: 1778000000, limit: 100 });
+```
+
+All list responses include `rows_returned`, `has_more`, `offset`, `limit`, and `elapsed_ms`.
+
+## Markets
+
+```typescript
+const matches = await pn.v3.searchMarkets({
+  query: 'bitcoin',
+  limit: 10,
+});
+
+const condition = await pn.v3.marketByCondition(
+  '0x6c4d221b3cf2c8d17467c70a8aa3c714e30299b6e57cd3e4269dc8a41d2b0cd8'
+);
+
+const price = await pn.v3.marketPrice(
+  '75783394880030392863380883800697645018418815910449662777195626260206142035810'
+);
+
+const marketTrades = await pn.v3.marketTradesBySlug(
+  'dota2-aur1-liquid-2026-05-13',
+  { limit: 50 }
+);
+
+const holders = await pn.v3.marketPositionsBySlug(
+  'dota2-aur1-liquid-2026-05-13',
+  { status: 'open', sort: 'pnl', limit: 50 }
+);
+```
+
+`marketByCondition()` and `token()` return the standard V3 `data: [...]` envelope.
+
+```typescript
+const token = await pn.v3.token(
+  '75783394880030392863380883800697645018418815910449662777195626260206142035810'
+);
+
+const row = token.data[0];
+console.log(row.price, row.question, row.slug);
+```
+
+## Builders
+
+```typescript
+const builders = await pn.v3.builders({
+  sort: 'volume',
+  limit: 20,
+});
+
+const builder = await pn.v3.builder(
+  '0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df'
+);
+
+const builderTrades = await pn.v3.builderTrades(builder.builder_code ?? builder.builder, {
+  eventSlug: 'who-will-win-the-2026-world-cup',
+  side: 'buy',
+  minAmount: 1_000_000,
+  limit: 100,
+});
+```
+
+`builderTrades()` supports `tokenId`, `conditionId`, `marketSlug`, `eventSlug`, `side`, `category`, `tagSlug`, `minAmount`, `after`, `before`, `limit`, and `offset`.
+
+## Resolve Identifiers
+
+Use `resolve()` to turn any Polymarket wallet, EOA, or username into the full identity triple.
+
+```typescript
+const resolved = await pn.resolve('Fredi9999');
+
+console.log(resolved.safe);     // Polymarket trading wallet
+console.log(resolved.eoa);      // controlling EOA, or null
+console.log(resolved.username); // public username, or null
+console.log(resolved.type);     // "safe", "deposit_wallet", or "proxy"
+```
+
+## On-chain Positions
+
+The V2 on-chain positions helper is still top-level because it predates V3 and is already used by the local cache.
+
+```typescript
+const onchain = await pn.walletOnchainPositions(wallet, {
+  since: 1778000000,
+  until: 1778600000,
+  tagSlug: 'Crypto',
+});
+
+console.log(onchain.total_realized_pnl);
+console.log(onchain.total_unrealized_pnl);
+
+for (const position of onchain.positions) {
+  console.log(
+    position.condition_id,
+    position.market,
+    position.outcome,
+    position.current_price,
+    position.unrealized_pnl
+  );
+}
+```
+
+## Polymarket Username Flow
+
+The profile helpers let your app create or change a user's Polymarket username from an EOA wallet. Your backend calls PolyNode with your API key. Your frontend asks the user wallet to sign the returned messages.
+
+<Warning>
+Do not expose your PolyNode API key in the browser. Do not send private keys to PolyNode.
+</Warning>
+
+### Backend: create challenge
+
+```typescript
+import { PolyNode } from 'polynode-sdk';
+
+const pn = new PolyNode({ apiKey: process.env.POLYNODE_KEY! });
+
+export async function createProfileChallenge(input: {
+  address: string;
+  username: string;
+}) {
+  return pn.v3.createPolymarketUsernameChallenge({
+    address: input.address,
+    username: input.username,
+    action: 'set_username',
+  });
+}
+```
+
+The challenge contains two payloads:
+
+- `challenge.polymarket.message` — sign with `personal_sign`
+- `challenge.consent` — sign with `eth_signTypedData_v4`
+
+### Frontend: request signatures
+
+This example uses the raw EIP-1193 provider shape so the same payload works with browser wallets, wallet connectors, and embedded wallet providers.
+
+```typescript
+type EthereumProvider = {
+  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
+};
+
+declare const ethereum: EthereumProvider;
+
+const challenge = await fetch('/api/polymarket-profile/challenge', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ address, username }),
+}).then((r) => r.json());
+
+const polymarketSignature = await ethereum.request({
+  method: 'personal_sign',
+  params: [challenge.polymarket.message, address],
+});
+
+const consentSignature = await ethereum.request({
+  method: 'eth_signTypedData_v4',
+  params: [
+    address,
+    JSON.stringify({
+      domain: challenge.consent.domain,
+      types: challenge.consent.types,
+      primaryType: challenge.consent.primaryType,
+      message: challenge.consent.message,
+    }),
+  ],
+});
+```
+
+### Backend: complete username action
+
+```typescript
+export async function completeProfileUsername(input: {
+  challenge_id: string;
+  address: string;
+  username: string;
+  polymarket_signature: string;
+  consent_signature: string;
+}) {
+  return pn.v3.completePolymarketUsername(input);
+}
+```
+
+Completion returns the created or updated profile state:
+
+```typescript
+const result = await completeProfileUsername({
+  challenge_id: challenge.challenge_id,
+  address,
+  username,
+  polymarket_signature: String(polymarketSignature),
+  consent_signature: String(consentSignature),
+});
+
+console.log(result.deposit_wallet);
+console.log(result.safe_address);
+console.log(result.profile_url);
+```
+
+### Public profile lookup
+
+```typescript
+const profile = await pn.v3.polymarketProfile(result.deposit_wallet);
+
+console.log(profile.username);
+console.log(profile.x_username);
+console.log(profile.verified_badge);
+```
+
+For the full security model and raw HTTP examples, see [Polymarket Profile Setup](/guides/polymarket-profile-setup).

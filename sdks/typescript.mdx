@@ -58,6 +58,29 @@ await pn.walletSettlements(address, { count: 10 });
 
 // Wallets
 await pn.wallet(address);
+await pn.resolve('Fredi9999');
+await pn.walletOnchainPositions(address, { tagSlug: 'Crypto' });
+
+// V3 historical data
+await pn.v3.wallet(address);
+await pn.v3.walletTrades(address, { groupBy: 'user_trade', limit: 100 });
+await pn.v3.walletPositions(address, { status: 'open', sort: 'size' });
+await pn.v3.searchMarkets({ query: 'bitcoin', limit: 10 });
+await pn.v3.builderTrades(builderCode, { eventSlug: 'who-will-win-the-2026-world-cup' });
+
+// V3 Polymarket profiles
+await pn.v3.polymarketUsernameAvailable('alice123');
+const challenge = await pn.v3.createPolymarketUsernameChallenge({
+  address: userEoa,
+  username: 'alice123',
+});
+await pn.v3.completePolymarketUsername({
+  challenge_id: challenge.challenge_id,
+  address: userEoa,
+  username: 'alice123',
+  polymarket_signature: '0x...',
+  consent_signature: '0x...',
+});
 
 // Enriched Data (1 req/sec rate limit)
 await pn.leaderboard({ period: 'monthly', sort: 'profit' });
@@ -204,7 +227,9 @@ pn.ws.disconnect();     // close connection
 const pn = new PolyNode({
   apiKey: 'pn_live_...',                    // required
   baseUrl: 'https://api.polynode.dev',      // default
+  v3BaseUrl: 'https://api.polynode.dev',    // optional override for pn.v3
   wsUrl: 'wss://ws.polynode.dev/ws',        // default
+  obUrl: 'wss://ob.polynode.dev/ws',        // default
   rpcUrl: 'https://rpc.polynode.dev',       // default
   timeout: 10000,                            // ms, default 10s
 });

@@ -8,6 +8,31 @@ icon: "clock-rotate-left"
 
 ---
 
+## 2026-05-26 — TypeScript SDK v0.10.13: V3 parity, resolver, and profile helpers
+
+Released a TypeScript SDK parity update for the current REST API surface.
+
+What's new:
+
+- `pn.v3` namespace for the V3 historical data API while preserving existing top-level SDK behavior.
+- Typed V3 methods for wallet summaries, wallet P&L, P&L events, wallet trades, wallet positions, global trades, global positions, market search, market price, market trades, market positions, leaderboard, tags, builders, builder trades, fees, resolutions, conditions, and token info.
+- Builder trade filters in the SDK: `tokenId`, `conditionId`, `marketSlug`, `eventSlug`, `side`, `category`, `tagSlug`, `minAmount`, `after`, `before`, `limit`, and `offset`.
+- `pn.resolve(query)` for wallet / EOA / username resolution, returning `{ safe, eoa, username, type }`.
+- Fully typed `pn.walletOnchainPositions()` response including `condition_id`, `unrealized_pnl`, `current_price`, `market_status`, `market`, `slug`, `event_slug`, `outcome`, `won`, `winning_outcome_index`, `last_trade_at`, `closed_at`, `resolved_at`, and top-level `total_unrealized_pnl`.
+- V3 Polymarket profile helpers: `polymarketUsernameAvailable`, `createPolymarketUsernameChallenge`, `completePolymarketUsername`, and `polymarketProfile`.
+
+Docs updated:
+
+- Added [TypeScript — V3 Data & Profiles](/sdks/ts/v3-data) with copyable SDK examples.
+- Updated [TypeScript — REST API](/sdks/ts/rest-api), [TypeScript — Types](/sdks/ts/types), and [Polymarket Profile Setup](/guides/polymarket-profile-setup) with SDK-specific examples and the exact signing flow.
+
+Notes:
+
+- Existing `pn.market()`, `pn.wallet()`, `pn.leaderboard()`, and other top-level methods keep their historical paths and response shapes.
+- Event-by-ID lookup and a fully filterable events listing remain backend/API work, not just SDK wrapper work. Current SDK support reflects the endpoints that exist publicly today.
+
+---
+
 ## 2026-05-22 — V3 grouped trade total alias
 
 Added `total_amount_usd` to v3 `group_by=order_hash` trade responses. It is an additive alias of `total_usd` / `amount_usd`, so clients that already use the v2 grouped trade field can read the same total field on v3.

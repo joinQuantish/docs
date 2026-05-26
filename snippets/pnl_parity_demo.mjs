@@ -10,7 +10,10 @@
  *   POLYNODE_KEY=pn_live_xxx node pnl_parity_demo.mjs                # uses default wallets
  */
 
-const KEY = process.env.POLYNODE_KEY ?? 'pn_live_test_session_tracking_51eca107e9b347b589f5b0a04f98eb1d';
+const KEY = process.env.POLYNODE_KEY;
+if (!KEY) {
+  throw new Error('Set POLYNODE_KEY before running this demo.');
+}
 
 // Default test wallets — fresh, never used before in our internal tests
 const WALLETS = process.argv[2]
