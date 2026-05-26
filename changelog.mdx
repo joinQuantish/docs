@@ -13,6 +13,7 @@ What's new:
 
 - `position_status_change` now detects first observed `none` -> `open` transitions for watched wallets from CTF ERC-1155 transfer deltas.
 - Existing wallet positions are seeded when a wallet is first watched, so new webhooks emit future transitions without backfilling historical opens.
+- Each watched wallet now gets its own seed cursor, so adding a new wallet does not replay stale source rows from before that wallet's baseline.
 - Payloads now include `previous_amount`, `new_amount`, `delta_amount`, `transfer_amount`, `source`, `source_event_id`, block/transaction fields, and market enrichment.
 - Filters now include `wallet_addresses`, `token_ids`, `condition_ids`, `event_slugs`, `tags`, `status_from`, and `status_to`.
 
