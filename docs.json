@@ -106,17 +106,6 @@
             ]
           },
           {
-            "group": "Polymarket Profiles",
-            "tag": "Beta",
-            "pages": [
-              "api-reference/polymarket-profiles/overview",
-              "api-reference/polymarket-profiles/username-available",
-              "api-reference/polymarket-profiles/create-challenge",
-              "api-reference/polymarket-profiles/complete-username",
-              "api-reference/polymarket-profiles/get-profile"
-            ]
-          },
-          {
             "group": "Wallet P&L",
             "pages": [
               "api-reference/wallets/resolve",
@@ -165,6 +154,17 @@
               "data/builders/list",
               "data/builders/detail",
               "data/builders/trades"
+            ]
+          },
+          {
+            "group": "Polymarket Profiles",
+            "tag": "Beta",
+            "pages": [
+              "api-reference/polymarket-profiles/overview",
+              "api-reference/polymarket-profiles/username-available",
+              "api-reference/polymarket-profiles/create-challenge",
+              "api-reference/polymarket-profiles/complete-username",
+              "api-reference/polymarket-profiles/get-profile"
             ]
           },
           {
