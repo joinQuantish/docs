@@ -5,6 +5,27 @@ description: "All notable changes to the PolyNode API and SDKs."
 icon: "clock-rotate-left"
 ---
 
+## 2026-05-26 — Webhooks beta: first observed position opens
+
+Added `position_status_change` support for watched-wallet CTF position opens and exits.
+
+What's new:
+
+- `position_status_change` now detects first observed `none` -> `open` transitions for watched wallets from CTF ERC-1155 transfer deltas.
+- Existing wallet positions are seeded when a wallet is first watched, so new webhooks emit future transitions without backfilling historical opens.
+- Payloads now include `previous_amount`, `new_amount`, `delta_amount`, `transfer_amount`, `source`, `source_event_id`, block/transaction fields, and market enrichment.
+- Filters now include `wallet_addresses`, `token_ids`, `condition_ids`, `event_slugs`, `tags`, `status_from`, and `status_to`.
+
+Beta note:
+
+- `wallet_addresses` is required for this beta. Unfiltered/global position-status webhooks are intentionally not enabled yet.
+
+Docs updated:
+
+- See [`position_status_change`](/webhooks/events/position-status-change) for the exact payload and copyable first-open registration example.
+
+---
+
 ## 2026-05-26 — TypeScript SDK v0.10.13: V3 parity, resolver, and profile helpers
 
 Released a TypeScript SDK parity update for the current REST API surface.

@@ -32,6 +32,12 @@ curl https://api.polynode.dev/v3/webhooks/event-types \
       "description": "Wallet redeems shares from resolved market",
       "filters": ["wallet_addresses", "condition_ids"],
       "exclusive": true
+    },
+    {
+      "name": "position_status_change",
+      "description": "Watched-wallet CTF position transitions, including first observed opens",
+      "filters": ["wallet_addresses", "token_ids", "condition_ids", "event_slugs", "tags", "status_from", "status_to"],
+      "exclusive": true
     }
   ]
 }
