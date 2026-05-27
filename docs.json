@@ -122,7 +122,6 @@
               "data/wallets/trades",
               "data/wallets/fees-paid",
               "data/wallets/rebates",
-              "data/wallets/rewards",
               "data/wallets/redemptions",
               "data/wallets/splits",
               "data/wallets/merges",

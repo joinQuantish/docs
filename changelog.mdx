@@ -15,12 +15,11 @@ What's new:
 - Explicit time-windowed P&L events (`period`, `after`, or `before`) still use the indexed `pnl_event` stream and ignore timestamp-0 artifacts.
 - Added `GET /v3/wallets/{address}/fees-paid` for fee-bearing `OrderFilled` rows.
 - Added `GET /v3/wallets/{address}/rebates` as a Polymarket public maker-rebate wrapper.
-- Added `GET /v3/wallets/{address}/rewards` as a caller-authenticated Polymarket LP reward earnings proxy.
 - Added public reward-market config wrappers at `GET /v3/rewards/markets` and `GET /v3/rewards/markets/{condition_id}`.
 
 Notes:
 
-- Fees paid, maker rebates, and LP rewards are intentionally separate surfaces. They should not be merged into headline P&L unless the response explicitly labels the category and source.
+- Fees paid and maker rebates are intentionally separate surfaces. LP reward market configuration is public; per-wallet earned LP rewards require authenticated Polymarket data and are not exposed as an arbitrary-wallet lookup in the public docs.
 - Wallet activity endpoints still cover conditional-token activity, not PolyUSD ERC-20 deposits or withdrawals.
 
 ---
