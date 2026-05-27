@@ -4849,6 +4849,108 @@
         ]
       }
     },
+    "/v3/wallets/{address}/polyusd-flows": {
+      "get": {
+        "tags": [
+          "V3 Wallets"
+        ],
+        "summary": "Wallet PolyUSD flows",
+        "description": "Get chain-backed PolyUSD deposits and withdrawals for one wallet.",
+        "operationId": "v3_wallet_polyusd_flows",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Wallet address"
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "deposit",
+                "withdrawal"
+              ],
+              "default": "all"
+            },
+            "description": "Flow type to return"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Unix timestamp lower bound"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Unix timestamp upper bound"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            },
+            "description": "Sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            },
+            "description": "Max results, clamped to 1000"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Pagination offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PolyUSD deposit and withdrawal rows"
+          },
+          "400": {
+            "description": "Invalid wallet address or query parameter"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "502": {
+            "description": "Polygon RPC upstream failure"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v3/wallets/{address}/rebates": {
       "get": {
         "tags": [

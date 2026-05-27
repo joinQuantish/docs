@@ -121,6 +121,7 @@
             "pages": [
               "data/wallets/trades",
               "data/wallets/fees-paid",
+              "data/wallets/polyusd-flows",
               "data/wallets/rebates",
               "data/wallets/redemptions",
               "data/wallets/splits",

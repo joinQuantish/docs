@@ -1,0 +1,108 @@
+---
+title: "Wallet PolyUSD Flows"
+openapi: "GET /v3/wallets/{address}/polyusd-flows"
+description: "Get chain-backed PolyUSD deposits and withdrawals for a wallet."
+---
+
+Returns PolyUSD deposit and withdrawal history for one wallet directly from Polygon logs.
+
+Deposits are PolyUSD `Wrapped` events from the Collateral Onramp or Permissioned Ramp where the wallet receives minted PolyUSD. Withdrawals are PolyUSD transfers from the wallet into the PolyUSD contract, correlated with a same-transaction `Unwrapped` event from the Collateral Offramp or Permissioned Ramp.
+
+<Note>
+This endpoint is wallet-scoped and chain-backed. It does not require the full PolyUSD indexer, and it excludes internal settlement adapter unwraps used by V2 split/trading mechanics.
+</Note>
+
+## Request
+
+```
+GET /v3/wallets/{address}/polyusd-flows
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `kind` | string | `all` | `all`, `deposit`, or `withdrawal` |
+| `after` | integer | `0` | Start of time range (Unix seconds, inclusive) |
+| `before` | integer | unlimited | End of time range (Unix seconds, inclusive) |
+| `order` | string | `desc` | `asc` or `desc` |
+| `limit` | integer | `100` | Max 1000 |
+| `offset` | integer | `0` | Pagination offset |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x2a1f579283C87c4574102bbF6E4B39F7A12fe77E/polyusd-flows?limit=2"
+```
+
+```json
+{
+  "address": "0x2a1f579283c87c4574102bbf6e4b39f7a12fe77e",
+  "flows": [
+    {
+      "event_type": "withdrawal",
+      "direction": "out",
+      "amount": 2690.200068,
+      "amount_usdc": 2690.200068,
+      "amount_raw": "2690200068",
+      "asset": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+      "asset_symbol": "USDC.e",
+      "ramp": "CollateralOfframp",
+      "source_event": "Transfer+Unwrapped",
+      "transaction_hash": "0xed54095cbf5c5f434cd3c12d7d226e8922bb40d597d0c61a623412567b5f0e45"
+    },
+    {
+      "event_type": "deposit",
+      "direction": "in",
+      "amount": 1500,
+      "amount_usdc": 1500,
+      "amount_raw": "1500000000",
+      "asset": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+      "asset_symbol": "USDC.e",
+      "ramp": "CollateralOnramp",
+      "source_event": "Wrapped",
+      "transaction_hash": "0x1d516fa44c127232be3f8aad9dc974fca73e2f1e1c8716914a8ef6c8222cbf25"
+    }
+  ],
+  "rows_returned": 2,
+  "total_matching_rows": 21,
+  "has_more": true,
+  "total_deposited": 12854.05392,
+  "total_withdrawn": 5930.200068,
+  "net_deposited": 6923.853852,
+  "source": "polygon_rpc_pusd_wrap_unwrap"
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `address` | string | Wallet address, lowercased |
+| `flows` | array | Deposit and withdrawal rows for the requested page |
+| `flows[].event_type` | string | `deposit` or `withdrawal` |
+| `flows[].direction` | string | `in` for deposits, `out` for withdrawals |
+| `flows[].amount` | number | 6-decimal normalized USD amount |
+| `flows[].amount_raw` | string | Raw PolyUSD amount |
+| `flows[].asset` | string | Underlying asset address |
+| `flows[].asset_symbol` | string | `USDC.e`, `USDC`, or `unknown` |
+| `flows[].ramp` | string | Ramp contract used |
+| `flows[].recipient` | string | Recipient of minted PolyUSD or unwrapped USDC/USDC.e |
+| `flows[].transaction_hash` | string | Polygon transaction hash |
+| `flows[].block_number` | integer | Polygon block number |
+| `flows[].block_timestamp` | integer | Polygon block timestamp |
+| `rows_returned` | integer | Number of rows returned |
+| `total_matching_rows` | integer | Total rows after filters before pagination |
+| `has_more` | boolean | Whether another page exists |
+| `total_deposited` | number | Sum of matching deposit rows |
+| `total_withdrawn` | number | Sum of matching withdrawal rows |
+| `net_deposited` | number | Deposits minus withdrawals |
+| `source` | string | `polygon_rpc_pusd_wrap_unwrap` |
+
+## Errors
+
+| HTTP | When |
+|------|------|
+| `400` | Invalid wallet address, `kind`, or `order` |
+| `401` | Missing or invalid PolyNode API key |
+| `502` | Polygon RPC upstream failure |

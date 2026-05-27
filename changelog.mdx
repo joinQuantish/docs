@@ -5,7 +5,7 @@ description: "All notable changes to the PolyNode API and SDKs."
 icon: "clock-rotate-left"
 ---
 
-## 2026-05-27 - V3 wallet P&L alignment, fees, rebates, and rewards
+## 2026-05-27 - V3 wallet P&L alignment, fees, rebates, rewards, and PolyUSD flows
 
 Updated V3 wallet accounting surfaces.
 
@@ -14,13 +14,14 @@ What's new:
 - Default/all-time `GET /v3/wallets/{address}/pnl/events` now returns a single summary-backed bucket from the wallet summary source so it agrees with `GET /v3/wallets/{address}/pnl`.
 - Explicit time-windowed P&L events (`period`, `after`, or `before`) still use the indexed `pnl_event` stream and ignore timestamp-0 artifacts.
 - Added `GET /v3/wallets/{address}/fees-paid` for fee-bearing `OrderFilled` rows.
+- Added `GET /v3/wallets/{address}/polyusd-flows` for chain-backed wallet PolyUSD deposits and withdrawals.
 - Added `GET /v3/wallets/{address}/rebates` as a Polymarket public maker-rebate wrapper.
 - Added public reward-market config wrappers at `GET /v3/rewards/markets` and `GET /v3/rewards/markets/{condition_id}`.
 
 Notes:
 
 - Fees paid and maker rebates are intentionally separate surfaces. LP reward market configuration is public; per-wallet earned LP rewards require authenticated Polymarket data and are not exposed as an arbitrary-wallet lookup in the public docs.
-- Wallet activity endpoints still cover conditional-token activity, not PolyUSD ERC-20 deposits or withdrawals.
+- `GET /v3/wallets/{address}/activity` remains the indexed conditional-token activity feed; PolyUSD deposits and withdrawals now live in the separate wallet PolyUSD flows endpoint.
 
 ---
 
