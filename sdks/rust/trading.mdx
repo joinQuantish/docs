@@ -6,16 +6,28 @@ sidebarTitle: "Trading"
 ## Trading Module
 
 <Warning>
-**Polymarket V2 cutover: April 28, 2026 at ~11am UTC.** Set `exchange_version: ExchangeVersion::V2` in your `TraderConfig` before cutover. V1 orders submitted after April 28 will be rejected with `order_version_mismatch`. Pass your V2 builder code (mint at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder)) via `OrderParams.builder`. See the [V2 Migration Guide](/guides/v2-migration).
+**Polymarket V2 is live.** Set `exchange_version: ExchangeVersion::V2` in your `TraderConfig`. V1 orders submitted after April 28, 2026 are rejected with `order_version_mismatch`. The Rust SDK defaults V2 order attribution to PolyNode's builder code; pass your own code via `TraderConfig.builder_code` or `OrderParams.builder`.
 </Warning>
 
-<Note>Requires the `trading` feature flag: `polynode = { version = "0.13.3", features = ["trading"] }`</Note>
+<Note>Requires the `trading` feature flag: `polynode = { version = "0.13.11", features = ["trading"] }`</Note>
 
 <Info>
 **Deposit wallets supported.** The SDK auto-detects Safe proxy and deposit wallet users. No code changes needed for existing integrations. See the [Deposit Wallets guide](/guides/deposit-wallets).
 </Info>
 
 Place orders on Polymarket with local credential custody and builder attribution. All signing happens locally. Private keys never leave your machine. Supports both the current exchange and the [Polymarket V2 exchange](/guides/v2-migration). See also: [PolyUSD Guide](/guides/polyusd) for V2 collateral wrapping.
+
+### Credential Model
+
+The SDK separates three credentials so users can choose the easiest path without mixing ownership boundaries:
+
+| Credential | Used for | Default |
+| --- | --- | --- |
+| User CLOB API key | Authenticates `/order`, cancel, open-order, balance-allowance calls | Created or loaded by `ensure_ready()` |
+| V2 builder code | Public bytes32 attribution signed into V2 orders | PolyNode builder code via `TraderConfig.builder_code` |
+| Relayer auth | Gasless Safe/proxy/deposit-wallet `/submit` calls | PolyNode managed relayer via `polynode_key` + `cosigner_url` |
+
+Orders are always submitted with the user's CLOB API credentials. PolyNode's builder code and relayer path do not make PolyNode the owner of the order.
 
 ### Generate a Wallet
 
@@ -35,13 +47,14 @@ println!("key: {}", private_key);
 `ensure_ready()` handles the full onboarding flow in one call: derives addresses, checks Safe deployment and approvals, creates or loads CLOB credentials, and stores everything in a local SQLite database.
 
 ```rust,no_run
-use polynode::trading::{PolyNodeTrader, TraderConfig, PrivateKeySigner};
+use polynode::trading::{ExchangeVersion, PolyNodeTrader, TraderConfig, PrivateKeySigner};
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
     let mut trader = PolyNodeTrader::new(TraderConfig {
         polynode_key: "pn_live_YOUR_KEY".into(),
         db_path: "./my-trading.db".into(),
+        exchange_version: ExchangeVersion::V2,
         ..Default::default()
     })?;
 
@@ -58,6 +71,17 @@ async fn main() -> polynode::Result<()> {
     Ok(())
 }
 ```
+
+`ReadyStatus.actions` is the easiest way to inspect what happened. Common values:
+
+| Action | Meaning |
+| --- | --- |
+| `credentials_created` / `credentials_loaded` | User CLOB credentials were created or reused locally |
+| `relayer_key_provisioned` | The SDK signed a SIWE message and cached a per-user relayer key through PolyNode's cosigner |
+| `relayer_key_skipped: ...` | Non-fatal; future relayer calls fall back to builder auth |
+| `safe_approvals_submitted: <tx>` | Safe/proxy approvals were submitted through the configured relayer path |
+| `deposit_wallet_create_submitted: <id>` | Deposit wallet creation was submitted through the configured relayer path |
+| `deposit_wallet_approval_submitted: <id>` | Deposit wallet approvals were submitted through the configured relayer path |
 
 ### Place an Order
 
@@ -79,8 +103,8 @@ let result = trader.order(OrderParams {
     price: 0.55,
     size: 100.0,
     order_type: OrderType::GTC,
-    // For V2 orders, add builder attribution:
-    //   builder: Some("0x5472fdd7...".into()),
+    // Optional per-order override. If omitted, TraderConfig.builder_code is used.
+    // builder: Some("0xYourBuilderCodeBytes32".into()),
     ..Default::default()
 }).await?;
 
@@ -200,17 +224,103 @@ trader.import_wallet(data)?;
 The SDK supports the Polymarket V2 exchange system. Set `exchange_version` in your config to target V2. Defaults to V1 — no existing code is affected.
 
 ```rust,no_run
-use polynode::trading::{PolyNodeTrader, TraderConfig, ExchangeVersion};
+use polynode::trading::{PolyNodeTrader, TraderConfig, ExchangeVersion, RelayerMode};
 
 # async fn example() -> polynode::Result<()> {
 let mut trader = PolyNodeTrader::new(TraderConfig {
     polynode_key: "pn_live_...".into(),
     exchange_version: ExchangeVersion::V2,
+    relayer_mode: RelayerMode::Auto, // default
     ..Default::default()
 })?;
 # Ok(())
 # }
 ```
+
+### Builder Attribution and Relayer Modes
+
+Default managed mode:
+
+```rust,no_run
+use polynode::trading::{ExchangeVersion, PolyNodeTrader, TraderConfig};
+
+# fn example() -> polynode::Result<()> {
+let trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: "pn_live_...".into(),
+    exchange_version: ExchangeVersion::V2,
+    // builder_code defaults to PolyNode's public V2 builder code.
+    // relayer_mode defaults to Auto: managed relayer when polynode_key is set.
+    ..Default::default()
+})?;
+# Ok(())
+# }
+```
+
+Bring your own builder code but still use PolyNode's managed relayer:
+
+```rust,no_run
+use polynode::trading::{ExchangeVersion, PolyNodeTrader, TraderConfig};
+
+# fn example() -> polynode::Result<()> {
+let trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: "pn_live_...".into(),
+    exchange_version: ExchangeVersion::V2,
+    builder_code: Some("0xYourBuilderCodeBytes32".into()),
+    ..Default::default()
+})?;
+# Ok(())
+# }
+```
+
+Bring your own builder credentials for direct Polymarket relayer auth:
+
+```rust,no_run
+use polynode::trading::{
+    BuilderCredentials, ExchangeVersion, PolyNodeTrader, RelayerMode, TraderConfig,
+};
+
+# fn example() -> polynode::Result<()> {
+let trader = PolyNodeTrader::new(TraderConfig {
+    exchange_version: ExchangeVersion::V2,
+    relayer_mode: RelayerMode::BuilderCredentials,
+    builder_code: Some("0xYourBuilderCodeBytes32".into()),
+    builder_credentials: Some(BuilderCredentials {
+        key: "builder-api-key".into(),
+        secret: "builder-secret-base64".into(),
+        passphrase: "builder-passphrase".into(),
+    }),
+    ..Default::default()
+})?;
+# Ok(())
+# }
+```
+
+`RelayerMode::Auto` chooses the least-friction path:
+
+| Config | Relayer submit behavior |
+| --- | --- |
+| `polynode_key` + `cosigner_url` | Submit through PolyNode `/relay`; per-user relayer key is preferred |
+| No `polynode_key`, but `builder_credentials` present | Submit directly to Polymarket relayer with those credentials |
+| `relayer_mode: RelayerMode::DirectRpc` | Safe/proxy calls sign `execTransaction` and broadcast through `rpc_url`; deposit-wallet factory calls still need a relayer mode |
+| Neither configured | Smart-wallet deploy/approve/wrap calls return a clear configuration error |
+
+Direct RPC mode for Safe/proxy calls:
+
+```rust,no_run
+use polynode::trading::{ExchangeVersion, PolyNodeTrader, RelayerMode, TraderConfig};
+
+# fn example() -> polynode::Result<()> {
+let trader = PolyNodeTrader::new(TraderConfig {
+    exchange_version: ExchangeVersion::V2,
+    relayer_mode: RelayerMode::DirectRpc,
+    rpc_url: "https://polygon-bor-rpc.publicnode.com".into(),
+    ..Default::default()
+})?;
+# Ok(())
+# }
+```
+
+`DirectRpc` pays gas from the signer EOA and requires a signer with `TradingSigner::sign_hash` support, such as `PrivateKeySigner`; the built-in `PrivySigner` does not currently sign raw transactions. It does not apply to deposit-wallet create/approval envelopes, which route through Polymarket's deposit-wallet factory relayer API.
 
 V2 uses PolyUSD as collateral instead of USDC.e. The SDK provides helper methods for wrapping and balance checking:
 
@@ -300,7 +410,7 @@ Set `fee_bps: 0` or omit `fee_config` to skip the escrow entirely. Per-order ove
 
 ### Privy Signer
 
-<Note>Requires the `privy` feature flag: `polynode = { version = "0.12.0", features = ["trading", "privy"] }`</Note>
+<Note>Requires the `privy` feature flag: `polynode = { version = "0.13.11", features = ["trading", "privy"] }`</Note>
 
 Sign orders with a Privy server-side wallet. No private key needed on your machine. All signing happens via Privy's HTTP API.
 
@@ -343,7 +453,7 @@ The `PrivySigner` implements `TradingSigner`, so it works with `ensure_ready()`,
 ### TraderConfig
 
 ```rust,no_run
-use polynode::trading::{TraderConfig, SignatureType, ExchangeVersion};
+use polynode::trading::{TraderConfig, SignatureType, ExchangeVersion, RelayerMode};
 
 # fn example() {
 let config = TraderConfig {
@@ -353,7 +463,11 @@ let config = TraderConfig {
     fallback_direct: true,                       // submit directly if cosigner is down
     default_signature_type: SignatureType::PolyGnosisSafe, // default
     rpc_url: "https://polygon-bor-rpc.publicnode.com".into(),  // default; for on-chain reads
+    builder_code: Some("0xYourBuilderCodeBytes32".into()), // V2 default order attribution
+    relayer_mode: RelayerMode::Auto,              // managed when polynode_key is set
     exchange_version: ExchangeVersion::V1,       // default; set to V2 for the Polymarket V2 exchange
+    builder_credentials: None,                    // optional direct relayer fallback/override
+    fee_config: None,                             // optional fee escrow config
 };
 # }
 ```

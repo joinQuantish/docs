@@ -71,13 +71,10 @@ With the TypeScript SDK:
 ```ts
 import { PolyNode } from "polynode-sdk";
 
-const pn = new PolyNode({ apiKey: process.env.POLYNODE_KEY! });
+const pn = new PolyNode({ apiKey: process.env.POLYNODE_KEY || "pn_live_YOUR_KEY" });
 
 // POST /api/polymarket-profile/challenge in your own backend
-export async function createPolymarketProfileChallenge(input: {
-  address: string;
-  username: string;
-}) {
+async function createPolymarketProfileChallenge(input) {
   return pn.v3.createPolymarketUsernameChallenge({
     address: input.address,
     username: input.username,
@@ -100,7 +97,7 @@ export async function createPolymarketProfileChallenge(input: {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-api-key": process.env.POLYNODE_KEY!,
+        "x-api-key": process.env.POLYNODE_KEY || "pn_live_YOUR_KEY",
       },
       body: JSON.stringify({
         address: input.address,
@@ -248,6 +245,9 @@ const consentSignature = await walletClient.signTypedData({
 With ethers v6:
 
 ```ts
+import { BrowserProvider } from "ethers";
+
+const browserProvider = new BrowserProvider(window.ethereum);
 const signer = await browserProvider.getSigner();
 const address = await signer.getAddress();
 
@@ -298,7 +298,7 @@ export async function completePolymarketProfile(input: {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-api-key": process.env.POLYNODE_KEY!,
+        "x-api-key": process.env.POLYNODE_KEY || "pn_live_YOUR_KEY",
       },
       body: JSON.stringify(input),
     }

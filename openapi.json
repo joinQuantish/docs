@@ -4594,6 +4594,536 @@
           }
         ]
       }
+    },
+    "/v3/wallets/{address}/pnl": {
+      "get": {
+        "tags": [
+          "V3 Wallets"
+        ],
+        "summary": "Wallet P&L",
+        "description": "Get wallet profit and loss. Default/all-time mode reads the current wallet position summary. Time-windowed mode reads the realized pnl_event stream.",
+        "operationId": "v3_wallet_pnl",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Wallet address"
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1d",
+                "7d",
+                "30d",
+                "1y"
+              ]
+            },
+            "description": "Time window shortcut"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Unix timestamp lower bound"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Unix timestamp upper bound"
+          },
+          {
+            "name": "include_unrealized",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Include current unrealized P&L alongside time-windowed realized P&L"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet P&L"
+          },
+          "400": {
+            "description": "Invalid wallet address or query parameter"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v3/wallets/{address}/pnl/events": {
+      "get": {
+        "tags": [
+          "V3 Wallets"
+        ],
+        "summary": "Wallet P&L time series",
+        "description": "Get wallet P&L buckets. Default/all-time mode returns a single summary-backed bucket. Explicit time filters return realized pnl_event buckets.",
+        "operationId": "v3_wallet_pnl_events",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Wallet address"
+          },
+          {
+            "name": "group",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hour",
+                "day",
+                "week",
+                "month"
+              ],
+              "default": "day"
+            },
+            "description": "Bucket size"
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1d",
+                "7d",
+                "30d",
+                "1y"
+              ]
+            },
+            "description": "Time window shortcut"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Unix timestamp lower bound. Values below 1 are clamped to 1."
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Unix timestamp upper bound"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 5000
+            },
+            "description": "Maximum bucket count"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet P&L buckets"
+          },
+          "400": {
+            "description": "Invalid wallet address or query parameter"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v3/wallets/{address}/fees-paid": {
+      "get": {
+        "tags": [
+          "V3 Wallets"
+        ],
+        "summary": "Wallet fees paid",
+        "description": "Get fee-bearing OrderFilled rows where the wallet is the order owner.",
+        "operationId": "v3_wallet_fees_paid",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Wallet address"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Unix timestamp lower bound"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 9999999999
+            },
+            "description": "Unix timestamp upper bound"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            },
+            "description": "Sort order"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            },
+            "description": "Max results, clamped to 1000"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Pagination offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fee-bearing fill rows"
+          },
+          "400": {
+            "description": "Invalid wallet address or query parameter"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v3/wallets/{address}/rebates": {
+      "get": {
+        "tags": [
+          "V3 Wallets"
+        ],
+        "summary": "Wallet maker rebates",
+        "description": "Get Polymarket-reported maker rebates for one maker address and date.",
+        "operationId": "v3_wallet_rebates",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Wallet or CLOB maker address"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "UTC date in YYYY-MM-DD format. Defaults to current UTC date."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Maker rebate records"
+          },
+          "400": {
+            "description": "Invalid wallet address or date"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "502": {
+            "description": "Polymarket upstream failure"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v3/wallets/{address}/rewards": {
+      "get": {
+        "tags": [
+          "V3 Wallets"
+        ],
+        "summary": "Wallet LP rewards",
+        "description": "Proxy Polymarket-authenticated LP reward earnings for a wallet. Requires caller-supplied Polymarket CLOB L2 auth headers.",
+        "operationId": "v3_wallet_rewards",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Wallet or CLOB maker address"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "UTC date in YYYY-MM-DD format. Defaults to current UTC date."
+          },
+          {
+            "name": "signature_type",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "default": 1
+            },
+            "description": "Polymarket signature type: 0 EOA, 1 POLY_PROXY, 2 POLY_GNOSIS_SAFE"
+          },
+          {
+            "name": "sponsored",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Forward sponsored=true to Polymarket"
+          },
+          {
+            "name": "next_cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Polymarket cursor"
+          },
+          {
+            "name": "POLY_ADDRESS",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Polymarket CLOB auth address"
+          },
+          {
+            "name": "POLY_API_KEY",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Polymarket CLOB API key"
+          },
+          {
+            "name": "POLY_PASSPHRASE",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Polymarket CLOB passphrase"
+          },
+          {
+            "name": "POLY_SIGNATURE",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Polymarket CLOB request signature"
+          },
+          {
+            "name": "POLY_TIMESTAMP",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Polymarket CLOB request timestamp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Caller-authenticated LP reward earnings"
+          },
+          "400": {
+            "description": "Invalid wallet address, date, or signature type"
+          },
+          "401": {
+            "description": "Unauthorized or missing Polymarket auth headers"
+          },
+          "502": {
+            "description": "Polymarket upstream failure"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v3/rewards/markets": {
+      "get": {
+        "tags": [
+          "V3 Rewards"
+        ],
+        "summary": "Reward markets",
+        "description": "List public Polymarket reward-market configurations.",
+        "operationId": "v3_rewards_markets",
+        "parameters": [
+          {
+            "name": "sponsored",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Forward sponsored=true to Polymarket"
+          },
+          {
+            "name": "next_cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Polymarket cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reward-market configurations"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "502": {
+            "description": "Polymarket upstream failure"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v3/rewards/markets/{condition_id}": {
+      "get": {
+        "tags": [
+          "V3 Rewards"
+        ],
+        "summary": "Reward market detail",
+        "description": "Get public Polymarket reward-market configuration for a condition ID.",
+        "operationId": "v3_rewards_market",
+        "parameters": [
+          {
+            "name": "condition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "0x-prefixed 32-byte condition ID"
+          },
+          {
+            "name": "sponsored",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Forward sponsored=true to Polymarket"
+          },
+          {
+            "name": "next_cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Polymarket cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reward-market configuration"
+          },
+          "400": {
+            "description": "Invalid condition ID"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "502": {
+            "description": "Polymarket upstream failure"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
     }
   },
   "components": {

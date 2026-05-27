@@ -12,7 +12,6 @@
 import { readFileSync, readdirSync, statSync, writeFileSync, unlinkSync } from 'fs';
 import { join, relative } from 'path';
 import { execSync, execFileSync } from 'child_process';
-import { tmpdir } from 'os';
 
 const TEST_KEY = process.env.POLYNODE_TEST_KEY;
 if (!TEST_KEY) {
@@ -357,7 +356,7 @@ function hasTopLevelAwait(code) {
 function executeBlock(block) {
   const code = replaceKeys(block.code);
   const wrapped = wrapCode(code, block.lang);
-  const tmpFile = join(tmpdir(), `polynode-doc-test-${Date.now()}-${Math.random().toString(36).slice(2)}.cjs`);
+  const tmpFile = join(DOCS_DIR, `.polynode-doc-test-${Date.now()}-${Math.random().toString(36).slice(2)}.cjs`);
 
   try {
     writeFileSync(tmpFile, wrapped, 'utf-8');

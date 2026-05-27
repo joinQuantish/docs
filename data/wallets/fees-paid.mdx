@@ -1,0 +1,95 @@
+---
+title: "Wallet Fees Paid"
+openapi: "GET /v3/wallets/{address}/fees-paid"
+description: "Get fee-bearing order fills for a wallet from indexed OrderFilled events."
+---
+
+Returns fills where the wallet was the order owner and `OrderFilled.fee` was greater than zero. Each row is enriched with the same market context used by wallet trade history.
+
+This is fees paid by the trader on executed order fills. It is not the same as maker rebates, LP rewards, or builder payouts.
+
+<Note>
+`page_total_fees_paid` is the sum for the returned page only. Page through the result set to walk a full date range until wallet-level fee aggregates are indexed.
+</Note>
+
+## Request
+
+```
+GET /v3/wallets/{address}/fees-paid
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `after` | integer | `0` | Start of time range (Unix seconds, inclusive) |
+| `before` | integer | `9999999999` | End of time range (Unix seconds, inclusive) |
+| `order` | string | `desc` | `asc` or `desc` |
+| `limit` | integer | `100` | Max 1000 |
+| `offset` | integer | `0` | Pagination offset |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/fees-paid?limit=1&after=1779700000"
+```
+
+```json
+{
+  "address": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+  "fees": [
+    {
+      "id": "0x4f8447fda6ed5b200d876ffc677fedd853d524c9a2751d055d7578c1575124dc_847",
+      "maker": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+      "taker": "0xe111180000d2663c0091e4f400237545b87b996b",
+      "fee": 352.774,
+      "fee_paid": 352.774,
+      "fee_paid_raw": "352774000",
+      "price": 0.45,
+      "size": 47511.65,
+      "direction": "BUY",
+      "market": "Spread: Thunder (-2.5)",
+      "slug": "nba-sas-okc-2026-05-26-spread-home-2pt5",
+      "condition_id": "0x7bcc428d368834c6dfbb4925f699079f65925fef69ad259274b88c5671aaa29e",
+      "timestamp": "1779839786",
+      "source": "order_filled_event"
+    }
+  ],
+  "rows_returned": 1,
+  "has_more": true,
+  "page_total_fees_paid": 352.774,
+  "fee_semantics": "wallet-paid trader fees from OrderFilled.fee where wallet is the order owner in S6 v1.order_filled_event.maker; this table includes legacy V1 rows plus V2 exchange rows",
+  "elapsed_ms": 14
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `address` | string | Wallet address, lowercased |
+| `fees` | array | Fee-bearing fill rows |
+| `fees[].fee` | number | Fee in USD |
+| `fees[].fee_paid` | number | Same value as `fee`, included for category-breakdown clarity |
+| `fees[].fee_paid_raw` | string | Raw 6-decimal fee amount |
+| `fees[].source` | string | `order_filled_event` |
+| `rows_returned` | integer | Number of rows returned |
+| `has_more` | boolean | Whether another page exists |
+| `offset` | integer | Offset used for this page |
+| `limit` | integer | Limit used for this page |
+| `page_total_fees_paid` | number | Sum of `fee_paid` for this page only |
+| `page_total_fees_paid_raw_note` | string | Reminder that the total is page-scoped |
+| `fee_semantics` | string | Source and attribution note |
+| `after` | string | Applied start timestamp |
+| `before` | string | Applied end timestamp |
+| `elapsed_ms` | integer | Server-side query time in milliseconds |
+
+The fill objects also include standard trade fields such as `maker_asset_id`, `taker_asset_id`, `maker_amount`, `taker_amount`, `token_id`, `asset`, `amount`, `amount_usd`, `transaction_hash`, `order_hash`, `builder`, `side`, `role`, `outcome`, `outcome_index`, and `image` when available.
+
+## Errors
+
+| HTTP | When |
+|------|------|
+| `400` | Invalid wallet address |
+| `400` | Invalid `order` value |
+| `401` | Missing or invalid PolyNode API key |

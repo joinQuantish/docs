@@ -120,11 +120,21 @@
             "group": "Wallet Activity",
             "pages": [
               "data/wallets/trades",
+              "data/wallets/fees-paid",
+              "data/wallets/rebates",
+              "data/wallets/rewards",
               "data/wallets/redemptions",
               "data/wallets/splits",
               "data/wallets/merges",
               "data/wallets/nrc",
               "data/wallets/activity"
+            ]
+          },
+          {
+            "group": "Rewards",
+            "pages": [
+              "data/rewards/markets",
+              "data/rewards/market"
             ]
           },
           {

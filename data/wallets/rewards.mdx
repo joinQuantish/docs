@@ -1,0 +1,104 @@
+---
+title: "Wallet LP Rewards"
+openapi: "GET /v3/wallets/{address}/rewards"
+description: "Proxy Polymarket-authenticated LP reward earnings for a wallet."
+---
+
+Returns per-wallet LP reward earnings from Polymarket's authenticated rewards endpoint.
+
+This is not a public wallet lookup. The caller must provide their own Polymarket CLOB L2 auth headers in addition to their PolyNode API key.
+
+<Warning>
+LP reward earnings are authenticated Polymarket accounting data. PolyNode does not derive this value from chain logs and does not expose it publicly for arbitrary wallets.
+</Warning>
+
+## Request
+
+```
+GET /v3/wallets/{address}/rewards
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `date` | string | current UTC date | Date in `YYYY-MM-DD` format |
+| `signature_type` | integer | `1` | Polymarket signature type: `0` EOA, `1` POLY_PROXY, or `2` POLY_GNOSIS_SAFE |
+| `sponsored` | boolean | `false` | Forward `sponsored=true` to Polymarket |
+| `next_cursor` | string | -- | Cursor forwarded to Polymarket |
+
+### Required Polymarket headers
+
+| Header | Description |
+|--------|-------------|
+| `POLY_ADDRESS` | Polymarket CLOB auth address |
+| `POLY_API_KEY` | Polymarket CLOB API key |
+| `POLY_PASSPHRASE` | Polymarket CLOB passphrase |
+| `POLY_SIGNATURE` | Polymarket CLOB request signature |
+| `POLY_TIMESTAMP` | Polymarket CLOB request timestamp |
+
+HTTP headers are case-insensitive, so lowercase names such as `poly-api-key` are also accepted.
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x8ecb4b228e07b6ddc58a32997093032a6907b8f6/rewards?date=2026-05-27&signature_type=1" \
+  -H "x-api-key: $POLYNODE_KEY" \
+  -H "POLY_ADDRESS: $POLY_ADDRESS" \
+  -H "POLY_API_KEY: $POLY_API_KEY" \
+  -H "POLY_PASSPHRASE: $POLY_PASSPHRASE" \
+  -H "POLY_SIGNATURE: $POLY_SIGNATURE" \
+  -H "POLY_TIMESTAMP: $POLY_TIMESTAMP"
+```
+
+```json
+{
+  "address": "0x8ecb4b228e07b6ddc58a32997093032a6907b8f6",
+  "date": "2026-05-27",
+  "rewards": {
+    "data": []
+  },
+  "total_earnings_usdc": 0,
+  "source": "polymarket_clob_rewards_user",
+  "reward_semantics": "caller-authenticated Polymarket LP reward earnings; not chain-derived and not available as a public wallet lookup",
+  "elapsed_ms": 412
+}
+```
+
+If the Polymarket auth headers are missing, the endpoint returns:
+
+```json
+{
+  "error": "missing Polymarket CLOB L2 auth headers",
+  "missing": [
+    "poly-address",
+    "poly-api-key",
+    "poly-passphrase",
+    "poly-signature",
+    "poly-timestamp"
+  ],
+  "source": "polymarket_clob_rewards_user",
+  "reward_semantics": "user LP reward earnings are authenticated Polymarket accounting data; public endpoints only expose market reward configurations"
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `address` | string | Wallet or maker address, lowercased |
+| `date` | string | Date used for the upstream rewards lookup |
+| `rewards` | object | Polymarket upstream rewards response |
+| `total_earnings_usdc` | number | Sum of `earnings` over `rewards.data` when present |
+| `source` | string | `polymarket_clob_rewards_user` |
+| `reward_semantics` | string | Auth and accounting note |
+| `elapsed_ms` | integer | Server-side request time in milliseconds |
+
+## Errors
+
+| HTTP | When |
+|------|------|
+| `400` | Invalid wallet address |
+| `400` | Invalid `date` or `signature_type` |
+| `401` | Missing or invalid PolyNode API key, or missing Polymarket CLOB auth headers |
+| `502` | Polymarket rewards upstream failed or returned invalid JSON |

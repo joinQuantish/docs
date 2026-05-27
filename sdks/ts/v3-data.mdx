@@ -10,7 +10,7 @@ Top-level methods such as `pn.market()`, `pn.wallet()`, and `pn.leaderboard()` k
 ```typescript
 import { PolyNode } from 'polynode-sdk';
 
-const pn = new PolyNode({ apiKey: process.env.POLYNODE_KEY! });
+const pn = new PolyNode({ apiKey: process.env.POLYNODE_KEY || 'pn_live_YOUR_KEY' });
 ```
 
 ## Wallets
@@ -181,12 +181,9 @@ Do not expose your PolyNode API key in the browser. Do not send private keys to 
 ```typescript
 import { PolyNode } from 'polynode-sdk';
 
-const pn = new PolyNode({ apiKey: process.env.POLYNODE_KEY! });
+const pn = new PolyNode({ apiKey: process.env.POLYNODE_KEY || 'pn_live_YOUR_KEY' });
 
-export async function createProfileChallenge(input: {
-  address: string;
-  username: string;
-}) {
+async function createProfileChallenge(input) {
   return pn.v3.createPolymarketUsernameChallenge({
     address: input.address,
     username: input.username,
@@ -253,7 +250,7 @@ export async function completeProfileUsername(input: {
 Completion returns the created or updated profile state:
 
 ```typescript
-const result = await completeProfileUsername({
+const result = await pn.v3.completePolymarketUsername({
   challenge_id: challenge.challenge_id,
   address,
   username,

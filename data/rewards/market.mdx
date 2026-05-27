@@ -1,0 +1,74 @@
+---
+title: "Reward Market Detail"
+openapi: "GET /v3/rewards/markets/{condition_id}"
+description: "Get public Polymarket reward configuration for one condition ID."
+---
+
+Returns Polymarket's public reward-market configuration for a single condition ID. This describes market reward settings; it is not per-wallet earned LP rewards.
+
+## Request
+
+```
+GET /v3/rewards/markets/{condition_id}
+```
+
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `condition_id` | string | `0x` + 64 hex condition ID |
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `sponsored` | boolean | `false` | Forward `sponsored=true` to Polymarket |
+| `next_cursor` | string | -- | Cursor forwarded to Polymarket |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/rewards/markets/0x0001cb8c0b39aeb614ab9a43867595317f06ede9c011661513065c638fbbefda"
+```
+
+```json
+{
+  "source": "polymarket_clob_rewards_market",
+  "reward_semantics": "public Polymarket reward market configuration; this is not per-wallet earned LP rewards",
+  "upstream": {
+    "count": 1,
+    "data": [
+      {
+        "condition_id": "0x0001cb8c0b39aeb614ab9a43867595317f06ede9c011661513065c638fbbefda",
+        "native_daily_rate": 1,
+        "rewards_config": [
+          {
+            "asset_address": "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB",
+            "rate_per_day": 1,
+            "start_date": "2026-02-17",
+            "end_date": "2500-12-31"
+          }
+        ]
+      }
+    ]
+  },
+  "elapsed_ms": 236
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `source` | string | `polymarket_clob_rewards_market` |
+| `reward_semantics` | string | Source and meaning note |
+| `upstream` | object | Polymarket upstream response |
+| `elapsed_ms` | integer | Server-side request time in milliseconds |
+
+## Errors
+
+| HTTP | When |
+|------|------|
+| `400` | Invalid condition ID format |
+| `401` | Missing or invalid PolyNode API key |
+| `502` | Polymarket rewards upstream failed or returned invalid JSON |

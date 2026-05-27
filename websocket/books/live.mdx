@@ -80,7 +80,7 @@ lib lib-gar-est-2026-04-14: 1-2 (2H 52)
 ```javascript
 import WebSocket from 'ws';
 
-const KEY = process.env.POLYNODE_KEY;
+const KEY = process.env.POLYNODE_KEY || 'pn_live_YOUR_KEY';
 const ws = new WebSocket(`wss://books.polynode.dev/ws/live?key=${KEY}`);
 
 ws.on('message', (raw) => {

@@ -4,9 +4,13 @@ openapi: "GET /v3/wallets/{address}/pnl/events"
 description: "Realized P&L bucketed by hour, day, week, or month — chart-ready time series for a wallet."
 ---
 
-Returns a per-bucket time series of realized P&L for a wallet. Each row is a fixed time window (hour, day, week, or month) with the sum of realized P&L, gross profit, gross loss, wins, losses, and event count for that bucket. A running `cumulative_pnl` is included so the response can be plotted directly.
+Returns wallet P&L buckets for charting. With `period`, `after`, or `before`, each row is a fixed time window (hour, day, week, or month) from the realized P&L event stream. A running `cumulative_pnl` is included so the response can be plotted directly.
 
-Backed by an indexed scan over `pnl_event` — sub-second on full-history windows in most cases.
+Without an explicit time filter, the endpoint returns a single all-time summary bucket from the same wallet summary source as [`GET /v3/wallets/{address}/pnl`](/data/wallets/pnl). That default mode is intentionally summary-backed so default `/pnl/events` and `/pnl` agree while the canonical S8 time-series index is being completed.
+
+In event-series mode, `wins`, `losses`, and `events` count realized P&L events in the selected window. In default summary mode, counts are position counts and the response includes `count_type: "positions"` and `summary_bucket: true`.
+
+Rows at timestamp `0` or earlier are ignored in event-series mode, so explicit event windows start at Unix second `1`.
 
 ## Request
 
@@ -20,13 +24,56 @@ GET /v3/wallets/{address}/pnl/events
 |-----------|------|---------|-------------|
 | `group` | string | `day` | Bucket size: `hour`, `day`, `week`, `month` |
 | `period` | string | -- | Shortcut for `after`: `1d`, `7d`, `30d`, `1y` |
-| `after` | integer | `0` | Start timestamp (Unix seconds, inclusive) |
+| `after` | integer | `1` | Start timestamp (Unix seconds, inclusive). Values below `1` are treated as `1`. |
 | `before` | integer | now | End timestamp (Unix seconds, inclusive) |
 | `limit` | integer | `5000` | Max buckets returned, clamped 1-10000 |
 
 If `after` and `period` are both set, `after` wins.
 
 ## Examples
+
+### All-time summary bucket
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/pnl/events"
+```
+
+```json
+{
+  "address": "0xbddf61af533ff524d27154e589d2d7a81510c684",
+  "granularity": "day",
+  "bucket_count": 1,
+  "buckets": [
+    {
+      "bucket": 1779908613,
+      "realized_pnl": 29035964.931344,
+      "cumulative_pnl": 29035964.931344,
+      "gross_profit": 29818047.886063,
+      "gross_loss": -782082.954719,
+      "wins": 482,
+      "losses": 33,
+      "events": 1016,
+      "position_count": 1016,
+      "open_positions": 511,
+      "unrealized_pnl": -26917534.501466,
+      "total_pnl": 2118430.429878,
+      "total_volume": 177203290.120101
+    }
+  ],
+  "total_realized_pnl": 29035964.931344,
+  "total_events": 1016,
+  "total_wins": 482,
+  "total_losses": 33,
+  "total_positions": 1016,
+  "open_positions": 511,
+  "unrealized_pnl": -26917534.501466,
+  "total_pnl": 2118430.429878,
+  "source": "wallet_stats_combined",
+  "count_type": "positions",
+  "summary_bucket": true,
+  "elapsed_ms": 3
+}
+```
 
 ### Daily P&L for the last 7 days
 
@@ -111,12 +158,19 @@ curl "https://api.polynode.dev/v3/wallets/0x44c1dfe43260c94ed4f1d00de2e1f80fb113
 | `buckets[].gross_loss` | number | Sum of losing events in that bucket (USD, negative) |
 | `buckets[].wins` | integer | Count of winning events in that bucket |
 | `buckets[].losses` | integer | Count of losing events in that bucket |
-| `buckets[].events` | integer | Total P&L events in that bucket |
+| `buckets[].events` | integer | Total P&L events in event-series mode; position count in default summary mode |
+| `buckets[].position_count` | integer | Position count. Present in default summary mode. |
+| `buckets[].open_positions` | integer | Open position count. Present in default summary mode. |
+| `buckets[].unrealized_pnl` | number | Current unrealized P&L. Present in default summary mode. |
+| `buckets[].total_pnl` | number | `realized_pnl + unrealized_pnl`. Present in default summary mode. |
+| `buckets[].total_volume` | number | Wallet volume from the summary source. Present in default summary mode. |
 | `total_realized_pnl` | number | Sum of `realized_pnl` across all returned buckets (USD) |
 | `total_events` | integer | Sum of `events` across all returned buckets |
 | `total_wins` | integer | Sum of `wins` across all returned buckets |
 | `total_losses` | integer | Sum of `losses` across all returned buckets |
-| `source` | string | Always `pnl_event` |
+| `source` | string | `wallet_stats_combined` for default summary mode, `pnl_event` for explicit event-series windows |
+| `count_type` | string | `positions` in default summary mode |
+| `summary_bucket` | boolean | `true` in default summary mode |
 | `elapsed_ms` | integer | Server-side query time in milliseconds |
 
 ## Errors

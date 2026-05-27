@@ -88,7 +88,7 @@ You can derive any user's deposit wallet address from their EOA without any netw
 
 <CodeGroup>
 ```typescript TypeScript
-import { deriveDepositWalletAddress, deriveSafeAddress } from 'polynode-sdk';
+const { deriveDepositWalletAddress, deriveSafeAddress } = require('polynode-sdk');
 
 const eoa = '0xA60601A4d903af91855C52BFB3814f6bA342f201';
 const depositWallet = await deriveDepositWalletAddress(eoa);

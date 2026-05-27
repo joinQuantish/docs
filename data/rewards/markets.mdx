@@ -1,0 +1,73 @@
+---
+title: "Reward Markets"
+openapi: "GET /v3/rewards/markets"
+description: "List public Polymarket reward market configurations."
+---
+
+Returns Polymarket's public reward-market configuration feed. This describes markets with active reward programs; it is not per-wallet earned LP rewards.
+
+## Request
+
+```
+GET /v3/rewards/markets
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `sponsored` | boolean | `false` | Forward `sponsored=true` to Polymarket |
+| `next_cursor` | string | -- | Cursor forwarded to Polymarket |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/rewards/markets"
+```
+
+```json
+{
+  "source": "polymarket_clob_rewards_markets_current",
+  "reward_semantics": "public Polymarket reward market configuration; this is not per-wallet earned LP rewards",
+  "upstream": {
+    "count": 500,
+    "data": [
+      {
+        "condition_id": "0x0001cb8c0b39aeb614ab9a43867595317f06ede9c011661513065c638fbbefda",
+        "native_daily_rate": 1,
+        "rewards_config": [
+          {
+            "asset_address": "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB",
+            "end_date": "2500-12-31",
+            "id": 0,
+            "rate_per_day": 1,
+            "start_date": "2026-02-17",
+            "total_rewards": 0
+          }
+        ],
+        "rewards_max_spread": 4.5,
+        "rewards_min_size": 50,
+        "total_daily_rate": 1
+      }
+    ],
+    "next_cursor": "..."
+  },
+  "elapsed_ms": 447
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `source` | string | `polymarket_clob_rewards_markets_current` |
+| `reward_semantics` | string | Source and meaning note |
+| `upstream` | object | Polymarket upstream response |
+| `elapsed_ms` | integer | Server-side request time in milliseconds |
+
+## Errors
+
+| HTTP | When |
+|------|------|
+| `401` | Missing or invalid PolyNode API key |
+| `502` | Polymarket rewards upstream failed or returned invalid JSON |

@@ -4,7 +4,9 @@ openapi: "GET /v3/wallets/{address}/pnl"
 description: "Get profit and loss for a wallet in USD. Supports time-windowed P&L with ?period=1d|7d|30d|1y and tag filtering."
 ---
 
-Returns P&L data for a wallet in USD. Without a `period` parameter, returns all-time P&L. With `period`, returns realized P&L for that time window computed from individual trade events.
+Returns P&L data for a wallet in USD. Without a `period` parameter, returns all-time P&L from the current position summary. With `period`, `after`, or `before`, returns realized P&L for that time window from the `pnl_event` event stream.
+
+The two modes have different counting semantics: all-time `wins` and `losses` are position counts; time-windowed `wins`, `losses`, and `events` are realized P&L event counts. Do not compare the counts directly.
 
 ## Request
 
@@ -17,11 +19,11 @@ GET /v3/wallets/{address}/pnl
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `period` | string | -- | Time window: `1d`, `7d`, `30d`, `1y` |
-| `after` | integer | -- | Start timestamp (Unix seconds) |
+| `after` | integer | -- | Start timestamp (Unix seconds). Time-windowed queries clamp values below `1` to `1`. |
 | `before` | integer | -- | End timestamp (Unix seconds) |
 | `tags` | string | -- | Comma-separated tag slugs to filter by, case-insensitive (e.g. `politics,crypto`, `nfl`, `Iran`) |
 | `market` | string | -- | Filter by condition_id |
-| `include_unrealized` | string | `false` | Set to `true` to include unrealized P&L at the end of the time window. Reconstructs which positions were open at that date and prices them at the last fill price. Only applies to time-filtered queries. |
+| `include_unrealized` | string | `false` | Set to `true` to include current unrealized P&L alongside the realized event-window result. Only applies to time-filtered queries. |
 
 ## Examples
 
@@ -73,7 +75,7 @@ curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c
 
 ### 30-day P&L with unrealized
 
-Pass `include_unrealized=true` to reconstruct which positions were open at the end of the time window, price them at the last fill before that date, and compute unrealized P&L.
+Pass `include_unrealized=true` to include current unrealized P&L alongside the realized event-window result.
 
 ```bash
 curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/pnl?period=30d&include_unrealized=true
@@ -133,6 +135,6 @@ curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `unrealized_pnl` | number | Unrealized P&L of positions that were open at the end of the time window (USD). Computed by reconstructing position state from fills and pricing at the last fill before the cutoff date. |
+| `unrealized_pnl` | number | Current unrealized P&L for open positions (USD), returned alongside the realized event-window result. |
 | `total_pnl` | number | `realized_pnl + unrealized_pnl` (USD) |
-| `open_positions_at_date` | integer | Number of positions that were open at the end of the time window |
+| `open_positions_at_date` | integer | Current open position count returned with the unrealized P&L estimate |

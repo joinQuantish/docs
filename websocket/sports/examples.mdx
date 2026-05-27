@@ -124,18 +124,30 @@ await ws.send(json.dumps({
 ## Watch a single game by ID
 
 ```javascript
+import { WebSocket } from "ws";
+
 // First find the game ID from /games
 const games = await fetch("https://sports.polynode.dev/games?sport=tennis&status=inprogress")
   .then(r => r.json());
 const target = games.games[0];
-console.log(`Watching game ${target.game_id}: ${target.data.awayTeam} @ ${target.data.homeTeam}`);
 
-// Then subscribe to just that game
-ws.send(JSON.stringify({
-  action: "subscribe",
-  type: "sports_scores",
-  filters: { game_id: [target.game_id] }
-}));
+if (!target) {
+  console.log("No live tennis games right now");
+} else {
+  console.log(`Watching game ${target.game_id}: ${target.data.awayTeam} @ ${target.data.homeTeam}`);
+
+  // Then subscribe to just that game
+  const ws = new WebSocket("wss://sports.polynode.dev/ws?key=pn_live_YOUR_KEY");
+  ws.on("open", () => {
+    ws.send(JSON.stringify({
+      action: "subscribe",
+      type: "sports_scores",
+      filters: { game_id: [target.game_id] }
+    }));
+  });
+
+  ws.on("message", (raw) => console.log(raw.toString()));
+}
 ```
 
 ## Auto-reconnect with snapshot replay
