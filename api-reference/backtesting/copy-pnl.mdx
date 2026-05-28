@@ -14,14 +14,14 @@ This endpoint returns **two different PnL numbers** that can look very different
 | Field | What it answers | When to use |
 |---|---|---|
 | `total_realized_pnl_usdc` | "Did this wallet **make money** trading?" | **Default for customer-facing UI.** Closest to what other trading platforms call "PnL". Equivalent to summing per-position WAVG-realized PnL across every position the wallet touched. |
-| `actual_pnl_usdc` | "How much **net cash** moved through this wallet's USDC balance from trading?" | Diagnostic / slippage-analysis. Used internally to compute `slippage_*` fields. Inflated for active wallets that hold inventory. |
+| `actual_pnl_usdc` | "How much **net cash** moved through this wallet's USDC balance from trading?" | Diagnostic / slippage-analysis. Used for `slippage_*` fields. Inflated for active wallets that hold inventory. |
 
 **Both numbers are correct** — they measure different things. See [the worked example below](#understanding-cashflow-pnl-vs-realized-pnl) for the math.
 
 ## Path parameters
 
 <ParamField path="wallet" type="string" required>
-  The Polymarket wallet address (Safe proxy or EOA, lowercased internally).
+  The Polymarket wallet address (Safe proxy or EOA, normalized to lowercase).
 </ParamField>
 
 ## Query parameters

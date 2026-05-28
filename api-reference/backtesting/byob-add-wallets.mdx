@@ -13,7 +13,7 @@ Add one or more wallets to your private BYOB tracked-pool. Wallets are immediate
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `addresses` | `string[]` | yes | Array of valid `0x…` wallet addresses (Safe proxy or EOA). Lowercased internally. Max 1000 per request. |
+| `addresses` | `string[]` | yes | Array of valid `0x…` wallet addresses (Safe proxy or EOA). Addresses are normalized to lowercase. Max 1000 per request. |
 
 ## Response fields
 
@@ -111,7 +111,7 @@ Only the genuinely new wallet (`0xdead…cc`) was added and refresh-kicked. The 
 
 ## Notes
 
-- **Wallets are lowercased internally.** Mixing case across requests is fine; the same wallet in different case won't double-track.
+- **Wallets are normalized to lowercase.** Mixing case across requests is fine; the same wallet in different case won't double-track.
 - **Within a single request, duplicates are de-duped** before the dedup-against-pool check. So passing the same address twice in one body counts as one.
 - **Pool isolation:** each API key has its own private pool keyed on the SHA256 of your key. Adding wallets to one pool doesn't affect any other customer.
 - **On-add freshening** runs in the background — the HTTP response returns within milliseconds even though scoring takes 30s+ to complete. Poll `/v2/copy-pnl/leaderboard` to see scores land.

@@ -221,7 +221,7 @@ A single settlement can contain multiple trades (one per matched maker order). I
 </Note>
 
 <Tip>
-**Tracking limit orders across fills:** Use `order_hash` to group partial fills of the same limit order. When a maker places a 1,000-share order and it fills in three separate transactions, all three trades share the same `order_hash`. This is the EIP-712 hash of the signed order struct — it's deterministic from the order parameters and identical to what Polymarket's CLOB uses internally.
+**Tracking limit orders across fills:** Use `order_hash` to group partial fills of the same limit order. When a maker places a 1,000-share order and it fills in three separate transactions, all three trades share the same `order_hash`. This is the EIP-712 hash of the signed order struct — it's deterministic from the order parameters and matches Polymarket's CLOB order hash.
 </Tip>
 
 ## Tracking a specific wallet's trades

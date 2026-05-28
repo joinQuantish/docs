@@ -4,7 +4,7 @@ description: "Query every trade ever executed on Polymarket. Filter by wallet, m
 openapi: "GET /v2/onchain/trades"
 ---
 
-Search and filter the complete history of Polymarket trades. Every CLOB fill is indexed and enriched with market metadata. Supports filtering by wallet, market (via slug, condition ID, or token ID), time range, and minimum trade size.
+Search and filter the complete history of Polymarket trades. Every CLOB fill is enriched with market metadata. Supports filtering by wallet, market (via slug, condition ID, or token ID), time range, and minimum trade size.
 
 When no filters are provided, returns the most recent trades from the last 24 hours. Add any filter to query the full history.
 

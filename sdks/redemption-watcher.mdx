@@ -41,7 +41,7 @@ await watcher.start([
 
 ## How It Works
 
-1. **`start(wallets)`** fetches positions for each wallet via REST (parallel), builds an internal index keyed by `condition_id`, then subscribes to the oracle WebSocket stream
+1. **`start(wallets)`** fetches positions for each wallet via REST (parallel), builds a local watch set keyed by `condition_id`, then subscribes to the oracle WebSocket stream
 2. When a `condition_resolution` event arrives, the watcher cross-references `event.condition_id` against the position index
 3. For each matched position, a `RedeemableAlert` is emitted with wallet address, win/loss status, payout estimate, and full market metadata
 4. After alerts fire, the resolved condition is evicted from memory. Positions that drop to zero size (full sell) are also evicted. This keeps memory bounded to only active, non-zero positions regardless of how long the watcher runs.

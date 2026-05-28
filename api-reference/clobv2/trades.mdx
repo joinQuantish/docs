@@ -1,12 +1,12 @@
 ---
 title: "Trades (Global)"
-description: "Every Polymarket CLOB v2 fill, live-indexed, joined to market metadata. Filter by wallet, market, token, builder, time range, or size."
+description: "Every Polymarket CLOB v2 fill, joined to market metadata. Filter by wallet, market, token, builder, time range, or size."
 openapi: "GET /clobv2/trades"
 ---
 
 Every v2 `OrderFilled` event as it lands on-chain, joined to the 860K-market metadata layer so every hex ID comes back with `question`, `slug`, `event_title`, `image`, and `outcome` inline. No cursor games — simple `limit` + `offset`.
 
-Backed by the `v2.fill` view on the polynode explorer gateway. Data appears within seconds of confirmation.
+Data appears within seconds of confirmation.
 
 ## Request
 
@@ -126,7 +126,7 @@ Same fill, served raw so you can see exactly what's on-chain:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `question` | string \| null | Market question (e.g. `"Will Donald Trump win the 2024 US Presidential Election?"`). `null` only if metadata hasn't been indexed yet (rare; ingester catches up within 30s). |
+| `question` | string \| null | Market question (e.g. `"Will Donald Trump win the 2024 US Presidential Election?"`). `null` only if metadata is briefly unavailable. |
 | `slug` | string \| null | Polymarket URL slug. |
 | `event_title` | string \| null | Parent event title (neg-risk markets share an event). |
 | `image` | string \| null | CDN URL of the market icon. |
@@ -245,12 +245,12 @@ for trade in data["trades"]:
 | `401` | `{"error": "missing API key ..."}` or `{"error": "invalid or revoked API key"}` | No key, malformed key, or revoked. |
 | `402` | `{"error": "paid plan required ...", "tier": "free", "upgrade_url": "https://polynode.dev"}` | Valid key but `tier = "free"`. |
 | `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Per-key sliding-window rate limit hit. |
-| `5xx` | `{"error": "upstream gateway error", "detail": "..."}` | Transient upstream issue; retried once internally. |
+| `5xx` | `{"error": "temporary_data_provider_error", "detail": "..."}` | Temporary data provider issue. Retry with backoff. |
 
 ## Notes
 
 - `maker_token_id = "0"` (or `taker_token_id = "0"`) means that side of the fill is USDC collateral. The non-zero side is the outcome token.
 - Numeric fields come back as strings (e.g. `"2.9500000000000000"`) to avoid float precision loss. Parse with `Decimal`/`BigNumber` before math.
 - `builder = "0x000...000"` means the order did not carry a builder tag.
-- `question`, `slug`, `image`, `event_title`, `outcome` may be `null` on fills for markets our metadata hasn't yet indexed (rare; the metadata ingester catches up within 30 seconds).
+- `question`, `slug`, `image`, `event_title`, `outcome` may be `null` briefly on newly seen markets. Market metadata usually appears within 30 seconds.
 - Pagination is offset-based. If new fills arrive between pages, the same fill may be seen twice or skipped — for historical dumps, filter by `end=<snapshot_ts>` to get a stable window.

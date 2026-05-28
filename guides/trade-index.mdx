@@ -52,7 +52,7 @@ As of April 2026, the most widely used Polymarket subgraph has its positions ind
 
 If you're querying positions from a subgraph, you're getting portfolio data that's almost a week old. Any trade, any entry, any exit that happened in the last 6.7 days simply doesn't exist in those results.
 
-This isn't a one-time outage. Positions require computing VWAP across every trade a wallet has ever made, and subgraph indexers struggle with that at scale. The heaviest Polymarket wallets have millions of trades. A subgraph that re-indexes positions from raw events falls further behind every day as volume grows.
+This isn't a one-time outage. Positions require computing VWAP across every trade a wallet has ever made, and generic subgraph-style systems struggle with that at scale. The heaviest Polymarket wallets have millions of trades, and raw-event position rebuilds fall further behind every day as volume grows.
 
 polynode's trade index pre-computes positions for all 2.5 million wallets and maintains them in real-time as new trades confirm. There is no lag. When a trade confirms on-chain, positions update within seconds.
 

@@ -1,15 +1,15 @@
 ---
 title: "Wallet PolyUSD Flows"
 openapi: "GET /v3/wallets/{address}/polyusd-flows"
-description: "Get chain-backed PolyUSD deposits and withdrawals for a wallet."
+description: "Get PolyUSD deposits and withdrawals for a wallet."
 ---
 
-Returns PolyUSD deposit and withdrawal history for one wallet directly from Polygon logs.
+Returns PolyUSD deposit and withdrawal history for one wallet.
 
-Deposits are PolyUSD `Wrapped` events from the Collateral Onramp or Permissioned Ramp where the wallet receives minted PolyUSD. Withdrawals are PolyUSD transfers from the wallet into the PolyUSD contract, correlated with a same-transaction `Unwrapped` event from the Collateral Offramp or Permissioned Ramp.
+Deposits are incoming PolyUSD mints to the wallet. Withdrawals are outgoing PolyUSD movements that redeem back to USDC or USDC.e.
 
 <Note>
-This endpoint is wallet-scoped and chain-backed. It does not require the full PolyUSD indexer, and it excludes internal settlement adapter unwraps used by V2 split/trading mechanics.
+This endpoint is focused on user cash movement. It excludes split, merge, and trading settlement mechanics, which are available through the wallet activity and trade endpoints.
 </Note>
 
 ## Request
@@ -70,7 +70,7 @@ curl "https://api.polynode.dev/v3/wallets/0x2a1f579283C87c4574102bbF6E4B39F7A12f
   "total_deposited": 12854.05392,
   "total_withdrawn": 5930.200068,
   "net_deposited": 6923.853852,
-  "source": "polygon_rpc_pusd_wrap_unwrap"
+  "source": "polyusd_flows"
 }
 ```
 
@@ -97,7 +97,7 @@ curl "https://api.polynode.dev/v3/wallets/0x2a1f579283C87c4574102bbF6E4B39F7A12f
 | `total_deposited` | number | Sum of matching deposit rows |
 | `total_withdrawn` | number | Sum of matching withdrawal rows |
 | `net_deposited` | number | Deposits minus withdrawals |
-| `source` | string | `polygon_rpc_pusd_wrap_unwrap` |
+| `source` | string | Dataset label |
 
 ## Errors
 
@@ -105,4 +105,4 @@ curl "https://api.polynode.dev/v3/wallets/0x2a1f579283C87c4574102bbF6E4B39F7A12f
 |------|------|
 | `400` | Invalid wallet address, `kind`, or `order` |
 | `401` | Missing or invalid PolyNode API key |
-| `502` | Polygon RPC upstream failure |
+| `502` | Temporary data provider failure |

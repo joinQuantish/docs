@@ -565,7 +565,7 @@
           "Search & Context"
         ],
         "summary": "Online Search",
-        "description": "Search the public web through PolyNode's internal metasearch adapter and return normalized organic results. Intended for low-volume agent context, research, and enrichment workflows.",
+        "description": "Search the public web and return normalized organic results. Intended for low-volume agent context, research, and enrichment workflows.",
         "operationId": "search_online",
         "parameters": [
           {
@@ -1553,7 +1553,7 @@
           {
             "name": "includeTrades",
             "in": "query",
-            "description": "Enrich each position with `firstTradeAt` and `lastTradeAt` timestamps. Adds one upstream call per holder, so responses will be slower. Default false. **Rate limited to 60 requests per minute per key** (separate from your standard rate limit).",
+            "description": "Enrich each position with `firstTradeAt` and `lastTradeAt` timestamps. Responses will be slower. Default false. **Rate limited to 60 requests per minute per key** (separate from your standard rate limit).",
             "schema": {
               "type": "boolean",
               "default": false
@@ -4186,7 +4186,7 @@
         "tags": [
           "Onchain"
         ],
-        "summary": "Candles (trade-indexed OHLCV)",
+        "summary": "Candles (trade-based OHLCV)",
         "description": "Server-built OHLCV candles from real onchain trades. Anchor-based pagination with buy/sell volume split, VWAP, and trade counts.",
         "operationId": "onchain_candles",
         "parameters": [
@@ -4601,7 +4601,7 @@
           "V3 Wallets"
         ],
         "summary": "Wallet P&L",
-        "description": "Get wallet profit and loss. Default/all-time mode reads the current wallet position summary. Time-windowed mode reads the realized pnl_event stream.",
+        "description": "Get wallet profit and loss. Default/all-time mode returns current all-time P&L. Time-windowed mode returns realized P&L for the selected range.",
         "operationId": "v3_wallet_pnl",
         "parameters": [
           {
@@ -4677,7 +4677,7 @@
           "V3 Wallets"
         ],
         "summary": "Wallet P&L time series",
-        "description": "Get wallet P&L buckets. Default/all-time mode returns a single summary-backed bucket. Explicit time filters return realized pnl_event buckets.",
+        "description": "Get wallet P&L buckets. Default/all-time mode returns a single all-time bucket. Explicit time filters return realized P&L buckets.",
         "operationId": "v3_wallet_pnl_events",
         "parameters": [
           {
@@ -4769,7 +4769,7 @@
           "V3 Wallets"
         ],
         "summary": "Wallet fees paid",
-        "description": "Get fee-bearing OrderFilled rows where the wallet is the order owner.",
+        "description": "Get fee-bearing fills where the wallet is the order owner.",
         "operationId": "v3_wallet_fees_paid",
         "parameters": [
           {
@@ -4855,7 +4855,7 @@
           "V3 Wallets"
         ],
         "summary": "Wallet PolyUSD flows",
-        "description": "Get chain-backed PolyUSD deposits and withdrawals for one wallet.",
+        "description": "Get PolyUSD deposits and withdrawals for one wallet.",
         "operationId": "v3_wallet_polyusd_flows",
         "parameters": [
           {
@@ -4941,7 +4941,7 @@
             "description": "Unauthorized"
           },
           "502": {
-            "description": "Polygon RPC upstream failure"
+            "description": "Temporary data provider failure"
           }
         },
         "security": [
@@ -4990,7 +4990,7 @@
             "description": "Unauthorized"
           },
           "502": {
-            "description": "Polymarket upstream failure"
+            "description": "Temporary rebate data provider failure"
           }
         },
         "security": [
@@ -5016,7 +5016,7 @@
               "type": "boolean",
               "default": false
             },
-            "description": "Forward sponsored=true to Polymarket"
+            "description": "Filter to sponsored reward markets"
           },
           {
             "name": "next_cursor",
@@ -5024,7 +5024,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Polymarket cursor"
+            "description": "Pagination cursor"
           }
         ],
         "responses": {
@@ -5035,7 +5035,7 @@
             "description": "Unauthorized"
           },
           "502": {
-            "description": "Polymarket upstream failure"
+            "description": "Temporary rewards data provider failure"
           }
         },
         "security": [
@@ -5070,7 +5070,7 @@
               "type": "boolean",
               "default": false
             },
-            "description": "Forward sponsored=true to Polymarket"
+            "description": "Filter to sponsored reward markets"
           },
           {
             "name": "next_cursor",
@@ -5078,7 +5078,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Polymarket cursor"
+            "description": "Pagination cursor"
           }
         ],
         "responses": {
@@ -5092,7 +5092,7 @@
             "description": "Unauthorized"
           },
           "502": {
-            "description": "Polymarket upstream failure"
+            "description": "Temporary rewards data provider failure"
           }
         },
         "security": [

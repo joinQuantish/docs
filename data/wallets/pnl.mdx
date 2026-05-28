@@ -4,7 +4,7 @@ openapi: "GET /v3/wallets/{address}/pnl"
 description: "Get profit and loss for a wallet in USD. Supports time-windowed P&L with ?period=1d|7d|30d|1y and tag filtering."
 ---
 
-Returns P&L data for a wallet in USD. Without a `period` parameter, returns all-time P&L from the current position summary. With `period`, `after`, or `before`, returns realized P&L for that time window from the `pnl_event` event stream.
+Returns P&L data for a wallet in USD. Without a `period` parameter, returns all-time P&L. With `period`, `after`, or `before`, returns realized P&L for that time window.
 
 The two modes have different counting semantics: all-time `wins` and `losses` are position counts; time-windowed `wins`, `losses`, and `events` are realized P&L event counts. Do not compare the counts directly.
 
@@ -65,7 +65,7 @@ curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c
   "wins": 33039,
   "losses": 58867,
   "events": 91906,
-  "source": "pnl_event",
+  "source": "realized_pnl_series",
   "period": "30d",
   "after": 1776134996,
   "before": 1778726996,
@@ -93,7 +93,7 @@ curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c
   "wins": 33039,
   "losses": 58867,
   "events": 91906,
-  "source": "pnl_event",
+  "source": "realized_pnl_series",
   "period": "30d",
   "after": 1776135002,
   "before": 1778727002,
@@ -129,7 +129,7 @@ curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c
 | `period` | string | The requested period |
 | `after` | integer | Start timestamp (Unix seconds) |
 | `before` | integer | End timestamp (Unix seconds) |
-| `source` | string | Always `pnl_event` for time-windowed queries |
+| `source` | string | Dataset label for time-windowed queries |
 
 ### Additional fields (with `include_unrealized=true`)
 

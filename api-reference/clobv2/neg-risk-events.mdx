@@ -79,7 +79,7 @@ Bad input → `400 Bad Request`.
 | `events[].event_title` | string | Human-readable event name (e.g. `"PGA TOUR Wyndham Championship – Winner"`). |
 | `events[].event_slug` | string | URL slug of the event. |
 | `events[].question_count` | integer | Number of outcomes in the event — matches `child_market_count` for well-formed events. |
-| `events[].child_market_count` | integer | Number of child markets indexed. Each child market is a `"Will {outcome} win?"` binary. |
+| `events[].child_market_count` | integer | Number of child markets included. Each child market is a `"Will {outcome} win?"` binary. |
 | `events[].outcomes` | array of strings | Candidate names in outcome-index order. For PGA this is players, for elections this is candidates, etc. |
 | `events[].child_condition_ids` | array of strings | 32-byte condition_ids — one per child market, same order as `outcomes`. Use these to pull fills/positions for a specific outcome. |
 | `events[].image` | string \| null | CDN URL of the event image. |
@@ -134,7 +134,7 @@ for ev in r.json()["events"]:
 | `401` | `{"error": "missing API key ..."}` | No key or bad key. |
 | `402` | `{"error": "paid plan required ..."}` | Free tier. |
 | `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
-| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+| `5xx` | `{"error": "temporary_data_provider_error"}` | Temporary data provider issue. Retry with backoff. |
 
 ## Notes
 

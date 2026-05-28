@@ -16,7 +16,7 @@ tag: "BETA"
 GET /v2/search/online
 ```
 
-Search the public web and return normalized organic results. PolyNode runs this through an internal metasearch adapter and caches responses to keep the endpoint lightweight.
+Search the public web and return normalized organic results. Responses are cached to keep the endpoint lightweight.
 
 ```bash
 curl "https://api.polynode.dev/v2/search/online?q=Cavaliers%20Knicks%20injury%20news&max_results=5" \

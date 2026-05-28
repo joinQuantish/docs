@@ -137,10 +137,10 @@ print(f"{d['count']} fills on {d['market']} ({d['outcome']})")
 | `401` | `{"error": "missing API key ..."}` | No key or bad key. |
 | `402` | `{"error": "paid plan required ..."}` | Free tier. |
 | `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
-| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+| `5xx` | `{"error": "temporary_data_provider_error"}` | Temporary data provider issue. Retry with backoff. |
 
 ## Notes
 
 - A market typically has two outcome tokens (Yes/No) and neg-risk markets can have many. This endpoint returns fills for ONE outcome token. To see all fills on a whole market, query [`/clobv2/trades?condition_id=...`](/api-reference/clobv2/trades).
-- Top-level `market` / `slug` / `outcome` / `image` / `condition_id` come from the first matched trade's metadata — if the very first fill's metadata hasn't been indexed yet (rare), these fields can be `null` even though enrichment on per-trade rows might populate a moment later.
+- Top-level `market` / `slug` / `outcome` / `image` / `condition_id` come from the first matched trade's metadata. On newly seen markets, these fields can be `null` briefly even though enrichment on per-trade rows may populate a moment later.
 - Results always sorted by `ts_unix DESC`.

@@ -120,4 +120,4 @@ curl "https://api.polynode.dev/v2/onchain/markets/$TOKEN/trades/all?from=1774588
 - For a multi-token market (binary YES/NO), call this endpoint **twice** — once per `token_id`. A `condition_id` variant that returns both tokens in one call is on the roadmap.
 - `partial: true` results are **not cached**. Subsequent calls re-attempt the full walk. Tighten the time window with `from`/`to` if you keep hitting the cap.
 - Cache key is `(token_id, from_ts, to_ts)`. Different windows are cached independently. Default-window calls (no `from`/`to`) share a cache slot.
-- The walk is internally parallelized — total bandwidth use is moderate even for huge markets.
+- The walk is parallelized — total bandwidth use is moderate even for huge markets.

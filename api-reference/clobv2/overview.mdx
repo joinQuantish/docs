@@ -1,11 +1,11 @@
 ---
 title: "CLOB v2 API"
-description: "Paid REST endpoints for Polymarket CLOB v2 data — fills, positions, candles, builder leaderboard, neg-risk events. Enriched with market metadata. Backed by polynode's own indexer, not Goldsky."
+description: "Paid REST endpoints for Polymarket CLOB v2 data — fills, positions, candles, builder leaderboard, neg-risk events. Enriched with market metadata."
 ---
 
-REST endpoints for Polymarket CLOB v2 data, indexed and served by polynode. Every endpoint returns JSON enriched with market metadata (question, slug, outcome label, image, condition_id) baked in — you never need to look up a market name separately.
+REST endpoints for Polymarket CLOB v2 data. Every endpoint returns JSON enriched with market metadata (question, slug, outcome label, image, condition_id) baked in — you never need to look up a market name separately.
 
-This is the **v2-only** surface. The existing [`/v2/onchain/*`](/api-reference/onchain/trades) endpoints cover v1 Polymarket (and will eventually unify onto the same indexer). Until then, use `/clobv2/*` for anything that needs v2 fills, positions, builder attribution, or neg-risk events.
+This is the **v2-only** surface. The existing [`/v2/onchain/*`](/api-reference/onchain/trades) endpoints cover v1 Polymarket. Use `/clobv2/*` for anything that needs v2 fills, positions, builder attribution, or neg-risk events.
 
 ## Collateral token: pUSD
 
@@ -144,11 +144,11 @@ All error bodies follow `{"error": "<human readable>"}`. `402` also includes `ti
 
 ## Known stubs
 
-These endpoints exist on the server but are not yet documented because their backing data isn't indexed:
+These endpoints exist on the server but are not yet documented because their supporting historical datasets are still being completed:
 
 - `/clobv2/wallets/{address}/redemptions`
 - `/clobv2/wallets/{address}/activity`
 - `/clobv2/markets/{condition_id}/oi`
 - `/clobv2/oi`
 
-They currently return the empty-shape response (count/volume fields zeroed). When the supporting subgraphs catch up on s4, they'll light up with real data and get their own doc pages — no API contract change.
+They currently return the empty-shape response (count/volume fields zeroed). When coverage is complete, they'll return populated data and get their own doc pages — no API contract change.

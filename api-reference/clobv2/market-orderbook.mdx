@@ -129,7 +129,7 @@ if d["found"]:
 | `401` | `{"error": "missing API key ..."}` | No key or bad key. |
 | `402` | `{"error": "paid plan required ..."}` | Free tier. |
 | `429` | `{"error": "rate limit exceeded", "reset_at": <unix>}` | Rate limit hit. |
-| `5xx` | `{"error": "upstream gateway error"}` | Transient upstream; retried once. |
+| `5xx` | `{"error": "temporary_data_provider_error"}` | Temporary data provider issue. Retry with backoff. |
 
 ## Notes
 

@@ -4,9 +4,9 @@ openapi: "GET /v3/wallets/{address}/pnl/events"
 description: "Realized P&L bucketed by hour, day, week, or month — chart-ready time series for a wallet."
 ---
 
-Returns wallet P&L buckets for charting. With `period`, `after`, or `before`, each row is a fixed time window (hour, day, week, or month) from the realized P&L event stream. A running `cumulative_pnl` is included so the response can be plotted directly.
+Returns wallet P&L buckets for charting. With `period`, `after`, or `before`, each row is a fixed time window (hour, day, week, or month). A running `cumulative_pnl` is included so the response can be plotted directly.
 
-Without an explicit time filter, the endpoint returns a single all-time summary bucket from the same wallet summary source as [`GET /v3/wallets/{address}/pnl`](/data/wallets/pnl). That default mode is intentionally summary-backed so default `/pnl/events` and `/pnl` agree while the canonical S8 time-series index is being completed.
+Without an explicit time filter, the endpoint returns a single all-time summary bucket that matches [`GET /v3/wallets/{address}/pnl`](/data/wallets/pnl).
 
 In event-series mode, `wins`, `losses`, and `events` count realized P&L events in the selected window. In default summary mode, counts are position counts and the response includes `count_type: "positions"` and `summary_bucket: true`.
 
@@ -68,7 +68,7 @@ curl "https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510
   "open_positions": 511,
   "unrealized_pnl": -26917534.501466,
   "total_pnl": 2118430.429878,
-  "source": "wallet_stats_combined",
+  "source": "wallet_summary",
   "count_type": "positions",
   "summary_bucket": true,
   "elapsed_ms": 3
@@ -124,7 +124,7 @@ curl "https://api.polynode.dev/v3/wallets/0x44c1dfe43260c94ed4f1d00de2e1f80fb113
   "total_events": 29,
   "total_wins": 26,
   "total_losses": 3,
-  "source": "pnl_event",
+  "source": "realized_pnl_series",
   "elapsed_ms": 4
 }
 ```
@@ -168,7 +168,7 @@ curl "https://api.polynode.dev/v3/wallets/0x44c1dfe43260c94ed4f1d00de2e1f80fb113
 | `total_events` | integer | Sum of `events` across all returned buckets |
 | `total_wins` | integer | Sum of `wins` across all returned buckets |
 | `total_losses` | integer | Sum of `losses` across all returned buckets |
-| `source` | string | `wallet_stats_combined` for default summary mode, `pnl_event` for explicit event-series windows |
+| `source` | string | Dataset label |
 | `count_type` | string | `positions` in default summary mode |
 | `summary_bucket` | boolean | `true` in default summary mode |
 | `elapsed_ms` | integer | Server-side query time in milliseconds |

@@ -70,7 +70,7 @@ curl -s "https://books.polynode.dev/v1/market-types?sport=basketball&key=pn_live
 | `market_types[].display_name` | string | Human label (e.g. `"Player Points"`, `"Moneyline"`, `"Anytime Touchdown Scorer"`). |
 | `market_types[].pn_category` | string | Broad bucket: `moneyline`, `spread`, `total`, `player-prop`, `team-prop`, `half-period`, `esports-special`, `three-way`, `exact-score`, `parlay`, `prop`, `unknown`. |
 | `market_types[].applicable_sports` | array | Polynode's own list of sports this market applies to. `["*"]` means universal. |
-| `market_types[].sport_category_in_upstream_map` | string | The `sport_category` key used internally by the books mapping layer (basketball / soccer / football / etc., or `*` for universal). |
+| `market_types[].sport_category_in_upstream_map` | string | The `sport_category` key used for market-type coverage (basketball / soccer / football / etc., or `*` for universal). |
 
 ## Current market types
 

@@ -11,17 +11,17 @@ Updated V3 wallet accounting surfaces.
 
 What's new:
 
-- Default/all-time `GET /v3/wallets/{address}/pnl/events` now returns a single summary-backed bucket from the wallet summary source so it agrees with `GET /v3/wallets/{address}/pnl`.
-- Explicit time-windowed P&L events (`period`, `after`, or `before`) still use the indexed `pnl_event` stream and ignore timestamp-0 artifacts.
-- Added `GET /v3/wallets/{address}/fees-paid` for fee-bearing `OrderFilled` rows.
-- Added `GET /v3/wallets/{address}/polyusd-flows` for chain-backed wallet PolyUSD deposits and withdrawals.
-- Added `GET /v3/wallets/{address}/rebates` as a Polymarket public maker-rebate wrapper.
-- Added public reward-market config wrappers at `GET /v3/rewards/markets` and `GET /v3/rewards/markets/{condition_id}`.
+- Default/all-time `GET /v3/wallets/{address}/pnl/events` now returns a single all-time bucket so it agrees with `GET /v3/wallets/{address}/pnl`.
+- Explicit time-windowed P&L events (`period`, `after`, or `before`) return realized P&L buckets and ignore timestamp-0 artifacts.
+- Added `GET /v3/wallets/{address}/fees-paid` for fee-bearing wallet fills.
+- Added `GET /v3/wallets/{address}/polyusd-flows` for wallet PolyUSD deposits and withdrawals.
+- Added `GET /v3/wallets/{address}/rebates` for maker rebates.
+- Added public reward-market configuration at `GET /v3/rewards/markets` and `GET /v3/rewards/markets/{condition_id}`.
 
 Notes:
 
 - Fees paid and maker rebates are intentionally separate surfaces. LP reward market configuration is public; per-wallet earned LP rewards require authenticated Polymarket data and are not exposed as an arbitrary-wallet lookup in the public docs.
-- `GET /v3/wallets/{address}/activity` remains the indexed conditional-token activity feed; PolyUSD deposits and withdrawals now live in the separate wallet PolyUSD flows endpoint.
+- `GET /v3/wallets/{address}/activity` remains the conditional-token activity feed; PolyUSD deposits and withdrawals now live in the separate wallet PolyUSD flows endpoint.
 
 ---
 
@@ -130,7 +130,7 @@ For users comparing our PnL numbers to what the Polymarket frontend displays: th
 
 Added `GET /v3/wallets/{address}/pnl/events` — returns realized P&L bucketed by `hour`, `day`, `week`, or `month` so you can plot a wallet's P&L over time without pulling every trade. Each bucket includes `realized_pnl`, a running `cumulative_pnl`, gross profit/loss, win/loss counts, and event count. Supports `?period=1d|7d|30d|1y` shortcuts or explicit `after` / `before` Unix-second timestamps.
 
-Indexed scan over `pnl_event` — most full-history queries return sub-second.
+Most full-history queries return sub-second.
 
 Other quality-of-life:
 
@@ -298,7 +298,7 @@ Two new endpoints return the **entire** trade history for a market token or wall
 - `GET /v2/onchain/markets/{token_id}/trades/all`
 - `GET /v2/onchain/wallets/{address}/trades/all`
 
-The server walks the full history with parallel time-bucketed queries internally. Optional `from` and `to` query parameters narrow the window.
+The endpoint walks the full history for you. Optional `from` and `to` query parameters narrow the window.
 
 **Limits:**
 
@@ -307,11 +307,11 @@ The server walks the full history with parallel time-bucketed queries internally
 - Typical payload **1-50 MB**. Worst case (capped): **100-200 MB JSON**.
 - Cache TTL **5 minutes** per `(scope, from, to)` combination. Partial results are **not cached**.
 
-**Tier requirement:** **Growth plan ($200/mo) or above.** Starter and free tier requests receive `403`. The bulk endpoints are gated to paid plans because of the heavy server-side compute (one call drives 100s of internal sub-queries) and large payloads.
+**Tier requirement:** **Growth plan ($200/mo) or above.** Starter and free tier requests receive `403`. The bulk endpoints are gated to paid plans because of their large query and payload sizes.
 
 **Compatibility:** purely additive. The standard paginated `/trades` endpoints are unchanged and remain available on all paid tiers.
 
-Updated upstream timeout to 180 seconds across the gateway path so cold-cache calls complete cleanly.
+Updated the request timeout to 180 seconds so cold-cache calls complete cleanly.
 
 ---
 
@@ -415,7 +415,7 @@ npm install polynode-sdk@0.9.7
 
 Bug fix release for the trading module:
 
-- **Fixed `signer.getAddress is not a function` crash** — `ensureReady()` and `linkWallet()` could throw this error when the internal viem WalletClient was passed to downstream Polymarket packages that expect an ethers-style `getAddress()` method. The SDK now ensures `getAddress()` is always available on the normalized signer, regardless of which `@polymarket/clob-client` version you have installed.
+- **Fixed `signer.getAddress is not a function` crash** — `ensureReady()` and `linkWallet()` could throw this error with viem WalletClient signers when Polymarket packages expect an ethers-style `getAddress()` method. The SDK now ensures `getAddress()` is always available on the normalized signer, regardless of which `@polymarket/clob-client` version you have installed.
 - **Fixed signer detection logic** — a duplicate guard condition was allowing incomplete signer objects through, causing crashes instead of clean error messages.
 - **Hardened relay signer adapter** — address extraction now handles additional wallet shapes during Safe deployment and approval flows.
 
@@ -507,7 +507,7 @@ Full reference: [Backtest Copy PnL](/api-reference/backtesting/copy-pnl) · [Bac
 
 What's new on each position row:
 
-- **`initial_value`** — cost basis in USD of currently held shares. The exact number Polymarket uses internally to compute `cashPnl`.
+- **`initial_value`** — cost basis in USD of currently held shares. Use this when you need the basis number that matches Polymarket `cashPnl`.
 - **`redeemable`** — `true` when the market has resolved and the user can call redeem to claim payout / accept loss. Filter on this with `market_status` to detect resolved-but-not-yet-redeemed positions.
 - **`outcome_index`** — numeric index of this row's outcome (0 or 1 for binary markets). Stable across the API regardless of UI label.
 - **`won`** / **`winning_outcome_index`** — present on `resolved-win` / `resolved-loss` rows. Explicit booleans / ints so consumers don't have to parse outcome label strings.
@@ -515,7 +515,7 @@ What's new on each position row:
 
 What's fixed on the math:
 
-- **`current_price` is deterministic on resolved markets.** Reads `payoutNumerators` directly from the CTF contract on Polygon — no third-party indexer dependency, no wait for metadata to catch up. Returns exactly `1.0` for the winning outcome and `0.0` for the loser, the moment the market settles on chain.
+- **`current_price` is deterministic on resolved markets.** Reads settlement values directly from the CTF contract on Polygon. Returns exactly `1.0` for the winning outcome and `0.0` for the loser, the moment the market settles on chain.
 - **`market_status` never lies.** Was previously stuck on `"live"` for fresh resolutions when our metadata was behind. Now uses the chain timestamp as the authoritative resolution signal: `"live"`, `"resolved-win"`, `"resolved-loss"`, `"resolved-unknown"`, or `"closed"`.
 - **`unrealized_pnl` is byte-identical to Polymarket `cashPnl`** for any position covered by both sources.
 
@@ -678,7 +678,7 @@ The "Pricing" sidebar section has been removed. It contained two endpoints:
 
 ## 2026-04-25 — Wallet endpoints reorganized: V1 wallet endpoints removed from documentation
 
-The "Wallets" and "Onchain" sidebar sections have been merged into a single section called **Wallets / Positions / Onchain**. All wallet, position, and trade endpoints now live in one place — the V2 onchain endpoints, which are backed by our own indexer rather than upstream Polymarket data-api.
+The "Wallets" and "Onchain" sidebar sections have been merged into a single section called **Wallets / Positions / Onchain**. All wallet, position, and trade endpoints now live in one place — the V2 onchain endpoints.
 
 **What changed in the docs:**
 
@@ -700,7 +700,7 @@ The V1 endpoints **still respond on the API**. We have not turned them off. If y
 
 **Why V2 onchain is better:**
 
-V1 wallet endpoints were thin proxies over Polymarket's `data-api.polymarket.com` and returned mostly social-flavored fields (bio, profile picture, pseudonym). V2 onchain endpoints are powered by our own indexer over Polymarket's CTF Exchange logs and return rich trading-relevant fields: `avg_price`, `realized_pnl`, `unrealized_pnl`, `current_price`, `total_bought`, `market_status`, `order_hash`, `fee`, `maker_amount`, `taker_amount`, `condition_id`, and more. Same data your equity curve, leaderboard, and PnL endpoints already use.
+V1 wallet endpoints returned mostly social-flavored fields (bio, profile picture, pseudonym). V2 onchain endpoints return rich trading-relevant fields: `avg_price`, `realized_pnl`, `unrealized_pnl`, `current_price`, `total_bought`, `market_status`, `order_hash`, `fee`, `maker_amount`, `taker_amount`, `condition_id`, and more. Same data your equity curve, leaderboard, and PnL endpoints already use.
 
 ---
 
@@ -878,7 +878,7 @@ Each sandbox pulled from the public registry, imported the SDK, placed a real V2
 
 ## 2026-04-20 — CLOB v2 API launched
 
-New paid REST namespace `/clobv2/*` exposing every Polymarket CLOB v2 fill, position, builder, and neg-risk event. Backed by polynode's own indexer on s4 — no external dependencies.
+New paid REST namespace `/clobv2/*` exposing every Polymarket CLOB v2 fill, position, builder, and neg-risk event.
 
 **11 endpoints, all enriched with market metadata (question, slug, outcome, image, condition_id) inline:**
 
@@ -1022,7 +1022,7 @@ Positions that were closed via onchain payout redemption (rather than selling on
 
 ---
 
-## 2026-04-15 — Trade-indexed candles endpoint
+## 2026-04-15 — Trade-based candles endpoint
 
 ### New: `GET /v2/onchain/candles/{token_id}`
 
@@ -1590,7 +1590,7 @@ Full documentation: [Rust SDK](/sdks/rust)
 ### TypeScript SDK v0.5.5
 
 - **EOA auto-approvals:** `ensureReady()` now automatically sends approval transactions for EOA wallets with proper nonce management. Requires ~0.05 MATIC in the wallet (~$0.01).
-- **Fix:** `createPrivySigner`, `createPrivyClient`, and other Privy helpers are now correctly exported from the package root. In v0.5.2 these were only reachable via internal module paths.
+- **Fix:** `createPrivySigner`, `createPrivyClient`, and other Privy helpers are now correctly exported from the package root. In v0.5.2 these were only reachable through non-public module paths.
 - **Privy server-auth integration:** `createPrivySigner()` and `createPrivyClient()` for server-side trading with Privy-managed wallets.
 - **Unlimited gasless operations:** Paid tiers get unlimited gasless on-chain operations. Free tier gets basic gasless onboarding.
 - **ethers v5/v6 compatibility:** Safe transaction signing works with both ethers v5 and v6.
@@ -1655,13 +1655,13 @@ Every onchain endpoint now returns enriched data with human-readable market cont
 
 ### New: Onchain Data Section
 
-Seven new endpoints sourced directly from blockchain settlement data. These provide complete, accurate data that never times out or drops records, unlike endpoints that rely on upstream APIs.
+Seven new endpoints for blockchain settlement data. These provide complete, accurate data that never times out or drops records.
 
 All onchain endpoints are under `/v2/onchain/` and documented in the new [Onchain](/api-reference/onchain/wallet-trades) section of the API reference.
 
 #### Wallet endpoints
 
-- **`GET /v2/onchain/wallets/{addr}/trades`** — Complete trade fill history for any wallet. Every fill, every counterparty, every fee. Replaces the unreliable upstream trade API that drops records for heavy wallets.
+- **`GET /v2/onchain/wallets/{addr}/trades`** — Complete trade fill history for any wallet. Every fill, every counterparty, every fee.
 - **`GET /v2/onchain/wallets/{addr}/redemptions`** — All redemptions with payout amounts. See who cashed out, when, and how much. Not available anywhere else.
 - **`GET /v2/onchain/wallets/{addr}/activity`** — Splits, merges, and multi-outcome conversions. Shows how wallets interact with the CTF contract beyond simple trading.
 
@@ -1690,7 +1690,7 @@ Two new v2 endpoints return complete position history with accurate P&L sourced 
 
 **One call. No pagination. All positions (open + closed).**
 
-Unlike the v1 positions endpoint which requires the SDK to paginate through trades page by page, this endpoint returns the complete picture in a single request. The server handles all internal pagination (up to 20,000 positions).
+Unlike the v1 positions endpoint which requires the SDK to paginate through trades page by page, this endpoint returns the complete picture in a single request with up to 20,000 positions.
 
 ```bash
 curl "https://api.polynode.dev/v2/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/positions/onchain" \
@@ -1876,7 +1876,7 @@ curl "https://api.polynode.dev/v1/resolve/DTCahill" \
 }
 ```
 
-Backed by a pre-indexed table of ~3 million Polymarket wallets, updated daily. Lookups are sub-millisecond. Accepts any of the three identifiers as input:
+Covers ~3 million Polymarket wallets and is updated daily. Lookups are sub-millisecond. Accepts any of the three identifiers as input:
 
 - `GET /v1/resolve/{safe_address}` — proxy wallet to EOA + username
 - `GET /v1/resolve/{eoa_address}` — EOA to proxy wallet + username
@@ -1934,7 +1934,7 @@ Purely additive. Existing clients are unaffected.
 
 ### TypeScript SDK — RedemptionWatcher Memory Management
 
-The `RedemptionWatcher` now automatically evicts resolved conditions and zero-size positions from its internal index. This keeps memory bounded to only active, non-zero positions regardless of how long the watcher runs or how many wallets it tracks.
+The `RedemptionWatcher` now automatically evicts resolved conditions and zero-size positions from its local watch set. This keeps memory bounded to only active, non-zero positions regardless of how long the watcher runs or how many wallets it tracks.
 
 Previously, resolved markets and fully-sold positions accumulated in memory indefinitely. For long-running services tracking thousands of wallets, this could grow to hundreds of megabytes over weeks.
 

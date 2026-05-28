@@ -4,12 +4,12 @@ openapi: "GET /v3/wallets/{address}/rebates"
 description: "Get Polymarket-reported maker rebates for a wallet and date."
 ---
 
-Returns maker rebate records reported by Polymarket's public rebate endpoint for one maker address and one date.
+Returns maker rebate records reported by Polymarket for one maker address and one date.
 
-Maker rebates are Polymarket accounting credits. They are not the same value as indexed `OrderFilled.fee`, and they should not be treated as trader fees paid.
+Maker rebates are Polymarket accounting credits. They are not the same value as trader fees paid.
 
 <Note>
-Polymarket's upstream rebate endpoint expects the CLOB maker/signing address. If you pass a Safe or proxy wallet that Polymarket does not accept as a maker address, PolyNode returns an empty `rebates` array with an explanatory `hint`.
+Polymarket rebate lookups are keyed by CLOB maker/signing address. If you pass a Safe or proxy wallet that Polymarket does not accept as a maker address, PolyNode returns an empty `rebates` array with an explanatory `hint`.
 </Note>
 
 ## Request
@@ -37,8 +37,8 @@ curl "https://api.polynode.dev/v3/wallets/0x8ecb4b228e07b6ddc58a32997093032a6907
   "rebates": [],
   "rows_returned": 0,
   "total_rebated_fees_usdc": 0,
-  "source": "polymarket_clob_rebates_current",
-  "rebate_semantics": "maker rebates reported by Polymarket upstream for one maker/date; not derived from v1.fee_charged_event",
+  "source": "polymarket_rebates",
+  "rebate_semantics": "Maker rebates reported for one maker/date. Separate from trader-paid fees.",
   "elapsed_ms": 271
 }
 ```
@@ -48,18 +48,18 @@ curl "https://api.polynode.dev/v3/wallets/0x8ecb4b228e07b6ddc58a32997093032a6907
 | Field | Type | Description |
 |-------|------|-------------|
 | `address` | string | Wallet or maker address, lowercased |
-| `date` | string | Date used for the upstream rebate lookup |
-| `rebates` | array | Polymarket upstream rebate records |
+| `date` | string | Date used for the rebate lookup |
+| `rebates` | array | Polymarket rebate records |
 | `rows_returned` | integer | Number of rebate records returned |
 | `total_rebated_fees_usdc` | number | Sum of `rebated_fees_usdc` across returned records when present |
-| `source` | string | `polymarket_clob_rebates_current` |
-| `rebate_semantics` | string | Source and accounting note |
-| `upstream_status` | integer | Present when Polymarket returned an invalid maker-address response that PolyNode converted to an empty result |
-| `upstream_warning` | object | Present with the upstream warning body for invalid maker-address responses |
+| `source` | string | Dataset label |
+| `rebate_semantics` | string | Accounting note |
+| `provider_status` | integer | Present when the rebate data provider returned an invalid maker-address response that PolyNode converted to an empty result |
+| `provider_warning` | object | Present with the provider warning body for invalid maker-address responses |
 | `hint` | string | Present when a Safe/proxy address may need to be resolved to a maker EOA |
 | `elapsed_ms` | integer | Server-side request time in milliseconds |
 
-The objects inside `rebates` are passed through from Polymarket. Their fields can change upstream; when a record includes `rebated_fees_usdc`, PolyNode includes it in `total_rebated_fees_usdc`.
+The objects inside `rebates` follow Polymarket's rebate record format. When a record includes `rebated_fees_usdc`, PolyNode includes it in `total_rebated_fees_usdc`.
 
 ## Errors
 
@@ -68,4 +68,4 @@ The objects inside `rebates` are passed through from Polymarket. Their fields ca
 | `400` | Invalid wallet address |
 | `400` | Invalid `date` format |
 | `401` | Missing or invalid PolyNode API key |
-| `502` | Polymarket rebate upstream failed or returned invalid JSON |
+| `502` | Temporary rebate data provider failure |

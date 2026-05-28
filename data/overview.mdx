@@ -5,11 +5,11 @@ description: "polynode API reference. Real-time streaming, historical data, P&L 
 
 The polynode API provides two main surfaces:
 
-1. **V3 Historical Data** — query the complete Polymarket V1 + V2 database. 1.2 billion fills, 228 million positions, 2.7 million wallets. Dual P&L (realized + unrealized), position tracking with settlement status, builder analytics, market search, and leaderboards.
+1. **V3 Historical Data** — query the complete Polymarket V1 + V2 historical dataset. 1.2 billion fills, 228 million positions, 2.7 million wallets. Dual P&L (realized + unrealized), position tracking with settlement status, builder analytics, market search, and leaderboards.
 
 2. **Real-time Streaming** — live WebSocket feeds for settlements, trades, price updates, position changes, and more. See the [WebSocket tab](/websocket/overview).
 
-The V3 endpoints are **live** and provide the most comprehensive Polymarket dataset available, served entirely from our own infrastructure (no upstream subgraph dependency).
+The V3 endpoints are **live** and provide the most comprehensive Polymarket dataset available.
 
 ## V3 Data API — Base URL
 
@@ -31,7 +31,7 @@ curl -H "Authorization: Bearer pn_live_..." https://api.polynode.dev/v3/stats
 
 Get a key from the [dashboard](https://polynode.dev/dashboard). All examples in this section assume `?key=YOUR_KEY` is appended (omitted only for brevity in the code blocks).
 
-## What's in the database
+## Dataset Scale
 
 Query `GET /v3/stats` for live counts. Current scale:
 
@@ -43,7 +43,7 @@ Query `GET /v3/stats` for live counts. Current scale:
 | Redemptions | 160+ million |
 | Splits | 30+ million |
 | Merges | 14+ million |
-| Markets indexed | 1.07 million |
+| Markets tracked | 1.07 million |
 | Token prices | 2 million |
 
 ## Key features

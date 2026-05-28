@@ -1,7 +1,7 @@
 ---
 title: "Wallet Fees Paid"
 openapi: "GET /v3/wallets/{address}/fees-paid"
-description: "Get fee-bearing order fills for a wallet from indexed OrderFilled events."
+description: "Get fee-bearing order fills for a wallet."
 ---
 
 Returns fills where the wallet was the order owner and `OrderFilled.fee` was greater than zero. Each row is enriched with the same market context used by wallet trade history.
@@ -9,7 +9,7 @@ Returns fills where the wallet was the order owner and `OrderFilled.fee` was gre
 This is fees paid by the trader on executed order fills. It is not the same as maker rebates, LP rewards, or builder payouts.
 
 <Note>
-`page_total_fees_paid` is the sum for the returned page only. Page through the result set to walk a full date range until wallet-level fee aggregates are indexed.
+`page_total_fees_paid` is the sum for the returned page only. Page through the result set to calculate totals across a larger date range.
 </Note>
 
 ## Request
@@ -52,13 +52,13 @@ curl "https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510
       "slug": "nba-sas-okc-2026-05-26-spread-home-2pt5",
       "condition_id": "0x7bcc428d368834c6dfbb4925f699079f65925fef69ad259274b88c5671aaa29e",
       "timestamp": "1779839786",
-      "source": "order_filled_event"
+      "source": "wallet_fees_paid"
     }
   ],
   "rows_returned": 1,
   "has_more": true,
   "page_total_fees_paid": 352.774,
-  "fee_semantics": "wallet-paid trader fees from OrderFilled.fee where wallet is the order owner in S6 v1.order_filled_event.maker; this table includes legacy V1 rows plus V2 exchange rows",
+  "fee_semantics": "Trader-paid fees on executed order fills where this wallet was the order owner. Includes supported Polymarket exchange versions.",
   "elapsed_ms": 14
 }
 ```
@@ -72,14 +72,14 @@ curl "https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510
 | `fees[].fee` | number | Fee in USD |
 | `fees[].fee_paid` | number | Same value as `fee`, included for category-breakdown clarity |
 | `fees[].fee_paid_raw` | string | Raw 6-decimal fee amount |
-| `fees[].source` | string | `order_filled_event` |
+| `fees[].source` | string | Dataset label |
 | `rows_returned` | integer | Number of rows returned |
 | `has_more` | boolean | Whether another page exists |
 | `offset` | integer | Offset used for this page |
 | `limit` | integer | Limit used for this page |
 | `page_total_fees_paid` | number | Sum of `fee_paid` for this page only |
 | `page_total_fees_paid_raw_note` | string | Reminder that the total is page-scoped |
-| `fee_semantics` | string | Source and attribution note |
+| `fee_semantics` | string | Attribution note |
 | `after` | string | Applied start timestamp |
 | `before` | string | Applied end timestamp |
 | `elapsed_ms` | integer | Server-side query time in milliseconds |

@@ -27,7 +27,7 @@ The pending settlement and confirmed fills come from different data sources insi
 | **Size** | Gross token amount | Gross token amount (separate `fee` field) |
 | **Per-fill detail** | Per-maker breakdown from calldata | Per-maker breakdown from receipt logs |
 
-**Why the difference exists:** When a taker order sweeps multiple makers in one transaction, the calldata contains each maker's order and the total amounts being exchanged. But the total USDC is an aggregate across all makers. polynode estimates each maker's share proportionally. The contract does its own math internally and emits the exact per-maker amounts in the `OrderFilled` logs. For most fills, the estimate and the result are identical. For multi-maker sweeps, the contract's integer rounding can produce slightly different per-maker splits.
+**Why the difference exists:** When a taker order sweeps multiple makers in one transaction, the calldata contains each maker's order and the total amounts being exchanged. But the total USDC is an aggregate across all makers. polynode estimates each maker's share proportionally. The contract computes and emits the exact per-maker amounts in the `OrderFilled` logs. For most fills, the estimate and the result are identical. For multi-maker sweeps, the contract's integer rounding can produce slightly different per-maker splits.
 
 **Size vs Polymarket:** Polymarket's activity API reports sizes net of fees. polynode's confirmed fills report the gross size from the OrderFilled event plus the fee as a separate field. To get the Polymarket-equivalent size: `net_size = size - (fee / price)`.
 

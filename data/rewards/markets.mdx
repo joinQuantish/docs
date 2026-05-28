@@ -16,8 +16,8 @@ GET /v3/rewards/markets
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `sponsored` | boolean | `false` | Forward `sponsored=true` to Polymarket |
-| `next_cursor` | string | -- | Cursor forwarded to Polymarket |
+| `sponsored` | boolean | `false` | Filter to sponsored reward markets |
+| `next_cursor` | string | -- | Pagination cursor |
 
 ## Example
 
@@ -27,9 +27,9 @@ curl "https://api.polynode.dev/v3/rewards/markets"
 
 ```json
 {
-  "source": "polymarket_clob_rewards_markets_current",
+  "source": "reward_market_config",
   "reward_semantics": "public Polymarket reward market configuration; this is not per-wallet earned LP rewards",
-  "upstream": {
+  "data": {
     "count": 500,
     "data": [
       {
@@ -60,9 +60,9 @@ curl "https://api.polynode.dev/v3/rewards/markets"
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `source` | string | `polymarket_clob_rewards_markets_current` |
-| `reward_semantics` | string | Source and meaning note |
-| `upstream` | object | Polymarket upstream response |
+| `source` | string | Dataset label |
+| `reward_semantics` | string | Meaning note |
+| `data` | object | Reward-market configuration response |
 | `elapsed_ms` | integer | Server-side request time in milliseconds |
 
 ## Errors
@@ -70,4 +70,4 @@ curl "https://api.polynode.dev/v3/rewards/markets"
 | HTTP | When |
 |------|------|
 | `401` | Missing or invalid PolyNode API key |
-| `502` | Polymarket rewards upstream failed or returned invalid JSON |
+| `502` | Temporary rewards data provider failure |

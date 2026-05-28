@@ -40,7 +40,7 @@ If you want PM-website style realized + unrealized PnL, use the [Trader PnL Seri
 
 ### Per-position metrics: parity with Polymarket
 
-The `avg_entry_prob_weighted` and `positions_closed` fields are computed via per-position weighted-average cost basis matching across every fill, split, merge, redemption, and neg-risk conversion in the requested window — the same algorithm Polymarket's own data-api uses internally.
+The `avg_entry_prob_weighted` and `positions_closed` fields are computed via per-position weighted-average cost basis matching across every fill, split, merge, redemption, and neg-risk conversion in the requested window — the same method used to match Polymarket's own data-api.
 
 Validation against `data-api.polymarket.com/positions` `realizedPnl` across 30 positions on diverse wallets (standard CTF + neg-risk markets):
 

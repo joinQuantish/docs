@@ -79,11 +79,11 @@ All three are independent. `feeBps: 0` turns off **your** platform fee only — 
   </Accordion>
 
   <Accordion title="How does partial fill distribution work?">
-    Our lifecycle service checks on-chain `OrderFilled` events every 30 seconds. Each partial fill emits an event with the exact amount filled. The service sums all fills, computes the fill fraction against the original order size, and distributes only the new portion since the last check. The contract tracks cumulative distributed amounts internally and caps at the total, so there's no risk of over-distribution even if our math has a rounding error. Undistributed remainder is refunded after the 72-hour timeout.
+    Our lifecycle service checks on-chain `OrderFilled` events every 30 seconds. Each partial fill emits an event with the exact amount filled. The service sums all fills, computes the fill fraction against the original order size, and distributes only the new portion since the last check. The contract tracks cumulative distributed amounts and caps at the total, so there's no risk of over-distribution even if our math has a rounding error. Undistributed remainder is refunded after the 72-hour timeout.
   </Accordion>
 
   <Accordion title="How does the system verify that an order actually filled?">
-    Pure on-chain verification. The CLOB order ID is the EIP-712 hash of the signed order, and that same hash appears as an indexed topic in every on-chain `OrderFilled` event. Our lifecycle queries `eth_getLogs` with that hash across all Polymarket V2 exchange contracts. If the event exists on the blockchain, the fill happened. If it doesn't exist, it didn't. No API calls, no authentication, no trust assumptions. Immutable blockchain state is the source of truth.
+    Pure on-chain verification. The CLOB order ID is the EIP-712 hash of the signed order, and that same hash appears in every matching on-chain `OrderFilled` event. Our lifecycle queries `eth_getLogs` with that hash across all Polymarket V2 exchange contracts. If the event exists on the blockchain, the fill happened. If it doesn't exist, it didn't. No API calls, no authentication, no trust assumptions. Immutable blockchain state is the source of truth.
   </Accordion>
 </AccordionGroup>
 
