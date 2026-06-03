@@ -183,6 +183,7 @@ In addition to the WebSocket stream, crypto data is available via REST. See the 
 |----------|-------------|
 | `GET /v1/crypto/markets` | All crypto prediction markets |
 | `GET /v1/crypto/candles?symbol=BTC` | 5-min OHLC candles from Chainlink oracle |
+| `GET /v1/crypto/ticks?symbol=BTC&from={unix_ms}&to={unix_ms}` | 1-second historical price ticks for chart backfill |
 | `GET /v1/crypto/price?symbol=BTC&window={epoch}` | Open/close price for a market window |
 | `GET /v1/crypto/active` | Currently active 5-minute markets for all 7 coins |
 | `GET /v1/crypto/series` | Recurring crypto market series |
@@ -202,6 +203,7 @@ Here's how it works: a BTC 5-minute market opens at 10:00 with BTC at $66,800. I
 | Stream | What it gives you | How to get it |
 |--------|-------------------|---------------|
 | **Chainlink prices** | Underlying asset price at ~1/sec | `subscribe('chainlink')` on the main WS |
+| **Historical price ticks** | 1-second chart backfill for an already-open window | `GET /v1/crypto/ticks` |
 | **Short-form settlements** | Every trade on 5m/15m/1h markets | SDK `shortForm('15m')` auto-rotates between windows |
 | **Short-form orderbook** | Bid/ask depth on crypto markets | `OrderbookEngine` with `clobTokenIds` from rotation |
 | **Price-to-beat** | Chainlink opening price per window | Included in SDK rotation events |

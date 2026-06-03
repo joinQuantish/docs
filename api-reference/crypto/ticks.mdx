@@ -1,0 +1,132 @@
+---
+title: "Historical Price Ticks"
+openapi: "GET /v1/crypto/ticks"
+description: "Historical 1-second crypto price ticks for short-form chart backfill."
+---
+
+Returns historical 1-second price ticks for the same crypto feeds available on the `price_feed` WebSocket stream. Use this endpoint to backfill a 5-minute, 15-minute, or 1-hour chart when a user opens it part way through the market window, then keep the chart current with live `price_feed` events.
+
+<ParamField query="symbol" type="string" required>
+  Asset symbol. One of `BTC`, `ETH`, `SOL`, `BNB`, `XRP`, `DOGE`, `HYPE`.
+</ParamField>
+
+<ParamField query="from" type="number" required>
+  Start of the range as a Unix timestamp in milliseconds.
+</ParamField>
+
+<ParamField query="to" type="number" required>
+  End of the range as a Unix timestamp in milliseconds.
+</ParamField>
+
+<ParamField query="limit" type="number" default="10000">
+  Maximum ticks to return. Max 100000.
+</ParamField>
+
+<ParamField query="source" type="string">
+  Optional feed source filter. Valid values are `chainlink_data_streams` and `polymarket_chainlink`.
+</ParamField>
+
+<RequestExample>
+```bash
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://api.polynode.dev/v1/crypto/ticks?symbol=BTC&from=1780458961000&to=1780459082000&limit=5"
+```
+</RequestExample>
+
+<ResponseExample>
+```json
+{
+  "symbol": "BTC",
+  "feed": "BTC/USD",
+  "from": 1780458961000,
+  "to": 1780459082000,
+  "limit": 5,
+  "count": 5,
+  "truncated": true,
+  "source": null,
+  "ticks": [
+    {
+      "id": "1780458962000-0",
+      "type": "price_feed",
+      "feed": "BTC/USD",
+      "timestamp": 1780458962,
+      "timestamp_ms": 1780458962000,
+      "source": "chainlink_data_streams",
+      "data": {
+        "feed": "BTC/USD",
+        "price": 65869.02124677686,
+        "bid": 65865.65936734258,
+        "ask": 65870.4120597498,
+        "timestamp": 1780458962
+      }
+    }
+  ]
+}
+```
+</ResponseExample>
+
+## Range limits
+
+Each request can cover up to 24 hours. If `truncated` is `true`, the response hit the requested `limit`; request a narrower time range or increase `limit` to retrieve more ticks.
+
+Historical availability starts when tick collection was enabled. Ranges before available history return an empty `ticks` array.
+
+## Chart backfill
+
+For a 15-minute market, request ticks from the market window start to now, render those points, then append live WebSocket `price_feed` events as they arrive.
+
+```javascript
+const apiKey = "YOUR_API_KEY";
+const symbol = "BTC";
+const now = Date.now();
+const windowStart = Math.floor(now / 1000 / 900) * 900 * 1000;
+
+const url = new URL("https://api.polynode.dev/v1/crypto/ticks");
+url.searchParams.set("symbol", symbol);
+url.searchParams.set("from", String(windowStart));
+url.searchParams.set("to", String(now));
+url.searchParams.set("limit", "2000");
+
+const response = await fetch(url, {
+  headers: { "x-api-key": apiKey }
+});
+const history = await response.json();
+
+const points = history.ticks.map((tick) => ({
+  t: tick.timestamp_ms,
+  price: tick.data.price
+}));
+
+console.log(points.at(0), points.at(-1));
+```
+
+## Pair with the live stream
+
+The response uses the same event shape as the WebSocket `price_feed` stream. The main difference is that historical responses include an `id`, `timestamp_ms`, and optional `source` label for replay and deduplication.
+
+```javascript
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=YOUR_API_KEY");
+
+ws.addEventListener("open", () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    type: "chainlink",
+    filters: { feeds: ["BTC/USD"] }
+  }));
+});
+
+ws.addEventListener("message", (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type !== "price_feed") return;
+
+  const point = {
+    t: msg.data.timestamp * 1000,
+    price: msg.data.price
+  };
+  console.log(point);
+});
+```
+
+<Note>
+  BTC/USD can include more than one source for the same second. Deduplicate by `timestamp_ms` or choose a single `source` when your chart needs exactly one point per second.
+</Note>

@@ -1,7 +1,7 @@
 ---
 title: "REST API"
 sidebarTitle: "REST API"
-description: "REST endpoints for crypto market discovery, oracle candles, price-to-beat, and active short-form markets."
+description: "REST endpoints for crypto market discovery, oracle candles, historical ticks, price-to-beat, and active short-form markets."
 icon: "server"
 ---
 
@@ -98,6 +98,61 @@ curl "https://api.polynode.dev/v1/crypto/candles?symbol=BTC&key=YOUR_API_KEY"
 }
 ```
 </Expandable>
+
+---
+
+## GET /v1/crypto/ticks
+
+Historical 1-second ticks for the same crypto feeds available on the `price_feed` WebSocket stream. Use this to backfill a chart window before switching to live WebSocket updates.
+
+**Range:** up to 24 hours per request
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `symbol` | Yes | Asset symbol: `BTC`, `ETH`, `SOL`, `BNB`, `XRP`, `DOGE`, `HYPE` |
+| `from` | Yes | Start of range as Unix milliseconds |
+| `to` | Yes | End of range as Unix milliseconds |
+| `limit` | No | Max ticks to return. Default 10000, max 100000 |
+| `source` | No | Optional source filter: `chainlink_data_streams` or `polymarket_chainlink` |
+
+```bash
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://api.polynode.dev/v1/crypto/ticks?symbol=BTC&from=1780458961000&to=1780459082000&limit=5"
+```
+
+<Expandable title="Response">
+```json
+{
+  "symbol": "BTC",
+  "feed": "BTC/USD",
+  "from": 1780458961000,
+  "to": 1780459082000,
+  "limit": 5,
+  "count": 5,
+  "truncated": true,
+  "source": null,
+  "ticks": [
+    {
+      "id": "1780458962000-0",
+      "type": "price_feed",
+      "feed": "BTC/USD",
+      "timestamp": 1780458962,
+      "timestamp_ms": 1780458962000,
+      "source": "chainlink_data_streams",
+      "data": {
+        "feed": "BTC/USD",
+        "price": 65869.02124677686,
+        "bid": 65865.65936734258,
+        "ask": 65870.4120597498,
+        "timestamp": 1780458962
+      }
+    }
+  ]
+}
+```
+</Expandable>
+
+If `truncated` is `true`, request a narrower range or increase `limit`. BTC/USD can include more than one source for the same second; use the `source` parameter or deduplicate by `timestamp_ms` if your chart needs exactly one point per second.
 
 ---
 

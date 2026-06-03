@@ -2669,6 +2669,99 @@
         }
       }
     },
+    "/v1/crypto/ticks": {
+      "get": {
+        "tags": [
+          "Crypto"
+        ],
+        "summary": "Historical price ticks",
+        "description": "Historical 1-second crypto price ticks for the same feeds available on the price_feed WebSocket stream.",
+        "operationId": "crypto_ticks",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BTC",
+                "ETH",
+                "SOL",
+                "BNB",
+                "XRP",
+                "DOGE",
+                "HYPE"
+              ]
+            },
+            "description": "Asset symbol"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number"
+            },
+            "description": "Start of the range as a Unix timestamp in milliseconds"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number"
+            },
+            "description": "End of the range as a Unix timestamp in milliseconds"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 10000
+            },
+            "description": "Maximum ticks to return"
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "chainlink_data_streams",
+                "polymarket_chainlink"
+              ]
+            },
+            "description": "Optional feed source filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historical price ticks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid symbol, time range, limit, or source"
+          }
+        }
+      }
+    },
     "/v1/crypto/price": {
       "get": {
         "tags": [
