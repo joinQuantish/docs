@@ -9,6 +9,8 @@ Emitted when a user redeems their outcome tokens for collateral after a market r
 
 Every resolved market generates redemption events as holders claim their payouts. A non-zero `payout` means the user held winning shares. A zero payout means the user redeemed losing shares (no collateral returned).
 
+Recent redemption events also include the market's resolved payout vector when available. Use `winning_outcome`, `winning_token_id`, or the ordered `payouts` / `outcome_prices` arrays to identify which outcome won without making a second market lookup.
+
 ```json
 {
   "data": {
@@ -23,16 +25,26 @@ Every resolved market generates redemption events as holders claim their payouts
     "market_slug": "btc-updown-5m-1775607300",
     "market_title": "Bitcoin Up or Down - April 7, 8:15PM-8:20PM ET",
     "neg_risk": false,
+    "outcome_prices": [1.0, 0.0],
+    "outcomes": ["Up", "Down"],
     "payout": 7.566434,
+    "payouts": [1, 0],
     "redeemer": "0x8858aae9c92a82b00986a0f1a66338e8b0cc8641",
     "taker_base_fee": 1000,
     "tick_size": 0.01,
     "timestamp": 1775608721000,
+    "token_ids": [
+      "81518481532502107093994258923994884503752044066839262771005198927094175386674",
+      "112731399428633109059368520083498445904538970112239739400592554575174180266461"
+    ],
     "tokens": {
       "112731399428633109059368520083498445904538970112239739400592554575174180266461": "Down",
       "81518481532502107093994258923994884503752044066839262771005198927094175386674": "Up"
     },
-    "tx_hash": "0xcfb51c25a8f6ebb0b5a7484de7812d66f2cbf9935f29c0b56561e74722c64fac"
+    "tx_hash": "0xcfb51c25a8f6ebb0b5a7484de7812d66f2cbf9935f29c0b56561e74722c64fac",
+    "winning_outcome": "Up",
+    "winning_outcome_index": 0,
+    "winning_token_id": "81518481532502107093994258923994884503752044066839262771005198927094175386674"
   },
   "timestamp": 1775608721000,
   "type": "redemption"
@@ -118,6 +130,34 @@ Every resolved market generates redemption events as holders claim their payouts
     <ResponseField name="tokens" type="object">
       Map of token ID to outcome name for all outcomes in this market. Enriched from metadata.
     </ResponseField>
+
+    <ResponseField name="token_ids" type="string[]">
+      Ordered token IDs for this market. Same order as `outcomes`, `payouts`, and `outcome_prices`.
+    </ResponseField>
+
+    <ResponseField name="outcomes" type="string[]">
+      Ordered outcome labels for this market. Same order as `token_ids`, `payouts`, and `outcome_prices`.
+    </ResponseField>
+
+    <ResponseField name="payouts" type="number[]">
+      Resolved payout numerators for each outcome. Binary markets usually resolve to `[1, 0]` or `[0, 1]`.
+    </ResponseField>
+
+    <ResponseField name="outcome_prices" type="number[]">
+      Normalized payout value for each outcome. Binary winners are `1.0`, losing outcomes are `0.0`; split outcomes can be fractional.
+    </ResponseField>
+
+    <ResponseField name="winning_outcome_index" type="number">
+      Index of the winning outcome when exactly one outcome has a non-zero payout.
+    </ResponseField>
+
+    <ResponseField name="winning_outcome" type="string">
+      Label of the winning outcome when exactly one outcome has a non-zero payout.
+    </ResponseField>
+
+    <ResponseField name="winning_token_id" type="string">
+      Token ID of the winning outcome when exactly one outcome has a non-zero payout.
+    </ResponseField>
   </Expandable>
 </ResponseField>
 
@@ -127,6 +167,7 @@ Every resolved market generates redemption events as holders claim their payouts
 - **Wallet PnL** — combine with trade data to calculate realized profit/loss per wallet
 - **Market lifecycle** — track the full arc from trading to resolution to redemption
 - **Winning wallet alerts** — filter for large `payout` values to spot big winners as they redeem
+- **Outcome-aware automations** — use `winning_outcome` or `outcome_prices` directly instead of waiting on slower market metadata refreshes
 
 ## Subscribing
 
