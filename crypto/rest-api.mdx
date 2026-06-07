@@ -71,17 +71,21 @@ curl "https://api.polynode.dev/v1/crypto/markets?key=YOUR_API_KEY"
 
 ## GET /v1/crypto/candles
 
-5-minute OHLC candles from Chainlink oracle. Returns ~2.5 hours of history (30 candles).
+5-minute OHLC candles from PolyNode's live Chainlink tick archive. Returns ~2.5 hours of history (30 candles).
 
-**Cache:** 30 seconds
+**Cache:** ~5 seconds
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `symbol` | Yes | Asset symbol: `BTC`, `ETH`, `SOL`, `BNB`, `XRP`, `DOGE`, `HYPE` |
+| `symbol` | Yes | Asset symbol or feed name: `BTC`, `ETH`, `SOL`, `BNB`, `XRP`, `DOGE`, `HYPE`, or names like `BTC/USD` |
 
 ```bash
 curl "https://api.polynode.dev/v1/crypto/candles?symbol=BTC&key=YOUR_API_KEY"
 ```
+
+<Note>
+  REST candle symbols accept both bare asset symbols like `BTC` and feed names like `BTC/USD`. WebSocket Chainlink subscriptions use feed names such as `BTC/USD`.
+</Note>
 
 <Expandable title="Response">
 ```json

@@ -1828,13 +1828,13 @@
           "Wallets"
         ],
         "summary": "Resolve wallet",
-        "description": "Instantly resolve any Polymarket wallet address, EOA, or username. Returns the full identity triple: proxy wallet (safe), EOA, and username.",
+        "description": "Instantly resolve any Polymarket wallet address, EOA, or username. Returns the preferred Polymarket trading wallet in the legacy safe field, plus EOA, username, and wallet type. If the resolved EOA has a deployed deposit wallet, safe returns the deposit wallet.",
         "operationId": "resolve_wallet",
         "parameters": [
           {
             "name": "query",
             "in": "path",
-            "description": "Safe address, EOA address, or Polymarket username (case-insensitive)",
+            "description": "Wallet address, EOA address, or Polymarket username (case-insensitive)",
             "required": true,
             "schema": {
               "type": "string"
@@ -1851,23 +1851,34 @@
                   "properties": {
                     "safe": {
                       "type": "string",
-                      "description": "Polymarket proxy wallet address (Gnosis Safe)"
+                      "description": "Preferred Polymarket trading wallet. Field name is kept for backward compatibility; deposit wallet is returned when deployed, otherwise Safe/proxy."
                     },
                     "eoa": {
                       "type": "string",
+                      "nullable": true,
                       "description": "Externally owned account (signer)"
                     },
                     "username": {
                       "type": "string",
                       "nullable": true,
                       "description": "Polymarket display name, or null"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "safe",
+                        "deposit_wallet",
+                        "proxy"
+                      ],
+                      "description": "Wallet type for the address returned in safe"
                     }
                   }
                 },
                 "example": {
-                  "safe": "0xfa85349327a63aa563029737f0492a79dca8f95d",
-                  "eoa": "0xc2783891b1d2287345e30f75e0f1ecd189a967d0",
-                  "username": "Letsgetit6969"
+                  "safe": "0x8b60bf0f650bf7a0d93f10d72375b37de18f8c40",
+                  "eoa": "0xa60601a4d903af91855c52bfb3814f6ba342f201",
+                  "username": null,
+                  "type": "deposit_wallet"
                 }
               }
             }
@@ -2628,7 +2639,7 @@
           "Crypto"
         ],
         "summary": "Oracle candles",
-        "description": "5-minute OHLC candles from Chainlink oracle. Returns ~2.5 hours of history.",
+        "description": "5-minute OHLC candles from PolyNode's live Chainlink tick archive. Returns ~2.5 hours of history. Accepts bare asset symbols like BTC and feed names like BTC/USD.",
         "operationId": "crypto_candles",
         "security": [
           {
@@ -2649,10 +2660,17 @@
                 "BNB",
                 "XRP",
                 "DOGE",
-                "HYPE"
+                "HYPE",
+                "BTC/USD",
+                "ETH/USD",
+                "SOL/USD",
+                "BNB/USD",
+                "XRP/USD",
+                "DOGE/USD",
+                "HYPE/USD"
               ]
             },
-            "description": "Asset symbol"
+            "description": "Asset symbol or feed name"
           }
         ],
         "responses": {
@@ -3685,14 +3703,14 @@
           "Sports & Esports"
         ],
         "summary": "List Games",
-        "description": "Games for a league with scores, teams, and market data.",
+        "description": "Games for a league with scores, teams, market data, token IDs, and upstream fallback metadata. PolyNode resolves the league code to a Polymarket sports series ID, fetches by series_id, then applies status filtering, sorting, limit, and offset locally. Responses include source, fallback, and stale fields so clients can tell when alternate Gamma sources or last-known-good cache were used.",
         "operationId": "sports_games",
         "parameters": [
           {
             "name": "code",
             "in": "path",
             "required": true,
-            "description": "League code (e.g. nba, lol, cs2)",
+            "description": "League code (e.g. fifwc, fif, nba, lol, cs2)",
             "schema": {
               "type": "string",
               "default": "nba"
@@ -3758,7 +3776,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Game list"
+            "description": "Game list. Top-level fields include league, status, series_id, source, fallback, stale, count, and games."
           }
         },
         "security": [
@@ -3856,7 +3874,7 @@
           {
             "name": "interval",
             "in": "query",
-            "description": "Polymarket CLOB history interval, e.g. 1d, 1w, max.",
+            "description": "Polymarket CLOB history interval, e.g. 1d, 1w, max. Defaults to max when history is requested without an explicit time window.",
             "schema": {
               "type": "string"
             }
@@ -4063,7 +4081,7 @@
           "Sports & Esports"
         ],
         "summary": "Search",
-        "description": "Search for games, teams, and events by name.",
+        "description": "Search for games, teams, and events by name. PolyNode first uses Polymarket public search, then falls back to Gamma tag/event search when that upstream is unavailable.",
         "operationId": "sports_search",
         "parameters": [
           {
@@ -4103,7 +4121,7 @@
           "Sports & Esports"
         ],
         "summary": "Live Overview",
-        "description": "Real-time snapshot across all sports: volumes, market counts, upcoming leagues.",
+        "description": "Real-time snapshot across all sports: volumes, market counts, upcoming leagues. Uses Polymarket sports summary when healthy and falls back to per-league series/event data when that upstream summary is partial or empty.",
         "operationId": "sports_live",
         "parameters": [],
         "responses": {

@@ -1,10 +1,10 @@
 ---
 title: "Oracle Candles"
 openapi: "GET /v1/crypto/candles"
-description: "5-minute OHLC candles from Chainlink oracle."
+description: "5-minute OHLC candles from PolyNode's live Chainlink tick archive."
 ---
 
-Returns 5-minute OHLC candles from the Chainlink oracle for a given crypto asset. Approximately 30 candles (~2.5 hours of history) are returned.
+Returns 5-minute OHLC candles from PolyNode's live Chainlink tick archive for a given crypto asset. Approximately 30 candles (~2.5 hours of history) are returned.
 
 These are the same oracle prices used to resolve Polymarket's short-form crypto markets.
 
@@ -32,5 +32,5 @@ These are the same oracle prices used to resolve Polymarket's short-form crypto 
 </ResponseExample>
 
 <Note>
-  Cached for 30 seconds. Each candle's `time` field is a Unix epoch timestamp marking the start of that 5-minute window.
+  Cached for about 5 seconds. The `symbol` parameter accepts bare asset symbols like `BTC` and feed names like `BTC/USD`. Each candle's `time` field is a Unix epoch timestamp marking the start of that 5-minute window.
 </Note>
