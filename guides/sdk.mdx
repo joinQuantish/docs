@@ -171,6 +171,7 @@ const ws = pn.configureWs({
   maxReconnectAttempts: Infinity, // default: unlimited
   reconnectBaseDelay: 1000,      // default: 1s
   reconnectMaxDelay: 30000,      // default: 30s
+  subscribeTimeoutMs: 30000,      // default: 30s
 });
 
 ws.onConnect(() => console.log('connected'));
@@ -178,6 +179,8 @@ ws.onDisconnect((reason) => console.log('disconnected:', reason));
 ws.onReconnect((attempt) => console.log('reconnected, attempt', attempt));
 ws.onError((err) => console.error(err));
 ```
+
+In TypeScript SDK v0.10.17+, event subscriptions also preserve frames that arrive before the subscribe acknowledgement, so attaching handlers immediately after `await ...send()` will still receive the initial snapshot/live frames. Orderbook subscriptions use the same 30s default subscribe timeout and replay the active token list on reconnect without replacing handlers.
 
 ### Cleanup
 

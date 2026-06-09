@@ -5,6 +5,27 @@ description: "All notable changes to the PolyNode API and SDKs."
 icon: "clock-rotate-left"
 ---
 
+## 2026-06-09 - TypeScript SDK v0.10.17 WebSocket resilience
+
+Released `polynode-sdk@0.10.17` for Node/TypeScript WebSocket consumers.
+
+What's new:
+
+- Event-stream subscriptions preserve frames that arrive before the subscribe acknowledgement, so handlers attached immediately after `await subscribe(...).send()` still receive initial snapshot/live events.
+- Default WebSocket subscribe timeout is now 30s and configurable with `subscribeTimeoutMs`.
+- Orderbook `subscribe()` now resolves only after the server acknowledges the subscription.
+- Orderbook reconnects replay the active token list without replacing existing handlers.
+- Orderbook `unsubscribe(tokenIds)` can remove a subset of tokens; `unsubscribe()` with no arguments remains the full unsubscribe behavior.
+- Added SDK protocol tests and a live orderbook soak test for multi-token subscribe, partial unsubscribe/resubscribe, snapshots, live batches, protocol errors, unexpected unsubscribe frames, and disconnects.
+
+Upgrade:
+
+```bash
+npm install polynode-sdk@0.10.17 ws
+```
+
+---
+
 ## 2026-05-27 - V3 wallet P&L alignment, fees, rebates, rewards, and PolyUSD flows
 
 Updated V3 wallet accounting surfaces.

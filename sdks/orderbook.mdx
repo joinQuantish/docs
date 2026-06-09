@@ -7,6 +7,10 @@ icon: "layer-group"
 
 The SDK includes a dedicated orderbook client for real-time book data from `ob.polynode.dev`. This is a separate WebSocket connection from the event stream, with its own protocol optimized for orderbook updates across 108k+ Polymarket markets.
 
+<Note>
+  TypeScript SDK v0.10.17 hardens orderbook subscriptions: `subscribe()` resolves only after the server acknowledges the token set, reconnects replay the active subscription without replacing handlers, and protocol acknowledgments such as `unsubscribed`/`pong` are handled internally.
+</Note>
+
 ## Subscribe
 
 <Tabs>
@@ -71,6 +75,19 @@ The SDK includes a dedicated orderbook client for real-time book data from `ob.p
     ```
   </Tab>
 </Tabs>
+
+## Update a Subscription
+
+Calling `subscribe()` with a new token list replaces the active orderbook subscription for that connection. To remove only a subset of tokens, pass those token IDs to `unsubscribe()`. Calling `unsubscribe()` with no arguments still removes every token and keeps the previous behavior.
+
+```typescript
+await pn.orderbook.subscribe([tokenA, tokenB, tokenC]);
+
+pn.orderbook.unsubscribe([tokenB]); // remove one token
+pn.orderbook.unsubscribe();         // remove all tokens
+```
+
+For high-volume orderbook consumers, register `snapshot`, `update`, `price`, and `error` handlers before calling `subscribe()` so your process is ready as soon as the initial snapshot batches start flowing.
 
 ## LocalOrderbook
 
