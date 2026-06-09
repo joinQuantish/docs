@@ -5,6 +5,26 @@ description: "All notable changes to the PolyNode API and SDKs."
 icon: "clock-rotate-left"
 ---
 
+## 2026-06-09 - Python SDK v0.10.6 WebSocket resilience
+
+Released `polynode==0.10.6` for Python WebSocket consumers.
+
+What's new:
+
+- Event-stream subscriptions preserve frames that arrive before the subscribe acknowledgement, so handlers attached immediately after `await ...send()` still receive initial snapshot/live events.
+- Default event WebSocket subscribe timeout is now 30s and configurable with `WsOptions(subscribe_timeout=...)`.
+- Orderbook `subscribe()` now resolves only after the server acknowledges the subscription, and rejects promptly on server errors, disconnects, or timeout.
+- Orderbook `unsubscribe(token_ids)` can remove a subset of tokens; `unsubscribe()` with no arguments remains the full unsubscribe behavior.
+- Added protocol regression tests for snapshot-before-ack, pending-subscribe errors, timeout handling, and partial unsubscribe behavior.
+
+Upgrade:
+
+```bash
+pip install --upgrade polynode==0.10.6
+```
+
+---
+
 ## 2026-06-09 - TypeScript SDK v0.10.17 WebSocket resilience
 
 Released `polynode-sdk@0.10.17` for Node/TypeScript WebSocket consumers.
