@@ -1,0 +1,85 @@
+---
+title: "Combo Approval Event"
+sidebarTitle: "combo_approval"
+description: "PositionManager approval events relevant to combo settlement and auto-redemption."
+icon: "key"
+---
+
+Emitted for approvals that affect combo settlement or redeemability.
+
+<Note>
+  The default combo stream does not include approvals. Request `combo_approval` explicitly if you need approval monitoring. Collateral ERC20 allowance approvals are intentionally not part of the default customer stream.
+</Note>
+
+```json
+{
+  "type": "combo_approval",
+  "timestamp": 1781054112400,
+  "data": {
+    "event_type": "combo_approval",
+    "tx_hash": "0xabc...",
+    "status": "confirmed",
+    "detected_at": 1781054112400,
+    "block_number": 88232739,
+    "approval_type": "position_manager_approval_for_all",
+    "owner": "0xOwner...",
+    "operator": "0xe3333700cA9d93003F00f0F71f8515005F6c00Aa",
+    "approved": true,
+    "target_role": "ExchangeV3"
+  }
+}
+```
+
+## Subscribing
+
+```json
+{
+  "action": "subscribe",
+  "type": "combos",
+  "filters": {
+    "event_types": ["combo_approval"]
+  }
+}
+```
+
+## Fields
+
+<ResponseField name="data.tx_hash" type="string" required>
+  Polygon transaction hash.
+</ResponseField>
+
+<ResponseField name="data.status" type="string" required>
+  `pending` or `confirmed`.
+</ResponseField>
+
+<ResponseField name="data.detected_at" type="number" required>
+  Unix milliseconds when PolyNode first saw the approval transaction.
+</ResponseField>
+
+<ResponseField name="data.block_number" type="number">
+  Polygon block number once confirmed.
+</ResponseField>
+
+<ResponseField name="data.approval_type" type="string" required>
+  Approval class. Currently `position_manager_approval_for_all` or `collateral_allowance` when decoded.
+</ResponseField>
+
+<ResponseField name="data.owner" type="string" required>
+  Wallet granting the approval.
+</ResponseField>
+
+<ResponseField name="data.operator" type="string" required>
+  Approved operator or spender.
+</ResponseField>
+
+<ResponseField name="data.approved" type="boolean">
+  PositionManager approval status.
+</ResponseField>
+
+<ResponseField name="data.amount_e6" type="string">
+  Raw approved amount when the decoded approval is allowance-based.
+</ResponseField>
+
+<ResponseField name="data.target_role" type="string">
+  Known combo role for the operator, such as `ExchangeV3` or `AutoRedeemer`.
+</ResponseField>

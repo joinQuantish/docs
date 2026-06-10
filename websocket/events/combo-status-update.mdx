@@ -1,0 +1,158 @@
+---
+title: "Combo Status Update Event"
+sidebarTitle: "combo_status_update"
+description: "Confirmation event for a combo execution or lifecycle transaction."
+icon: "circle-check"
+---
+
+Emitted when a combo transaction confirms on-chain. This event links back to a pending `combo_execution` when one was observed, and includes exact receipt data when available.
+
+```json
+{
+  "type": "combo_status_update",
+  "timestamp": 1781054112400,
+  "data": {
+    "event_type": "combo_status_update",
+    "tx_hash": "0xb0411705aaefc17991e4121acecd8aad03901ddc359cfdb7cf8773f46942927a",
+    "block_number": 88232739,
+    "confirmed_at": 1781054112400,
+    "execution_status": "CONFIRMED",
+    "pending_detected_at": 1781054110000,
+    "latency_ms": 2400,
+    "combo_condition_id": "0xcombo...",
+    "yes_position_id": "123...",
+    "no_position_id": "456...",
+    "leg_position_ids": ["111...", "222..."],
+    "legs": [
+      {
+        "position_id": "111...",
+        "leg_outcome_label": "Yes",
+        "market": {
+          "title": "Will Team A win?",
+          "slug": "will-team-a-win",
+          "outcomes": ["Yes", "No"],
+          "token_ids": ["111...", "333..."]
+        }
+      }
+    ],
+    "maker_address": "0xMaker...",
+    "signer_address": "0xSigner...",
+    "taker_address": "0xTaker...",
+    "confirmed_fills": [
+      {
+        "position_id": "123...",
+        "order_hash": "0xorder...",
+        "maker_address": "0xMaker...",
+        "taker_address": "0xTaker...",
+        "side": "BUY",
+        "outcome_side": "YES",
+        "price": 0.45,
+        "size": 1,
+        "maker_amount_e6": "450000",
+        "taker_amount_e6": "1000000"
+      }
+    ],
+    "fees": [],
+    "confirmed_transfers": [],
+    "gas_used": "450000",
+    "effective_gas_price": "30000000000"
+  }
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"combo_status_update"`.
+</ResponseField>
+
+<ResponseField name="data.tx_hash" type="string" required>
+  Transaction hash. Match this to `combo_execution.data.tx_hash` when a pending event was observed.
+</ResponseField>
+
+<ResponseField name="data.block_number" type="number" required>
+  Polygon block number where the transaction confirmed.
+</ResponseField>
+
+<ResponseField name="data.execution_status" type="string">
+  `CONFIRMED`, `FAILED`, `MATCHED`, `MINED`, or `RETRYING`.
+</ResponseField>
+
+<ResponseField name="data.pending_detected_at" type="number">
+  Unix milliseconds from the pending event. Present when PolyNode saw the transaction before confirmation.
+</ResponseField>
+
+<ResponseField name="data.latency_ms" type="number">
+  Time between pending detection and confirmation.
+</ResponseField>
+
+<ResponseField name="data.combo_condition_id" type="string">
+  Derived combo condition ID.
+</ResponseField>
+
+<ResponseField name="data.yes_position_id" type="string">
+  YES combo position ID.
+</ResponseField>
+
+<ResponseField name="data.no_position_id" type="string">
+  NO combo position ID.
+</ResponseField>
+
+<ResponseField name="data.leg_position_ids" type="string[]">
+  Constituent leg position IDs for the combo.
+</ResponseField>
+
+<ResponseField name="data.legs" type="object[]" required>
+  Enriched combo legs. Customer-facing status updates are emitted only when all legs are enriched.
+</ResponseField>
+
+<ResponseField name="data.maker_address" type="string">
+  Maker wallet when available from the pending order or receipt.
+</ResponseField>
+
+<ResponseField name="data.signer_address" type="string">
+  Address that signed the order when available.
+</ResponseField>
+
+<ResponseField name="data.taker_address" type="string">
+  Taker / transaction participant when available.
+</ResponseField>
+
+<ResponseField name="data.amount_usdc" type="number">
+  USDC-normalized amount when derivable.
+</ResponseField>
+
+<ResponseField name="data.notional_usdc" type="number">
+  USDC-normalized notional when derivable.
+</ResponseField>
+
+<ResponseField name="data.order_hashes" type="string[]">
+  Exchange order hashes associated with the transaction.
+</ResponseField>
+
+<ResponseField name="data.confirmed_fills" type="object[]">
+  Exact ExchangeV3 fill logs decoded from the receipt.
+</ResponseField>
+
+<ResponseField name="data.execution_summaries" type="object[]">
+  OrdersMatched-style execution summaries decoded from the receipt.
+</ResponseField>
+
+<ResponseField name="data.fees" type="object[]">
+  FeeCharged logs, normalized to USDC where possible.
+</ResponseField>
+
+<ResponseField name="data.confirmed_transfers" type="object[]">
+  PositionManager transfer logs for combo positions.
+</ResponseField>
+
+## Subscribing
+
+`combo_status_update` is included in the default combo stream:
+
+```json
+{
+  "action": "subscribe",
+  "type": "combos"
+}
+```

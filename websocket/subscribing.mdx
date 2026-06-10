@@ -30,6 +30,32 @@ Send a JSON message after connecting to start receiving events:
 
 All fields except `action` are optional.
 
+## Subscribe response
+
+Successful subscriptions return an acknowledgement:
+
+```json
+{
+  "type": "subscribed",
+  "subscriber_id": "connection-id",
+  "subscription_id": "connection-id:0",
+  "subscription_type": "combos"
+}
+```
+
+Event messages use this envelope:
+
+```json
+{
+  "type": "combo_execution",
+  "timestamp": 1781054110000,
+  "data": {
+    "event_type": "combo_execution",
+    "tx_hash": "0xb0411705aaefc17991e4121acecd8aad03901ddc359cfdb7cf8773f46942927a"
+  }
+}
+```
+
 ## Subscription types
 
 The `type` field selects a preset of event types. If you also set `filters.event_types`, it overrides the preset.
@@ -111,6 +137,33 @@ The `type` field selects a preset of event types. If you also set `filters.event
   Events: `settlement`, `trade`
 
   Price-moving events only. Useful for building price feeds.
+</ResponseField>
+
+<ResponseField name="combos" type="string">
+  Events: `combo_execution`, `combo_status_update`
+
+  Polymarket combo executions and confirmations. Pending `combo_execution` events are decoded before on-chain confirmation; confirmed `combo_status_update` events include receipt-derived fills, transfers, fees, gas fields, and confirmation latency when the pending event was seen first.
+
+  Combo events are enrichment-gated. Customer-facing combo executions and status updates include enriched `legs[]` metadata; events without enough leg metadata are held instead of emitted partially.
+
+  Lifecycle and approval events are available by explicit request:
+
+  ```json
+  {
+    "action": "subscribe",
+    "type": "combos",
+    "filters": {
+      "event_types": [
+        "combo_execution",
+        "combo_status_update",
+        "combo_lifecycle",
+        "combo_approval"
+      ]
+    }
+  }
+  ```
+
+  See [Combo Stream](/websocket/combos) for the full field reference and filters.
 </ResponseField>
 
 <ResponseField name="dome" type="string">
@@ -196,6 +249,12 @@ The `type` field selects a preset of event types. If you also set `filters.event
   All activity for specific markets. Best used with `tokens`, `slugs`, or `condition_ids` filters.
 </ResponseField>
 
+<ResponseField name="deposits" type="string">
+  Events: `deposit`
+
+  USDC.e and Polymarket USD deposit/withdrawal activity involving known Polymarket contracts.
+</ResponseField>
+
 <ResponseField name="large_trades" type="string">
   Events: `settlement`, `trade`
 
@@ -203,9 +262,9 @@ The `type` field selects a preset of event types. If you also set `filters.event
 </ResponseField>
 
 <ResponseField name="global" type="string">
-  Events: all types including `redemption`, except `position_split`, `position_merge`, and `positions_converted`
+  Events: `settlement`, `trade`, `position_change`, `deposit`, `block`, `status_update`, `oracle`, `redemption`
 
-  Unfiltered stream of every event (**firehose**, full data stream), including oracle and redemption events. High throughput — use with caution. This counts toward your plan's firehose connection limit. To include `position_split`/`position_merge`/`positions_converted`, add them explicitly via the `event_types` filter override.
+  Unfiltered stream of the default public event set (**firehose**). High throughput — use with caution. This counts toward your plan's firehose connection limit. Combo events are not included in `global` by default; use `type: "combos"` for combo activity.
 </ResponseField>
 
 <Note>
@@ -251,6 +310,46 @@ All filters are optional. Omit the `filters` object entirely to receive all even
   "condition_ids": ["0x123abc..."]
   ```
 </ParamField>
+
+### Combo identification
+
+These filters apply to `type: "combos"` subscriptions.
+
+<ParamField body="combo_condition_ids" type="string[]">
+  Filter by derived combo condition IDs.
+  ```json
+  "combo_condition_ids": ["0xcombo..."]
+  ```
+</ParamField>
+
+<ParamField body="leg_position_ids" type="string[]">
+  Filter by constituent leg position IDs. `tokens` also matches combo and leg position IDs, but `leg_position_ids` makes the intent explicit.
+  ```json
+  "leg_position_ids": ["123456789..."]
+  ```
+</ParamField>
+
+<ParamField body="event_ids" type="string[]">
+  Filter by combo leg event IDs when available.
+</ParamField>
+
+<ParamField body="module_ids" type="number[]">
+  Filter by combo module ID. Common values are `1` for binary, `2` for negative-risk, and `3` for combinatorial legs.
+</ParamField>
+
+<ParamField body="action" type="string">
+  Filter `combo_lifecycle` events by lifecycle action. Values include `Prepare`, `Split`, `Merge`, `HorizontalSplit`, `HorizontalMerge`, `Convert`, `Redeem`, `Wrap`, `Unwrap`, `Transfer`, `Compress`, `Extract`, `Inject`, `ConvertToYesBasket`, and `MergeFromYesBasket`.
+</ParamField>
+
+<ParamField body="direction" type="string">
+  Filter `combo_execution` events by requester direction.
+
+  Values: `"BUY"` or `"SELL"`
+</ParamField>
+
+<Note>
+  For `type: "combos"`, `condition_ids` are matched directly against combo and leg condition IDs. They are not resolved through standard market metadata at subscription time.
+</Note>
 
 ### Wallet filtering
 
@@ -304,7 +403,7 @@ The `maker` field on each fill is the wallet that placed the order. The `taker` 
 
 <ParamField body="event_types" type="string[]">
   Override the subscription type's default event list. Valid values:
-  `"settlement"`, `"trade"`, `"status_update"`, `"block"`, `"position_change"`, `"deposit"`, `"position_split"`, `"position_merge"`, `"positions_converted"`, `"redemption"`
+  `"settlement"`, `"trade"`, `"status_update"`, `"block"`, `"position_change"`, `"deposit"`, `"position_split"`, `"position_merge"`, `"positions_converted"`, `"redemption"`, `"oracle"`, `"combo_execution"`, `"combo_status_update"`, `"combo_lifecycle"`, `"combo_approval"`
 </ParamField>
 
 <ParamField body="snapshot_count" type="number" default="20">

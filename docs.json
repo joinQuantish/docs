@@ -22,6 +22,7 @@
             "pages": [
               "websocket/overview",
               "websocket/subscribing",
+              "websocket/combos",
               "websocket/compression"
             ]
           },
@@ -30,6 +31,10 @@
             "pages": [
               "websocket/events/settlement",
               "websocket/events/status-update",
+              "websocket/events/combo-execution",
+              "websocket/events/combo-status-update",
+              "websocket/events/combo-lifecycle",
+              "websocket/events/combo-approval",
               "websocket/events/trade",
               "websocket/events/price-feed",
               "websocket/events/block",

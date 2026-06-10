@@ -1,0 +1,131 @@
+---
+title: "Combo Stream"
+sidebarTitle: "Combos"
+description: "Real-time Polymarket combo executions and enriched confirmation events."
+icon: "layer-group"
+---
+
+PolyNode streams Polymarket combo activity from on-chain combo transactions. The stream follows the same lifecycle as standard settlements: pending events come from mempool calldata, then confirmation events come from on-chain receipts.
+
+<Info>
+  This is the on-chain combo stream. Polymarket's RFQ gateway is an off-chain maker/quoter channel. Use this stream to monitor combo executions, fills, confirmations, and enriched lifecycle actions as they hit Polygon.
+</Info>
+
+## Subscribe
+
+```json
+{
+  "action": "subscribe",
+  "type": "combos"
+}
+```
+
+The default `combos` preset emits:
+
+| Event | Timing | Purpose |
+| --- | --- | --- |
+| `combo_execution` | Pending / mempool | Combo order execution decoded before confirmation. |
+| `combo_status_update` | Confirmed / receipt | Confirmation, exact receipt fills, fees, transfers, and latency. |
+
+Every customer-facing combo event is enrichment-gated. If a combo leg cannot be resolved to market metadata, the event is held rather than emitted partially.
+
+## Full combo surface
+
+Advanced users can explicitly request lifecycle and approval events:
+
+```json
+{
+  "action": "subscribe",
+  "type": "combos",
+  "filters": {
+    "event_types": [
+      "combo_execution",
+      "combo_status_update",
+      "combo_lifecycle",
+      "combo_approval"
+    ]
+  }
+}
+```
+
+Lifecycle events are emitted only when their legs are present and enriched. Condition-only lifecycle actions are not emitted unless they can be represented without requiring a follow-up lookup.
+
+## Covered on-chain surface
+
+The combo stream covers the Polymarket on-chain contracts used for combo execution and position lifecycle activity:
+
+| Contract | Address | Surface |
+| --- | --- | --- |
+| ExchangeV3 | `0xe3333700cA9d93003F00f0F71f8515005F6c00Aa` | Combo order execution and confirmation. |
+| PositionManager | `0x006F54F7f9A22e0000CC2AB60031000000ae9fEF` | Position transfers and approvals. |
+| BinaryModule | `0x1000008dD9001B968442c1000017eaE6E0dA00Ba` | Split, merge, redeem, migration, and result lifecycle calls. |
+| NegRiskModule | `0x200000900045e3B6259600682756002200028933` | Negative-risk split, merge, redeem, convert, migration, and result calls. |
+| CombinatorialModule | `0x30000034706C7d8e12009DAB006Be20000c031A8` | Prepare, split, merge, extract, inject, wrap, unwrap, compress, redeem, and basket conversion. |
+| Router | `0x12121212006e4CD160D18e3f00711DA5c3372600` | Router split, merge, redeem, horizontal split/merge, and convert. |
+| AutoRedeemer | `0xa1200000d0002264C9a1698e001292D00E1b00af` | Auto redeem calls and confirmations. |
+
+PositionManager approvals for ExchangeV3 and AutoRedeemer are available through `combo_approval` when requested explicitly. Collateral ERC20 allowance approvals are not part of the default combo stream.
+
+## Example
+
+```javascript
+import WebSocket from "ws";
+
+const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
+const pending = new Map();
+
+ws.on("open", () => {
+  ws.send(JSON.stringify({ action: "subscribe", type: "combos" }));
+});
+
+ws.on("message", (raw) => {
+  const msg = JSON.parse(raw);
+
+  if (msg.type === "combo_execution") {
+    pending.set(msg.data.tx_hash, msg.data);
+    console.log("pending combo", msg.data.tx_hash, msg.data.legs.length, "legs");
+  }
+
+  if (msg.type === "combo_status_update") {
+    const original = pending.get(msg.data.tx_hash);
+    console.log("confirmed combo", msg.data.tx_hash, {
+      latency_ms: msg.data.latency_ms,
+      pending_seen: Boolean(original),
+      fills: msg.data.confirmed_fills?.length ?? 0
+    });
+  }
+});
+```
+
+## Filters
+
+Combo subscriptions support the standard WebSocket filters plus combo-specific identifiers:
+
+```json
+{
+  "action": "subscribe",
+  "type": "combos",
+  "filters": {
+    "wallets": ["0xMakerOrTaker..."],
+    "leg_position_ids": ["123456789..."],
+    "tokens": ["123456789..."],
+    "combo_condition_ids": ["0xcombo..."],
+    "condition_ids": ["0xleg_or_combo_condition..."],
+    "event_ids": ["0xevent..."],
+    "module_ids": [3],
+    "side": "YES",
+    "direction": "BUY",
+    "status": "confirmed",
+    "min_size": 100
+  }
+}
+```
+
+`tokens` and `leg_position_ids` both match combo position IDs and leg position IDs. Use `leg_position_ids` when you want the filter to be self-documenting.
+
+## Event reference
+
+- [`combo_execution`](/websocket/events/combo-execution)
+- [`combo_status_update`](/websocket/events/combo-status-update)
+- [`combo_lifecycle`](/websocket/events/combo-lifecycle)
+- [`combo_approval`](/websocket/events/combo-approval)

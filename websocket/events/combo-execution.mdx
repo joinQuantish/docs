@@ -1,0 +1,146 @@
+---
+title: "Combo Execution Event"
+sidebarTitle: "combo_execution"
+description: "Pending Polymarket combo execution decoded from ExchangeV3 calldata."
+icon: "bolt"
+---
+
+Emitted when PolyNode detects an ExchangeV3 combo execution before the transaction confirms on-chain.
+
+```json
+{
+  "type": "combo_execution",
+  "timestamp": 1781054110000,
+  "data": {
+    "event_type": "combo_execution",
+    "tx_hash": "0xb0411705aaefc17991e4121acecd8aad03901ddc359cfdb7cf8773f46942927a",
+    "status": "pending",
+    "detected_at": 1781054110000,
+    "block_number": null,
+    "combo_condition_id": "0xcombo...",
+    "yes_position_id": "123...",
+    "no_position_id": "456...",
+    "leg_position_ids": ["111...", "222..."],
+    "legs_total": 2,
+    "legs": [
+      {
+        "position_id": "111...",
+        "module_id": 3,
+        "module_name": "CombinatorialModule",
+        "condition_id": "0xleg...",
+        "outcome_index": 0,
+        "leg_outcome_label": "Yes",
+        "market": {
+          "title": "Will Team A win?",
+          "slug": "will-team-a-win",
+          "image": "https://...",
+          "event_title": "Match Winner",
+          "event_slug": "match-winner",
+          "outcomes": ["Yes", "No"],
+          "token_ids": ["111...", "333..."]
+        }
+      }
+    ],
+    "direction": "BUY",
+    "side": "YES",
+    "price_e6": "450000",
+    "size_e6": "1000000",
+    "amount_usdc": 1,
+    "notional_usdc": 1,
+    "maker_address": "0xMaker...",
+    "signer_address": "0xSigner...",
+    "taker_address": "0xTaker...",
+    "order_hashes": ["0xorder..."]
+  }
+}
+```
+
+## Fields
+
+<ResponseField name="type" type="string" required>
+  Always `"combo_execution"`.
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Unix milliseconds when PolyNode emitted the pending event.
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  <Expandable title="data fields">
+    <ResponseField name="tx_hash" type="string" required>
+      Polygon transaction hash.
+    </ResponseField>
+    <ResponseField name="status" type="string" required>
+      `"pending"` for mempool-detected combo executions.
+    </ResponseField>
+    <ResponseField name="detected_at" type="number" required>
+      Unix milliseconds when PolyNode first saw the transaction.
+    </ResponseField>
+    <ResponseField name="combo_condition_id" type="string">
+      Derived combinatorial condition ID.
+    </ResponseField>
+    <ResponseField name="rfq_id" type="string">
+      Polymarket RFQ ID when it can be linked to the on-chain execution.
+    </ResponseField>
+    <ResponseField name="quote_id" type="string">
+      Polymarket quote ID when it can be linked to the on-chain execution.
+    </ResponseField>
+    <ResponseField name="yes_position_id" type="string">
+      YES combo position ID.
+    </ResponseField>
+    <ResponseField name="no_position_id" type="string">
+      NO combo position ID.
+    </ResponseField>
+    <ResponseField name="leg_position_ids" type="string[]">
+      Constituent leg position IDs for the combo.
+    </ResponseField>
+    <ResponseField name="legs" type="object[]" required>
+      Enriched leg metadata. Customer-facing combo executions are emitted only when all legs are enriched.
+    </ResponseField>
+    <ResponseField name="direction" type="string">
+      `"BUY"` or `"SELL"`.
+    </ResponseField>
+    <ResponseField name="side" type="string">
+      `"YES"` or `"NO"`.
+    </ResponseField>
+    <ResponseField name="price_e6" type="string">
+      Six-decimal fixed-point quote price.
+    </ResponseField>
+    <ResponseField name="size_e6" type="string">
+      Six-decimal fixed-point share size.
+    </ResponseField>
+    <ResponseField name="amount_usdc" type="number">
+      USDC-normalized amount when derivable from calldata.
+    </ResponseField>
+    <ResponseField name="maker_address" type="string">
+      Maker wallet.
+    </ResponseField>
+    <ResponseField name="signer_address" type="string">
+      Address that signed the ExchangeV3 order.
+    </ResponseField>
+    <ResponseField name="taker_address" type="string">
+      Taker / transaction participant.
+    </ResponseField>
+    <ResponseField name="signature_type" type="number">
+      Exchange signature type when present in the decoded order.
+    </ResponseField>
+    <ResponseField name="order_hashes" type="string[]">
+      ExchangeV3 order hashes decoded from the call.
+    </ResponseField>
+    <ResponseField name="trades" type="object[]">
+      Per-position fill details when available before confirmation.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Subscribing
+
+```json
+{
+  "action": "subscribe",
+  "type": "combos",
+  "filters": {
+    "event_types": ["combo_execution"]
+  }
+}
+```
