@@ -14,7 +14,7 @@ These endpoints replace the old sportsbook/OddsJam experiment. They do not retur
 | `GET /v2/sports/summary` | League-level active/live/date summary |
 | `GET /v2/sports/live` | Backward-compatible live overview derived from `/sports/summary` |
 | `GET /v2/sports/leagues/{league}/teams` | Teams for a league, with logos and records when available |
-| `GET /v2/sports/leagues/{league}/games` | Games/events for a league, including markets and token IDs |
+| `GET /v2/sports/leagues/{league}/games` | Games/events for a league, including markets, token IDs, and Gamma fallback metadata |
 | `GET /v2/sports/games/{slug}` | Full game/event detail with normalized markets |
 | `GET /v2/sports/games/{slug}/state` | Canonical game state: metadata, score fields, markets, current prices, and subscribe payload |
 | `GET /v2/sports/games/{slug}/context` | Agent-friendly context bundle from generated game queries and optional external sources |
@@ -24,6 +24,17 @@ These endpoints replace the old sportsbook/OddsJam experiment. They do not retur
 | `GET /v2/sports/search?q={query}` | Search sports events and teams |
 
 ## Game state
+
+## League games
+
+Use league games for schedule discovery, such as listing all active FIFA World Cup match markets:
+
+```bash
+curl "https://api.polynode.dev/v2/sports/leagues/fifwc/games?status=active&sort=startDate&direction=asc&limit=50" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+The response is filtered and sorted by PolyNode after resolving the league code to Polymarket's sports `series_id`. If Polymarket Gamma's primary event listing is unavailable, the response can still succeed through alternate Gamma sources and will include `fallback: true`. If Gamma is fully unavailable and PolyNode has a recent good response, it returns that cached response with `stale: true`.
 
 Use this when you want one game-centric object instead of manually joining game metadata, CLOB prices, markets, and websocket subscription details.
 
@@ -181,11 +192,11 @@ curl "https://api.polynode.dev/v2/sports/games/nba-nyk-cle-2026-05-25/prices?lim
 ## Price history
 
 ```bash
-curl "https://api.polynode.dev/v2/sports/games/nba-nyk-cle-2026-05-25/history?interval=1d&limit_tokens=2" \
+curl "https://api.polynode.dev/v2/sports/games/nba-nyk-cle-2026-05-25/history?limit_tokens=2" \
   -H "x-api-key: YOUR_KEY"
 ```
 
-`limit_tokens` defaults to `20` and is capped at `20` because Polymarket's batch history endpoint caps requests at 20 market asset IDs.
+`limit_tokens` defaults to `20` and is capped at `20` because Polymarket's batch history endpoint caps requests at 20 market asset IDs. If you do not pass `interval`, `start_ts`, or `end_ts`, PolyNode requests the full available CLOB history with `interval=max`.
 
 ```json
 {
@@ -209,6 +220,6 @@ curl "https://api.polynode.dev/v2/sports/games/nba-nyk-cle-2026-05-25/history?in
 ## Notes
 
 - `prices` fans out to Polymarket CLOB batch price, midpoint, and spread endpoints.
-- `history` uses Polymarket CLOB batch price history.
+- `history` uses Polymarket CLOB batch price history. Bare `/history` calls default to `interval=max`; pass `interval=1d`, `interval=1w`, or an explicit `start_ts`/`end_ts` window when you want a smaller range.
 - Scores are included only where Polymarket Gamma has score fields on the event. Use score fields as best-effort metadata, not guaranteed live scoreboard state.
 - For live orderbook updates, use the returned `subscribe.token_ids` with PolyNode orderbook WebSocket.

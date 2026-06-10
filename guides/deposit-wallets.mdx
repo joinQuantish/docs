@@ -21,7 +21,7 @@ From your perspective as a builder, the key differences are:
 | **Approvals** | Gasless via Safe multisend | Gasless via WALLET batch |
 | **V1 support** | Yes | No (V2 only) |
 
-**The good news:** if you use the polynode SDK, all of this is handled automatically. `ensureReady()` detects the wallet type, `order()` signs correctly, and the `/resolve` endpoint returns both types.
+**The good news:** if you use the polynode SDK, all of this is handled automatically. `ensureReady()` detects the wallet type, `order()` signs correctly, and the `/resolve` endpoint resolves both wallet types.
 
 ## Do I need to change anything?
 
@@ -34,20 +34,20 @@ npm install polynode-sdk@0.10.6  # TypeScript
 pip install polynode==0.10.3     # Python
 ```
 
-**If you only read data (positions, trades, /resolve):** the only change is that `/resolve` responses now include a `type` field. Your existing code continues to work — the `safe`, `eoa`, and `username` fields are unchanged.
+**If you only read data (positions, trades, /resolve):** the response shape is unchanged. `/resolve` still returns `safe`, `eoa`, `username`, and `type`, but `safe` now means the preferred Polymarket trading wallet. If an EOA has a deployed deposit wallet, `safe` returns the deposit wallet.
 
 **If you call the Polymarket CLOB directly (without our SDK):** you need to implement ERC-7739 TypedDataSign wrapping for `signatureType: 3` orders. See the [signing details](#how-poly_1271-signing-works) below.
 
 ## How to detect wallet type
 
-The SDK auto-detects wallet type when you call `ensureReady()` or `detectWalletType()`. Detection checks on-chain in this order:
+For trading, the SDK auto-detects wallet type when you call `ensureReady()` or `detectWalletType()`. Detection checks on-chain in this order:
 
 1. Safe deployed? -> `POLY_GNOSIS_SAFE` (type 2)
 2. Proxy deployed? -> `POLY_PROXY` (type 1)
 3. Deposit wallet deployed? -> `POLY_1271` (type 3)
 4. Nothing deployed -> defaults to `POLY_GNOSIS_SAFE` (new Safe will be created)
 
-This means existing Safe users keep their Safe. Only users who have never had a Safe or Proxy will get a deposit wallet.
+This controls how the SDK signs orders. The `/resolve` identity endpoint uses a different rule for compatibility with Polymarket's deposit-wallet migration: if a resolved EOA has a deployed deposit wallet, `/resolve` returns that deposit wallet in `safe`.
 
 ```typescript
 import { PolyNodeTrader } from 'polynode-sdk';
@@ -116,7 +116,7 @@ let safe = derive_safe_address(eoa);
 
 ## The /resolve endpoint
 
-The [Resolve Wallet](/api-reference/wallets/resolve) endpoint now returns a `type` field indicating the wallet type. This is additive — existing fields (`safe`, `eoa`, `username`) are unchanged.
+The [Resolve Wallet](/api-reference/wallets/resolve) endpoint keeps the same fields and prioritizes deposit wallets in the existing `safe` field. The field name remains `safe` for backward compatibility.
 
 ```bash
 curl "https://api.polynode.dev/v1/resolve/0x8b60bf0f650bf7a0d93f10d72375b37de18f8c40" \
@@ -132,7 +132,7 @@ curl "https://api.polynode.dev/v1/resolve/0x8b60bf0f650bf7a0d93f10d72375b37de18f
 }
 ```
 
-The `safe` field contains the trading wallet address regardless of type. For Safe users it's the Safe address, for deposit wallet users it's the deposit wallet address. The `type` field tells you which.
+The `safe` field contains the preferred trading wallet address. If the controlling EOA has a deployed deposit wallet, `safe` is the deposit wallet. Otherwise it is the existing Safe/proxy wallet. The `type` field tells you which kind of wallet was returned.
 
 | `type` value | Description |
 |---|---|
@@ -140,7 +140,7 @@ The `safe` field contains the trading wallet address regardless of type. For Saf
 | `"deposit_wallet"` | Deposit wallet (newer accounts) |
 | `"proxy"` | Legacy proxy wallet |
 
-Both forward resolution (EOA -> wallet) and reverse resolution (wallet -> EOA) work for all wallet types.
+Both forward resolution (EOA -> wallet) and reverse resolution (wallet -> EOA) work for all wallet types. When both a Safe and deposit wallet exist, deposit wallet wins.
 
 ## How POLY_1271 signing works
 
@@ -171,7 +171,7 @@ No. Safe wallets continue to work exactly as before. The SDK detects your wallet
 </Accordion>
 
 <Accordion title="Will my /resolve API responses break?">
-No. The `safe`, `eoa`, and `username` fields are unchanged. A new `type` field was added. If your code ignores unknown fields (standard JSON parsing behavior), nothing breaks.
+No field names changed. The endpoint still returns `safe`, `eoa`, `username`, and `type`. The important behavior change is that `safe` now returns the deposit wallet when the resolved EOA has one deployed.
 </Accordion>
 
 <Accordion title="Can I still create new Safe wallets?">
@@ -183,7 +183,7 @@ Deposit wallet address derivation and detection: `>= 0.10.0`. POLY_1271 order si
 </Accordion>
 
 <Accordion title="What if a user has both a Safe and a deposit wallet?">
-The SDK checks Safe first. If a Safe is deployed, it uses the Safe. Deposit wallet is only used when no Safe or Proxy exists. This preserves backward compatibility for all existing users.
+For `/resolve`, the deposit wallet is returned in `safe` when it is deployed. The field name stays `safe` so existing clients do not need to parse a new field.
 </Accordion>
 
 <Accordion title="Do deposit wallets work with V1 orders?">

@@ -4,7 +4,7 @@ openapi: "GET /v2/sports/search"
 description: "Search for games, teams, and events by name."
 ---
 
-Search across all sports and esports events. Returns matching games with their slugs so you can drill into [Game Detail](/api-reference/sports/game-detail).
+Search across all sports and esports events. Returns matching games with their slugs so you can drill into [Game Detail](/api-reference/sports/game-detail). PolyNode first uses Polymarket's public search endpoint, then falls back to Gamma tag/event search when that upstream is unavailable.
 
 <ParamField query="q" type="string" required>
   Search query (e.g. `celtics`, `fnatic`, `manchester`).
@@ -22,6 +22,8 @@ Search across all sports and esports events. Returns matching games with their s
 ```json
 {
   "query": "fnatic",
+  "source": "gamma:/public-search",
+  "fallback": false,
   "count": 5,
   "results": [
     {

@@ -6,6 +6,8 @@ description: "Real-time snapshot across all sports: volumes, market counts, upco
 
 Returns a dashboard view of what's happening across all sports and esports right now. Use this to see which leagues are active, where the volume is, and what's coming up.
 
+PolyNode uses Polymarket's sports summary when it is healthy. If that upstream summary is partial or empty, PolyNode falls back to league series/event data so this endpoint can still return active sports coverage.
+
 <ParamField query="key" type="string" required>
   Your API key.
 </ParamField>
@@ -13,6 +15,9 @@ Returns a dashboard view of what's happening across all sports and esports right
 <ResponseExample>
 ```json
 {
+  "source": "gamma:/sports/summary+gamma:/series/{id}",
+  "fallback": true,
+  "summary_league_count": 4,
   "volumes_24h": {
     "nba": 19219377.26,
     "league-of-legends": 9525630.77,
@@ -50,6 +55,9 @@ Returns a dashboard view of what's happening across all sports and esports right
 
 | Field | What it is |
 |-------|-----------|
+| `source` | Upstream source path used for the overview |
+| `fallback` | `true` when PolyNode used series/event fallback because Gamma sports summary was partial |
+| `summary_league_count` | Number of leagues returned by Gamma sports summary before fallback enrichment |
 | `volumes_24h` | 24-hour trading volume in USD per league |
 | `market_counts` | Number of active markets per league |
 | `upcoming_leagues` | Leagues with games starting soon |

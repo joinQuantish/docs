@@ -113,6 +113,16 @@ Notes:
 
 ---
 
+## 2026-06-04 — `/resolve` prefers deployed deposit wallets
+
+`GET /v1/resolve/{query}` keeps the same response fields: `safe`, `eoa`, `username`, and `type`.
+
+The `safe` field now returns the preferred Polymarket trading wallet. If the resolved EOA has a deployed deposit wallet, `safe` is that deposit wallet and `type` is `"deposit_wallet"`. If no deposit wallet is deployed, `safe` falls back to the existing Safe/proxy wallet.
+
+This applies to address, EOA, and cached username lookups.
+
+---
+
 ## 2026-05-22 — V3 grouped trade total alias
 
 Added `total_amount_usd` to v3 `group_by=order_hash` trade responses. It is an additive alias of `total_usd` / `amount_usd`, so clients that already use the v2 grouped trade field can read the same total field on v3.

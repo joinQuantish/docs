@@ -1,13 +1,15 @@
 ---
 title: "List Games"
 openapi: "GET /v2/sports/leagues/{code}/games"
-description: "Games for a league with scores, teams, and market data."
+description: "Games for a league with scores, teams, market data, token IDs, and upstream fallback metadata."
 ---
 
 Returns daily matchups for a league. Use `status=closed` to get completed games with final scores.
 
+The endpoint resolves the league code to Polymarket's sports series ID, fetches game events by `series_id`, and applies status filtering, sorting, limit, and offset in PolyNode. This avoids Polymarket Gamma outages in tag and filtered pagination queries. If the primary Gamma event listing is unavailable, PolyNode falls back to alternate Gamma series/event sources and marks `fallback: true`. If all upstream sources fail but a recent good response exists, PolyNode returns that response with `stale: true`.
+
 <ParamField path="code" type="string" required>
-  League code from `/v2/sports/leagues` (e.g. `nba`, `lol`, `cs2`).
+  League code from `/v2/sports/leagues` (for example `fifwc`, `fif`, `nba`, `lol`, `cs2`).
 </ParamField>
 
 <ParamField query="key" type="string" required>
@@ -34,29 +36,66 @@ Returns daily matchups for a league. Use `status=closed` to get completed games 
   `asc` or `desc`.
 </ParamField>
 
+<ResponseField name="league" type="string">
+  Requested league code.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Applied status filter, either `active` or `closed`.
+</ResponseField>
+
+<ResponseField name="series_id" type="string">
+  Polymarket Gamma sports series ID used for discovery.
+</ResponseField>
+
+<ResponseField name="source" type="string">
+  Upstream source used for this response, such as `gamma:/events`, `gamma:/series/{id}`, or `gamma:/events/pagination`.
+</ResponseField>
+
+<ResponseField name="fallback" type="boolean">
+  `true` when PolyNode used an alternate Gamma source after the primary event listing was unavailable or unsuitable.
+</ResponseField>
+
+<ResponseField name="stale" type="boolean">
+  `true` when PolyNode served the last-known-good response because all upstream Gamma sources failed.
+</ResponseField>
+
 <ResponseExample>
 ```json
 {
-  "league": "nba",
-  "status": "closed",
-  "count": 5,
+  "league": "fifwc",
+  "status": "active",
+  "series_id": "11433",
+  "source": "gamma:/events",
+  "fallback": false,
+  "stale": false,
+  "count": 2,
   "games": [
     {
-      "id": "304966",
-      "slug": "nba-nyk-hou-2026-03-31",
-      "title": "Knicks vs. Rockets",
-      "score": "94-111",
-      "gameId": 20023567,
-      "startDate": "2026-03-25T03:00:04Z",
-      "endDate": "2026-04-08T00:00:00Z",
-      "closed": true,
-      "volume24hr": 7684869,
+      "id": "351718",
+      "slug": "fifwc-usa-par-2026-06-12",
+      "title": "United States vs. Paraguay",
+      "startTime": "2026-06-13T01:00:00Z",
+      "eventDate": "2026-06-12",
+      "closed": false,
+      "status": "scheduled",
       "markets": [
         {
-          "id": "1716626",
-          "question": "Knicks vs. Rockets",
+          "id": "1897039",
+          "question": "Will United States win on 2026-06-12?",
           "sportsMarketType": "moneyline",
-          "outcomePrices": "[\"0.01\",\"0.99\"]"
+          "outcomes": ["Yes", "No"],
+          "outcomePrices": ["0.385", "0.615"],
+          "clobTokenIds": ["...", "..."],
+          "_links": {
+            "ws": "wss://ws.polynode.dev/ws",
+            "ws_subscribe": {
+              "action": "subscribe",
+              "type": "orderbook",
+              "token_ids": ["...", "..."]
+            },
+            "orderbook_rest": "https://api.polynode.dev/v1/orderbook/..."
+          }
         }
       ]
     }
@@ -70,6 +109,9 @@ Returns daily matchups for a league. Use `status=closed` to get completed games 
 ```bash
 # Get last night's NBA results with scores
 curl "https://api.polynode.dev/v2/sports/leagues/nba/games?status=closed&limit=10&key=YOUR_KEY"
+
+# Get upcoming World Cup matches in kickoff order
+curl "https://api.polynode.dev/v2/sports/leagues/fifwc/games?status=active&sort=startDate&direction=asc&limit=50&key=YOUR_KEY"
 
 # Get upcoming NHL games
 curl "https://api.polynode.dev/v2/sports/leagues/nhl/games?status=active&limit=20&key=YOUR_KEY"
