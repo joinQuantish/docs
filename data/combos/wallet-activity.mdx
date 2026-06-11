@@ -1,0 +1,74 @@
+---
+title: "Wallet Combo Activity"
+description: "List combo lifecycle activity for one wallet, including split and merge activity."
+---
+
+Returns combo lifecycle activity for a wallet. This is the combo-only counterpart to wallet splits, merges, redemptions, and lifecycle activity.
+
+## Request
+
+```
+GET /v3/wallets/{address}/combos/activity
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `market_id` | string | -- | Alias for `condition_id` |
+| `condition_id` | string | -- | Combo condition ID |
+| `position_id` | string | -- | Combo position ID |
+| `event_kind` | string | -- | Filter by event kind, for example `PositionsSplit` |
+| `limit` | integer | 100 | Results per page, max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/activity?limit=2"
+```
+
+```json
+{
+  "address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+  "activity": [
+    {
+      "position_type": "combo",
+      "event_kind": "PositionsSplit",
+      "side": "Split",
+      "user_address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+      "combo_condition_id": "0x03d98f6ac4c108c5ca66f79f34908a1d820000000000000000000000000000",
+      "combo_position_id": "1741334187009265192213210063949860811096650382021683265628751751539647840256",
+      "amount_usdc": "0.050750",
+      "tx_hash": "0xf3a8985f04bf869483ef4163a185f296c834eb827b5e5ae3db5bd44558121d51",
+      "log_index": 890,
+      "block_number": 88276713,
+      "timestamp": 1781120055,
+      "legs": [
+        {
+          "leg_index": 0,
+          "leg_position_id": "547325449395903582555711510844460161809002726131102493368605951180083822592"
+        }
+      ]
+    }
+  ],
+  "rows_returned": 2,
+  "has_more": true,
+  "position_type": "combo",
+  "source": "v3.wallet_combos.activity"
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `event_kind` | string | Contract lifecycle event kind |
+| `side` | string | Human-readable lifecycle side, such as `Split` or `Merge` |
+| `combo_condition_id` | string | Combo condition ID |
+| `combo_position_id` | string | Combo position ID |
+| `amount_usdc` | string | Amount formatted in USDC |
+| `tx_hash` | string | Polygon transaction hash |
+| `block_number` | integer | Polygon block number |
+| `timestamp` | integer | Unix timestamp in seconds |
+| `legs` | array | Leg position IDs involved in the lifecycle event |

@@ -24,6 +24,7 @@ GET /v3/wallets/{address}/pnl
 | `tags` | string | -- | Comma-separated tag slugs to filter by, case-insensitive (e.g. `politics,crypto`, `nfl`, `Iran`) |
 | `market` | string | -- | Filter by condition_id |
 | `include_unrealized` | string | `false` | Set to `true` to include current unrealized P&L alongside the realized event-window result. Only applies to time-filtered queries. |
+| `include_combos` | boolean | `false` | Add combo position P&L to all-time wallet P&L. If the wallet has no combo exposure, the response remains 200 with a zero combo contribution. |
 
 ## Examples
 
@@ -32,6 +33,40 @@ GET /v3/wallets/{address}/pnl
 ```bash
 curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl
 ```
+
+### All-time P&L including combos
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/pnl?include_combos=true"
+```
+
+```json
+{
+  "address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+  "net_realized_pnl": 113.510513,
+  "realized_pnl": 113.510513,
+  "gross_profit": 184.901354,
+  "gross_loss": -71.390841,
+  "unrealized_pnl": 0.0,
+  "total_pnl": 113.510513,
+  "position_count": 21496,
+  "open_positions": 1495,
+  "total_volume": 129.837476,
+  "include_combos": true,
+  "included_position_types": ["market", "combo"],
+  "combo_pnl": {
+    "position_type": "combo",
+    "included": true,
+    "realized_pnl": 113.510513,
+    "unrealized_pnl": 0.0,
+    "total_pnl": 113.510513,
+    "position_count": 21492,
+    "open_positions": 1495
+  }
+}
+```
+
+For time-windowed or tag-filtered P&L, the response stays successful. If combo P&L cannot be safely added to that filtered view, `combo_pnl.included` is `false` and the standard market P&L fields remain unchanged.
 
 ```json
 {
@@ -115,6 +150,9 @@ curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c
 | `position_count` | integer | Total positions |
 | `open_positions` | integer | Currently held positions |
 | `total_volume` | number | Total volume traded (USD) |
+| `include_combos` | boolean | Present when `include_combos=true` was requested |
+| `included_position_types` | array | Position families included in aggregate totals |
+| `combo_pnl` | object | Combo-only contribution to the aggregate response |
 
 ## Response fields (with period)
 

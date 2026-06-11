@@ -1,0 +1,82 @@
+---
+title: "Wallet Combo Positions"
+description: "List combo positions for one wallet with legs, entry basis, balances, and P&L."
+---
+
+Returns combo positions for a wallet. Each row includes balance, entry basis, realized/unrealized/total P&L, status, and leg metadata when available.
+
+For a combined standard + combo position list, call `GET /v3/wallets/{address}/positions?include_combos=true`.
+
+## Request
+
+```
+GET /v3/wallets/{address}/combos/positions
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `market_id` | string | -- | Alias for `condition_id` |
+| `condition_id` | string | -- | Combo condition ID |
+| `position_id` | string | -- | Combo position ID |
+| `status` | string | -- | `open`, `closed`, `resolved`, `redeemable`, `redeemed`, `observed`, or `all` |
+| `limit` | integer | 100 | Results per page, max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/positions?limit=1"
+```
+
+```json
+{
+  "address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+  "positions": [
+    {
+      "position_type": "combo",
+      "wallet_address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+      "combo_condition_id": "0x030002fa8781d9f445d838e60524d70bf30000000000000000000000000000",
+      "combo_position_id": "1356959103499736670017337806334234879289930581423500836189165811753797287936",
+      "shares_balance": "0.000100",
+      "entry_avg_price_usdc": "0.2285",
+      "entry_cost_usdc": "0.00",
+      "realized_pnl_usdc": "0.000000",
+      "total_pnl_usdc": "0.000000",
+      "status": "open",
+      "legs_total": 3,
+      "legs": [
+        {
+          "leg_index": 0,
+          "leg_outcome_label": "Yes",
+          "leg_status": "OPEN",
+          "market": {
+            "slug": "fifwc-ger-civ-2026-06-20",
+            "event_title": "Germany vs. Cote d'Ivoire"
+          }
+        }
+      ]
+    }
+  ],
+  "rows_returned": 1,
+  "has_more": true,
+  "position_type": "combo",
+  "source": "v3.wallet_combos.positions"
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `combo_condition_id` | string | Combo condition ID |
+| `combo_position_id` | string | Combo ERC-1155 position ID |
+| `shares_balance` | string | Current combo share balance |
+| `entry_avg_price_usdc` | string | Weighted-average entry price |
+| `entry_cost_usdc` | string | Entry cost for current/lifetime accounting |
+| `realized_pnl_usdc` | string | Realized P&L |
+| `unrealized_pnl_usdc` | string or null | Unrealized P&L when available |
+| `total_pnl_usdc` | string | Realized + unrealized P&L |
+| `status` | string | Current combo position status |
+| `legs` | array | Leg metadata for the combo |

@@ -28,6 +28,7 @@ GET /v3/wallets/{address}/positions
 | `condition_id` | string | -- | Filter by market condition ID |
 | `market_slug` | string | -- | Filter by market slug |
 | `min_size` | number | -- | Minimum position size in USD (e.g. `min_size=10.0`) |
+| `include_combos` | boolean | `false` | Append combo positions to the response. Combo rows have `position_type: "combo"` and include `legs` metadata. |
 | `limit` | integer | 100 | Results per page (max 1000) |
 | `offset` | integer | 0 | Pagination offset |
 
@@ -119,6 +120,36 @@ curl "https://api.polynode.dev/v3/wallets/0x.../positions?sort=recent"
 
 ```bash
 curl "https://api.polynode.dev/v3/wallets/0x.../positions?sort=amount"
+```
+
+### Include combo positions
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/positions?include_combos=true&limit=2"
+```
+
+When combo rows are present, they are appended with `position_type: "combo"` and a combo-specific field set:
+
+```json
+{
+  "position_type": "combo",
+  "combo_condition_id": "0x030002fa8781d9f445d838e60524d70bf30000000000000000000000000000",
+  "combo_position_id": "1356959103499736670017337806334234879289930581423500836189165811753797287936",
+  "shares_balance": "0.000100",
+  "entry_avg_price_usdc": "0.2285",
+  "entry_cost_usdc": "0.00",
+  "realized_pnl_usdc": "0.000000",
+  "total_pnl_usdc": "0.000000",
+  "status": "open",
+  "legs": [
+    {
+      "leg_index": 0,
+      "leg_position_id": "943244391856361009754982642766252708422485833075867696330382296106234020352",
+      "leg_outcome_label": "Yes",
+      "leg_status": "OPEN"
+    }
+  ]
+}
 ```
 
 ## Response fields

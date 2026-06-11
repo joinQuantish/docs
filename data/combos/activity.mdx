@@ -1,0 +1,57 @@
+---
+title: "Combo Activity"
+description: "Query combo lifecycle activity by market, condition, position, or wallet."
+---
+
+Returns combo lifecycle activity across wallets. At least one of `market_id`, `condition_id`, or `position_id` is required. Add `wallet` to narrow results to a single wallet.
+
+## Request
+
+```
+GET /v3/combos/activity
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `market_id` | string | -- | Alias for `condition_id` |
+| `condition_id` | string | -- | Combo condition ID |
+| `position_id` | string | -- | Combo position ID |
+| `wallet` | string | -- | Wallet address |
+| `event_kind` | string | -- | Filter by event kind |
+| `limit` | integer | 100 | Results per page, max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/combos/activity?condition_id=0x03d98f6ac4c108c5ca66f79f34908a1d820000000000000000000000000000&limit=10"
+```
+
+```json
+{
+  "activity": [
+    {
+      "position_type": "combo",
+      "event_kind": "PositionsSplit",
+      "wallet_address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+      "combo_condition_id": "0x03d98f6ac4c108c5ca66f79f34908a1d820000000000000000000000000000",
+      "amount_usdc": "0.050750",
+      "tx_hash": "0xf3a8985f04bf869483ef4163a185f296c834eb827b5e5ae3db5bd44558121d51",
+      "block_number": 88276713,
+      "timestamp": 1781120055
+    }
+  ],
+  "rows_returned": 10,
+  "has_more": true,
+  "position_type": "combo",
+  "source": "v3.combos.activity"
+}
+```
+
+## Notes
+
+- Use `/v3/wallets/{address}/combos/activity` when the wallet address is already known.
+- Use this endpoint when you are exploring all lifecycle activity for a combo market or position.
+- The activity feed is on-chain derived and can include split, merge, redemption, and transfer-related lifecycle rows as those events are observed.

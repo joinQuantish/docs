@@ -5,6 +5,29 @@ description: "All notable changes to the PolyNode API and SDKs."
 icon: "clock-rotate-left"
 ---
 
+## 2026-06-11 - Polymarket combos: V3 API and WebSocket event references
+
+Added public documentation for Polymarket combo / combinatorial position support.
+
+What's new:
+
+- New combo API group in the API Reference.
+- `GET /v3/combos/markets` for observed combo markets and legs.
+- `GET /v3/combos/activity` for combo lifecycle activity by market, condition, position, or wallet.
+- `GET /v3/wallets/{address}/combos/positions` for combo-only wallet positions.
+- `GET /v3/wallets/{address}/combos/trades` for combo-only wallet trades.
+- `GET /v3/wallets/{address}/combos/activity` for combo-only wallet lifecycle activity.
+- `GET /v3/wallets/{address}/combos/summary` for combo-only wallet P&L summary.
+- `include_combos=true` on wallet summary, wallet P&L, and wallet positions for additive standard + combo responses.
+- New WebSocket event reference pages for `combo_execution`, `combo_status_update`, `combo_lifecycle`, and `combo_approval`.
+
+Notes:
+
+- Existing wallet endpoints keep their default response behavior. Combo data is included only when explicitly requested or when using dedicated combo endpoints.
+- If a wallet has no combo exposure, `include_combos=true` returns a normal successful response with a zero combo contribution.
+
+---
+
 ## 2026-06-09 - Python SDK v0.10.6 WebSocket resilience
 
 Released `polynode==0.10.6` for Python WebSocket consumers.

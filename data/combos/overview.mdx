@@ -1,0 +1,52 @@
+---
+title: "Combos Overview"
+description: "Query Polymarket combo markets, combo wallet positions, combo trades, and combo lifecycle activity."
+---
+
+Combos are Polymarket's combinatorial positions: one position is defined by multiple market legs. PolyNode indexes those on-chain combo positions separately from standard CTF positions, then exposes them through dedicated combo endpoints and opt-in wallet aggregates.
+
+Use the dedicated combo endpoints when you want combo-only data. Use `include_combos=true` on supported wallet endpoints when you want the wallet-level response to include both standard market positions and combo positions.
+
+## Base URL
+
+```
+https://api.polynode.dev/v3
+```
+
+## Dedicated combo endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v3/combos/markets` | List observed combo markets with leg metadata |
+| `GET /v3/combos/activity` | List combo lifecycle activity for a market, condition, position, or wallet |
+| `GET /v3/wallets/{address}/combos/positions` | Combo positions for one wallet |
+| `GET /v3/wallets/{address}/combos/trades` | Combo trades for one wallet |
+| `GET /v3/wallets/{address}/combos/activity` | Combo lifecycle activity for one wallet |
+| `GET /v3/wallets/{address}/combos/summary` | Combo-only P&L summary for one wallet |
+
+## Additive wallet support
+
+These wallet endpoints support `include_combos=true`:
+
+| Endpoint | Behavior |
+|----------|----------|
+| `GET /v3/wallets/{address}` | Adds combo P&L/counts to the all-time wallet summary |
+| `GET /v3/wallets/{address}/pnl` | Adds combo P&L/counts to all-time wallet P&L |
+| `GET /v3/wallets/{address}/positions` | Appends combo positions to the position list |
+
+If a wallet has no combo exposure, `include_combos=true` still returns `200` with the normal wallet response and a zero combo contribution. Clients do not need to know ahead of time whether a wallet has traded combos.
+
+## Identifier notes
+
+| Identifier | Description |
+|------------|-------------|
+| `combo_condition_id` | Combo condition ID. Returned as a hex string. |
+| `position_id` / `combo_position_id` | ERC-1155 position ID for the combo leg or combo position. Returned as a string because it can exceed JavaScript integer precision. |
+| `legs` | Array of market legs that define the combo position. Legs may include market slug/title, event slug/title, outcome label, current price, and leg status when metadata is available. |
+
+## P&L semantics
+
+Combo P&L uses the same high-level model as standard Polymarket positions: weighted-average cost basis, realized P&L from closes/redeems/merges, and unrealized P&L for open balances when a current price is available.
+
+All aggregate P&L fields are returned as decimal USD numbers. Event-level combo amount fields use decimal strings such as `"0.050750"` for exact USDC-style display.
+

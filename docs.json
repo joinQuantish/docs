@@ -43,6 +43,10 @@
               "websocket/events/position-split",
               "websocket/events/position-merge",
               "websocket/events/positions-converted",
+              "websocket/events/combo-execution",
+              "websocket/events/combo-status-update",
+              "websocket/events/combo-lifecycle",
+              "websocket/events/combo-approval",
               "websocket/events/oracle",
               "websocket/events/redemption"
             ]
@@ -133,6 +137,19 @@
               "data/wallets/merges",
               "data/wallets/nrc",
               "data/wallets/activity"
+            ]
+          },
+          {
+            "group": "Combos",
+            "tag": "New",
+            "pages": [
+              "data/combos/overview",
+              "data/combos/markets",
+              "data/combos/activity",
+              "data/combos/wallet-summary",
+              "data/combos/wallet-positions",
+              "data/combos/wallet-trades",
+              "data/combos/wallet-activity"
             ]
           },
           {

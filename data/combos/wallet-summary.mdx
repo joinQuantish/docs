@@ -1,0 +1,59 @@
+---
+title: "Wallet Combo Summary"
+description: "Get combo-only P&L and position counts for one wallet."
+---
+
+Returns a combo-only summary for a wallet. Use this endpoint when you want to inspect combo exposure separately from the standard wallet summary.
+
+For an all-in wallet summary, call `GET /v3/wallets/{address}?include_combos=true`.
+
+## Request
+
+```
+GET /v3/wallets/{address}/combos/summary
+```
+
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `address` | string | Wallet address |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/summary"
+```
+
+```json
+{
+  "address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+  "summary": {
+    "position_type": "combo",
+    "wallet_address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+    "open_combo_count": 1495,
+    "closed_combo_count": 19995,
+    "balance_count": 21492,
+    "realized_pnl_usdc": "113.510513",
+    "unrealized_pnl_usdc": null,
+    "total_pnl_usdc": "113.510513",
+    "last_activity_at": "2026-06-11T02:04:19.887367+00:00"
+  },
+  "rows_returned": 1,
+  "position_type": "combo",
+  "source": "v3.wallet_combos.summary",
+  "elapsed_ms": 13
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `open_combo_count` | integer | Open combo positions |
+| `closed_combo_count` | integer | Closed combo positions |
+| `balance_count` | integer | Total combo balance rows tracked for the wallet |
+| `realized_pnl_usdc` | string | Realized combo P&L in USD |
+| `unrealized_pnl_usdc` | string or null | Current unrealized combo P&L when available |
+| `total_pnl_usdc` | string | Realized + unrealized combo P&L |
+| `last_activity_at` | string | Last observed combo activity for this wallet |

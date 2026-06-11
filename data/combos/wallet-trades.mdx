@@ -1,0 +1,73 @@
+---
+title: "Wallet Combo Trades"
+description: "List combo trades for one wallet with side, size, price, role, counterparty, and transaction data."
+---
+
+Returns combo trades where the wallet participated as maker or taker. Use this endpoint for combo-only trade history.
+
+## Request
+
+```
+GET /v3/wallets/{address}/combos/trades
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `market_id` | string | -- | Alias for `condition_id` |
+| `condition_id` | string | -- | Combo condition ID |
+| `position_id` | string | -- | Combo position ID |
+| `side` | string | -- | `BUY`, `SELL`, or `all` |
+| `limit` | integer | 100 | Results per page, max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/trades?limit=2"
+```
+
+```json
+{
+  "address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+  "trades": [
+    {
+      "position_type": "combo",
+      "wallet_role": "maker",
+      "wallet_address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+      "counterparty_address": "0xe3333700ca9d93003f00f0f71f8515005f6c00aa",
+      "position_id": "1741334187009265192213210063949860811096650382021683265628751751539647840256",
+      "side": "BUY",
+      "price": "0.0197",
+      "size": "0.050750",
+      "fee": "0.000020",
+      "tx_hash": "0xf3a8985f04bf869483ef4163a185f296c834eb827b5e5ae3db5bd44558121d51",
+      "log_index": 896,
+      "block_number": 88276713,
+      "timestamp": 1781120055
+    }
+  ],
+  "rows_returned": 2,
+  "has_more": true,
+  "position_type": "combo",
+  "source": "v3.wallet_combos.trades",
+  "elapsed_ms": 23
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallet_role` | string | `maker` or `taker` |
+| `counterparty_address` | string | Counterparty address |
+| `position_id` | string | Combo position ID |
+| `side` | string | `BUY` or `SELL` |
+| `price` | string | Fill price |
+| `size` | string | Combo shares traded |
+| `fee` | string | Fee amount |
+| `tx_hash` | string | Polygon transaction hash |
+| `log_index` | integer | Log index within the transaction |
+| `block_number` | integer | Polygon block number |
+| `timestamp` | integer | Unix timestamp in seconds |

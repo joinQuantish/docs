@@ -1,0 +1,76 @@
+---
+title: "Combo Markets"
+description: "List observed Polymarket combo markets with legs and activity counters."
+---
+
+Returns observed combo markets. Each market includes its combo condition, status, activity counters, volume, and a `legs` array when leg metadata is available.
+
+## Request
+
+```
+GET /v3/combos/markets
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `market_id` | string | -- | Alias for `condition_id` |
+| `condition_id` | string | -- | Combo condition ID |
+| `status` | string | -- | `observed`, `open`, `closed`, `resolved`, `redeemable`, `redeemed`, or `all` |
+| `limit` | integer | 100 | Results per page, max 1000 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/combos/markets?limit=2"
+```
+
+```json
+{
+  "markets": [
+    {
+      "combo_condition_id": "0x03c58e66825a6501dfffbf7dd0e802c3470000000000000000000000000000",
+      "module_name": "CombinatorialModule",
+      "status": "observed",
+      "observed_execution_count": 10,
+      "observed_lifecycle_count": 16,
+      "observed_transfer_count": 32,
+      "volume_usdc": "427.01",
+      "last_activity_at": "2026-06-11T02:07:18+00:00",
+      "legs": [
+        {
+          "leg_index": 0,
+          "leg_position_id": "770259566746216134461634134886555299946416955842760322422283095048103919616",
+          "leg_status": "OPEN",
+          "market_slug": "fifwc-gha-pan-2026-06-17-spread-away-1pt5",
+          "market_title": "Panama (-1.5)",
+          "event_title": "Ghana vs. Panama - More Markets",
+          "leg_current_price": "0.0000"
+        }
+      ]
+    }
+  ],
+  "rows_returned": 2,
+  "has_more": true,
+  "position_type": "combo",
+  "source": "v3.combos.markets",
+  "elapsed_ms": 148
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `combo_condition_id` | string | Combo condition ID |
+| `module_name` | string | Combo module name, usually `CombinatorialModule` |
+| `status` | string | Observed lifecycle status |
+| `observed_execution_count` | integer | Observed combo execution count |
+| `observed_lifecycle_count` | integer | Observed split/merge/lifecycle count |
+| `observed_redeem_count` | integer | Observed combo redemption count |
+| `observed_transfer_count` | integer | Observed combo position transfer count |
+| `volume_usdc` | string | Observed combo volume formatted in USDC |
+| `last_activity_at` | string | Last observed combo activity timestamp |
+| `legs` | array | Market legs that define the combo |

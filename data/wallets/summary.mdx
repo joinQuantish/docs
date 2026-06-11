@@ -18,10 +18,43 @@ GET /v3/wallets/{address}
 |-----------|------|-------------|
 | `address` | string | Wallet address (0x-prefixed, case-insensitive) |
 
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `include_combos` | boolean | `false` | Add combo P&L and combo position counts to the all-time wallet summary. |
+
 ## Example
 
 ```bash
 curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839
+```
+
+### Summary including combos
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907?include_combos=true"
+```
+
+```json
+{
+  "address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+  "net_realized_pnl": 113.510513,
+  "realized_pnl": 113.510513,
+  "total_pnl": 113.510513,
+  "position_count": 21496,
+  "open_positions": 1495,
+  "include_combos": true,
+  "included_position_types": ["market", "combo"],
+  "combo_pnl": {
+    "position_type": "combo",
+    "included": true,
+    "realized_pnl": 113.510513,
+    "total_pnl": 113.510513,
+    "position_count": 21492,
+    "open_positions": 1495
+  }
+}
 ```
 
 ```json
@@ -55,3 +88,4 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
 | `position_count` | integer | Total positions (open + closed) |
 | `open_positions` | integer | Positions with shares > 0 |
 | `total_volume` | number | Total volume traded (USD) |
+| `combo_pnl` | object | Present when `include_combos=true`; combo-only contribution to the wallet summary |
