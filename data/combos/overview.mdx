@@ -5,7 +5,7 @@ description: "Query Polymarket combo markets, combo wallet positions, combo trad
 
 Combos are Polymarket's combinatorial positions: one position is defined by multiple market legs. PolyNode indexes those on-chain combo positions separately from standard CTF positions, then exposes them through dedicated combo endpoints and opt-in wallet aggregates.
 
-Use the dedicated combo endpoints when you want combo-only data. Use `include_combos=true` on supported wallet endpoints when you want the wallet-level response to include both standard market positions and combo positions.
+Use the dedicated combo endpoints when you want combo-only data. Use `include_combos=true` on supported wallet endpoints when you want the wallet-level response to include both standard market data and combo data.
 
 ## Base URL
 
@@ -33,8 +33,9 @@ These wallet endpoints support `include_combos=true`:
 | `GET /v3/wallets/{address}` | Adds combo P&L/counts to the all-time wallet summary |
 | `GET /v3/wallets/{address}/pnl` | Adds combo P&L/counts to all-time wallet P&L |
 | `GET /v3/wallets/{address}/positions` | Appends combo positions to the position list |
+| `GET /v3/wallets/{address}/trades` | Adds a `combo_trades` branch alongside the standard trade list |
 
-If a wallet has no combo exposure, `include_combos=true` still returns `200` with the normal wallet response and a zero combo contribution. Clients do not need to know ahead of time whether a wallet has traded combos.
+If a wallet has no combo exposure, `include_combos=true` still returns `200` with the normal wallet response and a zero combo contribution or empty combo branch. Clients do not need to know ahead of time whether a wallet has traded combos.
 
 ## Identifier notes
 
@@ -49,4 +50,3 @@ If a wallet has no combo exposure, `include_combos=true` still returns `200` wit
 Combo P&L uses the same high-level model as standard Polymarket positions: weighted-average cost basis, realized P&L from closes/redeems/merges, and unrealized P&L for open balances when a current price is available.
 
 All aggregate P&L fields are returned as decimal USD numbers. Event-level combo amount fields use decimal strings such as `"0.050750"` for exact USDC-style display.
-

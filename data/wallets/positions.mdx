@@ -154,6 +154,14 @@ When combo rows are present, they are appended with `position_type: "combo"` and
 
 ## Response fields
 
+### Top-level combo fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `include_combos` | boolean | Present when `include_combos=true` was requested |
+| `included_position_types` | array | Includes `market` and `combo` when combo inclusion was requested |
+| `combo_position_count` | integer | Number of combo position rows returned in this page |
+
 ### Position data
 
 | Field | Type | Description |

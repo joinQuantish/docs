@@ -25,6 +25,7 @@ GET /v3/wallets/{address}/trades
 | `group_by` | string | -- | `user_trade` returns Polymarket-style user-visible trade rows; `transaction_hash` is an alias; `order_hash` aggregates wallet-visible fills per order |
 | `after` | integer | -- | Start of time range (Unix timestamp) |
 | `before` | integer | -- | End of time range (Unix timestamp) |
+| `include_combos` | boolean | `false` | Add combo trades in a separate `combo_trades` branch. If the wallet has no combo trades, the response remains 200 with an empty combo branch. |
 | `order` | string | `desc` | `asc` or `desc` |
 | `limit` | integer | 100 | Max 1000 |
 | `offset` | integer | 0 | Pagination offset |
@@ -91,7 +92,57 @@ curl https://api.polynode.dev/v3/wallets/0x.../trades?token_id=75783394...&limit
 curl https://api.polynode.dev/v3/wallets/0x.../trades?after=1778000000&before=1778604000
 ```
 
+### Include combo trades
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/trades?include_combos=true&limit=5"
+```
+
+Combo trades are returned in `combo_trades` so existing consumers of the standard `trades` array do not need to change parsing logic.
+
+```json
+{
+  "address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+  "trades": [],
+  "rows_returned": 0,
+  "include_combos": true,
+  "included_position_types": ["market", "combo"],
+  "combo_trade_count": 5,
+  "combo_has_more": true,
+  "combo_source": "v3.wallet_combos.trades",
+  "combo_trades": [
+    {
+      "position_type": "combo",
+      "wallet_role": "maker",
+      "wallet_address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+      "counterparty_address": "0xe3333700ca9d93003f00f0f71f8515005f6c00aa",
+      "combo_condition_id": "0x0310c8c1e924b0ddffd987430c42fc26e10000000000000000000000000000",
+      "position_id": "1741334187009265192213210063949860811096650382021683265628751751539647840256",
+      "side": "BUY",
+      "price": "0.0197",
+      "size": "0.050750",
+      "fee": "0.000020",
+      "tx_hash": "0xf3a8985f04bf869483ef4163a185f296c834eb827b5e5ae3db5bd44558121d51",
+      "block_number": 88276713,
+      "timestamp": 1781120055,
+      "source": "v3.wallet_combos.trades"
+    }
+  ]
+}
+```
+
 ## Response fields
+
+### Top-level combo fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `include_combos` | boolean | Present when `include_combos=true` was requested |
+| `included_position_types` | array | Includes `market` and `combo` when combo inclusion was requested |
+| `combo_trades` | array | Combo trade rows for the wallet |
+| `combo_trade_count` | integer | Number of combo trade rows returned in this page |
+| `combo_has_more` | boolean | Whether more combo trade rows are available |
+| `combo_source` | string | Source label for the combo trade branch |
 
 ### Trade data
 
