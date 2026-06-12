@@ -17,8 +17,8 @@ GET /v3/combos/markets
 |-----------|------|---------|-------------|
 | `market_id` | string | -- | Alias for `condition_id` |
 | `condition_id` | string | -- | Combo condition ID |
-| `status` | string | -- | `observed`, `open`, `closed`, `resolved`, `redeemable`, `redeemed`, or `all` |
-| `limit` | integer | 100 | Results per page, max 1000 |
+| `status` | string | -- | `observed`, `open`, `closed`, `resolved`, `resolved_win`, `resolved_loss`, `redeemable`, `redeemed`, or `all` |
+| `limit` | integer | 100 | Results per page, max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
 ## Example
@@ -74,3 +74,5 @@ curl "https://api.polynode.dev/v3/combos/markets?limit=2"
 | `volume_usdc` | string | Observed combo volume formatted in USDC |
 | `last_activity_at` | string | Last observed combo activity timestamp |
 | `legs` | array | Market legs that define the combo |
+
+Resolved leg metadata is refreshed from Polymarket combo metadata when available. Leg rows can include `leg_status` values such as `RESOLVED_WIN` or `RESOLVED_LOSS`, `leg_resolved_at`, and `leg_current_price`.

@@ -18,8 +18,8 @@ GET /v3/wallets/{address}/combos/activity
 | `market_id` | string | -- | Alias for `condition_id` |
 | `condition_id` | string | -- | Combo condition ID |
 | `position_id` | string | -- | Combo position ID |
-| `event_kind` | string | -- | Filter by event kind, for example `PositionsSplit` |
-| `limit` | integer | 100 | Results per page, max 1000 |
+| `event_kind` | string | -- | Filter by event kind, for example `PositionsSplit` or `PositionRedeemed` |
+| `limit` | integer | 100 | Results per page, max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
 ## Example
@@ -63,12 +63,19 @@ curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d1
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `event_kind` | string | Contract lifecycle event kind |
+| `event_kind` | string | Public lifecycle event kind |
 | `side` | string | Human-readable lifecycle side, such as `Split` or `Merge` |
 | `combo_condition_id` | string | Combo condition ID |
 | `combo_position_id` | string | Combo position ID |
 | `amount_usdc` | string | Amount formatted in USDC |
+| `payout_usdc` | string or null | Redemption payout formatted in USDC when the activity is a redeem |
 | `tx_hash` | string | Polygon transaction hash |
 | `block_number` | integer | Polygon block number |
 | `timestamp` | integer | Unix timestamp in seconds |
 | `legs` | array | Leg position IDs involved in the lifecycle event |
+
+## Redemption semantics
+
+Combo redemptions are normalized to match Polymarket's public combo activity shape. Router and auto-redeemer paths are returned as `event_kind: "PositionRedeemed"` with `side: "Redeem"` and the underlying module kind, such as `Combinatorial`, `Binary`, or `NegRisk`. The raw router/auto-redeemer contract path is used internally for indexing but is not the public event kind.
+
+When leg metadata is available, redemption rows include resolved leg statuses and `leg_current_price` values in the `legs` array.

@@ -49,4 +49,6 @@ If a wallet has no combo exposure, `include_combos=true` still returns `200` wit
 
 Combo P&L uses the same high-level model as standard Polymarket positions: weighted-average cost basis, realized P&L from closes/redeems/merges, and unrealized P&L for open balances when a current price is available.
 
+When a combo is redeemed, PolyNode settles the redeemed size against weighted-average entry basis. Fully redeemed winners return `RESOLVED_WIN` with zero open entry cost and realized P&L from the redemption payout; fully redeemed losers return `RESOLVED_LOSS`. Combo redemption activity is normalized to Polymarket's public `PositionRedeemed` shape even when the on-chain path used the router or auto-redeemer.
+
 All aggregate P&L fields are returned as decimal USD numbers. Event-level combo amount fields use decimal strings such as `"0.050750"` for exact USDC-style display.

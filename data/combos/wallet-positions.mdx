@@ -20,8 +20,8 @@ GET /v3/wallets/{address}/combos/positions
 | `market_id` | string | -- | Alias for `condition_id` |
 | `condition_id` | string | -- | Combo condition ID |
 | `position_id` | string | -- | Combo position ID |
-| `status` | string | -- | `open`, `closed`, `resolved`, `redeemable`, `redeemed`, `observed`, or `all` |
-| `limit` | integer | 100 | Results per page, max 1000 |
+| `status` | string | -- | `open`, `closed`, `resolved`, `resolved_win`, `resolved_loss`, `redeemable`, `redeemed`, `observed`, or `all` |
+| `limit` | integer | 100 | Results per page, max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
 ## Example
@@ -80,3 +80,9 @@ curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d1
 | `total_pnl_usdc` | string | Realized + unrealized P&L |
 | `status` | string | Current combo position status |
 | `legs` | array | Leg metadata for the combo |
+
+## Resolution semantics
+
+Redeemed combo positions are settled into weighted-average cost basis as soon as PolyNode observes the on-chain combo redemption. A fully redeemed winning combo returns `status: "RESOLVED_WIN"`, `shares_balance: "0.000000"`, `entry_cost_usdc: "0.00"`, and realized/total P&L equal to redemption payout minus entry basis. A fully redeemed losing combo returns `status: "RESOLVED_LOSS"` with zero open entry cost.
+
+Leg metadata is refreshed from Polymarket combo metadata. Resolved legs expose `leg_status` values such as `RESOLVED_WIN` or `RESOLVED_LOSS`, `leg_resolved_at`, and `leg_current_price` when available. `legs_resolved` and `legs_pending` are derived from those leg statuses.

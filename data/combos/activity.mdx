@@ -19,8 +19,8 @@ GET /v3/combos/activity
 | `condition_id` | string | -- | Combo condition ID |
 | `position_id` | string | -- | Combo position ID |
 | `wallet` | string | -- | Wallet address |
-| `event_kind` | string | -- | Filter by event kind |
-| `limit` | integer | 100 | Results per page, max 1000 |
+| `event_kind` | string | -- | Filter by event kind, for example `PositionsSplit` or `PositionRedeemed` |
+| `limit` | integer | 100 | Results per page, max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
 ## Example
@@ -55,3 +55,5 @@ curl "https://api.polynode.dev/v3/combos/activity?condition_id=0x03d98f6ac4c108c
 - Use `/v3/wallets/{address}/combos/activity` when the wallet address is already known.
 - Use this endpoint when you are exploring all lifecycle activity for a combo market or position.
 - The activity feed is on-chain derived and can include split, merge, redemption, and transfer-related lifecycle rows as those events are observed.
+- Public combo redemption rows are normalized to Polymarket's combo activity shape: router and auto-redeemer redemption paths are returned as `event_kind: "PositionRedeemed"` with `side: "Redeem"`, a module kind such as `Combinatorial`, `Binary`, or `NegRisk`, and `payout_usdc` when available.
+- When leg metadata is available, resolved combo activity includes leg statuses such as `RESOLVED_WIN` or `RESOLVED_LOSS` and `leg_current_price` values.

@@ -4853,7 +4853,7 @@
               "type": "integer",
               "default": 5000
             },
-            "description": "Maximum bucket count"
+            "description": "Maximum bucket count, clamped to 10000"
           }
         ],
         "responses": {
@@ -4930,7 +4930,7 @@
               "type": "integer",
               "default": 100
             },
-            "description": "Max results, clamped to 1000"
+            "description": "Max results, clamped to 300"
           },
           {
             "name": "offset",
@@ -5029,7 +5029,7 @@
               "type": "integer",
               "default": 100
             },
-            "description": "Max results, clamped to 1000"
+            "description": "Max results, clamped to 300"
           },
           {
             "name": "offset",
