@@ -1,5 +1,6 @@
 ---
 title: "Complete Username Action"
+openapi: "POST /v3/polymarket/profiles/username/complete"
 description: "Submit wallet signatures and create or change the user's Polymarket username."
 ---
 
@@ -106,4 +107,3 @@ The endpoint:
 | `403` | `polymarket_compliance_blocked` | Polymarket rejected the action for compliance or eligibility reasons |
 | `429` | `rate_limited` | Profile-specific rate limit exceeded |
 | `502` | `polymarket_login_failed`, `polymarket_profile_create_failed`, `polymarket_profile_update_failed`, or `upstream_unavailable` | Upstream action failed |
-

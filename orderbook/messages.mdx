@@ -418,5 +418,7 @@ Response to a client ping.
 
 | Error | Cause |
 |-------|-------|
-| `token_limit` | Subscription exceeds your tier's token limit (starter/growth only) |
+| `token_limit` | Explicit subscription resolved above 15,000 token IDs on one connection. Use `markets: ["*"]` for the full firehose, or split large explicit lists across connections. |
+| `input_too_large` | Request contains an unusually large explicit identifier list. Use `markets: ["*"]` for the full firehose, or split very large explicit lists across connections. |
+| `service_warming_up` | The Orderbook Stream accepted the connection but is still loading market metadata after a restart. Retry the subscribe shortly. |
 | `session_limit` | Free tier 1-hour daily session expired (resets at midnight UTC) |

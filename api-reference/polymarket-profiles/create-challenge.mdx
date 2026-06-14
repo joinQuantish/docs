@@ -1,5 +1,6 @@
 ---
 title: "Create Username Challenge"
+openapi: "POST /v3/polymarket/profiles/username/challenge"
 description: "Create the wallet-signing challenge for a Polymarket username create or update."
 ---
 
@@ -128,4 +129,3 @@ The endpoint:
 | `409` | `username_taken` | Username is not available |
 | `429` | `rate_limited` | Profile-specific rate limit exceeded |
 | `502` | `upstream_unavailable` | Polymarket, Gamma, or Polygon RPC failed |
-

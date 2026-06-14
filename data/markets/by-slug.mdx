@@ -18,7 +18,7 @@ GET /v3/markets/slug/{slug}/trades
 |-----------|------|---------|-------------|
 | `after` | integer | -- | Start of time range (Unix timestamp) |
 | `before` | integer | -- | End of time range |
-| `limit` | integer | 100 | Max 1000 |
+| `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
 ### Example
@@ -41,7 +41,7 @@ Returns every wallet holding (or that has ever held) any outcome of this market,
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `limit` | integer | 100 | Max 1000 |
+| `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
 | `sort` | string | `realized_pnl` | One of `amount`, `volume`, `realized_pnl`, `pnl` |
 | `status` | string | -- | `open` (current holders only) or `closed` (zeroed-out positions only). Omit to return all. |

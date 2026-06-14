@@ -117,20 +117,23 @@ All Unix timestamps in responses are in **seconds** (e.g., `"1778674056"`). The 
 
 ## Rate limits
 
-| Limit | Value |
-|-------|-------|
-| Requests per minute per IP | 200 |
-| Max concurrent queries per IP | 5 |
-| Max page size | 1,000 rows |
-| Query timeout | 30 seconds |
+V3 REST data endpoints require a paid API key and are rate limited per key.
+
+| Plan | Standard V3 REST | Heavy V3 trade endpoints |
+|------|------------------|--------------------------|
+| Starter | 1,000 req/min | 1,000 req/min |
+| Growth | 2,000 req/min | 1,500 req/min |
+| Enterprise | 4,000 req/min default; custom by agreement | 1,500 req/min default; custom by agreement |
+
+See [Rate Limits](/guides/rate-limits) for the full tier table and heavy-endpoint details.
 
 ## Pagination
 
 All list endpoints support:
-- `?limit=N` — results per page (default 100, max 1000)
+- `?limit=N` — results per page (default 100, max 300)
 - `?offset=N` — skip N results
 
-Responses include `has_more: true/false` to indicate if more pages exist.
+Responses include the actual `limit` used, plus `has_more: true/false` to indicate if more pages exist. For deep trade-history walks, prefer `after` and `before` time windows instead of very large offsets.
 
 ## Response format
 

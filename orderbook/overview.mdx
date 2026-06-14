@@ -218,16 +218,18 @@ wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
 
 ## Subscription limits
 
-All paid tiers can subscribe to **every active market** with no token limit. Access is gated by the number of simultaneous WebSocket connections you can open to the Orderbook Stream.
+Use `markets: ["*"]` for the full all-market firehose. Explicit market lists are capped at **15,000 resolved token IDs per connection** to protect low-latency fan-out; split large explicit watchlists across connections or use the firehose path when you truly need every market.
 
-| Tier | Connections | Market subscriptions | Session limit |
-|------|-----------|---------------------|--------------|
-| **Free** | 1 | Unlimited | 1 hour/day |
-| **Starter** ($50/mo) | 10 | Unlimited | Unlimited |
-| **Growth** ($200/mo) | 50 | Unlimited | Unlimited |
-| **Enterprise** ($750/mo) | Unlimited | Unlimited | Unlimited |
+| Tier | Connections | Explicit list cap | Firehose | Session limit |
+|------|-----------|-------------------|----------|--------------|
+| **Free** | 1 | 15,000 tokens / connection | Included | 1 hour/day |
+| **Starter** ($50/mo) | 10 | 15,000 tokens / connection | Included | Unlimited |
+| **Growth** ($200/mo) | 50 | 15,000 tokens / connection | Included | Unlimited |
+| **Enterprise** ($750/mo) | Unlimited | 15,000 tokens / connection | Included | Unlimited |
 
 Each Polymarket market has two tokens (one per outcome). Subscribing to both tokens of a market gives you the full two-sided orderbook.
+
+Plan upgrades increase the number of concurrent Orderbook Stream connections. The explicit-list token cap is a per-connection safety limit and is not removed by upgrading.
 
 <Tip>
   **Free tier includes the full firehose.** Subscribe to every market and see the full data flow. The only limit is a 1-hour daily session so you can properly evaluate the product before upgrading.

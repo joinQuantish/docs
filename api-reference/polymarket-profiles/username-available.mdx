@@ -1,5 +1,6 @@
 ---
 title: "Check Username Availability"
+openapi: "GET /v3/polymarket/profiles/username-available"
 description: "Check whether Polymarket will accept a username."
 ---
 
@@ -49,4 +50,3 @@ Unavailable usernames return `200` with `available: false`:
 | `402` | varies | Paid plan required |
 | `429` | `rate_limited` | Profile-specific rate limit exceeded |
 | `502` | `upstream_unavailable` | Polymarket availability check failed |
-

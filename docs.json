@@ -111,6 +111,12 @@
           {
             "group": "Overview",
             "pages": [
+              "api-reference/overview"
+            ]
+          },
+          {
+            "group": "V3 Data API",
+            "pages": [
               "data/overview"
             ]
           },

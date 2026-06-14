@@ -1,0 +1,33 @@
+---
+title: "API Reference"
+description: "Start here for PolyNode REST APIs: V3 Polymarket data, wallet analytics, market data, orderbook snapshots, profiles, search, and legacy endpoints."
+---
+
+PolyNode exposes authenticated REST APIs for Polymarket market data, wallet analytics, positions, trades, builders, orderbooks, profiles, search, and supporting tools.
+
+## Core APIs
+
+| API | Use it for |
+| --- | --- |
+| [V3 Data API](/data/overview) | Polymarket markets, positions, trades, wallet P&L, builders, combos, rewards, tags, fees, and global stats. |
+| [Wallet P&L](/data/wallets/summary) | Wallet summaries, realized P&L, P&L events, open positions, and wallet activity. |
+| [Markets & Search](/data/markets/search) | Market discovery, condition lookups, market-level positions, prices, and trades. |
+| [Orderbook](/api-reference/orderbook/order-book) | Current orderbook, midpoint, and spread snapshots. |
+| [Profiles](/api-reference/polymarket-profiles/overview) | Polymarket profile lookup and username setup flows. |
+| [Onchain V2](/api-reference/onchain/trades) | Legacy onchain V2 trade, position, redemption, volume, and candle endpoints. |
+
+## Base URLs
+
+| Surface | Base URL |
+| --- | --- |
+| REST API | `https://api.polynode.dev` |
+| WebSocket streams | `wss://polynode.dev/ws` |
+| Orderbook stream | `wss://polynode.dev/orderbook/ws` |
+
+## Authentication
+
+Send your API key with either `x-api-key`, `Authorization: Bearer <key>`, or `?key=<key>`.
+
+## Rate Limits
+
+REST and streaming limits vary by plan. See [Rate Limits](/guides/rate-limits) for the current public limits, including the separate bucket for heavy trade-history endpoints.

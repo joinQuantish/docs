@@ -3,7 +3,7 @@ title: Rate Limits
 description: Rate limiting details and best practices.
 ---
 
-PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your plan.
+PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your plan and with the endpoint class.
 
 ## Tier limits
 
@@ -13,7 +13,8 @@ PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your
 
 | | Free | Starter ($50/mo) | Growth ($200/mo) | Enterprise ($750/mo) |
 |--|------|-------------------|------------------|----------------------|
-| **REST API limit** | 60 req/min (1 QPS) | 600 req/min (10 QPS) | 3,000 req/min (50 QPS) | Custom |
+| **Standard V3 REST data** | Not available | 1,000 req/min (~16 QPS) | 2,000 req/min (~33 QPS) | 4,000 req/min default; custom by agreement |
+| **Heavy V3 trade-history endpoints** | Not available | 1,000 req/min | 1,500 req/min | 1,500 req/min default; custom by agreement |
 | **Event WebSocket connections** | 1 | 10 | 50 | Unlimited |
 | **Orderbook WebSocket connections** | 1 | 10 | 50 | Unlimited |
 | **Filter items per subscription** | 10,000 | 10,000 | 10,000 | Custom |
@@ -34,14 +35,17 @@ PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your
 </Note>
 
 <Info>
-  Some data-heavy endpoints have endpoint-specific limits or paid-tier requirements in addition to your plan's REST API limit. See [Data endpoint limits](#data-endpoint-limits) below for details.
+  V3 REST data endpoints require a paid plan. Heavy trade-history endpoints have a separate per-key bucket in addition to your standard V3 REST data limit. See [V3 REST data limits](#v3-rest-data-limits) below.
 </Info>
 
 ## How it works
 
 - Rate limits are tracked per API key using a sliding window.
+- V3 REST data endpoints require a paid API key. Free-tier keys receive `402 Payment Required`.
+- Heavy V3 trade-history endpoints check both your standard V3 REST data limit and the heavy endpoint bucket. The stricter remaining limit applies.
 - When you exceed the limit, you'll receive a `429 Too Many Requests` response.
 - The error message includes a Unix timestamp for when you can retry.
+- Successful REST responses include `x-ratelimit-limit`, `x-ratelimit-remaining`, and `x-ratelimit-reset` headers.
 
 ## Best practices
 
@@ -50,7 +54,7 @@ PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your
 Instead of polling REST endpoints, connect via WebSocket for live updates:
 
 ```javascript
-// Instead of polling /v1/markets every 5 seconds (12 req/min)...
+// Instead of polling /v3/trades every 5 seconds (12 req/min)...
 // Use WebSocket (1 connection, unlimited events)
 const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 ws.send(JSON.stringify({
@@ -65,18 +69,18 @@ Market metadata (question, slug, outcomes) changes infrequently. Cache it and on
 
 ```javascript
 // Fetch full market list once
-const markets = await fetch("/v1/markets?count=1000", { headers })
+const markets = await fetch("/v3/markets/search?q=bitcoin&limit=100", { headers })
   .then((r) => r.json());
 
 // Cache by token_id
-const cache = new Map(markets.markets.map((m) => [m.token_id, m]));
+const cache = new Map(markets.data.map((m) => [m.condition_id, m]));
 
 // Use cache for lookups, refresh every 5 minutes
 ```
 
 ### Batch where possible
 
-Use `/v1/markets?count=1000` instead of individual `/v1/markets/:id` calls to reduce requests.
+Use `POST /v3/wallets/batch` instead of many individual wallet summary requests when you need P&L for multiple wallets.
 
 ### Use filtered subscriptions
 
@@ -108,65 +112,50 @@ WebSocket subscriptions are not rate-limited by requests/min, but message volume
   `status_update` events arrive in bursts (30–80 per block). If you don't need confirmation tracking, exclude them from your `event_types` filter to reduce volume.
 </Tip>
 
-## Data endpoint limits
+## V3 REST data limits
 
-The wallet and market data endpoints proxy to upstream sources and have their own rate limits, separate from your per-key limit.
+Standard V3 REST reads count against your plan's V3 REST data limit.
 
-### Standard data endpoints
+| Plan | Standard V3 REST data | Heavy V3 trade-history endpoints |
+|---|---:|---:|
+| Free | Not available | Not available |
+| Starter | 1,000 req/min | 1,000 req/min |
+| Growth | 2,000 req/min | 1,500 req/min |
+| Enterprise | 4,000 req/min default; custom by agreement | 1,500 req/min default; custom by agreement |
 
-These endpoints share your plan's normal rate limit and a global throughput cap of **20 upstream calls per second** across all data endpoints. This ensures stable upstream performance for all users.
+Heavy V3 trade endpoints have a separate per-key bucket because trade-history scans are the highest-throughput REST surface:
 
-- `/v1/wallets/{addr}/positions`
-- `/v1/wallets/{addr}/trades`
-- `/v1/wallets/positions` (multi-wallet)
-- `/v1/markets/{id}/positions`
-- `/v1/markets/{id}/trades`
+- `/v3/trades`
+- `/v3/wallets/{address}/trades`
+- `/v3/wallets/{address}/combos/trades`
+- `/v3/markets/{token_id}/trades`
+- `/v3/markets/slug/{slug}/trades`
+- `/v3/builders/{code}/trades`
 
-Batch requests (multiple wallets) count each wallet as one request toward your limit. For example, a 5-wallet batch counts as 5 requests.
+When the heavy bucket is exceeded, you'll receive a `429` response with:
 
-<Note>
-  **Onchain enrichment:** The wallet positions endpoints check onchain redemption state for resolved positions. This adds a single batched RPC call (~130ms) per request when redeemable positions are present. No extra rate limit cost — it's included in the same request.
-</Note>
-
-### Enriched endpoints
-
-The enriched analytics endpoints count against your plan's REST API limit. Expensive endpoints may also have their own endpoint-specific caps called out in their endpoint reference.
-
-Enriched endpoints include:
-
-- `/v1/trader/{wallet}` — trader profile with EOA resolution
-- `/v1/trader/{wallet}/pnl` — PnL time series
-- `/v1/leaderboard` — top traders
-- `/v1/trending` — trending markets
-- `/v1/activity` — platform trade feed
-- `/v1/event/{slug}` — event details
-- `/v1/movers` — biggest price movers
-
-Responses are cached for a short window to ensure fast lookups. The trader profile endpoint resolves the underlying EOA wallet address onchain when available.
-
-### Heavy endpoints <span style={{color: '#f97316', fontWeight: 700, fontSize: '0.85em', background: 'rgba(249, 115, 22, 0.1)', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px'}}>RATE LIMITED</span>
-
-Some data endpoints fan out many upstream requests per call and have a stricter per-key limit:
-
-| Endpoint | Limit | Why |
-|---|---|---|
-| `/v1/markets/{id}/positions?includeTrades=true` | **60 req/min** per key | Each call fetches trade history for every position holder in the market (can be 50-100+ upstream calls) |
-
-When this limit is exceeded, you'll receive a `429` response with:
 ```json
 {
-  "error": "includeTrades rate limit exceeded (60/min). Retry after 1774108000."
+  "error": "rate limit exceeded",
+  "scope": "v3_heavy",
+  "reset_at": 1774108000
 }
 ```
 
 <Tip>
-  If you only need position sizes and P&L, omit `includeTrades` to use the standard rate limit. Only add `includeTrades=true` when you specifically need `firstTradeAt` and `lastTradeAt` timestamps.
+  For real-time trades, use the [WebSocket stream](/websocket/overview) instead of polling trade-history endpoints.
 </Tip>
 
-<Tip>
-  For real-time data, use the [WebSocket stream](/websocket/overview) instead of polling these endpoints.
-</Tip>
+## Pagination limits
+
+Most V3 list endpoints default to `limit=100` and clamp `limit` to a maximum of `300` rows per page. If you request more than the page cap, PolyNode normalizes `limit` to the maximum allowed value. Responses include the actual `limit`, `offset`, `rows_returned`, and `has_more` values.
+
+`/v3/markets/condition/{condition_id}/positions` supports tiered page sizes for holder lists: Starter keys can request up to `300` rows, Growth keys up to `1000`, and Enterprise keys up to `2000`.
+
+`/v3/wallets/{address}/pnl/events` is the exception: it defaults to `limit=5000` and clamps to a maximum of `10000` buckets.
+
+For deep trade-history walks, prefer `after` and `before` time windows instead of very large offsets.
 
 ## Higher limits
 
-Upgrade your plan at [polynode.dev/pricing](https://polynode.dev/pricing) for higher rate limits and more WebSocket connections.
+Upgrade your plan at [polynode.dev/pricing](https://polynode.dev/pricing) for higher rate limits and more WebSocket connections. Contact [josh@quantish.live](mailto:josh@quantish.live) for Enterprise capacity above the default V3 REST limits.

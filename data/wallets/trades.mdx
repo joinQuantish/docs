@@ -27,7 +27,7 @@ GET /v3/wallets/{address}/trades
 | `before` | integer | -- | End of time range (Unix timestamp) |
 | `include_combos` | boolean | `false` | Add combo trades in a separate `combo_trades` branch. If the wallet has no combo trades, the response remains 200 with an empty combo branch. |
 | `order` | string | `desc` | `asc` or `desc` |
-| `limit` | integer | 100 | Max 1000 |
+| `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
 ## Example

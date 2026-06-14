@@ -5,6 +5,21 @@ description: "All notable changes to the PolyNode API and SDKs."
 icon: "clock-rotate-left"
 ---
 
+## 2026-06-12 - Faster V3 builder trade time filters
+
+Improved reliability and latency for time-filtered builder trade lookups.
+
+What's improved:
+
+- `GET /v3/builders/{code}/trades?after=...` now returns consistently for high-volume builders instead of timing out on large builder histories.
+- `after` / `before` filters now work efficiently with broad `tag_slug` or `category` filters when a time bound is provided.
+- Time windows outside a builder's activity range return a normal empty response instead of an internal timeout.
+- Invalid millisecond timestamps now return a structured `400` with a hint to use Unix seconds.
+
+No response fields or pagination semantics changed.
+
+---
+
 ## 2026-06-11 - Polymarket combos: V3 API and WebSocket event references
 
 Added public documentation for Polymarket combo / combinatorial position support.
