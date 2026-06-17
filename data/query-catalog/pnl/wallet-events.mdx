@@ -1,0 +1,13 @@
+---
+title: "Wallet P&L Events"
+description: "Get bucketed wallet P&L events for charts."
+---
+
+Canonical reference: [Wallet P&L Time Series](/data/wallets/pnl-events)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/pnl/events?period=7d&group=day&limit=10" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use `group=hour`, `day`, `week`, or `month` depending on the chart resolution.

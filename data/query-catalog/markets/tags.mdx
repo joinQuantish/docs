@@ -1,0 +1,18 @@
+---
+title: "Tags and Markets by Tag"
+description: "List tags and discover markets under a tag."
+---
+
+Canonical references: [Tags](/data/leaderboard/tags), [Tag Markets](/data/leaderboard/tag-markets)
+
+```bash
+curl "https://api.polynode.dev/v3/tags?limit=3" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash
+curl "https://api.polynode.dev/v3/tags/ufc?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Tag values are case-insensitive. URL hyphens are treated like spaces.

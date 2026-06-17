@@ -1,0 +1,13 @@
+---
+title: "Search Markets"
+description: "Search Polymarket markets by text."
+---
+
+Canonical reference: [Search Markets](/data/markets/search)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/search?q=dota&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use market search when a user enters free text or when you need to discover slugs and condition IDs.

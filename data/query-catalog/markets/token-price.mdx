@@ -1,0 +1,13 @@
+---
+title: "Token Price"
+description: "Get the current price and resolution status for one outcome token."
+---
+
+Canonical reference: [Token Price](/data/markets/price)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/21578184864194020862792310253337084708609281967112790860038966988826118995357/price" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use token price for lightweight price checks when you do not need full market metadata.

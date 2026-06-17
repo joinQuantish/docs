@@ -1,0 +1,13 @@
+---
+title: "Global Positions"
+description: "Browse platform-wide open positions."
+---
+
+Canonical reference: [Global Positions](/data/global/positions)
+
+```bash
+curl "https://api.polynode.dev/v3/positions?status=open&sort=size&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use this for holder discovery across the platform. Add `condition_id`, `token_id`, `status`, `min_size`, and `sort` to narrow the result.

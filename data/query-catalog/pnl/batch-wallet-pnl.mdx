@@ -1,0 +1,15 @@
+---
+title: "Batch Wallet P&L"
+description: "Query P&L for multiple wallets in one request."
+---
+
+Canonical reference: [Batch Wallet P&L](/data/wallets/batch)
+
+```bash
+curl -X POST "https://api.polynode.dev/v3/wallets/batch" \
+  -H "content-type: application/json" \
+  -H "x-api-key: $POLYNODE_API_KEY" \
+  -d '{"wallets":["0x56687bf447db6ffa42ffe2204a05edaa20f55839","0x952d11ebff81d6bd3185e608ed3515b94618ab8a"]}'
+```
+
+Use this when a dashboard needs several wallet summaries at once.

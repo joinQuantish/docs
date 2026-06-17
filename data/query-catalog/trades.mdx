@@ -1,91 +1,33 @@
 ---
 title: "Trades Query Catalog"
-description: "All major V3 trade query shapes: global, wallet, market, builder, grouped, filtered, and combo trades."
+description: "Trade feed recipes for global, wallet, market, builder, grouped-order, and combo trade queries."
 ---
 
-Use these recipes when building trade feeds, wallet activity pages, market tape views, or builder analytics.
+Use these recipes when building trade feeds, market tapes, wallet histories, builder analytics, or order-level views.
 
-## All Trades
-
-Canonical reference: [Global Trades](/data/global/trades)
-
-```bash
-curl "https://api.polynode.dev/v3/trades?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-Useful filters: `after`, `before`, `token_id`, `builder`, `min_amount`, `order`, `limit`, `offset`.
-
-## Trades by Wallet
-
-Canonical reference: [Wallet Trades](/data/wallets/trades)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/trades?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-Useful filters: `side=maker|taker|both`, `token_id`, `condition_id`, `market_slug`, `min_amount`, `after`, `before`, `order`, `limit`, `offset`.
-
-## Trades by Market Token
-
-Canonical reference: [Market Trades](/data/markets/trades)
-
-```bash
-curl "https://api.polynode.dev/v3/markets/75783394880030392863380883800697645018418815910449662777195626260206142035810/trades?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Trades by Market Slug
-
-Canonical reference: [Market by Slug](/data/markets/by-slug)
-
-```bash
-curl "https://api.polynode.dev/v3/markets/slug/dota2-aur1-liquid-2026-05-13/trades?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Wallet Trades by Condition
-
-Use this when a wallet dashboard needs only trades from one market condition.
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/trades?condition_id=0x4f05dbc6273b89aed46bb79a961c1d8771c01925d92d439e9a81fa6241900661&limit=10" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Wallet Trades Grouped by Order
-
-Use this when a UI should show one visible row per order instead of every fill row.
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/trades?group_by=order_hash&limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Builder Trades
-
-Canonical reference: [Builder Trades](/data/builders/trades)
-
-```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-Builder trades can also filter by `token_id`, `condition_id`, `market_slug`, `event_slug`, `tag_slug`, `category`, `side`, `min_amount`, `after`, and `before`.
-
-## Combo Wallet Trades
-
-Canonical reference: [Wallet Combo Trades](/data/combos/wallet-trades)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/trades?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-To request a wallet's normal trade history plus combo trade branch:
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/trades?include_combos=true&limit=10" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
+<CardGroup cols={2}>
+  <Card title="All Trades" href="/data/query-catalog/trades/all-trades">
+    Global trade feed with pagination and time filters.
+  </Card>
+  <Card title="Trades by Wallet" href="/data/query-catalog/trades/by-wallet">
+    Trades where one wallet was maker or taker.
+  </Card>
+  <Card title="Trades by Market Token" href="/data/query-catalog/trades/by-market-token">
+    Trades for one outcome token.
+  </Card>
+  <Card title="Trades by Market Slug" href="/data/query-catalog/trades/by-market-slug">
+    Trades for all outcomes in one market slug.
+  </Card>
+  <Card title="Wallet Trades by Condition" href="/data/query-catalog/trades/wallet-by-condition">
+    One wallet's trades inside one market condition.
+  </Card>
+  <Card title="Wallet Trades Grouped by Order" href="/data/query-catalog/trades/wallet-grouped-by-order">
+    Order-level grouping for wallet trades.
+  </Card>
+  <Card title="Builder Trades" href="/data/query-catalog/trades/by-builder">
+    Trades attributed to a builder code.
+  </Card>
+  <Card title="Combo Wallet Trades" href="/data/query-catalog/trades/combo-wallet-trades">
+    Combo-only and combined wallet trade views.
+  </Card>
+</CardGroup>

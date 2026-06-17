@@ -1,0 +1,13 @@
+---
+title: "Open Wallet Positions"
+description: "Get current open positions for one wallet."
+---
+
+Canonical reference: [Wallet Positions](/data/wallets/positions)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/positions?status=open&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use `status=open` when you only want active exposure.

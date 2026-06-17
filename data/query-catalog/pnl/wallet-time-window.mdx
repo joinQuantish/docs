@@ -1,0 +1,13 @@
+---
+title: "Wallet Time-Windowed P&L"
+description: "Get wallet P&L for a period such as 30 days."
+---
+
+Canonical reference: [Wallet P&L](/data/wallets/pnl)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/pnl?period=30d&include_unrealized=true" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Supported period shortcuts are `1d`, `7d`, `30d`, and `1y`. You can also use `after` and `before` Unix timestamps.

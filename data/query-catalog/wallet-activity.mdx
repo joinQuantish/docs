@@ -1,73 +1,33 @@
 ---
 title: "Wallet Activity Query Catalog"
-description: "Wallet activity feeds for splits, merges, neg-risk conversions, redemptions, PolyUSD flows, and fees."
+description: "Wallet activity recipes for lifecycle events, PolyUSD flows, fees, rebates, and rewards."
 ---
 
-Use these recipes when building wallet timelines, accounting views, or conditional-token activity explorers.
+Use these recipes when building wallet timelines, cash movement views, settlement history, or fee accounting pages.
 
-## Unified Non-Trade Activity
-
-Canonical reference: [Wallet Activity](/data/wallets/activity)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/activity?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-This returns splits, merges, neg-risk conversions, and redemptions in one feed.
-
-## Splits
-
-Canonical reference: [Wallet Splits](/data/wallets/splits)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/splits?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Merges
-
-Canonical reference: [Wallet Merges](/data/wallets/merges)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/merges?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Redemptions
-
-Canonical reference: [Wallet Redemptions](/data/wallets/redemptions)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/redemptions?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Neg-Risk Conversions
-
-Canonical reference: [Wallet NRC](/data/wallets/nrc)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/nrc?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## PolyUSD Flows
-
-Canonical reference: [Wallet PolyUSD Flows](/data/wallets/polyusd-flows)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/polyusd-flows?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Wallet Fees
-
-Canonical reference: [Wallet Fees Paid](/data/wallets/fees-paid)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x63ce342161250d705dc0b16df89036c8e5f9ba9a/fees-paid?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-Every wallet activity endpoint accepts `limit` and `offset`; event-specific feeds also accept `after` and `before`.
+<CardGroup cols={2}>
+  <Card title="Unified Wallet Activity" href="/data/query-catalog/wallets/unified-activity">
+    Splits, merges, redemptions, and neg-risk conversions in one feed.
+  </Card>
+  <Card title="Wallet Splits" href="/data/query-catalog/wallets/splits">
+    USDC converted into outcome tokens.
+  </Card>
+  <Card title="Wallet Merges" href="/data/query-catalog/wallets/merges">
+    Outcome tokens converted back into USDC.
+  </Card>
+  <Card title="Wallet Redemptions" href="/data/query-catalog/wallets/redemptions">
+    Claimed payouts from resolved markets.
+  </Card>
+  <Card title="Neg-Risk Conversions" href="/data/query-catalog/wallets/neg-risk-conversions">
+    Neg-risk conversion events for a wallet.
+  </Card>
+  <Card title="PolyUSD Flows" href="/data/query-catalog/wallets/polyusd-flows">
+    PolyUSD deposits and withdrawals.
+  </Card>
+  <Card title="Wallet Fees Paid" href="/data/query-catalog/wallets/fees-paid">
+    Fee-bearing fills for one wallet.
+  </Card>
+  <Card title="Wallet Rebates and Rewards" href="/data/query-catalog/wallets/rebates-rewards">
+    Polymarket-reported maker rebates and reward surfaces.
+  </Card>
+</CardGroup>

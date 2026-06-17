@@ -1,0 +1,13 @@
+---
+title: "Wallet Fees Paid"
+description: "Get fee-bearing fills for one wallet."
+---
+
+Canonical reference: [Wallet Fees Paid](/data/wallets/fees-paid)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63ce342161250d705dc0b16df89036c8e5f9ba9a/fees-paid?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+This is trader-paid fill fee data. It is separate from maker rebates and reward configuration.

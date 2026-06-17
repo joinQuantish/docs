@@ -1,0 +1,13 @@
+---
+title: "Global P&L Leaderboard"
+description: "Rank wallets by P&L, volume, profit, or win count."
+---
+
+Canonical reference: [Leaderboard](/data/leaderboard/global)
+
+```bash
+curl "https://api.polynode.dev/v3/leaderboard?sort=total&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use `sort=total`, `realized`, `volume`, `profit`, or `wins` depending on the leaderboard view.

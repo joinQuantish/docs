@@ -1,62 +1,24 @@
 ---
 title: "Tags and Categories Query Catalog"
-description: "Discover tags, list markets by tag, filter P&L by tags, and build category leaderboards."
+description: "Tag and category recipes for discovery, market lists, P&L filters, leaderboards, and builder filters."
 ---
 
-Use these recipes when building category pages, tag-specific trader screens, or filtered wallet analytics.
+Tags are market labels. In V3 market and token responses, the first tag is also the category used by category-style query filters.
 
-## List Tags
-
-Canonical reference: [Tags](/data/leaderboard/tags)
-
-```bash
-curl "https://api.polynode.dev/v3/tags?limit=10" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Markets by Tag
-
-Canonical reference: [Tag Markets](/data/leaderboard/tag-markets)
-
-```bash
-curl "https://api.polynode.dev/v3/tags/ufc?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Leaderboard by Tag
-
-Canonical reference: [Tag Leaderboard](/data/leaderboard/tag-leaderboard)
-
-```bash
-curl "https://api.polynode.dev/v3/tags/ufc/leaderboard?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Wallet P&L by Tag
-
-Canonical reference: [Wallet P&L](/data/wallets/pnl)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl?tags=crypto" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Builder Trades by Tag
-
-Canonical reference: [Builder Trades](/data/builders/trades)
-
-```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&tag_slug=sports&limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Builder Trades by Category
-
-```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&category=Sports&limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-<Note>
-Tag path values are case-insensitive. URL hyphens are converted to spaces, so `us-election` resolves to `US Election`. Categories use the first market tag, which is the same category signal returned by the V3 market and position surfaces.
-</Note>
+<CardGroup cols={2}>
+  <Card title="List Tags" href="/data/query-catalog/markets/tags">
+    Discover available tag values.
+  </Card>
+  <Card title="Markets by Tag" href="/data/query-catalog/markets/tags">
+    List markets under a tag.
+  </Card>
+  <Card title="Leaderboard by Tag" href="/data/query-catalog/pnl/tag-leaderboard">
+    Rank wallets inside a tag/category.
+  </Card>
+  <Card title="Wallet P&L by Tag" href="/data/query-catalog/pnl/wallet-by-tag">
+    Filter wallet P&L to a tag/category.
+  </Card>
+  <Card title="Builder Trades by Tag or Category" href="/data/query-catalog/builders/trades-by-tag-category">
+    Filter builder-attributed trades by tag/category on an indexed market, condition, or token scope.
+  </Card>
+</CardGroup>

@@ -1,0 +1,13 @@
+---
+title: "Builder Trades by Side and Size"
+description: "Filter builder-attributed trades by side and minimum amount."
+---
+
+Canonical reference: [Builder Trades](/data/builders/trades)
+
+```bash
+curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?side=buy&min_amount=1000000&limit=10" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use `side=buy` or `side=sell`. `min_amount` is useful for large-trade filters.

@@ -1,0 +1,13 @@
+---
+title: "Builder Leaderboard"
+description: "Rank builders by fills, volume, fees, makers, or takers."
+---
+
+Canonical reference: [Builder Leaderboard](/data/builders/list)
+
+```bash
+curl "https://api.polynode.dev/v3/builders?sort=fees&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Sort options include `fills`, `volume`, `fees`, `makers`, and `takers`.

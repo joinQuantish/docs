@@ -1,0 +1,13 @@
+---
+title: "All Trades"
+description: "Browse the global Polymarket trade feed."
+---
+
+Canonical reference: [Global Trades](/data/global/trades)
+
+```bash
+curl "https://api.polynode.dev/v3/trades?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use `after`, `before`, `limit`, `offset`, `order`, and `min_amount` to page and filter the feed.

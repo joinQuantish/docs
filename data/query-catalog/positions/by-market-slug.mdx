@@ -1,0 +1,13 @@
+---
+title: "Positions by Market Slug"
+description: "Get holders for a market URL slug."
+---
+
+Canonical reference: [Market by Slug](/data/markets/by-slug)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/slug/dota2-tundra-xtreme-2026-05-22-game1/positions?sort=amount&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use this when your app stores or receives Polymarket slugs.

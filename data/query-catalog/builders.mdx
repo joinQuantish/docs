@@ -1,63 +1,27 @@
 ---
 title: "Builders Query Catalog"
-description: "Builder rankings, builder profiles, and builder-attributed trade filters."
+description: "Builder recipes for rankings, profiles, fee sorting, attributed trades, and filtered builder feeds."
 ---
 
-Use these recipes for builder dashboards, attribution analytics, and builder-specific trade feeds.
+Use these recipes when building builder dashboards, attribution analytics, or builder-specific trade feeds.
 
-## Builder Leaderboard
-
-Canonical reference: [Builder Leaderboard](/data/builders/list)
-
-```bash
-curl "https://api.polynode.dev/v3/builders?sort=fees&limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-Sort options: `fills`, `volume`, `fees`, `makers`, `takers`.
-
-## Builder Detail
-
-Canonical reference: [Builder Detail](/data/builders/detail)
-
-```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Builder Trades
-
-Canonical reference: [Builder Trades](/data/builders/trades)
-
-```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Builder Trades by Market
-
-```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Builder Trades by Tag or Category
-
-```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&tag_slug=sports&limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&category=Sports&limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-Builder categories are derived from the first market tag. Pair broad `tag_slug` or `category` filters with `market_slug`, `condition_id`, or `token_id` for the indexed path.
-
-## Builder Trades by Side and Size
-
-```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?side=buy&min_amount=1000000&limit=10" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
+<CardGroup cols={2}>
+  <Card title="Builder Leaderboard" href="/data/query-catalog/builders/leaderboard">
+    Rank builders by fills, volume, fees, makers, or takers.
+  </Card>
+  <Card title="Builder Detail" href="/data/query-catalog/builders/detail">
+    Stats and public profile metadata for one builder.
+  </Card>
+  <Card title="Builder Trades" href="/data/query-catalog/builders/trades">
+    Trades attributed to one builder code.
+  </Card>
+  <Card title="Builder Trades by Market" href="/data/query-catalog/builders/trades-by-market">
+    Builder-attributed trades inside one market.
+  </Card>
+  <Card title="Builder Trades by Tag or Category" href="/data/query-catalog/builders/trades-by-tag-category">
+    Indexed builder tag/category filters paired with market, condition, or token filters.
+  </Card>
+  <Card title="Builder Trades by Side and Size" href="/data/query-catalog/builders/trades-by-side-size">
+    Buy/sell and amount filters for builder trades.
+  </Card>
+</CardGroup>

@@ -1,0 +1,13 @@
+---
+title: "Unified Wallet Activity"
+description: "Get non-trade wallet activity in one feed."
+---
+
+Canonical reference: [Wallet Activity](/data/wallets/activity)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/activity?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+This feed includes split, merge, redemption, and neg-risk conversion activity.

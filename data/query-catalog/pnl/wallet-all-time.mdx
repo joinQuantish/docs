@@ -1,0 +1,13 @@
+---
+title: "Wallet All-Time P&L"
+description: "Get recovered all-time wallet P&L."
+---
+
+Canonical reference: [Wallet P&L](/data/wallets/pnl)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+The response includes realized P&L, unrealized P&L, total P&L, gross profit, gross loss, wins, losses, open positions, and volume.

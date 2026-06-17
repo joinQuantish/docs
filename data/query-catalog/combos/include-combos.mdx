@@ -1,0 +1,21 @@
+---
+title: "Include Combos in Wallet Views"
+description: "Add combo branches to standard wallet P&L, positions, and trades."
+---
+
+Canonical reference: [Combos Overview](/data/combos/overview)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/pnl?include_combos=true" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/positions?include_combos=true&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/trades?include_combos=true&limit=10" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```

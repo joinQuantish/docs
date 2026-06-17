@@ -1,0 +1,18 @@
+---
+title: "Wallet Rebates and Rewards"
+description: "Query maker rebates and wallet reward surfaces."
+---
+
+Canonical references: [Wallet Maker Rebates](/data/wallets/rebates), [Reward Markets](/data/rewards/markets)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x8ecb4b228e07b6ddc58a32997093032a6907b8f6/rebates" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash
+curl "https://api.polynode.dev/v3/rewards/markets" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Rebates, rewards, and fill fees are distinct accounting surfaces.

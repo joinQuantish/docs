@@ -1,0 +1,13 @@
+---
+title: "Trades by Wallet"
+description: "Get trades where a wallet participated as maker or taker."
+---
+
+Canonical reference: [Wallet Trades](/data/wallets/trades)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/trades?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Useful filters include `after`, `before`, `side`, `condition_id`, `token_id`, `market_slug`, `group_by=order_hash`, and `include_combos=true`.

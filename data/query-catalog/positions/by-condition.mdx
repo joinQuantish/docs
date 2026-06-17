@@ -1,0 +1,13 @@
+---
+title: "Positions by Condition"
+description: "Get holders across all outcomes in one market condition."
+---
+
+Canonical reference: [Market Positions by Condition](/data/markets/condition-positions)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/condition/0x97269cbb95bd572b3dde34cdd619be278c8f13ba5e43e2e6c2d8639411128a86/positions?sort=amount&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use condition-level positions when a market has multiple outcome tokens and you want the full holder table.

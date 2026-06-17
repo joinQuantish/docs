@@ -1,70 +1,30 @@
 ---
 title: "Combos Query Catalog"
-description: "Combo markets, combo wallet summaries, combo positions, combo trades, and combo lifecycle activity."
+description: "Combo recipes for markets, activity, wallet summaries, combo positions, combo trades, and combined wallet views."
 ---
 
-Use these recipes when building combo-specific market pages or wallet views.
+Use these recipes when building combo market explorers, combo wallet dashboards, or lifecycle activity feeds.
 
-## Combo Markets
-
-Canonical reference: [Combo Markets](/data/combos/markets)
-
-```bash
-curl "https://api.polynode.dev/v3/combos/markets?limit=10" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Wallet Combo Summary
-
-Canonical reference: [Wallet Combo Summary](/data/combos/wallet-summary)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/summary" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Wallet Combo Positions
-
-Canonical reference: [Wallet Combo Positions](/data/combos/wallet-positions)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/positions?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Wallet Combo Trades
-
-Canonical reference: [Wallet Combo Trades](/data/combos/wallet-trades)
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/trades?limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Combo Activity by Condition
-
-Canonical reference: [Combo Activity](/data/combos/activity)
-
-```bash
-curl "https://api.polynode.dev/v3/combos/activity?condition_id=0x0304bf1dd4cc027d46696a10e2c9543b870000000000000000000000000000&limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Combo Activity by Position
-
-```bash
-curl "https://api.polynode.dev/v3/combos/activity?position_id=1365324971809733613888061975454743817645520848902026045973515682587902738432&limit=1" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-## Include Combos in Wallet Endpoints
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/pnl?include_combos=true" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
-
-```bash
-curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/positions?include_combos=true&limit=10" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-```
+<CardGroup cols={2}>
+  <Card title="Combo Markets" href="/data/query-catalog/combos/markets">
+    List observed combo markets with leg metadata.
+  </Card>
+  <Card title="Combo Activity" href="/data/query-catalog/combos/activity">
+    Lifecycle activity by combo market, condition, position, or wallet.
+  </Card>
+  <Card title="Wallet Combo Summary" href="/data/query-catalog/combos/wallet-summary">
+    Combo-only P&L and position counts for one wallet.
+  </Card>
+  <Card title="Wallet Combo Positions" href="/data/query-catalog/combos/wallet-positions">
+    Combo positions for one wallet.
+  </Card>
+  <Card title="Wallet Combo Trades" href="/data/query-catalog/combos/wallet-trades">
+    Combo trades for one wallet.
+  </Card>
+  <Card title="Wallet Combo Activity" href="/data/query-catalog/combos/wallet-activity">
+    Combo lifecycle activity for one wallet.
+  </Card>
+  <Card title="Include Combos in Wallet Views" href="/data/query-catalog/combos/include-combos">
+    Add combo branches to standard wallet P&L, positions, and trades.
+  </Card>
+</CardGroup>

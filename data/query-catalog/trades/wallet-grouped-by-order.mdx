@@ -1,0 +1,13 @@
+---
+title: "Wallet Trades Grouped by Order"
+description: "Group wallet fills by order hash."
+---
+
+Canonical reference: [Wallet Trades](/data/wallets/trades)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/trades?group_by=order_hash&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use this for order-level analytics where multiple fills share the same order hash.

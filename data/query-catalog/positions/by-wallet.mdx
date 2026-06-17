@@ -1,0 +1,13 @@
+---
+title: "Positions by Wallet"
+description: "Get all standard positions for one wallet."
+---
+
+Canonical reference: [Wallet Positions](/data/wallets/positions)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/positions?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use this for wallet position tables with market context, current prices, unrealized P&L, and settlement status.

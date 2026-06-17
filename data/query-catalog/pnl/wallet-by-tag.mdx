@@ -1,0 +1,13 @@
+---
+title: "Wallet P&L by Tag"
+description: "Filter wallet P&L to a tag or category."
+---
+
+Canonical reference: [Wallet P&L](/data/wallets/pnl)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/pnl?tags=sports" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use comma-separated `tags` for multiple tags. `tag_slug` is also accepted as an alias for single-tag filters.

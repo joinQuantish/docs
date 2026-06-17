@@ -1,0 +1,13 @@
+---
+title: "Trades by Market Slug"
+description: "Get trades for all outcome tokens in one market slug."
+---
+
+Canonical reference: [Market by Slug](/data/markets/by-slug)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/slug/dota2-tundra-xtreme-2026-05-22-game1/trades?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use this when your application works from Polymarket URLs or slugs instead of token IDs.

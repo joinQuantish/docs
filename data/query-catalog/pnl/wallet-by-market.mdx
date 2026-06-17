@@ -1,0 +1,13 @@
+---
+title: "Wallet P&L by Market"
+description: "Filter wallet P&L to one condition ID or market slug."
+---
+
+Canonical reference: [Wallet P&L](/data/wallets/pnl)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/pnl?market=0x97269cbb95bd572b3dde34cdd619be278c8f13ba5e43e2e6c2d8639411128a86" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use `market` for a condition ID, or `market_slug` for a Polymarket slug.

@@ -1,0 +1,16 @@
+---
+title: "Combo Wallet Trades"
+description: "Get combo-only wallet trades or include combo trades in the standard wallet trade view."
+---
+
+Canonical references: [Wallet Combo Trades](/data/combos/wallet-trades), [Wallet Trades](/data/wallets/trades)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/trades?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/trades?include_combos=true&limit=10" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
