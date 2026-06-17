@@ -121,6 +121,20 @@
             ]
           },
           {
+            "group": "Query Catalog",
+            "root": "data/query-catalog/overview",
+            "pages": [
+              "data/query-catalog/trades",
+              "data/query-catalog/positions",
+              "data/query-catalog/pnl",
+              "data/query-catalog/markets",
+              "data/query-catalog/wallet-activity",
+              "data/query-catalog/builders",
+              "data/query-catalog/tags-categories",
+              "data/query-catalog/combos"
+            ]
+          },
+          {
             "group": "Wallet P&L",
             "pages": [
               "api-reference/wallets/resolve",
@@ -143,6 +157,18 @@
               "data/wallets/merges",
               "data/wallets/nrc",
               "data/wallets/activity"
+            ]
+          },
+          {
+            "group": "Fees",
+            "root": "data/fees/overview",
+            "pages": [
+              "data/fees/wallet-fees-paid",
+              "data/fees/global-fees",
+              "data/fees/fees-by-receiver",
+              "data/fees/builder-fees",
+              "data/fees/maker-rebates",
+              "data/fees/reward-market-configs"
             ]
           },
           {

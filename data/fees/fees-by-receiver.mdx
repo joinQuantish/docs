@@ -1,0 +1,28 @@
+---
+title: "Fees by Receiver"
+description: "Fetch fee charged events received by one address."
+---
+
+Use this when you know the receiver address and want only fee events paid to that receiver.
+
+Canonical endpoint reference: [Fee Events](/data/global/fees).
+
+## Query
+
+```bash
+curl "https://api.polynode.dev/v3/fees/0x115f48dc2a731aa16251c6d6e1befc42f92accc9?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Filters
+
+| Parameter | Purpose |
+|---|---|
+| `after` | Start timestamp |
+| `before` | End timestamp |
+| `limit` | Page size, max 300 |
+| `offset` | Pagination offset |
+
+## Returned Data
+
+Rows match the global fee event shape, with the receiver implied by the path.

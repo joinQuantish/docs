@@ -145,9 +145,10 @@ curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?side=sell&limit=
 
 ```bash
 curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&tag_slug=sports&limit=10"
+curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&category=Sports&limit=10"
 ```
 
-Broad `category` and `tag_slug` filters can be too large to run directly. Add `market_slug`, `condition_id`, `token_id`, or time bounds to narrow the request.
+Builder categories are derived from the first market tag. Broad `category` and `tag_slug` filters can be too large to run directly; add `market_slug`, `condition_id`, or `token_id` to use the indexed intersection path.
 
 ```json
 {

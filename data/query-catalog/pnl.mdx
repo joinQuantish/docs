@@ -1,0 +1,84 @@
+---
+title: "P&L Query Catalog"
+description: "Wallet P&L, time windows, tag filters, market filters, leaderboards, batch reads, and P&L event series."
+---
+
+Use these recipes for wallet dashboards, trader rankings, category leaderboards, and time-windowed P&L charts.
+
+## Wallet All-Time P&L
+
+Canonical reference: [Wallet P&L](/data/wallets/pnl)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Returns realized, unrealized, total P&L, gross profit, gross loss, volume, wins, losses, and position counts.
+
+## Wallet Time-Windowed P&L
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl?period=30d&include_unrealized=true" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Supported time-window controls: `period=1d|7d|30d|1y`, `after`, `before`.
+
+## Wallet P&L by Tag
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl?tags=crypto" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use comma-separated tag slugs for multiple tags, for example `tags=politics,crypto`.
+
+## Wallet P&L by Market Condition
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl?market=0x4f05dbc6273b89aed46bb79a961c1d8771c01925d92d439e9a81fa6241900661" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Wallet P&L Event Series
+
+Canonical reference: [Wallet P&L Time Series](/data/wallets/pnl-events)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl/events?period=30d&group=day&limit=10" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Batch Wallet P&L
+
+Canonical reference: [Batch Wallet P&L](/data/wallets/batch)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/batch" \
+  -H "x-api-key: $POLYNODE_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"wallets":["0x56687bf447db6ffa42ffe2204a05edaa20f55839","0x63ce342161250d705dc0b16df89036c8e5f9ba9a"]}'
+```
+
+## Global P&L Leaderboard
+
+Canonical reference: [Leaderboard](/data/leaderboard/global)
+
+```bash
+curl "https://api.polynode.dev/v3/leaderboard?sort=total&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Sort options: `total`, `realized`, `profit`, `volume`, `wins`.
+
+## Tag P&L Leaderboard
+
+Canonical reference: [Tag Leaderboard](/data/leaderboard/tag-leaderboard)
+
+```bash
+curl "https://api.polynode.dev/v3/tags/ufc/leaderboard?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+For very broad tags, use the global leaderboard or a narrower tag.

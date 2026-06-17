@@ -1,0 +1,48 @@
+---
+title: "Query Catalog"
+description: "Intent-based catalog of the most useful PolyNode V3 query shapes."
+---
+
+The canonical API reference is organized by endpoint. This catalog is organized by what you are trying to build: trade feeds, wallet dashboards, P&L screens, market pages, fee accounting, builder analytics, and combo views.
+
+<CardGroup cols={2}>
+  <Card title="Trades" icon="arrow-right-left" href="/data/query-catalog/trades">
+    Wallet trades, market trades, builder trades, grouped orders, time windows, and combo trade branches.
+  </Card>
+  <Card title="Positions" icon="layers" href="/data/query-catalog/positions">
+    Wallet positions, global holders, market holder lists, current size filters, and combo positions.
+  </Card>
+  <Card title="P&L" icon="chart-line" href="/data/query-catalog/pnl">
+    Wallet P&L, time windows, tag filters, leaderboard rankings, and batch wallet reads.
+  </Card>
+  <Card title="Markets" icon="search" href="/data/query-catalog/markets">
+    Search, condition lookup, slug lookup, tags, token price, and resolution data.
+  </Card>
+  <Card title="Wallet Activity" icon="history" href="/data/query-catalog/wallet-activity">
+    Splits, merges, redemptions, neg-risk conversions, PolyUSD flows, fees, and unified activity.
+  </Card>
+  <Card title="Fees" icon="receipt" href="/data/fees/overview">
+    Trader-paid fees, fee receiver events, builder fees, maker rebates, and reward configs.
+  </Card>
+  <Card title="Builders" icon="blocks" href="/data/query-catalog/builders">
+    Builder leaderboards, builder details, and attributed trade filters.
+  </Card>
+  <Card title="Combos" icon="workflow" href="/data/query-catalog/combos">
+    Combo markets, combo wallet summaries, combo positions, combo trades, and lifecycle activity.
+  </Card>
+</CardGroup>
+
+## How to Use This Catalog
+
+Each page gives the query shape first and links back to the canonical endpoint page for full response schemas. The examples use live-tested curl shapes against `https://api.polynode.dev`.
+
+```bash
+export POLYNODE_API_KEY="..."
+```
+
+Then run any example with:
+
+```bash
+curl "https://api.polynode.dev/v3/trades?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```

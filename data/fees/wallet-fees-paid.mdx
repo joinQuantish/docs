@@ -1,0 +1,41 @@
+---
+title: "Wallet Fees Paid"
+description: "Query fee-bearing executed fills for one wallet."
+---
+
+Use this when you want the fills where a specific wallet paid a nonzero trader fee.
+
+Canonical endpoint reference: [Wallet Fees Paid](/data/wallets/fees-paid).
+
+## Query
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63ce342161250d705dc0b16df89036c8e5f9ba9a/fees-paid?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Filters
+
+| Parameter | Purpose |
+|---|---|
+| `after` | Start timestamp, Unix seconds |
+| `before` | End timestamp, Unix seconds |
+| `order` | `asc` or `desc` |
+| `limit` | Page size, max 300 |
+| `offset` | Pagination offset |
+
+## Returned Data
+
+The response includes a `fees` array with the same market-enriched fill fields as wallet trades, plus:
+
+| Field | Meaning |
+|---|---|
+| `fee` | Fee in USD |
+| `fee_paid` | Same value as `fee`, named for fee-specific summaries |
+| `fee_paid_raw` | Raw 6-decimal amount |
+| `page_total_fees_paid` | Sum for the returned page only |
+| `fee_semantics` | Reminder that this is trader-paid fill fees |
+
+<Note>
+`page_total_fees_paid` is page-scoped. Page through the endpoint to build totals over a full history or a large time range.
+</Note>

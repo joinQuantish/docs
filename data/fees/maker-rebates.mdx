@@ -1,0 +1,28 @@
+---
+title: "Maker Rebates"
+description: "Query Polymarket-reported maker rebate records for one maker/date."
+---
+
+Maker rebates are Polymarket accounting credits. They are not the same thing as trader-paid fill fees.
+
+Canonical endpoint reference: [Wallet Maker Rebates](/data/wallets/rebates).
+
+## Query
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63ce342161250d705dc0b16df89036c8e5f9ba9a/rebates" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Optional Date
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63ce342161250d705dc0b16df89036c8e5f9ba9a/rebates?date=2026-06-17" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Notes
+
+- Rebate lookups are keyed by CLOB maker/signing address.
+- Passing a Safe or proxy wallet can return an empty `rebates` array with a hint.
+- This endpoint can return zero rows for a valid wallet/date.

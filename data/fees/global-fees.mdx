@@ -1,0 +1,28 @@
+---
+title: "Global Fee Events"
+description: "Browse fee charged events across Polymarket."
+---
+
+Use this when you want the global stream of fee charged events rather than wallet-owned fills.
+
+Canonical endpoint reference: [Fee Events](/data/global/fees).
+
+## Query
+
+```bash
+curl "https://api.polynode.dev/v3/fees?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Filters
+
+| Parameter | Purpose |
+|---|---|
+| `after` | Start timestamp |
+| `before` | End timestamp |
+| `limit` | Page size, max 300 |
+| `offset` | Pagination offset |
+
+## Returned Data
+
+Rows include the fee receiver, raw amount, transaction hash, and timestamp. Amounts are raw 6-decimal USDC values unless a page says otherwise.

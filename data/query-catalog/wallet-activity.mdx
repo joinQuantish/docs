@@ -1,0 +1,73 @@
+---
+title: "Wallet Activity Query Catalog"
+description: "Wallet activity feeds for splits, merges, neg-risk conversions, redemptions, PolyUSD flows, and fees."
+---
+
+Use these recipes when building wallet timelines, accounting views, or conditional-token activity explorers.
+
+## Unified Non-Trade Activity
+
+Canonical reference: [Wallet Activity](/data/wallets/activity)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/activity?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+This returns splits, merges, neg-risk conversions, and redemptions in one feed.
+
+## Splits
+
+Canonical reference: [Wallet Splits](/data/wallets/splits)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/splits?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Merges
+
+Canonical reference: [Wallet Merges](/data/wallets/merges)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/merges?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Redemptions
+
+Canonical reference: [Wallet Redemptions](/data/wallets/redemptions)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/redemptions?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Neg-Risk Conversions
+
+Canonical reference: [Wallet NRC](/data/wallets/nrc)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/nrc?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## PolyUSD Flows
+
+Canonical reference: [Wallet PolyUSD Flows](/data/wallets/polyusd-flows)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/polyusd-flows?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Wallet Fees
+
+Canonical reference: [Wallet Fees Paid](/data/wallets/fees-paid)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63ce342161250d705dc0b16df89036c8e5f9ba9a/fees-paid?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Every wallet activity endpoint accepts `limit` and `offset`; event-specific feeds also accept `after` and `before`.

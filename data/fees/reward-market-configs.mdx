@@ -1,0 +1,36 @@
+---
+title: "Reward Market Configs"
+description: "Query public Polymarket reward-market configuration."
+---
+
+Reward market configuration describes markets with reward programs. It is not a per-wallet earned rewards ledger.
+
+Canonical endpoint references:
+
+- [Reward Markets](/data/rewards/markets)
+- [Reward Market Detail](/data/rewards/market)
+
+## List Reward Markets
+
+```bash
+curl "https://api.polynode.dev/v3/rewards/markets" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## One Condition
+
+```bash
+curl "https://api.polynode.dev/v3/rewards/markets/0x0001cb8c0b39aeb614ab9a43867595317f06ede9c011661513065c638fbbefda" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Filters
+
+| Parameter | Purpose |
+|---|---|
+| `sponsored` | Filter to sponsored reward markets |
+| `next_cursor` | Provider cursor pagination |
+
+<Note>
+Use this for public market reward configuration. Do not treat it as arbitrary-wallet earned LP rewards.
+</Note>

@@ -1,0 +1,80 @@
+---
+title: "Positions Query Catalog"
+description: "Wallet, global, market, condition, slug, holder, size, status, and combo position query shapes."
+---
+
+Use these recipes for holder lists, portfolio pages, top-position screens, market participant tables, and P&L breakdowns.
+
+## Positions by Wallet
+
+Canonical reference: [Wallet Positions](/data/wallets/positions)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/positions?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Useful filters: `status`, `sort`, `order`, `condition_id`, `market_slug`, `min_size`, `include_combos`, `limit`, `offset`.
+
+## Open Wallet Positions
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/positions?status=open&limit=10" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Wallet lifecycle statuses are `open`, `closed`, `redeemable`, and `redeemed`.
+
+## Global Positions
+
+Canonical reference: [Global Positions](/data/global/positions)
+
+```bash
+curl "https://api.polynode.dev/v3/positions?status=open&sort=size&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Useful filters: `status`, `sort=pnl|size|volume`, `token_id`, `condition_id`, `market_slug`, `min_size`, `limit`, `offset`.
+
+## Positions by Market Token
+
+Canonical reference: [Market Positions](/data/markets/positions)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/75783394880030392863380883800697645018418815910449662777195626260206142035810/positions?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Positions by Condition
+
+Canonical reference: [Condition Positions](/data/markets/condition-positions)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/condition/0x4f05dbc6273b89aed46bb79a961c1d8771c01925d92d439e9a81fa6241900661/positions?sort=amount&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Positions by Market Slug
+
+Canonical reference: [Market by Slug](/data/markets/by-slug)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/slug/dota2-aur1-liquid-2026-05-13/positions?sort=realized_pnl&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Combo Positions
+
+Canonical reference: [Wallet Combo Positions](/data/combos/wallet-positions)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/positions?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+For a combined normal plus combo portfolio page:
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/positions?include_combos=true&limit=10" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```

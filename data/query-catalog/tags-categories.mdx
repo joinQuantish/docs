@@ -1,0 +1,62 @@
+---
+title: "Tags and Categories Query Catalog"
+description: "Discover tags, list markets by tag, filter P&L by tags, and build category leaderboards."
+---
+
+Use these recipes when building category pages, tag-specific trader screens, or filtered wallet analytics.
+
+## List Tags
+
+Canonical reference: [Tags](/data/leaderboard/tags)
+
+```bash
+curl "https://api.polynode.dev/v3/tags?limit=10" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Markets by Tag
+
+Canonical reference: [Tag Markets](/data/leaderboard/tag-markets)
+
+```bash
+curl "https://api.polynode.dev/v3/tags/ufc?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Leaderboard by Tag
+
+Canonical reference: [Tag Leaderboard](/data/leaderboard/tag-leaderboard)
+
+```bash
+curl "https://api.polynode.dev/v3/tags/ufc/leaderboard?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Wallet P&L by Tag
+
+Canonical reference: [Wallet P&L](/data/wallets/pnl)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55839/pnl?tags=crypto" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Builder Trades by Tag
+
+Canonical reference: [Builder Trades](/data/builders/trades)
+
+```bash
+curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&tag_slug=sports&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Builder Trades by Category
+
+```bash
+curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&category=Sports&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+<Note>
+Tag path values are case-insensitive. URL hyphens are converted to spaces, so `us-election` resolves to `US Election`. Categories use the first market tag, which is the same category signal returned by the V3 market and position surfaces.
+</Note>

@@ -1,0 +1,50 @@
+---
+title: "Fees Overview"
+description: "Where to query trader-paid fees, fee receiver events, builder-attributed fees, maker rebates, and reward market configuration."
+---
+
+PolyNode exposes fee data in a few different forms. Use this section when you know you need fee or rebate data but are not sure which endpoint matches the accounting question.
+
+<Note>
+Fees, rebates, rewards, and builder payouts are separate concepts. Trader-paid fees come from executed fills. Fee events show receiver-level on-chain fee charges. Maker rebates and reward configuration are Polymarket accounting surfaces. Builder rev share is paid off-chain and is not the same as `total_fees`.
+</Note>
+
+## Fee Surfaces
+
+| Need | Endpoint | Use this when |
+|---|---|---|
+| Wallet fee-bearing fills | `GET /v3/wallets/{address}/fees-paid` | You want trades where a wallet paid a nonzero fill fee |
+| Global fee events | `GET /v3/fees` | You want fee charged events across the platform |
+| Fees by receiver | `GET /v3/fees/{receiver}` | You want fee events received by one address |
+| Builder fee ranking | `GET /v3/builders?sort=fees` | You want builders ranked by fees generated on attributed fills |
+| Builder fee trades | `GET /v3/builders/{code}/trades` | You want the underlying attributed fills, including per-fill `fee` |
+| Maker rebates | `GET /v3/wallets/{address}/rebates` | You want Polymarket-reported maker rebates for one maker/date |
+| Reward configs | `GET /v3/rewards/markets` | You want public reward-market configuration, not wallet-earned rewards |
+
+## Quick Examples
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63ce342161250d705dc0b16df89036c8e5f9ba9a/fees-paid?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash
+curl "https://api.polynode.dev/v3/fees?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash
+curl "https://api.polynode.dev/v3/builders?sort=fees&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Related Pages
+
+| Page | Canonical reference |
+|---|---|
+| [Wallet Fees Paid](/data/fees/wallet-fees-paid) | [Wallet Fees Paid](/data/wallets/fees-paid) |
+| [Global Fee Events](/data/fees/global-fees) | [Fee Events](/data/global/fees) |
+| [Fees by Receiver](/data/fees/fees-by-receiver) | [Fee Events](/data/global/fees) |
+| [Builder Fees](/data/fees/builder-fees) | [Builder Leaderboard](/data/builders/list) |
+| [Maker Rebates](/data/fees/maker-rebates) | [Wallet Maker Rebates](/data/wallets/rebates) |
+| [Reward Market Configs](/data/fees/reward-market-configs) | [Reward Markets](/data/rewards/markets) |

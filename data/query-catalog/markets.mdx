@@ -1,0 +1,85 @@
+---
+title: "Markets Query Catalog"
+description: "Search markets, resolve condition IDs, inspect token IDs, browse tags, and query market resolution data."
+---
+
+Use these recipes when building market search, market detail pages, price cards, category pages, or resolution monitors.
+
+## Search Markets
+
+Canonical reference: [Search Markets](/data/markets/search)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/search?q=bitcoin&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Market by Condition ID
+
+Canonical reference: [Market by Condition](/data/markets/by-condition)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/condition/0x4f05dbc6273b89aed46bb79a961c1d8771c01925d92d439e9a81fa6241900661" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Condition Detail
+
+Canonical reference: [Condition Detail](/data/global/conditions)
+
+```bash
+curl "https://api.polynode.dev/v3/conditions/0x4f05dbc6273b89aed46bb79a961c1d8771c01925d92d439e9a81fa6241900661" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Trades and Positions by Slug
+
+Canonical reference: [Market by Slug](/data/markets/by-slug)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/slug/dota2-aur1-liquid-2026-05-13/trades?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash
+curl "https://api.polynode.dev/v3/markets/slug/dota2-aur1-liquid-2026-05-13/positions?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Tags
+
+Canonical references:
+
+- [Tags](/data/leaderboard/tags)
+- [Tag Markets](/data/leaderboard/tag-markets)
+
+```bash
+curl "https://api.polynode.dev/v3/tags?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash
+curl "https://api.polynode.dev/v3/tags/ufc?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Token Price and Metadata
+
+Canonical references:
+
+- [Token Price](/data/markets/price)
+- [Token Info](/data/tokens/info)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/75783394880030392863380883800697645018418815910449662777195626260206142035810/price" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Market Resolutions
+
+Canonical reference: [Market Resolutions](/data/global/resolutions)
+
+```bash
+curl "https://api.polynode.dev/v3/resolutions?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```

@@ -1,0 +1,70 @@
+---
+title: "Combos Query Catalog"
+description: "Combo markets, combo wallet summaries, combo positions, combo trades, and combo lifecycle activity."
+---
+
+Use these recipes when building combo-specific market pages or wallet views.
+
+## Combo Markets
+
+Canonical reference: [Combo Markets](/data/combos/markets)
+
+```bash
+curl "https://api.polynode.dev/v3/combos/markets?limit=10" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Wallet Combo Summary
+
+Canonical reference: [Wallet Combo Summary](/data/combos/wallet-summary)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/summary" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Wallet Combo Positions
+
+Canonical reference: [Wallet Combo Positions](/data/combos/wallet-positions)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/positions?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Wallet Combo Trades
+
+Canonical reference: [Wallet Combo Trades](/data/combos/wallet-trades)
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/trades?limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Combo Activity by Condition
+
+Canonical reference: [Combo Activity](/data/combos/activity)
+
+```bash
+curl "https://api.polynode.dev/v3/combos/activity?condition_id=0x0304bf1dd4cc027d46696a10e2c9543b870000000000000000000000000000&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Combo Activity by Position
+
+```bash
+curl "https://api.polynode.dev/v3/combos/activity?position_id=1365324971809733613888061975454743817645520848902026045973515682587902738432&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Include Combos in Wallet Endpoints
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/pnl?include_combos=true" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/positions?include_combos=true&limit=10" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
