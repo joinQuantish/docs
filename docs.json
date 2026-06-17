@@ -122,6 +122,7 @@
           },
           {
             "group": "Query Catalog",
+            "tag": "Start Here",
             "root": "data/query-catalog/overview",
             "pages": [
               "data/query-catalog/trades",
@@ -214,8 +215,8 @@
           },
           {
             "group": "Fees",
-            "root": "data/fees/overview",
             "pages": [
+              "data/fees/overview",
               "data/fees/wallet-fees-paid",
               "data/fees/global-fees",
               "data/fees/fees-by-receiver",
