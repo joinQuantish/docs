@@ -1,0 +1,13 @@
+---
+title: "Market Candles"
+description: "Build OHLCV candles for a V3 market token, condition ID, or slug."
+---
+
+Canonical reference: [Market Candles](/data/markets/candles)
+
+```bash
+curl "https://api.polynode.dev/v3/markets/{token_id}/candles?resolution=5m&limit=120" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use this for V3 charting. Candles are built from trade fills and support `1m`, `5m`, `15m`, `1h`, `4h`, and `1d` buckets.

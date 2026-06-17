@@ -157,6 +157,7 @@
               "data/query-catalog/markets/by-slug",
               "data/query-catalog/markets/token-info",
               "data/query-catalog/markets/token-price",
+              "data/query-catalog/markets/candles",
               "data/query-catalog/markets/tags",
               "data/query-catalog/markets/resolutions",
               "data/query-catalog/wallet-activity",
@@ -252,6 +253,7 @@
               "data/markets/trades",
               "data/markets/positions",
               "data/markets/price",
+              "data/markets/candles",
               "data/markets/by-slug"
             ]
           },

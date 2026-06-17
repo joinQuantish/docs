@@ -1,0 +1,242 @@
+---
+title: "Market Candles"
+description: "Trade-built OHLCV candles for V3 Polymarket outcome tokens, condition IDs, and market slugs."
+---
+
+Build OHLCV candles from V3 Polymarket trade fills. Candles are bucketed by trade timestamp and include price, volume, VWAP, trade count, and first/last fill markers for each bucket.
+
+Use this endpoint for V3 charting when you already have an outcome token ID, condition ID, or market slug.
+
+## Endpoints
+
+```http
+GET /v3/markets/{token_id}/candles
+GET /v3/markets/condition/{condition_id}/candles
+GET /v3/markets/slug/{slug}/candles
+```
+
+The token route returns one candle series for one outcome token. The condition and slug routes resolve the market's outcome tokens and return a `series` array, one entry per outcome token. Pass `token_id` on the condition or slug route to return only one outcome.
+
+## Authentication
+
+```bash
+curl "https://api.polynode.dev/v3/markets/{token_id}/candles?resolution=5m&limit=120" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Query parameters
+
+| Parameter | Type | Default | Description |
+|---|---:|---:|---|
+| `resolution` | string | `1h` | Bucket size. One of `1m`, `5m`, `15m`, `1h`, `4h`, `1d`. |
+| `limit` | integer | `120` | Maximum number of candle buckets in the requested window. Clamped by resolution. |
+| `direction` | string | `before` | `before` returns the window ending at `anchor_ts` or now. `after` returns the window starting at `anchor_ts`. |
+| `anchor_ts` | integer | now | Unix timestamp in seconds. Required when `direction=after`. |
+| `start` | integer | -- | Explicit window start timestamp in seconds. Alias: `start_time`, `after`. |
+| `end` | integer | -- | Explicit window end timestamp in seconds. Alias: `end_time`, `before`. |
+| `order` | string | `asc` | Candle order. Use `desc` to return newest bucket first. |
+| `gap_fill` | boolean | `false` | When true, empty buckets are filled with flat carry-forward candles after a prior price exists. |
+| `token_id` | string | -- | Condition/slug routes only. Filters the resolved market to one outcome token. |
+
+Timestamp parameters are Unix seconds, not milliseconds. If you pass an explicit range, the range must fit inside the resolution's bucket limit.
+
+## Bucket limits
+
+`limit` is a candle-bucket count, not a trade count.
+
+| Resolution | Max candles per request |
+|---|---:|
+| `1m` | 120 |
+| `5m` | 180 |
+| `15m` | 240 |
+| `1h` | 300 |
+| `4h` | 360 |
+| `1d` | 500 |
+
+For more history, walk backward with `pagination.older_end_ts`:
+
+```bash
+# First page: latest 120 one-minute buckets
+curl "https://api.polynode.dev/v3/markets/$TOKEN_ID/candles?resolution=1m&limit=120" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+
+# Older page: use pagination.older_end_ts from the previous response
+curl "https://api.polynode.dev/v3/markets/$TOKEN_ID/candles?resolution=1m&limit=120&anchor_ts=$OLDER_END_TS" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Token route response
+
+```json
+{
+  "token_id": "7936379438884929999943146941289093559746194477224187754527972073168717543990",
+  "resolution": "1m",
+  "count": 1,
+  "candles": [
+    {
+      "time": 1781659920,
+      "time_unix": 1781659920,
+      "time_ms": 1781659920000,
+      "open": 0.525,
+      "high": 0.535,
+      "low": 0.515,
+      "close": 0.53,
+      "volume": 233.135659,
+      "volume_usd": 233.135659,
+      "volume_shares": 444.019955,
+      "volume_buy": 121.504,
+      "volume_sell": 111.631659,
+      "trades": 13,
+      "vwap": 0.52504954,
+      "first_trade_ts": 1781659922,
+      "last_trade_ts": 1781659978,
+      "first_block": 88620000,
+      "last_block": 88620030,
+      "first_log_index": 320,
+      "last_log_index": 881,
+      "gap_filled": false
+    }
+  ],
+  "question": "Spread: Argentina (-1.5)",
+  "slug": "fifwc-arg-alg-2026-06-16-spread-home-1pt5",
+  "outcome": "Argentina",
+  "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/soccer ball-bba4025f77.png",
+  "condition_id": "0x1eb724a708f3720c2b7ef63d7ffc7483ecc14deed6df2e7e9dc1dfa724a98bd6",
+  "outcome_index": 0,
+  "window": {
+    "start_ts": 1781652840,
+    "end_ts": 1781659981,
+    "first_bucket": 1781652840,
+    "last_bucket": 1781659980,
+    "duration_seconds": 7142,
+    "bucket_count": 120,
+    "resolution_seconds": 60,
+    "older_end_ts": 1781652839,
+    "newer_start_ts": 1781660040,
+    "has_older": true,
+    "has_newer": true
+  },
+  "pagination": {
+    "limit": 120,
+    "max_limit": 120,
+    "direction": "before",
+    "order": "asc",
+    "older_end_ts": 1781652839,
+    "newer_start_ts": 1781660040,
+    "has_more": true,
+    "has_older": true,
+    "has_newer": true
+  },
+  "gap_fill": false,
+  "elapsed_ms": 27
+}
+```
+
+Sparse markets can return `count: 0` and `candles: []` for a window with no trades. That is a valid empty chart window, not a missing market.
+
+## Condition and slug responses
+
+```bash
+curl "https://api.polynode.dev/v3/markets/condition/$CONDITION_ID/candles?resolution=5m&limit=2" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```json
+{
+  "condition_id": "0x1eb724a708f3720c2b7ef63d7ffc7483ecc14deed6df2e7e9dc1dfa724a98bd6",
+  "resolution": "5m",
+  "series_count": 2,
+  "series": [
+    {
+      "token_id": "7936379438884929999943146941289093559746194477224187754527972073168717543990",
+      "resolution": "5m",
+      "count": 0,
+      "candles": [],
+      "question": "Spread: Argentina (-1.5)",
+      "slug": "fifwc-arg-alg-2026-06-16-spread-home-1pt5",
+      "outcome": "Argentina",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/soccer ball-bba4025f77.png",
+      "condition_id": "0x1eb724a708f3720c2b7ef63d7ffc7483ecc14deed6df2e7e9dc1dfa724a98bd6",
+      "outcome_index": 0
+    }
+  ],
+  "window": {
+    "start_ts": 1781668800,
+    "end_ts": 1781669399,
+    "first_bucket": 1781668800,
+    "last_bucket": 1781669100,
+    "duration_seconds": 600,
+    "bucket_count": 2,
+    "resolution_seconds": 300,
+    "older_end_ts": 1781668799,
+    "newer_start_ts": 1781669400,
+    "has_older": true,
+    "has_newer": true
+  },
+  "pagination": {
+    "limit": 2,
+    "max_limit": 180,
+    "direction": "before",
+    "order": "asc",
+    "older_end_ts": 1781668799,
+    "newer_start_ts": 1781669400,
+    "has_more": true,
+    "has_older": true,
+    "has_newer": true
+  },
+  "gap_fill": false,
+  "elapsed_ms": 205
+}
+```
+
+For a single outcome from a condition or slug:
+
+```bash
+curl "https://api.polynode.dev/v3/markets/condition/$CONDITION_ID/candles?token_id=$TOKEN_ID&resolution=15m&limit=96" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+If a condition or slug resolves to more than 50 outcome tokens, pass `token_id` to request one outcome series.
+
+## Candle fields
+
+| Field | Type | Description |
+|---|---|---|
+| `time` | integer | Candle bucket start time in Unix seconds. |
+| `time_unix` | integer | Same as `time`. |
+| `time_ms` | integer | Candle bucket start time in Unix milliseconds for charting libraries. |
+| `open` | number | First trade price in the bucket. |
+| `high` | number | Highest trade price in the bucket. |
+| `low` | number | Lowest trade price in the bucket. |
+| `close` | number | Last trade price in the bucket. |
+| `volume` | number | Total USD volume in the bucket. Alias of `volume_usd`. |
+| `volume_usd` | number | Total USD volume in the bucket. |
+| `volume_shares` | number | Total outcome-share volume in the bucket. |
+| `volume_buy` | number | USD volume where the fill bought this outcome token. |
+| `volume_sell` | number | USD volume where the fill sold this outcome token. |
+| `trades` | integer | Number of fills in the bucket. |
+| `vwap` | number | Volume-weighted average price. |
+| `first_trade_ts` | integer or null | Timestamp of the first fill in the bucket. |
+| `last_trade_ts` | integer or null | Timestamp of the last fill in the bucket. |
+| `first_block` | integer or null | Polygon block of the first fill in the bucket. |
+| `last_block` | integer or null | Polygon block of the last fill in the bucket. |
+| `first_log_index` | integer or null | Log index of the first fill in the bucket. |
+| `last_log_index` | integer or null | Log index of the last fill in the bucket. |
+| `gap_filled` | boolean | `true` only for carry-forward buckets created by `gap_fill=true`. |
+
+## Errors and guards
+
+| Status | Condition |
+|---:|---|
+| `400` | Invalid `resolution`, invalid `direction`, invalid `order`, millisecond timestamp, range larger than the resolution limit, or `token_id` that does not belong to a condition/slug route. |
+| `404` | Unknown token, condition, or slug. |
+
+Unknown token IDs return:
+
+```json
+{
+  "error": "market token not found",
+  "token_id": "0",
+  "hint": "candles are available for Polymarket outcome token IDs, not collateral or arbitrary asset IDs"
+}
+```
