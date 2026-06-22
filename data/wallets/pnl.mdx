@@ -1,12 +1,16 @@
 ---
 title: "Wallet P&L"
 openapi: "GET /v3/wallets/{address}/pnl"
-description: "Get profit and loss for a wallet in USD. Supports time-windowed P&L with ?period=1d|7d|30d|1y and tag filtering."
+description: "Get profit and loss for a wallet in USD. Supports time-windowed P&L with ?period=1d|7d|30d|1y plus tag, category, market, event, and condition filters."
 ---
 
 Returns P&L data for a wallet in USD. Without a `period` parameter, returns all-time P&L. With `period`, `after`, or `before`, returns realized P&L for that time window.
 
 The two modes have different counting semantics: all-time `wins` and `losses` are position counts; time-windowed `wins`, `losses`, and `events` are realized P&L event counts. Do not compare the counts directly.
+
+<Note>
+Wallet P&L supports focused market filters such as `category`, `tags`/`tag_slug`, `market`/`market_slug`, `event_slug`, and `condition_id`. For leaderboard views, use one primary filter dimension per request.
+</Note>
 
 ## Request
 
@@ -21,8 +25,13 @@ GET /v3/wallets/{address}/pnl
 | `period` | string | -- | Time window: `1d`, `7d`, `30d`, `1y` |
 | `after` | integer | -- | Start timestamp (Unix seconds). Time-windowed queries clamp values below `1` to `1`. |
 | `before` | integer | -- | End timestamp (Unix seconds) |
+| `category` | string | -- | Filter to one market category, case-insensitive |
 | `tags` | string | -- | Comma-separated tag slugs to filter by, case-insensitive (e.g. `politics,crypto`, `nfl`, `Iran`) |
-| `market` | string | -- | Filter by condition_id |
+| `tag_slug` | string | -- | Alias for a single `tags` value |
+| `market` | string | -- | Filter by condition ID or market slug |
+| `market_slug` | string | -- | Filter by market slug |
+| `event_slug` | string | -- | Filter by parent event slug |
+| `condition_id` | string | -- | Filter by market condition ID |
 | `include_unrealized` | string | `false` | Set to `true` to include current unrealized P&L alongside the realized event-window result. Only applies to time-filtered queries. |
 | `include_combos` | boolean | `false` | Add combo position P&L to all-time wallet P&L. If the wallet has no combo exposure, the response remains 200 with a zero combo contribution. |
 
@@ -106,6 +115,15 @@ curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c
   "before": 1778726996,
   "elapsed_ms": 5902
 }
+```
+
+### Filtered P&L
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/pnl?category=crypto"
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/pnl?tag_slug=us-election&period=30d"
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/pnl?market_slug=will-donald-trump-win-the-popular-vote-in-the-2024-presidential-election"
+curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618ab8a/pnl?event_slug=presidential-election-popular-vote-winner-2024"
 ```
 
 ### 30-day P&L with unrealized

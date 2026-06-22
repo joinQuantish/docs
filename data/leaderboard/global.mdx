@@ -1,10 +1,14 @@
 ---
 title: "Leaderboard"
 openapi: "GET /v3/leaderboard"
-description: "Rank all Polymarket wallets by P&L, volume, profit, or win count. All amounts in USD."
+description: "Rank all Polymarket wallets by P&L, volume, profit, or win count. Supports one primary market filter dimension per request. All amounts in USD."
 ---
 
 Ranks wallets by realized P&L, total P&L (realized + unrealized), gross profit, volume, or win count. All monetary values are in USD.
+
+<Note>
+Leaderboard filters are designed around one primary dimension per request. Use one of `category`, `tags`/`tag_slug`, `market`/`market_slug`, `event_slug`, or `condition_id`. For compound analysis, run separate leaderboard calls or filter client-side.
+</Note>
 
 ## Request
 
@@ -16,8 +20,14 @@ GET /v3/leaderboard
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `sort` | string | `total` | Sort by: `total` (total P&L), `realized`, `profit`, `volume`, `wins` |
-| `tags` | string | -- | Filter by tag slugs (comma-separated) |
+| `sort` | string | `total` | Sort by: `total`, `total_pnl`, `realized`, `profit`, `loss`, `volume`, `wins`, `positions`, `unrealized` |
+| `category` | string | -- | Filter to one market category, case-insensitive |
+| `tags` | string | -- | Filter to one tag slug. Comma-separated multi-tag filters may be accepted for specific cases, but one tag is the recommended leaderboard shape. |
+| `tag_slug` | string | -- | Alias for a single `tags` value |
+| `market` | string | -- | Filter by condition ID or market slug |
+| `market_slug` | string | -- | Filter by market slug |
+| `event_slug` | string | -- | Filter by parent event slug |
+| `condition_id` | string | -- | Filter by market condition ID |
 | `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
@@ -25,6 +35,15 @@ GET /v3/leaderboard
 
 ```bash
 curl https://api.polynode.dev/v3/leaderboard?limit=2&sort=total
+```
+
+### Filter by one dimension
+
+```bash
+curl "https://api.polynode.dev/v3/leaderboard?category=crypto&limit=20"
+curl "https://api.polynode.dev/v3/leaderboard?tag_slug=us-election&limit=20"
+curl "https://api.polynode.dev/v3/leaderboard?market_slug=will-donald-trump-win-the-popular-vote-in-the-2024-presidential-election&limit=20"
+curl "https://api.polynode.dev/v3/leaderboard?event_slug=presidential-election-popular-vote-winner-2024&limit=20"
 ```
 
 ```json

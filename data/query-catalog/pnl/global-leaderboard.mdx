@@ -11,3 +11,15 @@ curl "https://api.polynode.dev/v3/leaderboard?sort=total&limit=1" \
 ```
 
 Use `sort=total`, `realized`, `volume`, `profit`, or `wins` depending on the leaderboard view.
+
+For filtered leaderboards, use one primary market dimension per request:
+
+```bash
+curl "https://api.polynode.dev/v3/leaderboard?category=crypto&sort=total&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+
+curl "https://api.polynode.dev/v3/leaderboard?tag_slug=us-election&sort=volume&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Supported dimensions include `category`, `tags`/`tag_slug`, `market`/`market_slug`, `event_slug`, and `condition_id`.

@@ -10,4 +10,14 @@ curl "https://api.polynode.dev/v3/tags/ufc/leaderboard?limit=1" \
   -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
-Use tag leaderboards for category pages, sport-specific rankings, or event-family rankings.
+Use direct tag leaderboards for niche tags, sport-specific pages, or event-family rankings.
+
+For broad tags/categories, prefer the projected global leaderboard filter:
+
+```bash
+curl "https://api.polynode.dev/v3/leaderboard?tags=crypto&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+
+curl "https://api.polynode.dev/v3/leaderboard?category=crypto&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
