@@ -7,6 +7,8 @@ Use this when you want the fills where a specific wallet paid a nonzero trader f
 
 Canonical endpoint reference: [Wallet Fees Paid](/data/wallets/fees-paid).
 
+For the exact all-time total, use [Wallet Summary](/data/wallets/summary) with `include_accounting_summary=true` and read `accounting_summary.fees_paid.amount`.
+
 ## Query
 
 ```bash
@@ -37,5 +39,5 @@ The response includes a `fees` array with the same market-enriched fill fields a
 | `fee_semantics` | Reminder that this is trader-paid fill fees |
 
 <Note>
-`page_total_fees_paid` is page-scoped. Page through the endpoint to build totals over a full history or a large time range.
+`page_total_fees_paid` is page-scoped. Use `GET /v3/wallets/{address}?include_accounting_summary=true` when you need the all-time total.
 </Note>

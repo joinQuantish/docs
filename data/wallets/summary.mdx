@@ -23,6 +23,7 @@ GET /v3/wallets/{address}
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `include_combos` | boolean | `false` | Add combo P&L and combo position counts to the all-time wallet summary. |
+| `include_accounting_summary` | boolean | `false` | Add the all-time wallet accounting summary, including exact trader-paid fees from indexed onchain fills. |
 
 ## Example
 
@@ -54,6 +55,61 @@ curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d1
     "position_count": 21492,
     "open_positions": 1495
   }
+}
+```
+
+### Summary including accounting
+
+Use this when you need the exact all-time fee summary without paging through raw fill rows.
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x7553e42ce1b37727b819dfe4bac495b3968f65ca?include_accounting_summary=true"
+```
+
+```json
+{
+  "address": "0x7553e42ce1b37727b819dfe4bac495b3968f65ca",
+  "net_realized_pnl": -138570.0369464795,
+  "gross_profit": 524921.0508558493,
+  "gross_loss": -671088.850081543,
+  "unrealized_pnl": -7597.762279214215,
+  "total_pnl": -146167.79922569369,
+  "position_count": 915,
+  "open_positions": 0,
+  "total_volume": 2718779.615141,
+  "accounting_summary": {
+    "available": true,
+    "loaded": true,
+    "has_order_filled_rows": true,
+    "source": "api.wallet_accounting_summary_current",
+    "fees_paid": {
+      "available": true,
+      "loaded": true,
+      "amount": 99973.115598,
+      "raw": "99973115598",
+      "fee_fill_count": 2984,
+      "order_owner_fill_count": 5122,
+      "first_fee_block": "84892414",
+      "last_fee_block": "88904629"
+    },
+    "maker_rebates": {
+      "available": false,
+      "loaded": false,
+      "status": "not_loaded",
+      "amount": null,
+      "raw": null
+    },
+    "rewards": {
+      "available": false,
+      "loaded": false,
+      "status": "not_loaded",
+      "amount": null,
+      "raw": null
+    },
+    "order_filled_through_block": "88978163",
+    "projector_status": "ready"
+  },
+  "elapsed_ms": 2
 }
 ```
 
@@ -89,3 +145,12 @@ curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d1
 | `open_positions` | integer | Positions with shares > 0 |
 | `total_volume` | number | Total volume traded (USD) |
 | `combo_pnl` | object | Present when `include_combos=true`; combo-only contribution to the wallet summary |
+| `accounting_summary` | object | Present when `include_accounting_summary=true`; all-time compact wallet accounting summary |
+| `accounting_summary.fees_paid.amount` | number | Exact all-time trader-paid fees in USD |
+| `accounting_summary.fees_paid.raw` | string | Exact all-time trader-paid fees in 6-decimal raw units |
+| `accounting_summary.fees_paid.fee_fill_count` | integer | Number of order-owner fills with a positive fee |
+| `accounting_summary.fees_paid.order_owner_fill_count` | integer | Number of indexed order-owner fills for the wallet |
+| `accounting_summary.maker_rebates.status` | string | Maker rebate projection status. `not_loaded` means do not treat the amount as zero. |
+| `accounting_summary.rewards.status` | string | Reward projection status. `not_loaded` means do not treat the amount as zero. |
+| `accounting_summary.order_filled_through_block` | string | Latest block covered by the order-filled accounting projector |
+| `accounting_summary.projector_status` | string | Current projector status |

@@ -13,6 +13,7 @@ Fees, rebates, rewards, and builder payouts are separate concepts. Trader-paid f
 
 | Need | Endpoint | Use this when |
 |---|---|---|
+| Wallet all-time fee summary | `GET /v3/wallets/{address}?include_accounting_summary=true` | You want the exact all-time trader-paid fee total without paging raw fills |
 | Wallet fee-bearing fills | `GET /v3/wallets/{address}/fees-paid` | You want trades where a wallet paid a nonzero fill fee |
 | Global fee events | `GET /v3/fees` | You want fee charged events across the platform |
 | Fees by receiver | `GET /v3/fees/{receiver}` | You want fee events received by one address |
@@ -22,6 +23,11 @@ Fees, rebates, rewards, and builder payouts are separate concepts. Trader-paid f
 | Reward configs | `GET /v3/rewards/markets` | You want public reward-market configuration, not wallet-earned rewards |
 
 ## Quick Examples
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63ce342161250d705dc0b16df89036c8e5f9ba9a?include_accounting_summary=true" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
 
 ```bash
 curl "https://api.polynode.dev/v3/wallets/0x63ce342161250d705dc0b16df89036c8e5f9ba9a/fees-paid?limit=1" \
@@ -42,6 +48,7 @@ curl "https://api.polynode.dev/v3/builders?sort=fees&limit=1" \
 
 | Page | Canonical reference |
 |---|---|
+| [Wallet Summary](/data/wallets/summary) | [Wallet Summary](/data/wallets/summary) |
 | [Wallet Fees Paid](/data/fees/wallet-fees-paid) | [Wallet Fees Paid](/data/wallets/fees-paid) |
 | [Global Fee Events](/data/fees/global-fees) | [Fee Events](/data/global/fees) |
 | [Fees by Receiver](/data/fees/fees-by-receiver) | [Fee Events](/data/global/fees) |

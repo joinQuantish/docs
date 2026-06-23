@@ -5,6 +5,21 @@ description: "All notable changes to the PolyNode API and SDKs."
 icon: "clock-rotate-left"
 ---
 
+## 2026-06-22 - V3 wallet accounting summary
+
+Added an optional all-time accounting summary to the V3 wallet summary endpoint.
+
+What's new:
+
+- `GET /v3/wallets/{address}?include_accounting_summary=true` now returns `accounting_summary`.
+- `accounting_summary.fees_paid.amount` is the exact all-time trader-paid fee total from indexed onchain `OrderFilled` rows.
+- `accounting_summary.fees_paid.raw` exposes the exact 6-decimal raw amount.
+- Maker rebates and rewards are represented with explicit status fields. `not_loaded` means the source projection has not been loaded; clients should not treat those values as zero.
+
+Existing default responses are unchanged. The accounting object is included only when requested.
+
+---
+
 ## 2026-06-12 - Faster V3 builder trade time filters
 
 Improved reliability and latency for time-filtered builder trade lookups.

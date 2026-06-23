@@ -9,7 +9,7 @@ Returns fills where the wallet was the order owner and `OrderFilled.fee` was gre
 This is fees paid by the trader on executed order fills. It is not the same as maker rebates, LP rewards, or builder payouts.
 
 <Note>
-`page_total_fees_paid` is the sum for the returned page only. Page through the result set to calculate totals across a larger date range.
+`page_total_fees_paid` is the sum for the returned page only. For the exact all-time fee total, use `GET /v3/wallets/{address}?include_accounting_summary=true` and read `accounting_summary.fees_paid.amount`.
 </Note>
 
 ## Request
@@ -77,7 +77,7 @@ curl "https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510
 | `has_more` | boolean | Whether another page exists |
 | `offset` | integer | Offset used for this page |
 | `limit` | integer | Limit used for this page |
-| `page_total_fees_paid` | number | Sum of `fee_paid` for this page only |
+| `page_total_fees_paid` | number | Sum of `fee_paid` for this page only. Use wallet summary `include_accounting_summary=true` for the all-time total. |
 | `page_total_fees_paid_raw_note` | string | Reminder that the total is page-scoped |
 | `fee_semantics` | string | Attribution note |
 | `after` | string | Applied start timestamp |
