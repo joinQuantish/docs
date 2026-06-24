@@ -5,6 +5,9 @@ description: "Get all redemption events for a wallet. Redemptions occur when a w
 ---
 
 Returns redemption events where the wallet claimed payouts from resolved market conditions.
+Rows are enriched with market and resolution metadata when available so clients can identify
+the winning outcome without a second market lookup. The original response fields remain
+present and unchanged.
 
 ## Request
 
@@ -31,11 +34,31 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
 {
   "data": [
     {
-      "id": "0x6db3f0fd9cccd58d4bd59eb5816cc2823f62a85c343e5ff6d1dd177dfb128a6e_0x109",
-      "timestamp": "1731664609",
-      "condition": "0x26ee82bee2493a302d21283cb578f7e2fff2dd15743854f53034d12420863b55",
-      "payout": "120469388830",
-      "index_sets": ["1", "2"]
+      "id": "0x6173027f191670852e049df6ded0b353069a531f5ea647220bdcb64ab634348e_cac",
+      "timestamp": "1776731610",
+      "condition": "0x19be7c46e28b61455ec766679ee1122fba39eb0d5c85d0878e4b203ab8b18406",
+      "payout": "4078910900",
+      "index_sets": ["1", "2"],
+      "condition_id": "0x19be7c46e28b61455ec766679ee1122fba39eb0d5c85d0878e4b203ab8b18406",
+      "payout_e6": "4078910900",
+      "payout_usdc": 4078.9109,
+      "market_title": "Will John Ternus be the next CEO of Apple?",
+      "market_slug": "will-john-ternus-be-the-next-ceo-of-apple",
+      "market_image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/next-ceo-of-apple-leUfWn-_USCO.jpg",
+      "event_title": "Next CEO of Apple?",
+      "event_slug": "next-ceo-of-apple",
+      "neg_risk": true,
+      "token_ids": [
+        "92311850691119989700494243314039291208974625045063458908184129720108035114164",
+        "14954786464025422340381119759227166561985048022429770302259194276382916274663"
+      ],
+      "outcomes": ["Yes", "No"],
+      "payouts": [1.0, 0.0],
+      "outcome_prices": [1.0, 0.0],
+      "winning_outcome_index": 0,
+      "winning_outcome": "Yes",
+      "winning_token_id": "92311850691119989700494243314039291208974625045063458908184129720108035114164",
+      "resolved_at": "2026-05-28T04:49:07.589252+00:00"
     }
   ],
   "rows_returned": 1,
@@ -51,5 +74,22 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
 | `id` | string | Redemption event ID |
 | `timestamp` | string | Unix timestamp |
 | `condition` | string | Market condition ID that was redeemed |
-| `payout` | string | USDC payout amount (6-decimal) |
+| `payout` | string | Exact raw payout amount in six-decimal integer units. Preserved for backwards compatibility. |
 | `index_sets` | array | Which outcome index sets were redeemed |
+| `condition_id` | string | Alias of `condition`, matching the WebSocket redemption payload naming. |
+| `payout_e6` | string | Alias of `payout`; exact six-decimal payout amount for accounting-safe comparisons. |
+| `payout_usdc` | number | Human-readable payout amount in USDC. |
+| `market_title` | string \| null | Human-readable market question. |
+| `market_slug` | string \| null | Market slug. |
+| `market_image` | string \| null | Market image URL. |
+| `event_title` | string \| null | Parent event title, when available. |
+| `event_slug` | string \| null | Parent event slug, when available. |
+| `neg_risk` | boolean \| null | Whether the market uses Polymarket negative-risk settlement. |
+| `token_ids` | string[] \| null | Ordered market token IDs. Same order as `outcomes`, `payouts`, and `outcome_prices`. |
+| `outcomes` | string[] \| null | Ordered outcome labels for the market. |
+| `payouts` | number[] \| null | Resolved payout numerators for each outcome, when resolution metadata is available. |
+| `outcome_prices` | number[] \| null | Payouts normalized by the payout denominator. Winners are usually `1.0`; losers are usually `0.0`. |
+| `winning_outcome_index` | number \| null | Index of the winning outcome when exactly one outcome has a non-zero payout, or when metadata already provides the winner. |
+| `winning_outcome` | string \| null | Label of the winning outcome. |
+| `winning_token_id` | string \| null | Token ID of the winning outcome. |
+| `resolved_at` | string \| null | ISO timestamp for when the market resolution metadata indicates the condition became resolved. |
