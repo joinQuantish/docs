@@ -4,7 +4,7 @@ openapi: "GET /v3/builders/{code}"
 description: "Get stats and public profile metadata for a single builder by hex code."
 ---
 
-Returns fill count, volume, fees, unique wallet counts, and public profile metadata for a specific builder.
+Returns fill count, volume, fees, normalized side-aware volume, and public profile metadata for a specific builder.
 
 ## Request
 
@@ -21,25 +21,41 @@ GET /v3/builders/{code}
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df
+curl https://api.polynode.dev/v3/builders/0xd1d9dd6983c40006b0dc8eab84a41ac9a4f27643296178479ffbebbc01ab7bde
 ```
 
 ```json
 {
-  "builder": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
-  "builder_code": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
-  "builder_logo": "https://polymarket-upload.s3.us-east-2.amazonaws.com/profile-image-4043800-ced7ecde-0754-46a1-8a16-bb6c338fbf39.png",
-  "builder_name": "PolyCop",
+  "builder": "0xd1d9dd6983c40006b0dc8eab84a41ac9a4f27643296178479ffbebbc01ab7bde",
+  "builder_code": "0xd1d9dd6983c40006b0dc8eab84a41ac9a4f27643296178479ffbebbc01ab7bde",
+  "builder_logo": "https://polymarket-upload.s3.us-east-2.amazonaws.com/profile-image-5148537-b5dbf263-8d5f-41d7-bba1-387bfa17075c.png",
+  "builder_name": "MagicMarkets",
   "builder_verified": true,
+  "buy_volume_e6": "8805777867302",
+  "buy_volume_usdc": "8805777.867302000000",
   "elapsed_ms": 3,
-  "fill_count": 1314738,
-  "first_fill": "1777298664",
-  "last_fill": "1779212539",
-  "total_fees": "170807228110",
-  "total_maker_volume": "13811605578007",
-  "total_taker_volume": "26229864123405",
-  "unique_makers": 686,
-  "unique_takers": 4004
+  "external_active_users": 3,
+  "external_rank": 23,
+  "external_volume": "18380636.129236996",
+  "fee_semantics": "Builder-attributed trader-paid fees. This is not a builder rebate payout.",
+  "fill_count": 23076,
+  "first_fill": "1777382110",
+  "last_fill": "1782307555",
+  "sell_volume_e6": "0",
+  "sell_volume_usdc": "0.000000000000000000000000",
+  "source": "builder_fee_stats",
+  "stats_checked_at": "2026-06-24 13:28:05.26204+00",
+  "stats_pending": false,
+  "stats_refreshed_at": "2026-06-24 13:28:03.133082+00",
+  "stats_source": "local_order_filled_event_index",
+  "total_fees": "116885095300",
+  "total_fees_usdc": "116885.095300000000",
+  "total_maker_volume": "8805777867302",
+  "total_maker_volume_usdc": "8805777.867302000000",
+  "total_taker_volume": "18512535904523",
+  "total_taker_volume_usdc": "18512535.904523000000",
+  "volume_e6": "8805777867302",
+  "volume_usdc": "8805777.867302000000"
 }
 ```
 
@@ -57,11 +73,27 @@ Same fields as the [Builder Leaderboard](/data/builders/list) response, without 
 | `fill_count` | integer | Total fills attributed to this builder |
 | `first_fill` | string | Unix timestamp of first fill |
 | `last_fill` | string | Unix timestamp of most recent fill |
-| `total_fees` | string | Total fees generated (6-decimal USDC) |
-| `total_maker_volume` | string | Sum of maker-side volume (6-decimal USDC) |
-| `total_taker_volume` | string | Sum of taker-side volume (6-decimal USDC) |
-| `unique_makers` | integer | Distinct maker wallets |
-| `unique_takers` | integer | Distinct taker wallets |
+| `source` | string | Legacy source label. `builder_fee_stats` means local builder stats are present; `polymarket_builder_metadata` means only profile metadata is present so far. |
+| `stats_source` | string \| null | Local stats source, currently `local_order_filled_event_index` when local stats are populated |
+| `total_fees` | string | Total fees generated in raw 6-decimal USDC units |
+| `total_fees_usdc` | string \| null | Total fees normalized to decimal USDC |
+| `total_maker_volume` | string | Sum of raw maker-side amount fields in 6-decimal units, kept for compatibility |
+| `total_maker_volume_usdc` | string \| null | Maker-side total normalized to decimal USDC |
+| `total_taker_volume` | string | Sum of raw taker-side amount fields in 6-decimal units, kept for compatibility |
+| `total_taker_volume_usdc` | string \| null | Taker-side total normalized to decimal USDC |
+| `volume_e6` | string \| null | Side-aware builder volume in raw 6-decimal USDC units. For buys this uses maker collateral; for sells this uses taker collateral. |
+| `volume_usdc` | string \| null | `volume_e6` normalized to decimal USDC. Prefer this for displayed builder volume. |
+| `buy_volume_e6` | string \| null | Buy-side normalized-volume numerator in raw 6-decimal USDC units |
+| `buy_volume_usdc` | string \| null | Buy-side normalized volume in decimal USDC |
+| `sell_volume_e6` | string \| null | Sell-side normalized-volume numerator in raw 6-decimal USDC units |
+| `sell_volume_usdc` | string \| null | Sell-side normalized volume in decimal USDC |
+| `external_rank` | integer \| null | Polymarket's public builder leaderboard rank, when available |
+| `external_volume` | string \| null | Polymarket's public builder leaderboard volume, when available |
+| `external_active_users` | integer \| null | Polymarket's public active-user count, when available |
+| `stats_refreshed_at` | string \| null | Time PolyNode last rewrote local stats for this builder |
+| `stats_checked_at` | string \| null | Time PolyNode last checked this builder, including no-op refreshes |
+| `stats_pending` | boolean | `true` when profile metadata exists but the local stats row has not been populated yet |
+| `fee_semantics` | string | Reminder that builder fees are trader-paid fees attributed to builder order flow, not a builder rebate payout |
 | `elapsed_ms` | integer | Server-side query time in milliseconds |
 
 ## Related endpoints
