@@ -20,6 +20,21 @@ Existing default responses are unchanged. The accounting object is included only
 
 ---
 
+## 2026-06-15 - PM2 AutoRedeemer redemptions in WebSocket streams
+
+PM2 AutoRedeemer redemptions are now surfaced in both the combo stream and the standard redemption stream.
+
+What's new:
+
+- AutoRedeemer `Redemption`, `BinaryRedemption`, and `NegRiskRedemption` logs emit customer-facing `combo_lifecycle` events with the wallet, exact raw payout, normalized payout, module name, and receipt log index. Binary and negative-risk redemptions also include the condition ID directly.
+- Confirmed `combo_status_update` messages can include `lifecycle_events[]` for receipt-only AutoRedeemer lifecycle activity.
+- The same AutoRedeemer payout is also bridged into the standard `redemption` event class, attributed to the user wallet instead of the AutoRedeemer contract.
+- New `type: "redemptions"` WebSocket preset subscribes directly to `redemption` events. Existing `settlements` or `wallets` subscriptions with `event_types: ["redemption"]` continue to work.
+
+No subscription change is required for existing redemption consumers.
+
+---
+
 ## 2026-06-12 - Faster V3 builder trade time filters
 
 Improved reliability and latency for time-filtered builder trade lookups.

@@ -243,6 +243,12 @@ The `type` field selects a preset of event types. If you also set `filters.event
   All activity for specific wallets. Best used with the `wallets` filter.
 </ResponseField>
 
+<ResponseField name="redemptions" type="string">
+  Events: `redemption`
+
+  Direct feed for payout redemptions. Includes normal Conditional Tokens redemptions and PM2 AutoRedeemer redemptions bridged into the same `redemption` shape.
+</ResponseField>
+
 <ResponseField name="markets" type="string">
   Events: `settlement`, `trade`, `position_change`, `status_update`, `position_split`, `position_merge`, `positions_converted`, `redemption`
 

@@ -5,7 +5,7 @@ description: "Split, merge, redeem, convert, wrap, unwrap, and related combo lif
 icon: "diagram-project"
 ---
 
-Emitted for combo lifecycle actions when the event can be represented with enriched legs. This covers useful position-changing actions without emitting raw, condition-only messages that would require a second lookup to understand.
+Emitted for combo lifecycle actions when the event can be represented with enriched legs. AutoRedeemer redemption confirmations can also be emitted without legs when the receipt itself provides the user wallet, condition ID, exact payout, normalized payout, module name, and log index.
 
 ```json
 {
@@ -17,6 +17,7 @@ Emitted for combo lifecycle actions when the event can be represented with enric
     "status": "confirmed",
     "detected_at": 1781054112400,
     "block_number": 88232739,
+    "log_index": 44,
     "action": "Redeem",
     "user": "0xUser...",
     "combo_condition_id": "0xcombo...",
@@ -38,6 +39,7 @@ Emitted for combo lifecycle actions when the event can be represented with enric
     ],
     "amount_e6": "1000000",
     "amount_usdc": 1,
+    "payout_e6": "1000000",
     "payout_usdc": 1
   }
 }
@@ -76,6 +78,30 @@ Filter by lifecycle action:
 }
 ```
 
+AutoRedeemer redemptions can be consumed through the combo lifecycle stream:
+
+```json
+{
+  "type": "combo_lifecycle",
+  "data": {
+    "event_type": "combo_lifecycle",
+    "tx_hash": "0x...",
+    "status": "confirmed",
+    "block_number": 88462228,
+    "log_index": 27,
+    "action": "Redeem",
+    "user": "0xde0a3c61f87da595b215f88254a9473e6152f102",
+    "condition_ids": ["0xd7e68ef0dfabc386f97ffdc330ecff4908cda4d08c5fc5931503f1e60cac0dfe"],
+    "module_name": "AutoRedeemer",
+    "payout_e6": "4500000000",
+    "payout_usdc": 4500,
+    "diagnostics": {
+      "decoded_function": "AutoRedeemer.NegRiskRedemption"
+    }
+  }
+}
+```
+
 ## Fields
 
 <ResponseField name="data.action" type="string" required>
@@ -84,6 +110,10 @@ Filter by lifecycle action:
 
 <ResponseField name="data.user" type="string">
   Wallet that initiated or received the lifecycle action.
+</ResponseField>
+
+<ResponseField name="data.log_index" type="number">
+  Receipt log index for confirmed lifecycle events.
 </ResponseField>
 
 <ResponseField name="data.combo_condition_id" type="string">
@@ -126,8 +156,8 @@ Filter by lifecycle action:
   Positions created by the action.
 </ResponseField>
 
-<ResponseField name="data.legs" type="object[]" required>
-  Enriched legs. Lifecycle events without enriched legs are held from the customer stream.
+<ResponseField name="data.legs" type="object[]">
+  Enriched legs when available. AutoRedeemer redemptions can be emitted without legs when the receipt includes the wallet, condition ID, and payout directly.
 </ResponseField>
 
 <ResponseField name="data.amount_e6" type="string">
@@ -136,6 +166,10 @@ Filter by lifecycle action:
 
 <ResponseField name="data.amount_usdc" type="number">
   USDC-normalized amount.
+</ResponseField>
+
+<ResponseField name="data.payout_e6" type="string">
+  Exact raw payout in six-decimal USDC units for redeem actions.
 </ResponseField>
 
 <ResponseField name="data.payout_usdc" type="number">

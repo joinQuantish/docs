@@ -11,6 +11,8 @@ Every resolved market generates redemption events as holders claim their payouts
 
 Recent redemption events also include the market's resolved payout vector when available. Use `winning_outcome`, `winning_token_id`, or the ordered `payouts` / `outcome_prices` arrays to identify which outcome won without making a second market lookup.
 
+PM2 AutoRedeemer payouts are bridged into this same event class. For those transactions, `redeemer` is the user wallet from the AutoRedeemer log, not the AutoRedeemer contract, and `source` identifies the AutoRedeemer redemption function.
+
 ```json
 {
   "data": {
@@ -28,6 +30,7 @@ Recent redemption events also include the market's resolved payout vector when a
     "outcome_prices": [1.0, 0.0],
     "outcomes": ["Up", "Down"],
     "payout": 7.566434,
+    "payout_e6": "7566434",
     "payouts": [1, 0],
     "redeemer": "0x8858aae9c92a82b00986a0f1a66338e8b0cc8641",
     "taker_base_fee": 1000,
@@ -97,6 +100,14 @@ Recent redemption events also include the market's resolved payout vector when a
 
     <ResponseField name="payout" type="number" required>
       USDC amount paid out to the redeemer (6 decimal precision). `0` means the user redeemed losing shares and received nothing.
+    </ResponseField>
+
+    <ResponseField name="payout_e6" type="string">
+      Exact payout amount in six-decimal integer units. Use this for accounting-safe comparisons.
+    </ResponseField>
+
+    <ResponseField name="source" type="string">
+      Decoder path for bridged redemptions. PM2 AutoRedeemer events use values such as `AutoRedeemer.Redemption`, `AutoRedeemer.BinaryRedemption`, or `AutoRedeemer.NegRiskRedemption`.
     </ResponseField>
 
     <ResponseField name="market_title" type="string">
@@ -171,6 +182,17 @@ Recent redemption events also include the market's resolved payout vector when a
 
 ## Subscribing
 
+Subscribe directly to redemptions:
+
+```json
+{
+  "action": "subscribe",
+  "type": "redemptions"
+}
+```
+
+Or request redemptions from the settlement stream:
+
 ```json
 {
   "action": "subscribe",
@@ -180,6 +202,8 @@ Recent redemption events also include the market's resolved payout vector when a
   }
 }
 ```
+
+PM2 AutoRedeemer redemptions also appear here and can be matched to combo-native lifecycle data by `tx_hash`, `condition_id`, `payout_e6`, and `log_index`.
 
 Filter to only winning redemptions using `min_size`:
 

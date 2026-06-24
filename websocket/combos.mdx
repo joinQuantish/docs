@@ -25,7 +25,7 @@ The default `combos` preset emits:
 | Event | Timing | Purpose |
 | --- | --- | --- |
 | `combo_execution` | Pending / mempool | Combo order execution decoded before confirmation. |
-| `combo_status_update` | Confirmed / receipt | Confirmation, exact receipt fills, fees, transfers, and latency. |
+| `combo_status_update` | Confirmed / receipt | Confirmation, exact receipt fills, fees, transfers, lifecycle details, and latency. |
 
 Every customer-facing combo event is enrichment-gated. If a combo leg cannot be resolved to market metadata, the event is held rather than emitted partially.
 
@@ -48,7 +48,11 @@ Advanced users can explicitly request lifecycle and approval events:
 }
 ```
 
-Lifecycle events are emitted only when their legs are present and enriched. Condition-only lifecycle actions are not emitted unless they can be represented without requiring a follow-up lookup.
+Lifecycle events are emitted when their legs are present and enriched. AutoRedeemer redemption confirmations are also emitted when they are condition-only, because the receipt provides the user wallet, condition ID, exact payout, normalized payout, and log index without requiring a follow-up lookup.
+
+<Info>
+  PM2 AutoRedeemer redemptions are available two ways: as `combo_lifecycle` / `combo_status_update.lifecycle_events[]` for combo-native consumers, and as standard `redemption` events for existing redemption and wallet subscribers.
+</Info>
 
 ## Covered on-chain surface
 
@@ -122,6 +126,19 @@ Combo subscriptions support the standard WebSocket filters plus combo-specific i
 ```
 
 `tokens` and `leg_position_ids` both match combo position IDs and leg position IDs. Use `leg_position_ids` when you want the filter to be self-documenting.
+
+To receive only combo lifecycle redemptions:
+
+```json
+{
+  "action": "subscribe",
+  "type": "combos",
+  "filters": {
+    "event_types": ["combo_lifecycle"],
+    "action": "Redeem"
+  }
+}
+```
 
 ## Event reference
 
