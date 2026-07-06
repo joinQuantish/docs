@@ -145,5 +145,5 @@ The exact set depends on sport and whether the game is pre-match or live.
 
 ## Rate limits
 
-The REST API enforces **600 requests per minute per API key**, with a burst allowance of **60 requests**. Requests beyond the limit return `429 Too Many Requests` with `retry-after: 60`. WebSocket connections are **not** counted against this limit — stream consumers don't need to poll.
+The REST API enforces per-key rate limits that scale with your plan — **1,000 requests per minute on Starter, 2,000 on Growth, and 4,000 (default, custom by agreement) on Enterprise**. Requests beyond the limit return `429 Too Many Requests` with `retry-after: 60`. WebSocket connections are **not** counted against this limit — stream consumers don't need to poll. See [rate limits](/guides/rate-limits) for the full tier table.
 
