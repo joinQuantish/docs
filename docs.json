@@ -52,6 +52,13 @@
             ]
           },
           {
+            "group": "Perps Streaming",
+            "pages": [
+              "perps/websocket/overview",
+              "perps/websocket/channels"
+            ]
+          },
+          {
             "group": "More",
             "pages": [
               "websocket/examples"
