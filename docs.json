@@ -349,7 +349,9 @@
             "pages": [
               "perps/wallets/overview",
               "perps/wallets/portfolio",
-              "perps/wallets/registered"
+              "perps/wallets/registered",
+              "perps/wallets/batch-registered",
+              "perps/wallets/batch-portfolios"
             ]
           },
           {

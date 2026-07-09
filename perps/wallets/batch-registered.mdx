@@ -1,0 +1,14 @@
+---
+title: "Registered (batch)"
+openapi: "GET /v3/perps/wallets/registered"
+---
+
+Check perps registration for a whole list of wallets in one request — the cheapest way to narrow a set of addresses down to actual perps users before pulling portfolios.
+
+Pass a comma-separated `addresses` list (up to 50). Each address is resolved automatically (proxy or signer) and returned inline with its `wallet_type`, `signer`, and `registered` flag. If one address is malformed or unresolvable, it comes back with an `error` field instead — the rest of the batch still succeeds.
+
+```bash
+curl "https://api.polynode.dev/v3/perps/wallets/registered?addresses=0xABC...,0xDEF...&key=$POLYNODE_API_KEY"
+```
+
+For a single wallet, use the per-address [registered check](/perps/wallets/registered).

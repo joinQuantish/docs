@@ -14,4 +14,8 @@ openapi: "GET /v3/perps/wallets/{address}/portfolio"
 
 `equity`, `size`, `entry_price`, and `unrealized_pnl` keep their exact string precision.
 
+## Filters
+
+Narrow the position list server-side (Polymarket returns the full list only): `side`, `instrument`, `min_notional`, `min_roe`, and `sort` (`notional` or `pnl`). Unknown values return a `400`. To pull many wallets at once, use the [batch portfolios](/perps/wallets/batch-portfolios) endpoint.
+
 Portfolio data refreshes every few seconds per wallet. Works with either address form — proxy or signer ([details](/perps/wallet-mapping)).

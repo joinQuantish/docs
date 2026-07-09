@@ -7705,6 +7705,99 @@
      }
     }
    }
+  },
+  "/v3/perps/wallets/registered": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Registered (batch)",
+    "description": "Check perps registration for many wallets in one call (max 50). Each address is resolved and reported inline; a failure on one address does not fail the batch.",
+    "parameters": [
+     {
+      "name": "addresses",
+      "in": "query",
+      "required": true,
+      "description": "Comma-separated Polymarket addresses (proxy wallet or signer). Resolution is automatic.",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "input": "0xd498...b84d",
+           "wallet_type": "eoa",
+           "signer": "0xd498...b84d",
+           "registered": true
+          },
+          {
+           "input": "0x4f78...8731",
+           "wallet_type": "deposit",
+           "signer": "0x1a54...72f1",
+           "registered": true
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/wallets/portfolios": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Portfolios (batch)",
+    "description": "Fetch the enriched live portfolio for many wallets in one call (max 20). Each address is resolved and reported inline; a failure on one address does not fail the batch.",
+    "parameters": [
+     {
+      "name": "addresses",
+      "in": "query",
+      "required": true,
+      "description": "Comma-separated Polymarket addresses (proxy wallet or signer). Resolution is automatic.",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "input": "0x4f78...8731",
+           "wallet_type": "eoa",
+           "registered": true,
+           "equity": "255137.89",
+           "positions": [
+            {
+             "symbol": "SP500-USD",
+             "side": "short",
+             "size": "-133.9",
+             "notional": "1004179.30"
+            }
+           ],
+           "timestamp": 1783605489339
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {

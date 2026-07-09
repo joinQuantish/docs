@@ -1,0 +1,12 @@
+---
+title: "Portfolios (batch)"
+openapi: "GET /v3/perps/wallets/portfolios"
+---
+
+Fetch the enriched live portfolio for a list of wallets in one request (up to 20) — positions, equity, explicit side, live mark and derived notional, exactly as the single-wallet [portfolio](/perps/wallets/portfolio) endpoint returns them, one entry per address.
+
+Pass a comma-separated `addresses` list. Each address is resolved automatically; a malformed or unresolvable address returns an `error` field inline rather than failing the whole batch. Because every entry is a live per-wallet fetch, this endpoint is capped tighter than the registration check.
+
+```bash
+curl "https://api.polynode.dev/v3/perps/wallets/portfolios?addresses=0xABC...,0xDEF...&key=$POLYNODE_API_KEY"
+```
