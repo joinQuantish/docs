@@ -1,26 +1,8 @@
 ---
 title: "Funding Rates"
-description: "Hourly funding-rate history per instrument."
+openapi: "GET /v3/perps/funding/{instrument}"
 ---
 
-```bash
-curl "https://api.polynode.dev/v3/perps/funding/btc?key=$POLYNODE_API_KEY"
-```
-
-```json
-{
-  "data": [
-    { "funding_rate": "0.0000125", "timestamp": 1783566000059 },
-    { "funding_rate": "0.0000125", "timestamp": 1783562400068 }
-  ],
-  "more": true
-}
-```
-
 Newest first, one entry per hourly funding event. Window with `start_timestamp` / `end_timestamp` (Unix ms):
-
-```bash
-curl "https://api.polynode.dev/v3/perps/funding/btc?start_timestamp=1783000000000&key=$POLYNODE_API_KEY"
-```
 
 The current live rate and the next funding time are on the [ticker](/perps/market-data/tickers). Rates are per funding interval (hourly) — multiply by 24×365 for an annualized figure.

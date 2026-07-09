@@ -1,20 +1,7 @@
 ---
 title: "Klines (OHLCV)"
-description: "Candlestick data at intervals from 1 minute to 1 week."
+openapi: "GET /v3/perps/klines/{instrument}"
 ---
-
-```bash
-curl "https://api.polynode.dev/v3/perps/klines/eth?interval=1h&limit=24&key=$POLYNODE_API_KEY"
-```
-
-```json
-{
-  "data": [
-    [1783562400000, "1730.7", "1736.9", "1722.3", "1725.8", "631.577", 418]
-  ],
-  "more": false
-}
-```
 
 Candles are `[open_time, open, high, low, close, volume, trade_count]`.
 

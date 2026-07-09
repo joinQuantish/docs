@@ -266,6 +266,14 @@
             ]
           },
           {
+            "group": "Orderbook",
+            "pages": [
+              "api-reference/orderbook/order-book",
+              "api-reference/orderbook/midpoint",
+              "api-reference/orderbook/spread"
+            ]
+          },
+          {
             "group": "Leaderboard & Tags",
             "pages": [
               "data/leaderboard/global",
@@ -311,92 +319,6 @@
             ]
           },
           {
-            "group": "Enriched Data",
-            "pages": [
-              "api-reference/enriched/leaderboard",
-              "api-reference/enriched/trader-profile",
-              "api-reference/enriched/trader-pnl",
-              "api-reference/enriched/equity-curve",
-              "api-reference/enriched/trending",
-              "api-reference/enriched/activity",
-              "api-reference/enriched/event",
-              "api-reference/enriched/event-search",
-              "api-reference/enriched/movers",
-              "api-reference/enriched/markets"
-            ]
-          },
-          {
-            "group": "Orderbook",
-            "pages": [
-              "api-reference/orderbook/order-book",
-              "api-reference/orderbook/midpoint",
-              "api-reference/orderbook/spread"
-            ]
-          },
-          {
-            "group": "Sports",
-            "pages": [
-              "api-reference/sports/sports-markets"
-            ]
-          },
-          {
-            "group": "BYOL",
-            "pages": [
-              "api-reference/byol/overview",
-              "api-reference/byol/get-leaderboard",
-              "api-reference/byol/add-wallets",
-              "api-reference/byol/remove-wallets",
-              "api-reference/byol/list-wallets"
-            ]
-          },
-          {
-            "group": "Backtesting",
-            "pages": [
-              "api-reference/backtesting/overview",
-              "api-reference/backtesting/copy-pnl",
-              "api-reference/backtesting/batch",
-              "api-reference/backtesting/byob-add-wallets",
-              "api-reference/backtesting/byob-remove-wallets",
-              "api-reference/backtesting/byob-list-wallets",
-              "api-reference/backtesting/byob-leaderboard",
-              "api-reference/backtesting/byob-snapshot"
-            ]
-          },
-          {
-            "group": "Crypto",
-            "pages": [
-              "api-reference/crypto/markets",
-              "api-reference/crypto/candles",
-              "api-reference/crypto/ticks",
-              "api-reference/crypto/price",
-              "api-reference/crypto/active",
-              "api-reference/crypto/series"
-            ]
-          },
-          {
-            "group": "Market Card",
-            "pages": [
-              "api-reference/pricing/market-statistics"
-            ]
-          },
-          {
-            "group": "System",
-            "pages": [
-              "api-reference/system/system-status",
-              "api-reference/system/generate-api-key",
-              "api-reference/system/health-check",
-              "api-reference/system/readiness-check"
-            ]
-          },
-          {
-            "group": "Search & Context",
-            "tag": "BETA",
-            "pages": [
-              "api-reference/search-online",
-              "api-reference/x-search"
-            ]
-          },
-          {
             "group": "Perps",
             "pages": [
               "perps/overview",
@@ -434,6 +356,69 @@
             "pages": [
               "perps/websocket/overview",
               "perps/websocket/channels"
+            ]
+          },
+          {
+            "group": "Crypto",
+            "pages": [
+              "api-reference/crypto/markets",
+              "api-reference/crypto/candles",
+              "api-reference/crypto/ticks",
+              "api-reference/crypto/price",
+              "api-reference/crypto/active",
+              "api-reference/crypto/series"
+            ]
+          },
+          {
+            "group": "Sports",
+            "pages": [
+              "api-reference/sports/sports-markets"
+            ]
+          },
+          {
+            "group": "BYOL",
+            "pages": [
+              "api-reference/byol/overview",
+              "api-reference/byol/get-leaderboard",
+              "api-reference/byol/add-wallets",
+              "api-reference/byol/remove-wallets",
+              "api-reference/byol/list-wallets"
+            ]
+          },
+          {
+            "group": "Backtesting",
+            "pages": [
+              "api-reference/backtesting/overview",
+              "api-reference/backtesting/copy-pnl",
+              "api-reference/backtesting/batch",
+              "api-reference/backtesting/byob-add-wallets",
+              "api-reference/backtesting/byob-remove-wallets",
+              "api-reference/backtesting/byob-list-wallets",
+              "api-reference/backtesting/byob-leaderboard",
+              "api-reference/backtesting/byob-snapshot"
+            ]
+          },
+          {
+            "group": "Market Card",
+            "pages": [
+              "api-reference/pricing/market-statistics"
+            ]
+          },
+          {
+            "group": "System",
+            "pages": [
+              "api-reference/system/system-status",
+              "api-reference/system/generate-api-key",
+              "api-reference/system/health-check",
+              "api-reference/system/readiness-check"
+            ]
+          },
+          {
+            "group": "Search & Context",
+            "tag": "BETA",
+            "pages": [
+              "api-reference/search-online",
+              "api-reference/x-search"
             ]
           },
           {

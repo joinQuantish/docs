@@ -1,38 +1,9 @@
 ---
 title: "Instruments"
-description: "Every listed perps instrument with full contract configuration."
+openapi: "GET /v3/perps/instruments"
 ---
 
-```bash
-curl "https://api.polynode.dev/v3/perps/instruments?key=$POLYNODE_API_KEY"
-```
-
 Returns the complete exchange configuration for each instrument — symbol, category, leverage and risk tiers, precision, order size limits, funding interval — plus `first_seen`, the timestamp we first observed the listing.
-
-```json
-{
-  "data": [
-    {
-      "instrument_id": 6,
-      "instrument_type": "perpetual",
-      "category": "crypto",
-      "symbol": "BTC-USD",
-      "base_asset": "BTC",
-      "quote_asset": "pUSD",
-      "funding_interval": "1h",
-      "quantity_decimals": 5,
-      "price_decimals": 0,
-      "min_notional": "10",
-      "max_leverage": 20,
-      "risk_tiers": [
-        { "lower_bound": "0", "max_leverage": 20 },
-        { "lower_bound": "250000", "max_leverage": 10 }
-      ],
-      "first_seen": 1783569304465
-    }
-  ]
-}
-```
 
 ## Query parameters
 

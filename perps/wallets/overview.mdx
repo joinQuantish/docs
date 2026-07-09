@@ -1,38 +1,9 @@
 ---
 title: "Wallet Overview"
-description: "One call: resolve any Polymarket address, check perps registration, and get the live portfolio."
+openapi: "GET /v3/perps/wallets/{address}"
 ---
 
-```bash
-curl "https://api.polynode.dev/v3/perps/wallets/0x09b428f7c2b469786286214aa5c90dd9015f7320?key=$POLYNODE_API_KEY"
-```
-
 Accepts a Polymarket profile (proxy) address **or** the underlying account address — [resolution is automatic](/perps/wallet-mapping). The response combines the mapping, registration status, and (for registered accounts) the live portfolio:
-
-```json
-{
-  "input": "0x09b428f7c2b469786286214aa5c90dd9015f7320",
-  "pm_address": "0x09b428f7c2b469786286214aa5c90dd9015f7320",
-  "wallet_type": "deposit",
-  "signer": "0x509e390373f5bde0bb02c1019ee39cf0ef23a1a4",
-  "registered": true,
-  "equity": "5350.00",
-  "positions": [
-    {
-      "instrument_id": 6,
-      "symbol": "BTC-USD",
-      "size": "0.5",
-      "side": "long",
-      "entry_price": "61000",
-      "mark_price": "62010",
-      "notional": "31005.00",
-      "unrealized_pnl": "505.00",
-      "return_on_equity": "0.08"
-    }
-  ],
-  "timestamp": 1783571023159
-}
-```
 
 | Field | Meaning |
 |-------|---------|

@@ -1,28 +1,7 @@
 ---
 title: "Volume History"
-description: "Bucketed notional volume and trade counts rolled up from the polynode trade archive."
+openapi: "GET /v3/perps/volume/{instrument}"
 ---
-
-```bash
-curl "https://api.polynode.dev/v3/perps/volume/btc?bucket=1h&limit=24&key=$POLYNODE_API_KEY"
-```
-
-```json
-{
-  "instrument_id": 6,
-  "symbol": "BTC-USD",
-  "bucket": "1h",
-  "data": [
-    {
-      "timestamp": 1783569600000,
-      "notional_volume": "1284304.22",
-      "quantity": "20.71",
-      "trade_count": 342
-    }
-  ],
-  "more": false
-}
-```
 
 | Parameter | Description |
 |-----------|-------------|

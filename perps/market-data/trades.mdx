@@ -1,39 +1,11 @@
 ---
 title: "Trades"
-description: "Recent executions, and archived trade history beyond what the exchange keeps."
+openapi: "GET /v3/perps/trades/{instrument}"
 ---
-
-Recent trades (live, newest first):
-
-```bash
-curl "https://api.polynode.dev/v3/perps/trades/btc?limit=2&key=$POLYNODE_API_KEY"
-```
-
-```json
-{
-  "instrument_id": 6,
-  "symbol": "BTC-USD",
-  "data": [
-    {
-      "trade_id": 7504966405671651,
-      "instrument_id": 6,
-      "symbol": "BTC-USD",
-      "side": "short",
-      "price": "62009",
-      "quantity": "0.00842",
-      "timestamp": 1783571031288
-    }
-  ]
-}
-```
 
 ## Historical windows
 
 Add `after` and/or `before` (Unix seconds or milliseconds) to query historical trades. History covers every execution from July 9, 2026 onward and keeps growing:
-
-```bash
-curl "https://api.polynode.dev/v3/perps/trades/btc?after=1783500000&before=1783570000&limit=500&key=$POLYNODE_API_KEY"
-```
 
 Windowed responses add a `more` flag for pagination.
 

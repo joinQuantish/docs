@@ -1,34 +1,7 @@
 ---
 title: "Tickers"
-description: "Live index, mark, last and mid prices, open interest, and funding for every instrument."
+openapi: "GET /v3/perps/tickers/{instrument}"
 ---
-
-All instruments at once:
-
-```bash
-curl "https://api.polynode.dev/v3/perps/tickers?key=$POLYNODE_API_KEY"
-```
-
-One instrument — by id, symbol, or bare asset:
-
-```bash
-curl "https://api.polynode.dev/v3/perps/tickers/btc?key=$POLYNODE_API_KEY"
-```
-
-```json
-{
-  "instrument_id": 6,
-  "symbol": "BTC-USD",
-  "index_price": "62022",
-  "mark_price": "62010",
-  "last_price": "61989",
-  "mid_price": "62010",
-  "open_interest": "67.44542",
-  "funding_rate": "0.0000125",
-  "next_funding": 1783573200000,
-  "timestamp": 1783571023159
-}
-```
 
 | Field | Meaning |
 |-------|---------|
