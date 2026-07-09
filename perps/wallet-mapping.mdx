@@ -37,14 +37,18 @@ The relationship between a proxy and its signer never changes, so once an addres
 
 ## Wallet types
 
-Polymarket has four account/wallet types, and `wallet_type` uses their official names:
+Polymarket has used a few different wallet types over the years, depending on how an account signed up. `wallet_type` tells you which one you're looking at, using Polymarket's own names:
 
-| `wallet_type` | What it is | Resolution |
-|---------------|-----------|------------|
-| `eoa` | A plain private-key wallet, no contract. Some users trade Polymarket this way. | The address is its own perps account. |
-| `deposit` | A **deposit wallet** — Polymarket's current wallet type, deployed automatically for new accounts (including the newer beacon-upgradeable variant). | Resolved automatically. |
-| `safe` | A Gnosis Safe — the wallet type for accounts that connected a browser wallet like MetaMask. | Resolved automatically. |
-| `proxy` | A **Polymarket Proxy** — the wallet type behind email-login accounts. | Not yet resolvable — see below. |
+| `wallet_type` | Who has one | Resolution |
+|---------------|-------------|------------|
+| `eoa` | Users trading with a plain wallet, no Polymarket contract at all. | The address is its own perps account. |
+| `deposit` | **Every new Polymarket account** — the deposit wallet is the current standard. | Resolved automatically. |
+| `safe` | Older accounts that signed up by connecting a browser wallet (MetaMask etc.) — these got a Gnosis Safe. | Resolved automatically. |
+| `proxy` | Older accounts that signed up with an email login — these got a Polymarket Proxy. | Not yet resolvable — see below. |
+
+### "Deposit wallet" vs "beacon wallet"
+
+If you've seen both terms: they're the same thing. The deposit wallet is Polymarket's current wallet type, and the newer ones are built so Polymarket can upgrade all of them at once — that upgradeable variant is what gets called a "beacon wallet". There's also an earlier, standalone variant from before that change. Both behave identically, both resolve automatically, and this API reports both simply as `deposit` — you never need to tell them apart.
 
 ## The proxy-wallet edge case
 
