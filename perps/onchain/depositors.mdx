@@ -1,0 +1,6 @@
+---
+title: "Top Depositors"
+openapi: "GET /v3/perps/depositors"
+---
+
+The biggest depositors, ranked by total pUSD deposited — keyed by the real **beneficiary** account, not the router most deposits flow through. `min_usd` floors the total, `limit` caps rows. From on-chain deposit events; Polymarket exposes none of this.

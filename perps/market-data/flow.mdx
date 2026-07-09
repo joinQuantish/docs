@@ -1,0 +1,6 @@
+---
+title: "Trade Flow / CVD"
+openapi: "GET /v3/perps/flow/{instrument}"
+---
+
+Order-flow analytics per time bucket: taker buy vs sell notional, net quantity, and the running **cumulative volume delta** (CVD) — a classic pressure signal. `side` is the taker's direction (long = bought). Choose `bucket` (1m to 1d) and bound with `after` / `before`.

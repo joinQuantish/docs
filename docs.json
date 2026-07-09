@@ -341,7 +341,10 @@
               "perps/market-data/funding",
               "perps/market-data/open-interest",
               "perps/market-data/volume",
-              "perps/market-data/meta"
+              "perps/market-data/meta",
+              "perps/market-data/basis",
+              "perps/market-data/flow",
+              "perps/market-data/funding-pnl"
             ]
           },
           {
@@ -361,7 +364,22 @@
               "perps/analytics/leaderboard",
               "perps/analytics/positioning",
               "perps/analytics/large-positions",
-              "perps/analytics/position-history"
+              "perps/analytics/position-history",
+              "perps/analytics/traders",
+              "perps/analytics/events",
+              "perps/analytics/liquidations",
+              "perps/analytics/coverage"
+            ]
+          },
+          {
+            "group": "Perps On-Chain",
+            "pages": [
+              "perps/onchain/tvl",
+              "perps/onchain/depositors",
+              "perps/onchain/withdrawers",
+              "perps/onchain/deposits",
+              "perps/onchain/withdrawals",
+              "perps/onchain/flows"
             ]
           },
           {

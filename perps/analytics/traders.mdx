@@ -1,0 +1,6 @@
+---
+title: "Smart Money"
+openapi: "GET /v3/perps/traders"
+---
+
+Rank wallets by real **trading** P&L over a window — equity change minus net deposits in that window, so growth from funding the account is stripped out. This is only possible because we hold both the equity snapshots and the on-chain collateral flows. Pick the `window` (1h, 6h, 1d, 7d, 30d). Coverage deepens as history accrues.

@@ -9,7 +9,7 @@ Narrow the live tape server-side (Polymarket offers none of this): `side` (`long
 
 ## Historical windows
 
-Add `after` and/or `before` (Unix seconds or milliseconds) to query historical trades. History covers every execution from July 9, 2026 onward and keeps growing:
+Add `after` and/or `before` (Unix seconds or milliseconds) to query historical trades. History covers every execution from July 9, 2026 onward and keeps growing. The same `side`, `min_notional`, and `min_qty` filters apply to the archive too — so "all BTC taker-buys over $50k last week, by time" is one call.
 
 Windowed responses add a `more` flag for pagination.
 

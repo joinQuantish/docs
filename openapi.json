@@ -7798,6 +7798,799 @@
      }
     }
    }
+  },
+  "/v3/perps/depositors": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Top depositors",
+    "description": "Biggest depositors ranked by total pUSD deposited, keyed by the real beneficiary account (not the router).",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "min_usd",
+      "in": "query",
+      "required": false,
+      "description": "Only rows with total/size >= this many pUSD.",
+      "schema": {
+       "type": "number"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "address": "0x7930...",
+           "total_usd": "5302028.00",
+           "count": 18,
+           "largest_usd": "1500000.00",
+           "last_ts": 1783373000000
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/withdrawers": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Top withdrawers",
+    "description": "Biggest withdrawers ranked by total pUSD withdrawn.",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "min_usd",
+      "in": "query",
+      "required": false,
+      "description": "Only rows with total/size >= this many pUSD.",
+      "schema": {
+       "type": "number"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "address": "0x271f...",
+           "total_usd": "750483.40",
+           "count": 4,
+           "largest_usd": "418483.39",
+           "last_ts": 1782400000000
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/deposits": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Deposits feed",
+    "description": "Recent deposits, filterable by size and time. Each row carries the depositor (often a router) and the beneficiary (real account).",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "min_usd",
+      "in": "query",
+      "required": false,
+      "description": "Only rows with total/size >= this many pUSD.",
+      "schema": {
+       "type": "number"
+      }
+     },
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "description": "Only rows after this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "before",
+      "in": "query",
+      "required": false,
+      "description": "Only rows before this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "block": 89824545,
+           "ts": 1783610000000,
+           "depositor": "0x0c7d...",
+           "account": "0x30e2...",
+           "usd": "250000.00",
+           "tx": "0x..."
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/withdrawals": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Withdrawals feed",
+    "description": "Recent withdrawals, filterable by size and time.",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "min_usd",
+      "in": "query",
+      "required": false,
+      "description": "Only rows with total/size >= this many pUSD.",
+      "schema": {
+       "type": "number"
+      }
+     },
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "description": "Only rows after this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "before",
+      "in": "query",
+      "required": false,
+      "description": "Only rows before this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "block": 89940717,
+           "ts": 1783616070000,
+           "account": "0xd132...",
+           "usd": "10.00",
+           "tx": "0x..."
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/wallets/{address}/flows": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Wallet flows",
+    "description": "One wallet's collateral flow: total deposited, withdrawn, net, and recent events. Resolved to the signer.",
+    "parameters": [
+     {
+      "name": "address",
+      "in": "path",
+      "required": true,
+      "description": "Polymarket address (any form) or signer; resolved automatically.",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "signer": "0x...",
+         "deposited_usd": "250000.00",
+         "deposit_count": 4,
+         "withdrawn_usd": "0.00",
+         "withdrawal_count": 0,
+         "net_usd": "250000.00",
+         "events": [
+          {
+           "ts": 1783610000000,
+           "block": 89824545,
+           "kind": "deposit",
+           "usd": "250000.00"
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/tvl": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "TVL / collateral",
+    "description": "Protocol collateral: current net (deposited - withdrawn) plus a daily net-flow series.",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "deposited_usd": "28959084.48",
+         "withdrawn_usd": "6355479.06",
+         "net_usd": "22603605.42",
+         "daily_net_flow": [
+          {
+           "day": 1783555200000,
+           "net_flow_usd": "-8523.69"
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/coverage": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Coverage",
+    "description": "Transparency metric: for each instrument, our tracked long/short open interest (from the latest position snapshots) vs the exchange's live reported OI.",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "instrument_id": 6,
+           "symbol": "BTC-USD",
+           "tracked_long_oi": "65.0",
+           "tracked_short_oi": "65.2",
+           "exchange_oi": "65.4",
+           "coverage_pct": "99.4",
+           "accounts": 142
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/basis/{instrument}": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Basis history",
+    "description": "The perp's premium/discount to spot over time: mark - index (absolute and in bps), from the ticker snapshots.",
+    "parameters": [
+     {
+      "name": "instrument",
+      "in": "path",
+      "required": true,
+      "description": "Instrument id (6), symbol (BTC-USD), or bare asset (btc).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "description": "Only rows after this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "before",
+      "in": "query",
+      "required": false,
+      "description": "Only rows before this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "instrument_id": 6,
+         "symbol": "BTC-USD",
+         "data": [
+          {
+           "ts": 1783614397400,
+           "mark_price": "62511",
+           "index_price": "62538",
+           "basis": "-27.000000",
+           "basis_bps": "-4.32"
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/flow/{instrument}": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Trade flow / CVD",
+    "description": "Per time bucket: taker buy vs sell notional, net quantity, and the running cumulative volume delta (CVD). side = taker direction.",
+    "parameters": [
+     {
+      "name": "instrument",
+      "in": "path",
+      "required": true,
+      "description": "Instrument id (6), symbol (BTC-USD), or bare asset (btc).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "bucket",
+      "in": "query",
+      "required": false,
+      "description": "1m, 5m, 15m, 1h, 4h, 1d (default 1h)",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "description": "Only rows after this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "before",
+      "in": "query",
+      "required": false,
+      "description": "Only rows before this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "instrument_id": 6,
+         "symbol": "BTC-USD",
+         "bucket": "1h",
+         "data": [
+          {
+           "timestamp": 1783612800000,
+           "buy_notional": "69650.25",
+           "sell_notional": "50066.44",
+           "net_qty": "0.31442",
+           "cvd": "0.314420",
+           "trades": 417
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/funding-pnl/{instrument}": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Cumulative funding",
+    "description": "The funding-rate series plus a running sum - what a 1-unit long has paid (positive) or earned (negative) over the window.",
+    "parameters": [
+     {
+      "name": "instrument",
+      "in": "path",
+      "required": true,
+      "description": "Instrument id (6), symbol (BTC-USD), or bare asset (btc).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "description": "Only rows after this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "before",
+      "in": "query",
+      "required": false,
+      "description": "Only rows before this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "instrument_id": 6,
+         "symbol": "BTC-USD",
+         "data": [
+          {
+           "timestamp": 1783490400156,
+           "funding_rate": "0.0000125",
+           "cumulative_funding": "0.0000125000"
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/traders": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Smart money",
+    "description": "Rank wallets by real TRADING P&L over a window: equity change minus net deposits. Possible only because we hold both equity snapshots and on-chain collateral flows.",
+    "parameters": [
+     {
+      "name": "window",
+      "in": "query",
+      "required": false,
+      "description": "1h, 6h, 1d, 7d, 30d (default 1d)",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "window": "1 day",
+         "data": [
+          {
+           "address": "0x4c4f...",
+           "equity": "3148956.82",
+           "trading_pnl": "7709.63",
+           "as_of": 1783616146481
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/events": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Position events",
+    "description": "Real-time whale-activity feed: opened / closed / increased / reduced / flipped, built by diffing position snapshots. Filter by type, instrument, min_notional, address, liquidation, after.",
+    "parameters": [
+     {
+      "name": "type",
+      "in": "query",
+      "required": false,
+      "description": "opened | closed | increased | reduced | flipped",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "instrument",
+      "in": "query",
+      "required": false,
+      "description": "Instrument id/symbol/asset.",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "min_notional",
+      "in": "query",
+      "required": false,
+      "description": "Only events >= this USD size.",
+      "schema": {
+       "type": "number"
+      }
+     },
+     {
+      "name": "address",
+      "in": "query",
+      "required": false,
+      "description": "One account.",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "liquidation",
+      "in": "query",
+      "required": false,
+      "description": "true | false",
+      "schema": {
+       "type": "boolean"
+      }
+     },
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "description": "Only rows after this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "ts": 1783619129592,
+           "address": "0xc469...",
+           "instrument_id": 1,
+           "symbol": "SP500-USD",
+           "event": "closed",
+           "prev_size": "-0.00263",
+           "new_size": "0",
+           "mark_price": "7542",
+           "notional": "19.76",
+           "unrealized_pnl": "0.35",
+           "liquidation": false
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/liquidations": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Liquidations",
+    "description": "Likely liquidations - position closes wiped at a large loss. Same shape as events.",
+    "parameters": [
+     {
+      "name": "instrument",
+      "in": "query",
+      "required": false,
+      "description": "Instrument id/symbol/asset.",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "min_notional",
+      "in": "query",
+      "required": false,
+      "description": "Only >= this USD size.",
+      "schema": {
+       "type": "number"
+      }
+     },
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "description": "Only rows after this time (Unix s or ms).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows.",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "ts": 1783619129592,
+           "address": "0x...",
+           "symbol": "ETH-USD",
+           "event": "closed",
+           "notional": "250000.00",
+           "unrealized_pnl": "-140000.00",
+           "liquidation": true
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {

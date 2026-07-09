@@ -1,0 +1,6 @@
+---
+title: "Position Events"
+openapi: "GET /v3/perps/events"
+---
+
+A real-time whale-activity feed: **opened**, **closed**, **increased**, **reduced**, and **flipped** events, built by diffing each wallet's position snapshots. Filter by `type`, `instrument`, `min_notional`, `address`, `liquidation`, and `after`. Polymarket has nothing like this — it exists only because we snapshot every account continuously.
