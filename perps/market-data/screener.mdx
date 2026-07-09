@@ -1,0 +1,8 @@
+---
+title: "Screener"
+openapi: "GET /v3/perps/screener"
+---
+
+A cross-instrument screen computed live from current prices. For every instrument it returns the funding rate, open interest, and the **basis** — the mark price minus the index price, both as an absolute number and in basis points (the perp's premium or discount to spot).
+
+Sort by `funding`, `oi`, or `basis` (widest first), and filter with `min_funding` to surface only instruments paying above a threshold. Polymarket returns tickers but offers no way to sort or screen across them — this does it in one call, always on current data.

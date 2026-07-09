@@ -1,0 +1,10 @@
+---
+title: "Position History"
+openapi: "GET /v3/perps/wallets/{address}/positions/history"
+---
+
+Follow one wallet's perps positions through time — how each position grew, shrank, opened, or closed, with the mark, notional, and unrealized PnL captured at each point. Filter to a single `instrument` and bound the window with `after` / `before`.
+
+Polymarket returns only a wallet's *current* portfolio. This is the accumulated history of it, which exists nowhere else. Coverage begins when we started capturing (July 9, 2026) and grows continuously; each row carries its `snapshot_ts`. When you query, we also capture a fresh snapshot if the latest one is stale, so the current state is always part of what you get back.
+
+Accepts either address form — profile address or signer — resolved automatically.

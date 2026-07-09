@@ -1,0 +1,8 @@
+---
+title: "Large Positions"
+openapi: "GET /v3/perps/positions/large"
+---
+
+A live feed of the biggest open perps positions across every tracked account, sorted by notional. Set the floor with `?min_notional=` (USD, default 10,000), narrow to one market with `?instrument=`, and cap the count with `?limit=`.
+
+Each row is that account's current position for an instrument — address, side, size, notional, and unrealized PnL — drawn from its latest snapshot (`as_of`). Use it to watch where the size is concentrated right now.

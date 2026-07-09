@@ -1,0 +1,14 @@
+---
+title: "Whale Leaderboard"
+openapi: "GET /v3/perps/leaderboard"
+---
+
+Rank perps accounts three ways:
+
+- **`metric=equity`** (default) — by account equity. The biggest accounts by capital.
+- **`metric=size`** — by total open notional across all their positions. The biggest active risk-takers.
+- **`metric=pnl`** — by total unrealized profit/loss across their open positions.
+
+Add `?instrument=BTC-USD` to rank within a single market, and `?limit=` to control how many rows.
+
+Polymarket has no perps leaderboard, and can't easily build one: its public trade feed carries no account attribution, so there's no way to rank accounts from it. This works because we snapshot every account's portfolio continuously. Each row is drawn from that account's most recent snapshot, with an `as_of` timestamp.

@@ -5230,6 +5230,24 @@
       "schema": {
        "type": "string"
       }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "description": "Sort by funding | oi | volume",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "min_funding",
+      "in": "query",
+      "required": false,
+      "description": "Only instruments with funding rate >= this",
+      "schema": {
+       "type": "number"
+      }
      }
     ],
     "responses": {
@@ -5956,6 +5974,42 @@
       "description": "Only rows before this time (Unix seconds or ms).",
       "schema": {
        "type": "string"
+      }
+     },
+     {
+      "name": "side",
+      "in": "query",
+      "required": false,
+      "description": "Filter: long | short",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "min_qty",
+      "in": "query",
+      "required": false,
+      "description": "Minimum quantity",
+      "schema": {
+       "type": "number"
+      }
+     },
+     {
+      "name": "max_qty",
+      "in": "query",
+      "required": false,
+      "description": "Maximum quantity",
+      "schema": {
+       "type": "number"
+      }
+     },
+     {
+      "name": "min_notional",
+      "in": "query",
+      "required": false,
+      "description": "Minimum notional (price x qty), USD",
+      "schema": {
+       "type": "number"
       }
      }
     ],
@@ -7082,6 +7136,51 @@
       "schema": {
        "type": "string"
       }
+     },
+     {
+      "name": "side",
+      "in": "query",
+      "required": false,
+      "description": "Filter positions: long | short",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "instrument",
+      "in": "query",
+      "required": false,
+      "description": "Restrict to one instrument",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "min_notional",
+      "in": "query",
+      "required": false,
+      "description": "Minimum position notional, USD",
+      "schema": {
+       "type": "number"
+      }
+     },
+     {
+      "name": "min_roe",
+      "in": "query",
+      "required": false,
+      "description": "Minimum return on equity",
+      "schema": {
+       "type": "number"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "description": "Sort positions by notional | pnl",
+      "schema": {
+       "type": "string"
+      }
      }
     ],
     "responses": {
@@ -7121,6 +7220,486 @@
       "content": {
        "application/json": {
         "example": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/screener": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Screener",
+    "description": "Live cross-instrument screen: per-instrument funding rate, open interest, and the **basis** (mark minus index, in bps). Sort by `funding`, `oi`, or `basis`, and filter by `min_funding`. Computed on demand \u2014 Polymarket has no cross-instrument screen.",
+    "operationId": "perps_screener",
+    "parameters": [
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "description": "funding | oi | basis",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "min_funding",
+      "in": "query",
+      "required": false,
+      "description": "Only instruments with funding rate >= this",
+      "schema": {
+       "type": "number"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "basis": "-0.012000",
+           "basis_bps": "-1.77",
+           "funding_rate": "0.0000125",
+           "index_price": "67.638",
+           "instrument_id": 10,
+           "mark_price": "67.626",
+           "open_interest": "485.754",
+           "symbol": "HYPE-USD"
+          },
+          {
+           "basis": "-20.000000",
+           "basis_bps": "-3.19",
+           "funding_rate": "0.0000125",
+           "index_price": "62781",
+           "instrument_id": 6,
+           "mark_price": "62761",
+           "open_interest": "66.53743",
+           "symbol": "BTC-USD"
+          },
+          {
+           "basis": "0.016000",
+           "basis_bps": "2.68",
+           "funding_rate": "0.00000625",
+           "index_price": "59.602",
+           "instrument_id": 5,
+           "mark_price": "59.618",
+           "open_interest": "8641.76",
+           "symbol": "SILVER-USD"
+          },
+          {
+           "basis": "-0.030000",
+           "basis_bps": "-4.07",
+           "funding_rate": "0.00000625",
+           "index_price": "73.648",
+           "instrument_id": 3,
+           "mark_price": "73.618",
+           "open_interest": "3790.472",
+           "symbol": "WTIOIL-USD"
+          },
+          {
+           "basis": "-3.000000",
+           "basis_bps": "-1.02",
+           "funding_rate": "0.00000625",
+           "index_price": "29515",
+           "instrument_id": 4,
+           "mark_price": "29512",
+           "open_interest": "153.1141",
+           "symbol": "NAS100-USD"
+          },
+          {
+           "basis": "-1.800000",
+           "basis_bps": "-2.40",
+           "funding_rate": "0.00000625",
+           "index_price": "7498.9",
+           "instrument_id": 1,
+           "mark_price": "7497.1",
+           "open_interest": "793.42066",
+           "symbol": "SP500-USD"
+          },
+          {
+           "basis": "-0.020000",
+           "basis_bps": "-1.32",
+           "funding_rate": "0.00000625",
+           "index_price": "151.38",
+           "instrument_id": 9,
+           "mark_price": "151.36",
+           "open_interest": "1880.1307",
+           "symbol": "SPCX-USD"
+          },
+          {
+           "basis": "-1.300000",
+           "basis_bps": "-3.16",
+           "funding_rate": "0.00000625",
+           "index_price": "4116.4",
+           "instrument_id": 2,
+           "mark_price": "4115.1",
+           "open_interest": "226.72911",
+           "symbol": "GOLD-USD"
+          },
+          {
+           "basis": "-0.043000",
+           "basis_bps": "-5.52",
+           "funding_rate": "-0.00000525",
+           "index_price": "77.92",
+           "instrument_id": 8,
+           "mark_price": "77.877",
+           "open_interest": "1389.3",
+           "symbol": "SOL-USD"
+          },
+          {
+           "basis": "-1.000000",
+           "basis_bps": "-5.73",
+           "funding_rate": "-0.00000623",
+           "index_price": "1746.7",
+           "instrument_id": 7,
+           "mark_price": "1745.7",
+           "open_interest": "2357.9583",
+           "symbol": "ETH-USD"
+          }
+         ]
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/leaderboard": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Whale leaderboard",
+    "description": "Top perps accounts, ranked. `metric=equity` ranks by account equity; `metric=size` by total open notional; `metric=pnl` by total unrealized PnL. Optional `instrument` filter. **Polymarket has no perps leaderboard** \u2014 perps trades carry no account attribution, so this only exists because we snapshot every account's portfolio over time.",
+    "operationId": "perps_leaderboard",
+    "parameters": [
+     {
+      "name": "metric",
+      "in": "query",
+      "required": false,
+      "description": "equity (default) | size | pnl",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "instrument",
+      "in": "query",
+      "required": false,
+      "description": "Restrict to one instrument",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows (default 100)",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "address": "0x4f78dcb560f85bb028d6b75467c4bcb6412f8731",
+           "as_of": 1783602532386,
+           "positions": 3,
+           "total_notional": "1815468.212200",
+           "total_unrealized_pnl": "-5581.58753631389691173079221197"
+          },
+          {
+           "address": "0x2e4f2c311efbb8ab3adb9f7b7667af92e8a2af96",
+           "as_of": 1783602083934,
+           "positions": 2,
+           "total_notional": "1789051.590600",
+           "total_unrealized_pnl": "4691.6233452882009376598302290"
+          },
+          {
+           "address": "0xece7144d08695fee681496a5de501a0faa6c05ec",
+           "as_of": 1783602083934,
+           "positions": 2,
+           "total_notional": "1785020.450360",
+           "total_unrealized_pnl": "-13626.8974648418160300000000169"
+          }
+         ],
+         "metric": "size"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/wallets/{address}/positions/history": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Position history",
+    "description": "A wallet's perps positions over time \u2014 how each position changed, opened, or closed, with equity and PnL trajectory. Polymarket only returns a wallet's *current* portfolio; this is the accumulated history. Filter by `instrument` and time window (`after`/`before`). A read also captures a fresh snapshot when the latest is stale, so the current state is always included.",
+    "operationId": "perps_positions_history",
+    "parameters": [
+     {
+      "name": "address",
+      "in": "path",
+      "required": true,
+      "description": "Polymarket proxy wallet or signer EOA (`0x...`). Resolved automatically.",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "instrument",
+      "in": "query",
+      "required": false,
+      "description": "Restrict to one instrument",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "description": "Only rows after this time (Unix s or ms)",
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "before",
+      "in": "query",
+      "required": false,
+      "description": "Only rows before this time",
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows (default 500)",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "entry_price": "29618",
+           "instrument_id": 4,
+           "mark_price": "29512",
+           "notional": "785550.416000",
+           "side": "long",
+           "size": "26.6180",
+           "snapshot_ts": 1783602532386,
+           "symbol": "NAS100-USD",
+           "unrealized_pnl": "-2872.9108921767877465840364244"
+          },
+          {
+           "entry_price": "7467.5",
+           "instrument_id": 1,
+           "mark_price": "7497.8",
+           "notional": "1004045.393600",
+           "side": "short",
+           "size": "-133.91200",
+           "snapshot_ts": 1783602532386,
+           "symbol": "SP500-USD",
+           "unrealized_pnl": "-2324.0915037805232000"
+          },
+          {
+           "entry_price": "1780.9",
+           "instrument_id": 7,
+           "mark_price": "1746",
+           "notional": "25872.402600",
+           "side": "long",
+           "size": "14.8181",
+           "snapshot_ts": 1783602532386,
+           "symbol": "ETH-USD",
+           "unrealized_pnl": "-384.58514035658596514675578757"
+          }
+         ],
+         "signer": "0x4f78dcb560f85bb028d6b75467c4bcb6412f8731"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/positioning/{instrument}": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Positioning over time",
+    "description": "Aggregate positioning for one instrument across all tracked accounts, over time: total long size, total short size, and the net. Answers 'is the crowd long or short, and how is that shifting' \u2014 impossible from Polymarket's per-account API.",
+    "operationId": "perps_positioning",
+    "parameters": [
+     {
+      "name": "instrument",
+      "in": "path",
+      "required": true,
+      "description": "Instrument id (`6`), symbol (`BTC-USD`), or bare asset (`btc`).",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "after",
+      "in": "query",
+      "required": false,
+      "description": "Window start (Unix s or ms)",
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "before",
+      "in": "query",
+      "required": false,
+      "description": "Window end",
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max snapshots (default 500)",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "long_size": "2.35002",
+           "net_size": "-0.81676",
+           "positions": 28,
+           "short_size": "3.16678",
+           "snapshot_ts": 1783602083934
+          },
+          {
+           "long_size": "2.35002",
+           "net_size": "-0.81676",
+           "positions": 28,
+           "short_size": "3.16678",
+           "snapshot_ts": 1783601483559
+          }
+         ],
+         "instrument_id": 6,
+         "symbol": "BTC-USD"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/v3/perps/positions/large": {
+   "get": {
+    "tags": [
+     "Perps"
+    ],
+    "summary": "Large positions",
+    "description": "Current large open positions across all tracked accounts, notional-sorted \u2014 a live whale-position feed. Filter by `min_notional` and `instrument`.",
+    "operationId": "perps_large_positions",
+    "parameters": [
+     {
+      "name": "min_notional",
+      "in": "query",
+      "required": false,
+      "description": "Minimum position notional in USD (default 10000)",
+      "schema": {
+       "type": "number"
+      }
+     },
+     {
+      "name": "instrument",
+      "in": "query",
+      "required": false,
+      "description": "Restrict to one instrument",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "description": "Max rows (default 100)",
+      "schema": {
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Success",
+      "content": {
+       "application/json": {
+        "example": {
+         "data": [
+          {
+           "address": "0x4f78dcb560f85bb028d6b75467c4bcb6412f8731",
+           "as_of": 1783602532386,
+           "instrument_id": 1,
+           "notional": "1004045.393600",
+           "side": "short",
+           "size": "-133.91200",
+           "symbol": "SP500-USD",
+           "unrealized_pnl": "-2324.0915037805232000"
+          },
+          {
+           "address": "0x2e4f2c311efbb8ab3adb9f7b7667af92e8a2af96",
+           "as_of": 1783602083934,
+           "instrument_id": 1,
+           "notional": "1003911.481600",
+           "side": "long",
+           "size": "133.91200",
+           "symbol": "SP500-USD",
+           "unrealized_pnl": "2324.0915037805232000"
+          },
+          {
+           "address": "0xece7144d08695fee681496a5de501a0faa6c05ec",
+           "as_of": 1783602083934,
+           "instrument_id": 1,
+           "notional": "1002539.192360",
+           "side": "short",
+           "size": "-133.72895",
+           "symbol": "SP500-USD",
+           "unrealized_pnl": "-7024.165515422452030000000004"
+          }
+         ]
+        }
        }
       }
      }

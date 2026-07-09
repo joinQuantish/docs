@@ -1,0 +1,10 @@
+---
+title: "Positioning"
+openapi: "GET /v3/perps/positioning/{instrument}"
+---
+
+How the whole market is positioned on one instrument, over time. Each row is a point in time with the total **long** size, total **short** size, and the **net** across every tracked account. Watch the net flip, or watch one side build up ahead of a move.
+
+Add `after` / `before` (Unix seconds or milliseconds) to bound the window, and `limit` for the number of points.
+
+This is a cross-account aggregate. Polymarket's API only exposes one account at a time and keeps no history, so this view doesn't exist there at all.

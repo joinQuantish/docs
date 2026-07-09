@@ -1,0 +1,23 @@
+---
+title: "Perps Analytics"
+description: "Historical and cross-account perps data that Polymarket does not offer — whale leaderboards, positioning over time, position history, and a live large-position feed."
+---
+
+Everything else in the Perps API is live market data. This section is different: it answers questions that **need accumulated history and a view across every account** — which Polymarket's API cannot give you, because its perps trades carry no account attribution and it only ever returns a wallet's *current* portfolio.
+
+We capture every perps account's portfolio continuously, so we can serve:
+
+| Endpoint | Question it answers |
+|----------|---------------------|
+| [Whale Leaderboard](/perps/analytics/leaderboard) | Who are the biggest perps accounts — by equity, exposure, or PnL? |
+| [Positioning](/perps/analytics/positioning) | Is the crowd net long or short on an instrument, and how is that shifting? |
+| [Large Positions](/perps/analytics/large-positions) | Which accounts are holding the biggest positions right now? |
+| [Position History](/perps/analytics/position-history) | How has one wallet's position changed over time? |
+
+## Freshness and honesty
+
+These read from an archive we've been building continuously. Every row carries an `as_of` or `snapshot_ts` timestamp so you always know how fresh it is. Position history reaches back only as far as we've been capturing (it began July 9, 2026 and grows from there) — we never present a gap as if it were complete data. For the current, exact state of any single wallet, the live [portfolio endpoint](/perps/wallets/portfolio) is always available as a pass-through.
+
+## A note on wallets
+
+All of these accept either address form — a Polymarket profile address or the underlying signer — and resolve it automatically ([how that works](/perps/wallet-mapping)).

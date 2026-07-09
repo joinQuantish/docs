@@ -332,6 +332,7 @@
             "pages": [
               "perps/market-data/instruments",
               "perps/market-data/tickers",
+              "perps/market-data/screener",
               "perps/market-data/bbo",
               "perps/market-data/book",
               "perps/market-data/trades",
@@ -349,6 +350,16 @@
               "perps/wallets/overview",
               "perps/wallets/portfolio",
               "perps/wallets/registered"
+            ]
+          },
+          {
+            "group": "Perps Analytics",
+            "pages": [
+              "perps/analytics/overview",
+              "perps/analytics/leaderboard",
+              "perps/analytics/positioning",
+              "perps/analytics/large-positions",
+              "perps/analytics/position-history"
             ]
           },
           {
