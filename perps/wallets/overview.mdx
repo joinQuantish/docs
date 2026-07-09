@@ -13,7 +13,7 @@ Accepts a Polymarket profile (proxy) address **or** the underlying account addre
 {
   "input": "0x09b428f7c2b469786286214aa5c90dd9015f7320",
   "pm_address": "0x09b428f7c2b469786286214aa5c90dd9015f7320",
-  "wallet_type": "safe",
+  "wallet_type": "deposit",
   "signer": "0x509e390373f5bde0bb02c1019ee39cf0ef23a1a4",
   "registered": true,
   "equity": "5350.00",
@@ -39,7 +39,7 @@ Accepts a Polymarket profile (proxy) address **or** the underlying account addre
 | `input` | The address you passed, normalized |
 | `pm_address` | The Polymarket proxy address (null for plain-EOA users) |
 | `signer` | The perps account address |
-| `wallet_type` | `eoa`, `safe`, or `magic` — see [wallet mapping](/perps/wallet-mapping) |
+| `wallet_type` | `eoa`, `deposit`, `safe`, or `proxy` — see [wallet mapping](/perps/wallet-mapping) |
 | `registered` | Whether this account has activated perps |
 | `positions` | Empty for registered accounts with nothing open; absent portfolio fields for unregistered accounts |
 

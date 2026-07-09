@@ -27,7 +27,7 @@ The response always tells you what was resolved:
 ```json
 {
   "input": "0x09b428f7c2b469786286214aa5c90dd9015f7320",
-  "wallet_type": "safe",
+  "wallet_type": "deposit",
   "signer": "0x509e390373f5bde0bb02c1019ee39cf0ef23a1a4",
   "registered": false
 }
@@ -37,25 +37,28 @@ The relationship between a proxy and its signer never changes, so once an addres
 
 ## Wallet types
 
+Polymarket has four account/wallet types, and `wallet_type` uses their official names:
+
 | `wallet_type` | What it is | Resolution |
 |---------------|-----------|------------|
-| `eoa` | A plain private-key wallet, no proxy contract. Some users trade Polymarket this way. | The address is its own perps account. |
-| `safe` | The standard Polymarket proxy contract (users who connected a wallet like MetaMask). | Resolved automatically. |
-| `magic` | Email-login accounts (Magic wallets). | Not yet resolvable from the chain alone — see below. |
+| `eoa` | A plain private-key wallet, no contract. Some users trade Polymarket this way. | The address is its own perps account. |
+| `deposit` | A **deposit wallet** — Polymarket's current wallet type, deployed automatically for new accounts (including the newer beacon-upgradeable variant). | Resolved automatically. |
+| `safe` | A Gnosis Safe — the wallet type for accounts that connected a browser wallet like MetaMask. | Resolved automatically. |
+| `proxy` | A **Polymarket Proxy** — the wallet type behind email-login accounts. | Not yet resolvable — see below. |
 
-## The magic-wallet edge case
+## The proxy-wallet edge case
 
-Accounts created through Polymarket's email login ("magic" wallets) use a different kind of proxy that cannot be resolved automatically yet. For these, requests return `422` with a clear error:
+Email-login accounts use a Polymarket Proxy wallet whose owner cannot be resolved automatically yet. For these, requests return `422` with a clear error:
 
 ```json
 {
-  "error": "magic wallet",
-  "detail": "this Polymarket account is an email-login (magic) wallet; automatic resolution is not available for these yet — pass the account's signer address directly",
+  "error": "polymarket proxy wallet",
+  "detail": "this is a Polymarket Proxy wallet (email-login accounts); automatic resolution is not available for these yet — pass the account's signer address directly",
   "address": "0xf0318c32136c2db7fec88b84869aee6a1106c80c"
 }
 ```
 
-If you have the account's signer address from another source, pass it directly — everything works from there. Automatic resolution for magic wallets is on our roadmap.
+If you have the account's signer address from another source, pass it directly — everything works from there. Automatic resolution for proxy wallets is on our roadmap.
 
 ## Registration
 
