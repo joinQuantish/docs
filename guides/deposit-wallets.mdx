@@ -11,6 +11,8 @@ Polymarket is rolling out **deposit wallets** as a new account type alongside th
 
 Deposit wallets are Polymarket's new smart contract wallet type for new accounts. They replace the Gnosis Safe proxy that existing accounts use.
 
+**Heard the term "beacon wallet"?** It's the same thing. Newer deposit wallets are built so Polymarket can upgrade all of them at once — that upgradeable variant is what gets called a beacon wallet. There's also an earlier standalone variant from before that change. Both behave identically, and everything on this page (and the [/resolve endpoint](/api-reference/wallets/resolve)) handles both — you never need to tell them apart.
+
 From your perspective as a builder, the key differences are:
 
 | | Safe proxy (existing) | Deposit wallet (new) |
@@ -34,7 +36,7 @@ npm install polynode-sdk@0.10.6  # TypeScript
 pip install polynode==0.10.3     # Python
 ```
 
-**If you only read data (positions, trades, /resolve):** the response shape is unchanged. `/resolve` still returns `safe`, `eoa`, `username`, and `type`, but `safe` now means the preferred Polymarket trading wallet. If an EOA has a deployed deposit wallet, `safe` returns the deposit wallet.
+**If you only read data (positions, trades, /resolve):** the response shape is unchanged, with one addition. `/resolve` still returns `safe`, `eoa`, `username`, and `type` exactly as before (`safe` means the preferred Polymarket trading wallet — the deposit wallet when one is deployed), and now also includes a `wallets` object listing every wallet the user has deployed, by type.
 
 **If you call the Polymarket CLOB directly (without our SDK):** you need to implement ERC-7739 TypedDataSign wrapping for `signatureType: 3` orders. See the [signing details](#how-poly_1271-signing-works) below.
 
