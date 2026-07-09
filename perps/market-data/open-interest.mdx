@@ -1,0 +1,35 @@
+---
+title: "Open Interest History"
+description: "Open-interest time series — a polynode-exclusive dataset the exchange does not offer."
+---
+
+Open interest is normally only visible as a live number on the [ticker](/perps/market-data/tickers). This endpoint gives you its history:
+
+```bash
+curl "https://api.polynode.dev/v3/perps/oi/btc?after=1783500000&limit=100&key=$POLYNODE_API_KEY"
+```
+
+```json
+{
+  "instrument_id": 6,
+  "symbol": "BTC-USD",
+  "data": [
+    {
+      "timestamp": 1783571000000,
+      "open_interest": "67.44542",
+      "mark_price": "62010",
+      "funding_rate": "0.0000125"
+    }
+  ],
+  "more": true
+}
+```
+
+Each sample carries the mark price and funding rate at that moment, so OI-vs-price studies need no joins. Samples are minute-resolution, newest first.
+
+| Parameter | Description |
+|-----------|-------------|
+| `after` / `before` | Time window (Unix seconds or ms) |
+| `limit` | Max samples (default 500, up to 5000) |
+
+The series accrues from July 9, 2026 onward.

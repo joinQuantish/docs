@@ -411,6 +411,51 @@
         ]
       },
       {
+        "tab": "Perps",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "perps/overview",
+              "perps/quickstart",
+              "perps/wallet-mapping",
+              "perps/rate-limits"
+            ]
+          },
+          {
+            "group": "Market Data",
+            "pages": [
+              "perps/market-data/instruments",
+              "perps/market-data/tickers",
+              "perps/market-data/bbo",
+              "perps/market-data/book",
+              "perps/market-data/trades",
+              "perps/market-data/statistics",
+              "perps/market-data/klines",
+              "perps/market-data/funding",
+              "perps/market-data/open-interest",
+              "perps/market-data/volume",
+              "perps/market-data/meta"
+            ]
+          },
+          {
+            "group": "Wallets",
+            "pages": [
+              "perps/wallets/overview",
+              "perps/wallets/portfolio",
+              "perps/wallets/registered"
+            ]
+          },
+          {
+            "group": "Streaming",
+            "pages": [
+              "perps/websocket/overview",
+              "perps/websocket/channels"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Crypto Prices",
         "badge": "New",
         "groups": [

@@ -1,0 +1,43 @@
+---
+title: "Tickers"
+description: "Live index, mark, last and mid prices, open interest, and funding for every instrument."
+---
+
+All instruments at once:
+
+```bash
+curl "https://api.polynode.dev/v3/perps/tickers?key=$POLYNODE_API_KEY"
+```
+
+One instrument — by id, symbol, or bare asset:
+
+```bash
+curl "https://api.polynode.dev/v3/perps/tickers/btc?key=$POLYNODE_API_KEY"
+```
+
+```json
+{
+  "instrument_id": 6,
+  "symbol": "BTC-USD",
+  "index_price": "62022",
+  "mark_price": "62010",
+  "last_price": "61989",
+  "mid_price": "62010",
+  "open_interest": "67.44542",
+  "funding_rate": "0.0000125",
+  "next_funding": 1783573200000,
+  "timestamp": 1783571023159
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `index_price` | External reference price of the underlying |
+| `mark_price` | Exchange mark used for margining and liquidations |
+| `last_price` | Price of the most recent trade |
+| `mid_price` | Orderbook midpoint |
+| `open_interest` | Open contracts (base-asset units) |
+| `funding_rate` | Current hourly funding rate |
+| `next_funding` | When the next funding payment occurs (ms) |
+
+Tickers update continuously; for sub-second consumption use the [`perps_tickers` WebSocket channel](/perps/websocket/channels).

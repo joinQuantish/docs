@@ -1,0 +1,90 @@
+---
+title: "Channels"
+description: "Every perps WebSocket channel and its payload."
+---
+
+| Channel | Scope | Payload |
+|---------|-------|---------|
+| `perps_tickers` | all instruments | Ticker updates: index/mark/last/mid price, open interest, funding rate, next funding |
+| `perps_statistics` | all instruments | Rolling 24h stats per instrument |
+| `perps_bbo:<instrument>` | one instrument | Best bid/offer changes |
+| `perps_book:<instrument>` | one instrument | Full snapshot on subscribe, then book updates (top 20 levels) |
+| `perps_trades:<instrument>` | one instrument | Executions as they print |
+| `perps_klines:<instrument>:<interval>` | one instrument | Closed candles; streamed intervals are `1m` and `1h` |
+
+## Example events
+
+`perps_tickers`:
+
+```json
+{
+  "channel": "perps_tickers",
+  "data": {
+    "instrument_id": 6,
+    "symbol": "BTC-USD",
+    "index_price": "62022",
+    "mark_price": "62010",
+    "last_price": "61989",
+    "mid_price": "62010",
+    "open_interest": "67.44542",
+    "funding_rate": "0.0000125",
+    "next_funding": 1783573200000,
+    "timestamp": 1783571023159
+  }
+}
+```
+
+`perps_trades:<instrument>`:
+
+```json
+{
+  "channel": "perps_trades",
+  "data": {
+    "instrument_id": 6,
+    "symbol": "BTC-USD",
+    "data": [
+      {
+        "trade_id": 7504966405671651,
+        "instrument_id": 6,
+        "symbol": "BTC-USD",
+        "side": "short",
+        "price": "62009",
+        "quantity": "0.00842",
+        "timestamp": 1783571031288
+      }
+    ]
+  }
+}
+```
+
+`perps_book:<instrument>` (snapshot on subscribe, then updates):
+
+```json
+{
+  "channel": "perps_book",
+  "data": {
+    "instrument_id": 6,
+    "symbol": "BTC-USD",
+    "bids": [["62009", "0.03999"]],
+    "asks": [["62010", "0.05098"]],
+    "timestamp": 1783571023159
+  }
+}
+```
+
+`perps_klines:<instrument>:<interval>`:
+
+```json
+{
+  "channel": "perps_klines",
+  "data": {
+    "instrument_id": 6,
+    "symbol": "BTC-USD",
+    "interval": "1m",
+    "candle": [1783571040000, "62010", "62015", "62001", "62009", "1.2043", 18],
+    "timestamp": 1783571100000
+  }
+}
+```
+
+Candles are `[open_time, open, high, low, close, volume, trade_count]` — the same layout as [REST klines](/perps/market-data/klines).

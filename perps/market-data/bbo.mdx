@@ -1,0 +1,26 @@
+---
+title: "Best Bid/Offer"
+description: "Top-of-book price and size for one or all instruments."
+---
+
+```bash
+# All instruments
+curl "https://api.polynode.dev/v3/perps/bbo?key=$POLYNODE_API_KEY"
+
+# One instrument
+curl "https://api.polynode.dev/v3/perps/bbo/eth?key=$POLYNODE_API_KEY"
+```
+
+```json
+{
+  "instrument_id": 7,
+  "symbol": "ETH-USD",
+  "bid_price": "1729.7",
+  "bid_quantity": "0.5653",
+  "ask_price": "1729.8",
+  "ask_quantity": "3.7577",
+  "timestamp": 1783571033336
+}
+```
+
+Lighter than fetching the full [book](/perps/market-data/book) when you only need the touch. Streams as [`perps_bbo:<instrument>`](/perps/websocket/channels).

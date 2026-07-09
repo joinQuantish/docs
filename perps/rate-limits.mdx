@@ -1,0 +1,34 @@
+---
+title: "Rate Limits"
+description: "Request and WebSocket limits for the perps endpoints, by plan."
+---
+
+Perps REST endpoints share your key's standard `/v3` rate limit — there is no separate perps quota to think about.
+
+| Plan | Requests / minute |
+|------|-------------------|
+| Free | 120 |
+| Starter | 1,000 |
+| Growth | 2,000 |
+| Enterprise | 4,000 (custom by agreement) |
+
+Every response carries `x-ratelimit-limit`, `x-ratelimit-remaining`, and `x-ratelimit-reset` headers.
+
+## WebSocket limits
+
+Concurrent connections to `wss://perps.polynode.dev/ws` per key:
+
+| Plan | Connections | Channel subscriptions per key |
+|------|-------------|-------------------------------|
+| Free | 1 | 1 |
+| Starter | 10 | 500 |
+| Growth | 50 | 3,000 |
+| Enterprise | unlimited | 50,000 |
+
+One connection can carry all your channels — the subscription cap is what matters, and a single subscription like `perps_tickers` covers every instrument at once.
+
+## Practical notes
+
+- If you find yourself polling market data faster than about once a second, the [WebSocket](/perps/websocket/overview) will serve you better — it pushes every update as it happens.
+- Wallet portfolio data refreshes every few seconds; querying the same wallet faster than that returns the same snapshot.
+- Historical endpoints (`/oi`, `/volume`, time-windowed `/trades`) paginate with `limit` + `more`; prefer larger pages over many small ones.

@@ -1,0 +1,46 @@
+---
+title: "Fees & Exchange Meta"
+description: "Fee schedule, exchange rate-limit tiers, contract info, collateral assets, and index composition."
+---
+
+Five small reference endpoints round out the surface:
+
+## Fee schedule
+
+```bash
+curl "https://api.polynode.dev/v3/perps/fees?key=$POLYNODE_API_KEY"
+```
+
+Tiered maker/taker rates by 30-day volume, per instrument category (equity instruments carry different rates than crypto/index/commodity). Base tier is 4 bps taker / 1.25 bps maker.
+
+## Exchange rate-limit tiers
+
+```bash
+curl "https://api.polynode.dev/v3/perps/limit-tiers?key=$POLYNODE_API_KEY"
+```
+
+Polymarket's exchange-level trading limits by 14-day volume. Informational — your polynode rate limits are documented [here](/perps/rate-limits).
+
+## Exchange info
+
+```bash
+curl "https://api.polynode.dev/v3/perps/exchange?key=$POLYNODE_API_KEY"
+```
+
+EIP-712 domain and custody contract details for the perps exchange on Polygon.
+
+## Collateral assets
+
+```bash
+curl "https://api.polynode.dev/v3/perps/assets?key=$POLYNODE_API_KEY"
+```
+
+Collateral token config (pUSD address, decimals, withdrawal fee).
+
+## Index composition
+
+```bash
+curl "https://api.polynode.dev/v3/perps/index/BTC?key=$POLYNODE_API_KEY"
+```
+
+Index price and its constituent sources for an underlying asset.

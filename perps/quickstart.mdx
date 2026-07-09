@@ -1,0 +1,91 @@
+---
+title: "Quickstart"
+description: "From zero to live perps data in three requests."
+---
+
+All you need is a polynode API key from the [dashboard](https://polynode.dev/dashboard).
+
+## 1. List the instruments
+
+```bash
+curl "https://api.polynode.dev/v3/perps/instruments?key=$POLYNODE_API_KEY"
+```
+
+```json
+{
+  "data": [
+    {
+      "instrument_id": 6,
+      "symbol": "BTC-USD",
+      "category": "crypto",
+      "max_leverage": 20,
+      "funding_interval": "1h",
+      "risk_tiers": [{ "lower_bound": "0", "max_leverage": 20 }],
+      "first_seen": 1783569304465
+    }
+  ]
+}
+```
+
+## 2. Get live prices
+
+```bash
+curl "https://api.polynode.dev/v3/perps/tickers/btc?key=$POLYNODE_API_KEY"
+```
+
+```json
+{
+  "instrument_id": 6,
+  "symbol": "BTC-USD",
+  "index_price": "62022",
+  "mark_price": "62010",
+  "last_price": "61989",
+  "mid_price": "62010",
+  "open_interest": "67.44542",
+  "funding_rate": "0.0000125",
+  "next_funding": 1783573200000,
+  "timestamp": 1783571023159
+}
+```
+
+## 3. Check a wallet's perps account
+
+Pass any Polymarket address — profile address or account address, we resolve it:
+
+```bash
+curl "https://api.polynode.dev/v3/perps/wallets/0xd4983f729636aacb733171edc1fa8618a21ab84d?key=$POLYNODE_API_KEY"
+```
+
+```json
+{
+  "input": "0xd4983f729636aacb733171edc1fa8618a21ab84d",
+  "wallet_type": "eoa",
+  "signer": "0xd4983f729636aacb733171edc1fa8618a21ab84d",
+  "registered": true,
+  "equity": "125.42",
+  "positions": [],
+  "timestamp": 1783569406173
+}
+```
+
+## 4. Stream it
+
+One WebSocket connection carries every perps channel:
+
+```javascript
+const ws = new WebSocket("wss://perps.polynode.dev/ws?key=pn_live_...");
+
+ws.onopen = () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    channels: ["perps_tickers", "perps_trades:BTC-USD", "perps_book:ETH-USD"],
+  }));
+};
+
+ws.onmessage = (msg) => {
+  const event = JSON.parse(msg.data);
+  console.log(event.channel, event.data);
+};
+```
+
+See [WebSocket](/perps/websocket/overview) for the full channel list and protocol.

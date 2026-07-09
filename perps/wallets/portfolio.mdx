@@ -1,0 +1,45 @@
+---
+title: "Portfolio"
+description: "Live perps positions and equity for any wallet, enriched with marks and notionals."
+---
+
+```bash
+curl "https://api.polynode.dev/v3/perps/wallets/0xd4983f729636aacb733171edc1fa8618a21ab84d/portfolio?key=$POLYNODE_API_KEY"
+```
+
+```json
+{
+  "signer": "0xd4983f729636aacb733171edc1fa8618a21ab84d",
+  "registered": true,
+  "equity": "5350.00",
+  "positions": [
+    {
+      "instrument_id": 6,
+      "symbol": "BTC-USD",
+      "size": "0.5",
+      "side": "long",
+      "entry_price": "61000",
+      "mark_price": "62010",
+      "notional": "31005.00",
+      "unrealized_pnl": "505.00",
+      "return_on_equity": "0.08"
+    }
+  ],
+  "timestamp": 1783571023159
+}
+```
+
+## Fields
+
+Each position carries the raw signed size and entry data, plus:
+
+| Field | Meaning |
+|-------|---------|
+| `symbol` | Instrument symbol, so no lookup table is needed |
+| `side` | `long` / `short`, made explicit (raw `size` stays signed: negative = short) |
+| `mark_price` | Live mark at response time |
+| `notional` | Absolute position value at mark (derived, 2dp) |
+
+`equity`, `size`, `entry_price`, and `unrealized_pnl` keep their exact string precision.
+
+Portfolio data refreshes every few seconds per wallet. Works with either address form — proxy or signer ([details](/perps/wallet-mapping)).

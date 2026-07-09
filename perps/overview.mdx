@@ -1,0 +1,62 @@
+---
+title: "Perps Overview"
+description: "Polymarket perpetual futures data through the polynode API: live market data, orderbooks, trades, funding, klines, wallet portfolios, and WebSocket streaming."
+---
+
+Polymarket launched perpetual futures as a separate product next to its prediction markets: BTC, ETH, SOL, gold, silver, oil, S&P 500, Nasdaq and more, with up to 20x leverage and hourly funding. It is a whole new side of Polymarket, with its own instruments, its own account model, and its own market data.
+
+The polynode Perps API covers all of it with the integration you already have: one API key, one base URL, one WebSocket subscription model — plus historical trade, funding, open-interest and volume series, and automatic mapping between prediction-market wallets and perps accounts.
+
+## Base URL
+
+```
+https://api.polynode.dev/v3/perps
+```
+
+Authentication works exactly like every other `/v3` endpoint — pass your key as a query parameter or header:
+
+```bash
+# Query string
+curl "https://api.polynode.dev/v3/perps/tickers?key=pn_live_..."
+
+# Header
+curl -H "x-api-key: pn_live_..." https://api.polynode.dev/v3/perps/tickers
+```
+
+Get a key from the [dashboard](https://polynode.dev/dashboard).
+
+## What you can build
+
+- **Perps trading dashboards** — live tickers, orderbooks, best bid/offer, recent trades, and candles for every listed instrument, over REST or a single WebSocket connection
+- **Portfolio trackers** — look up any wallet's perps positions and equity. Pass either the Polymarket profile address or the underlying account address; resolution is automatic ([how it works](/perps/wallet-mapping))
+- **Funding and analytics tools** — hourly funding-rate history, 24h statistics, OHLCV candles, plus polynode-exclusive open-interest and volume time series
+- **Cross-product platforms** — perps data lives under the same `/v3` surface as prediction-market trades, positions, and P&L, so one integration covers both sides of Polymarket
+
+## Instruments
+
+10 instruments are live as of July 2026 across four categories — `crypto`, `index`, `commodity`, and `equity` — and Polymarket has dozens more defined for future launch. The API discovers new instruments automatically as they list; nothing is hardcoded. Everywhere an endpoint takes an instrument you can pass the numeric id (`6`), the full symbol (`BTC-USD`), or the bare asset (`btc`).
+
+## Data conventions
+
+- **Prices and quantities are strings.** The exchange uses high-precision decimals; we pass them through untouched so you never lose precision to floating point.
+- **Timestamps are Unix milliseconds** in responses. Time-range filters (`after`, `before`) accept seconds or milliseconds — values are detected automatically.
+- **Lists come wrapped** as `{"data": [...]}`, with a `more` flag on paginated endpoints.
+- **`instrument_id` and `symbol` appear together** in every response, so you never need a separate lookup call.
+
+## Live vs. historical
+
+Live market data (tickers, books, bbo, trades, statistics) reflects the current state of the market at request time. Historical series — trade history, funding, klines, open interest, volume — accrue from July 9, 2026 onward and keep growing.
+
+## Endpoint map
+
+| Area | Endpoints |
+|------|-----------|
+| Market data | [instruments](/perps/market-data/instruments), [tickers](/perps/market-data/tickers), [bbo](/perps/market-data/bbo), [book](/perps/market-data/book), [trades](/perps/market-data/trades), [statistics](/perps/market-data/statistics), [klines](/perps/market-data/klines), [funding](/perps/market-data/funding) |
+| polynode-exclusive series | [open interest](/perps/market-data/open-interest), [volume](/perps/market-data/volume) |
+| Exchange meta | [fees, limit tiers, exchange info, assets, index prices](/perps/market-data/meta) |
+| Wallets | [wallet overview](/perps/wallets/overview), [portfolio](/perps/wallets/portfolio), [registered](/perps/wallets/registered) |
+| Streaming | [WebSocket](/perps/websocket/overview) |
+
+## Trading
+
+This release covers market and account **data**. Order placement and account management for perps are a separate, upcoming track — if you need them early, [talk to us](mailto:team@polynode.dev).

@@ -1,0 +1,33 @@
+---
+title: "Volume History"
+description: "Bucketed notional volume and trade counts rolled up from the polynode trade archive."
+---
+
+```bash
+curl "https://api.polynode.dev/v3/perps/volume/btc?bucket=1h&limit=24&key=$POLYNODE_API_KEY"
+```
+
+```json
+{
+  "instrument_id": 6,
+  "symbol": "BTC-USD",
+  "bucket": "1h",
+  "data": [
+    {
+      "timestamp": 1783569600000,
+      "notional_volume": "1284304.22",
+      "quantity": "20.71",
+      "trade_count": 342
+    }
+  ],
+  "more": false
+}
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `bucket` | `1m`, `5m`, `15m`, `1h`, `4h`, `1d` (default `1h`) |
+| `after` / `before` | Time window (Unix seconds or ms) |
+| `limit` | Max buckets (default 200, up to 2000) |
+
+`notional_volume` is price × quantity summed in USD; `quantity` is base-asset units. Rolled up from every archived execution, accruing from July 9, 2026 onward.

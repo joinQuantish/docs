@@ -1,0 +1,68 @@
+---
+title: "Wallet Mapping"
+description: "Why Polymarket perps accounts use a different address than the profile you see, and how polynode resolves it for you automatically."
+---
+
+If you take a wallet address from a Polymarket profile, a leaderboard, or from polynode's prediction-market endpoints and ask the perps exchange about it, you will usually get nothing back. This page explains why, and what polynode does about it.
+
+## Two addresses per user
+
+Most Polymarket users trade prediction markets through a **proxy wallet** — a small smart contract deployed for them on Polygon. That contract address is their public identity: it is what appears on their profile page, on leaderboards, and in every prediction-market dataset (including polynode's `/v3` wallet endpoints).
+
+The perps exchange identifies users differently: by the **signer** — the private-key account that controls the proxy. The signer is not shown on the Polymarket frontend, and there is no public endpoint that translates one into the other.
+
+So a user's prediction-market history lives under one address, and their perps account lives under another. Without the mapping, you cannot connect them.
+
+## What polynode does
+
+Every perps wallet endpoint accepts **either address form** and resolves it server-side:
+
+```bash
+# Polymarket profile (proxy) address — resolved to the perps account automatically
+curl "https://api.polynode.dev/v3/perps/wallets/0x09b428f7c2b469786286214aa5c90dd9015f7320?key=$KEY"
+```
+
+The response always tells you what was resolved:
+
+```json
+{
+  "input": "0x09b428f7c2b469786286214aa5c90dd9015f7320",
+  "wallet_type": "safe",
+  "signer": "0x509e390373f5bde0bb02c1019ee39cf0ef23a1a4",
+  "registered": false
+}
+```
+
+The relationship between a proxy and its signer never changes, so once an address has been seen, repeat lookups are instant.
+
+## Wallet types
+
+| `wallet_type` | What it is | Resolution |
+|---------------|-----------|------------|
+| `eoa` | A plain private-key wallet, no proxy contract. Some users trade Polymarket this way. | The address is its own perps account. |
+| `safe` | The standard Polymarket proxy contract (users who connected a wallet like MetaMask). | Resolved automatically. |
+| `magic` | Email-login accounts (Magic wallets). | Not yet resolvable from the chain alone — see below. |
+
+## The magic-wallet edge case
+
+Accounts created through Polymarket's email login ("magic" wallets) use a different kind of proxy that cannot be resolved automatically yet. For these, requests return `422` with a clear error:
+
+```json
+{
+  "error": "magic wallet",
+  "detail": "this Polymarket account is an email-login (magic) wallet; automatic resolution is not available for these yet — pass the account's signer address directly",
+  "address": "0xf0318c32136c2db7fec88b84869aee6a1106c80c"
+}
+```
+
+If you have the account's signer address from another source, pass it directly — everything works from there. Automatic resolution for magic wallets is on our roadmap.
+
+## Registration
+
+Having a signer does not mean the user trades perps. Most Polymarket users have never activated a perps account. Check cheaply with:
+
+```bash
+curl "https://api.polynode.dev/v3/perps/wallets/0x.../registered?key=$KEY"
+```
+
+Once an account shows `registered: true` it stays that way; accounts that were `false` are picked up within minutes of activating, so newly onboarded perps users appear quickly.

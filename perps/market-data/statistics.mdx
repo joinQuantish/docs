@@ -1,0 +1,28 @@
+---
+title: "24h Statistics"
+description: "Rolling 24-hour volume, open price, and hourly candles per instrument."
+---
+
+```bash
+# All instruments
+curl "https://api.polynode.dev/v3/perps/statistics?key=$POLYNODE_API_KEY"
+
+# One instrument
+curl "https://api.polynode.dev/v3/perps/statistics/sol?key=$POLYNODE_API_KEY"
+```
+
+```json
+{
+  "instrument_id": 8,
+  "symbol": "SOL-USD",
+  "volume": "30017339.85",
+  "open_price": "142.11",
+  "klines": [
+    [1783483200000, "142.11", "142.30", "141.86", "141.99", "10233.5", 512]
+  ]
+}
+```
+
+`volume` is 24h notional volume in USD. `klines` are the trailing hourly candles as `[open_time, open, high, low, close, volume, trade_count]`.
+
+For custom intervals and longer ranges use [klines](/perps/market-data/klines); for a volume time series with your own bucketing use [volume](/perps/market-data/volume).

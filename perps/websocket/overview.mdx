@@ -1,0 +1,53 @@
+---
+title: "Perps WebSocket"
+description: "One connection streams every perps channel: tickers, books, best bid/offer, trades, statistics, and candles."
+---
+
+```
+wss://perps.polynode.dev/ws?key=pn_live_...
+```
+
+Authenticate with your normal polynode API key as the `key` query parameter. On connect you receive a hello frame listing the available channels and your subscription allowance, then you subscribe:
+
+```javascript
+const ws = new WebSocket("wss://perps.polynode.dev/ws?key=pn_live_...");
+
+ws.onopen = () => {
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    channels: ["perps_tickers", "perps_book:BTC-USD", "perps_trades:BTC-USD"],
+  }));
+};
+
+ws.onmessage = (msg) => {
+  const event = JSON.parse(msg.data);
+  if (event.action === "subscribed") {
+    console.log("subscribed:", event.channels, "rejected:", event.rejected);
+    return;
+  }
+  console.log(event.channel, event.data);
+};
+```
+
+## Protocol
+
+| Message | Direction | Shape |
+|---------|-----------|-------|
+| Hello | server → you | `{"status": "connected", "max_subscriptions": ..., "channels": [...]}` |
+| Subscribe | you → server | `{"action": "subscribe", "channels": [...]}` |
+| Unsubscribe | you → server | `{"action": "unsubscribe", "channels": [...]}` |
+| Ack | server → you | `{"action": "subscribed", "channels": [...], "rejected": [...], "active_subscriptions": n}` |
+| Event | server → you | `{"channel": "perps_tickers", "data": {...}}` |
+| Ping | you → server | `{"action": "ping"}` → `{"action": "pong"}` |
+
+Invalid channels come back in `rejected` with a reason — the rest of the batch still subscribes. Instruments can be referenced by id (`6`), symbol (`BTC-USD`), or bare asset (`btc`).
+
+Event payloads use the same field names as the REST endpoints — a `perps_tickers` event carries the exact shape of [`/v3/perps/tickers/:instrument`](/perps/market-data/tickers), so REST and WS code paths share models.
+
+## Connection limits
+
+Per-key concurrent connections and channel subscriptions follow your plan — see [rate limits](/perps/rate-limits). A single connection is enough for most platforms: `perps_tickers` alone covers every instrument.
+
+## Keep-alive and recovery
+
+The server pings every 30 seconds; standard pong replies (automatic in browsers and most WS libraries) keep the connection alive. If your consumer falls behind, you receive `{"warning": "lagged", "dropped_events": n}` instead of silently missing data — resubscribe or refetch REST state for the affected instruments. `perps_book` subscriptions receive a full snapshot immediately on subscribe, then updates.

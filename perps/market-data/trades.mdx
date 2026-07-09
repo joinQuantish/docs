@@ -1,0 +1,46 @@
+---
+title: "Trades"
+description: "Recent executions, and archived trade history beyond what the exchange keeps."
+---
+
+Recent trades (live, newest first):
+
+```bash
+curl "https://api.polynode.dev/v3/perps/trades/btc?limit=2&key=$POLYNODE_API_KEY"
+```
+
+```json
+{
+  "instrument_id": 6,
+  "symbol": "BTC-USD",
+  "data": [
+    {
+      "trade_id": 7504966405671651,
+      "instrument_id": 6,
+      "symbol": "BTC-USD",
+      "side": "short",
+      "price": "62009",
+      "quantity": "0.00842",
+      "timestamp": 1783571031288
+    }
+  ]
+}
+```
+
+## Historical windows
+
+Add `after` and/or `before` (Unix seconds or milliseconds) to query historical trades. History covers every execution from July 9, 2026 onward and keeps growing:
+
+```bash
+curl "https://api.polynode.dev/v3/perps/trades/btc?after=1783500000&before=1783570000&limit=500&key=$POLYNODE_API_KEY"
+```
+
+Windowed responses add a `more` flag for pagination.
+
+| Parameter | Description |
+|-----------|-------------|
+| `limit` | Max rows (default 100, up to 1000) |
+| `after` | Only trades after this time |
+| `before` | Only trades before this time |
+
+`side` is the taker's direction: `long` means the taker bought, `short` means the taker sold. Trades carry no account attribution — for position-level tracking use [wallet portfolios](/perps/wallets/portfolio).

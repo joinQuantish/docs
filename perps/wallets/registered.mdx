@@ -1,0 +1,21 @@
+---
+title: "Registered"
+description: "Check whether a wallet has activated a perps account."
+---
+
+```bash
+curl "https://api.polynode.dev/v3/perps/wallets/0x09b428f7c2b469786286214aa5c90dd9015f7320/registered?key=$POLYNODE_API_KEY"
+```
+
+```json
+{
+  "input": "0x09b428f7c2b469786286214aa5c90dd9015f7320",
+  "signer": "0x509e390373f5bde0bb02c1019ee39cf0ef23a1a4",
+  "wallet_type": "safe",
+  "registered": false
+}
+```
+
+The cheapest way to filter a wallet list down to actual perps users before requesting portfolios. Accounts that activate perps show up as `registered: true` within minutes.
+
+Accepts either address form — proxy or signer ([details](/perps/wallet-mapping)).
