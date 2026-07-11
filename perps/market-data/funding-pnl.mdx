@@ -4,3 +4,5 @@ openapi: "GET /v3/perps/funding-pnl/{instrument}"
 ---
 
 The funding-rate series plus a running sum — what a one-unit long has paid (positive) or earned (negative) over the window. Useful for funding-carry and basis analysis.
+
+Entries are **oldest first** (the cumulative sum runs forward from the start of the window). Bound with `after` / `before` to accumulate over exactly the window you want; a plain call starts at the beginning of our archive.

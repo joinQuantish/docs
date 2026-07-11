@@ -27,6 +27,8 @@ Concurrent connections to `wss://perps.polynode.dev/ws` per key:
 
 One connection can carry all your channels — the subscription cap is what matters, and a single subscription like `perps_tickers` covers every instrument at once.
 
+These are the plan defaults; individual keys can carry a custom allowance. The hello frame you receive on connect reports **your key's exact `max_subscriptions`** — treat that as authoritative.
+
 ## Practical notes
 
 - If you find yourself polling market data faster than about once a second, the [WebSocket](/perps/websocket/overview) will serve you better — it pushes every update as it happens.

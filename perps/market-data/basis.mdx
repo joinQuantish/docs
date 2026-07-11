@@ -3,4 +3,4 @@ title: "Basis History"
 openapi: "GET /v3/perps/basis/{instrument}"
 ---
 
-The perp's premium or discount to spot over time — mark minus index, as an absolute number and in basis points — from the ticker snapshots. Complements the live [screener](/perps/market-data/screener). Bound with `after` / `before`.
+The perp's premium or discount to spot over time — mark minus index, as an absolute number and in basis points — from the ticker snapshots (minute resolution, **newest first**). Complements the live [screener](/perps/market-data/screener). Bound with `after` / `before`, cap with `limit`.

@@ -3,6 +3,16 @@ title: "Funding Rates"
 openapi: "GET /v3/perps/funding/{instrument}"
 ---
 
-Newest first, one entry per hourly funding event. Window with `start_timestamp` / `end_timestamp` (Unix ms):
+Newest first, one entry per hourly funding event, with `instrument_id`/`symbol` alongside the data.
+
+## Query parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `after` / `before` | Time window (Unix seconds or ms, detected automatically) |
+| `limit` | Max rows (default 500, up to 5000) |
+| `start_timestamp` / `end_timestamp` | Legacy aliases of `after` / `before` (Unix ms) |
+
+Responses carry a `more` flag; page older history by moving `before` to the oldest `timestamp` you've received.
 
 The current live rate and the next funding time are on the [ticker](/perps/market-data/tickers). Rates are per funding interval (hourly) — multiply by 24×365 for an annualized figure.

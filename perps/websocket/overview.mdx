@@ -42,6 +42,10 @@ ws.onmessage = (msg) => {
 
 Invalid channels come back in `rejected` with a reason — the rest of the batch still subscribes. Instruments can be referenced by id (`6`), symbol (`BTC-USD`), or bare asset (`btc`).
 
+## Authentication failures
+
+A missing or invalid key does not silently drop the connection: the socket opens, you receive one error frame naming the problem, and the connection closes with an application close code — `4401` for a bad or missing key, `4429` when your plan's connection limit is reached. If you see close code `4401`, check the `key` query parameter first.
+
 Event payloads use the same field names as the REST endpoints — a `perps_tickers` event carries the exact shape of [`/v3/perps/tickers/:instrument`](/perps/market-data/tickers), so REST and WS code paths share models.
 
 ## Connection limits
@@ -50,4 +54,4 @@ Per-key concurrent connections and channel subscriptions follow your plan — se
 
 ## Keep-alive and recovery
 
-The server pings every 30 seconds; standard pong replies (automatic in browsers and most WS libraries) keep the connection alive. If your consumer falls behind, you receive `{"warning": "lagged", "dropped_events": n}` instead of silently missing data — resubscribe or refetch REST state for the affected instruments. `perps_book` subscriptions receive a full snapshot immediately on subscribe, then updates.
+The server pings every 30 seconds; standard pong replies (automatic in browsers and most WS libraries) keep the connection alive. If your consumer falls behind, you receive `{"warning": "lagged", "dropped_events": n}` instead of silently missing data — resubscribe or refetch REST state for the affected instruments. `perps_book` subscriptions receive a complete snapshot immediately on subscribe, and every subsequent message is also a complete snapshot — replace, don't merge ([details](/perps/websocket/channels)).

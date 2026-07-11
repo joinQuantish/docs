@@ -19,4 +19,6 @@ Windowed responses add a `more` flag for pagination.
 | `after` | Only trades after this time |
 | `before` | Only trades before this time |
 
+Trades are **newest first** in both live and windowed responses.
+
 `side` is the taker's direction: `long` means the taker bought, `short` means the taker sold. Trades carry no account attribution — for position-level tracking use [wallet portfolios](/perps/wallets/portfolio).

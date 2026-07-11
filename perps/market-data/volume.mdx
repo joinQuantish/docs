@@ -9,4 +9,4 @@ openapi: "GET /v3/perps/volume/{instrument}"
 | `after` / `before` | Time window (Unix seconds or ms) |
 | `limit` | Max buckets (default 200, up to 2000) |
 
-`notional_volume` is price × quantity summed in USD; `quantity` is base-asset units. Rolled up from every archived execution, accruing from July 9, 2026 onward.
+`notional_volume` is price × quantity summed in USD; `quantity` is base-asset units. Buckets are **newest first**. Rolled up from every archived execution, accruing from July 9, 2026 onward.

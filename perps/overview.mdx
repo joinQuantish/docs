@@ -34,14 +34,15 @@ Get a key from the [dashboard](https://polynode.dev/dashboard).
 
 ## Instruments
 
-10 instruments are live as of July 2026 across four categories — `crypto`, `index`, `commodity`, and `equity` — and Polymarket has dozens more defined for future launch. The API discovers new instruments automatically as they list; nothing is hardcoded. Everywhere an endpoint takes an instrument you can pass the numeric id (`6`), the full symbol (`BTC-USD`), or the bare asset (`btc`).
+Instruments span four categories — `crypto`, `index`, `commodity`, and `equity` (11 live as of mid-July 2026, and Polymarket has dozens more defined for future launch). The API discovers new instruments automatically as they list; nothing is hardcoded, so [`/instruments`](/perps/market-data/instruments) is always the current list. Everywhere an endpoint takes an instrument you can pass the numeric id (`6`), the full symbol (`BTC-USD`), or the bare asset (`btc`).
 
 ## Data conventions
 
-- **Prices and quantities are strings.** The exchange uses high-precision decimals; we pass them through untouched so you never lose precision to floating point.
-- **Timestamps are Unix milliseconds** in responses. Time-range filters (`after`, `before`) accept seconds or milliseconds — values are detected automatically.
+- **Prices and quantities are strings.** The exchange uses high-precision decimals; we pass them through untouched so you never lose precision to floating point. Exchange-reported values (prices, sizes, equity, unrealized PnL) keep their full native precision; values we derive (aggregates, notionals, basis, CVD) are normalized to a clean decimal form.
+- **Timestamps are Unix milliseconds** in responses, always in a field named `timestamp` (snapshot-based rows additionally carry `as_of` — when we last observed that account). Time-range filters (`after`, `before`) accept seconds or milliseconds — values are detected automatically.
 - **Lists come wrapped** as `{"data": [...]}`, with a `more` flag on paginated endpoints.
 - **`instrument_id` and `symbol` appear together** in every response, so you never need a separate lookup call.
+- **Unknown query parameters are rejected with a `400`** naming what the endpoint accepts, so a typo'd filter can never silently return unfiltered data.
 
 ## Live vs. historical
 

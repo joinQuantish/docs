@@ -44,25 +44,36 @@ Polymarket has used a few different wallet types over the years, depending on ho
 | `eoa` | Users trading with a plain wallet, no Polymarket contract at all. | The address is its own perps account. |
 | `deposit` | **Every new Polymarket account** — the deposit wallet is the current standard. | Resolved automatically. |
 | `safe` | Older accounts that signed up by connecting a browser wallet (MetaMask etc.) — these got a Gnosis Safe. | Resolved automatically. |
-| `proxy` | Older accounts that signed up with an email login — these got a Polymarket Proxy. | Not yet resolvable — see below. |
+| `proxy` | Older accounts that signed up with an email login — these got a Polymarket Proxy. | Resolved automatically — see below. |
 
 ### "Deposit wallet" vs "beacon wallet"
 
 If you've seen both terms: they're the same thing. The deposit wallet is Polymarket's current wallet type, and the newer ones are built so Polymarket can upgrade all of them at once — that upgradeable variant is what gets called a "beacon wallet". There's also an earlier, standalone variant from before that change. Both behave identically, both resolve automatically, and this API reports both simply as `deposit` — you never need to tell them apart.
 
-## The proxy-wallet edge case
+## Proxy wallets
 
-Email-login accounts use a Polymarket Proxy wallet whose owner cannot be resolved automatically yet. For these, requests return `422` with a clear error:
+Email-login accounts use a Polymarket Proxy wallet. These resolve automatically too — we maintain our own proxy-to-owner index covering these accounts from the beginning of Polymarket to the current block:
+
+```json
+{
+  "input": "0xf0318c32136c2db7fec88b84869aee6a1106c80c",
+  "wallet_type": "proxy",
+  "signer": "0x14dd4e61e9559e47277ffd19528ce8403ad9e861",
+  "registered": false
+}
+```
+
+In the rare case a proxy isn't in the index yet (the index tails the chain continuously, so this window is small), the API returns a `422` instead of guessing:
 
 ```json
 {
   "error": "polymarket proxy wallet",
-  "detail": "this is a Polymarket Proxy wallet (email-login accounts); automatic resolution is not available for these yet — pass the account's signer address directly",
-  "address": "0xf0318c32136c2db7fec88b84869aee6a1106c80c"
+  "detail": "this is a Polymarket Proxy wallet (email-login accounts); its owner isn't in the owner index yet — pass the account's signer address directly",
+  "address": "0x..."
 }
 ```
 
-If you have the account's signer address from another source, pass it directly — everything works from there. Automatic resolution for proxy wallets is on our roadmap.
+If you have the account's signer address from another source, pass it directly — everything works from there. A `422` address upgrades to full resolution automatically once the index covers it — just retry later.
 
 ## Registration
 

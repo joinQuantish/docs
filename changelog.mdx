@@ -5,6 +5,40 @@ description: "All notable changes to the PolyNode API and SDKs."
 icon: "clock-rotate-left"
 ---
 
+## 2026-07-11 - Perps API consistency pass
+
+A hardening pass across the whole perps surface, from a full external-style audit of the docs and live API.
+
+What's new:
+
+* `perps_klines` WebSocket events now carry exactly one flat candle (`[open_time, open, high, low, close, volume, trade_count]`) and are sent only when the candle's contents change. Empty and duplicate events are gone.
+* `perps_statistics` events are sent per instrument only when the statistics change, cutting idle bandwidth dramatically.
+* WebSocket authentication failures are now visible: the connection opens, delivers one error frame, and closes with code `4401` (bad or missing key) or `4429` (connection limit) instead of an unexplained disconnect.
+* `GET /v3/perps/funding/{instrument}` now accepts `after`/`before` (seconds or milliseconds) like every other series endpoint, honors `limit`, and includes `instrument_id`/`symbol`. `start_timestamp`/`end_timestamp` keep working.
+* Klines responses now include `instrument_id` and `symbol`; `/limit-tiers` and `/assets` return the standard `{"data": [...]}` wrapper.
+* Timestamp field names are unified: `timestamp` everywhere for event/sample times, `as_of` for snapshot freshness.
+* Derived values (aggregates, notionals, basis, CVD) are normalized to clean decimals; exchange-reported values keep their full native precision.
+* Unknown query parameters now return `400` with the list of accepted parameters, so a typo'd filter can never silently return unfiltered data.
+* Transient upstream congestion returns `503` with a `Retry-After` header instead of a misleading `429`.
+* Docs: real response examples on every perps endpoint, proxy-wallet resolution documented (it's automatic now), book and kline streaming semantics clarified, sort order documented on every series endpoint.
+
+***
+
+## 2026-07-09 - Polymarket perps API
+
+Full market and account data coverage for Polymarket perpetual futures, under the same `/v3` surface and API keys as everything else.
+
+What's new:
+
+* Live market data for every listed perps instrument: tickers, orderbooks, best bid/offer, trades, 24h statistics, klines, funding, and a cross-instrument screener.
+* polynode-exclusive history the exchange does not serve: trade archive with server-side filters, open-interest, volume, basis, trade-flow/CVD, and cumulative funding series.
+* Wallet endpoints with automatic address resolution — pass a Polymarket profile address or the underlying account address, single or batch.
+* Analytics that need cross-account history: whale leaderboard, smart money, positioning, large positions, position history, position events, liquidations, and a coverage transparency metric.
+* On-chain collateral data: TVL, deposits, withdrawals, top depositors/withdrawers, and per-wallet flows.
+* WebSocket streaming at `wss://perps.polynode.dev/ws`: tickers, statistics, bbo, books, trades, and klines over one connection.
+
+***
+
 ## 2026-06-22 - V3 wallet accounting summary
 
 Added an optional all-time accounting summary to the V3 wallet summary endpoint.

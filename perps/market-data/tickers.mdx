@@ -14,3 +14,5 @@ openapi: "GET /v3/perps/tickers/{instrument}"
 | `next_funding` | When the next funding payment occurs (ms) |
 
 Tickers update continuously; for sub-second consumption use the [`perps_tickers` WebSocket channel](/perps/websocket/channels).
+
+Omit the instrument — `GET /v3/perps/tickers` — to get every instrument's ticker in one call, wrapped as `{"data": [...]}`.

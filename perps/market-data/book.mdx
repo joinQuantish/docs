@@ -11,4 +11,4 @@ Levels are `[price, quantity]` pairs, best-first on both sides (bids descending,
 |-----------|-------------|
 | `depth` | Levels per side (default: full book) |
 
-For streaming updates subscribe to [`perps_book:<instrument>`](/perps/websocket/channels) — you get a full snapshot on subscribe, then updates as the book changes.
+For streaming updates subscribe to [`perps_book:<instrument>`](/perps/websocket/channels) — every message there is a complete snapshot (including the immediate one on subscribe), so you replace your local book each time rather than merging deltas.
