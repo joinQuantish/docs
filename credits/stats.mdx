@@ -4,3 +4,5 @@ openapi: "GET /v3/credits/stats"
 ---
 
 Program-wide totals and time series: how much Polymarket pays out per type, to how many wallets, at what average size.
+
+Two behaviors to know: `unique_recipients` is exact for all-time requests and `null` when you pass `start_ts`/`end_ts` (a windowed distinct count over the full index is not served). `interval=hour` requires a window of 7 days or less; day, week and month work over any range.

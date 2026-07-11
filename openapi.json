@@ -9227,8 +9227,8 @@
                       "avg_credit": "86.039627",
                       "batch_txs": 501,
                       "count": 158999,
-                      "first_ts": 1781914205,
-                      "last_ts": 1783728635,
+                      "first_ts": 1781913600,
+                      "last_ts": 1783728000,
                       "unique_recipients": 36469
                     }
                   }
