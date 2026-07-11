@@ -1,0 +1,11 @@
+---
+title: "Username Search"
+openapi: "GET /v3/identities/search"
+---
+
+Find Polymarket accounts by (partial) username across 5M+ named wallets. Results are ranked by similarity with exact matches first. Not available anywhere in Polymarket's public API.
+
+```bash
+curl "https://api.polynode.dev/v3/identities/search?q=swiss&limit=10" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```

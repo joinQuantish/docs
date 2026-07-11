@@ -1,0 +1,15 @@
+---
+title: "Batch Resolve"
+openapi: "POST /v3/identities/batch"
+---
+
+Resolve up to 1,000 trading wallets per call against PolyNode's identity index (11.9M wallets, refreshed daily). Answers come from a single indexed query — typical response time is tens of milliseconds regardless of batch size.
+
+Wallets without a known identity come back as `null`, so the response always covers every requested wallet. For richer single-wallet resolution (live on-chain fallback for brand-new wallets), the [Resolve Wallet](/api-reference/wallets/resolve) endpoint remains the deepest option.
+
+```bash
+curl -X POST "https://api.polynode.dev/v3/identities/batch" \
+  -H "x-api-key: $POLYNODE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"wallets": ["0x204f72f35326db932158cba6adff0b9a1da95e14"]}'
+```

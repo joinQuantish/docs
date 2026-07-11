@@ -1,0 +1,11 @@
+---
+title: "Identity Lookup"
+openapi: "GET /v3/identities/{addr}"
+---
+
+One call, either direction: pass a trading wallet to get its username, controlling EOA, wallet type and the user's other deployed wallets — or pass an EOA to list every Polymarket wallet that account controls.
+
+```bash
+curl "https://api.polynode.dev/v3/identities/0x204f72f35326db932158cba6adff0b9a1da95e14" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```

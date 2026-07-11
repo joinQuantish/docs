@@ -9520,6 +9520,164 @@
           }
         }
       }
+    },
+    "/v3/identities/batch": {
+      "post": {
+        "tags": [
+          "Identity"
+        ],
+        "summary": "Batch Resolve",
+        "operationId": "identity_batch",
+        "description": "Resolve up to 1,000 Polymarket trading wallets to usernames, controlling EOAs and wallet types in one call \u2014 roughly 1000x the throughput of per-wallet resolution.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "wallets": [
+                  "0x204f72f35326db932158cba6adff0b9a1da95e14",
+                  "0x84cfffc3f16dcc353094de30d4a45226eccd2f63"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "found": 2,
+                  "identities": {
+                    "0x204f72f35326db932158cba6adff0b9a1da95e14": {
+                      "eoa": "0xafcd9f5f78cb559c99d93f1914880df74cc3fc21",
+                      "username": "swisstony",
+                      "wallet_type": null
+                    },
+                    "0x84cfffc3f16dcc353094de30d4a45226eccd2f63": {
+                      "eoa": "0x30694d545db14898353d6dbf2b1dcd9c993fd5c2",
+                      "username": "mooseborzoi",
+                      "wallet_type": "proxy"
+                    }
+                  },
+                  "requested": 2
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v3/identities/search": {
+      "get": {
+        "tags": [
+          "Identity"
+        ],
+        "summary": "Username Search",
+        "operationId": "identity_search",
+        "description": "Search 5M+ Polymarket usernames by substring, similarity-ranked with exact matches first. Polymarket has no public username search.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search text, 2-60 characters.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Max results, up to 50 (default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "count": 3,
+                  "query": "swisstony",
+                  "results": [
+                    {
+                      "eoa": "0xafcd9f5f78cb559c99d93f1914880df74cc3fc21",
+                      "exact": true,
+                      "username": "swisstony",
+                      "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+                      "wallet_type": null
+                    },
+                    {
+                      "eoa": "0x1062f9d6324a75c2ddcb7d0bc952fafc0efad5d8",
+                      "exact": false,
+                      "username": "swisstony1111",
+                      "wallet": "0x2abcbec8775c6ff69a8ceab565b78f585105b438",
+                      "wallet_type": "safe"
+                    },
+                    {
+                      "eoa": "0xae2f27034b1bc11c68e5b88f8c875ca614dbf38a",
+                      "exact": false,
+                      "username": "testswisstonyy",
+                      "wallet": "0x7d48c9fa8eff21911307dd0e953436c39820452b",
+                      "wallet_type": "safe"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v3/identities/{addr}": {
+      "get": {
+        "tags": [
+          "Identity"
+        ],
+        "summary": "Identity Lookup",
+        "operationId": "identity_get",
+        "description": "Resolve one address: by trading wallet (returns username, EOA, wallet type and the user's other wallets) or, if not a known trading wallet, by controlling EOA (returns every wallet that account controls).",
+        "parameters": [
+          {
+            "name": "addr",
+            "in": "path",
+            "required": true,
+            "description": "Trading wallet or EOA.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "identity": {
+                    "eoa": "0xafcd9f5f78cb559c99d93f1914880df74cc3fc21",
+                    "other_wallets": [],
+                    "username": "swisstony",
+                    "wallet_type": null
+                  },
+                  "matched_by": "wallet",
+                  "query": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+                  "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No identity found"
+          }
+        }
+      }
     }
   },
   "components": {

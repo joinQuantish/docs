@@ -251,6 +251,14 @@
             ]
           },
           {
+            "group": "Identity",
+            "pages": [
+              "identities/batch-resolve",
+              "identities/search",
+              "identities/lookup"
+            ]
+          },
+          {
             "group": "Fees",
             "pages": [
               "data/fees/overview",
