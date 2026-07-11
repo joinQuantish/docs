@@ -3,4 +3,47 @@ title: "Credits Leaderboard"
 openapi: "GET /v3/credits/leaderboard"
 ---
 
-Top earners for any credit type over 24h/7d/30d/all-time or an explicit time range. `min_amount` filters small earners out.
+Top earners for any credit program over 24h/7d/30d/all-time or an explicit time range.
+
+## Credit types
+
+Every credits endpoint accepts these values in `type`/`types`:
+
+| Value | Program |
+|-------|---------|
+| `reward` | [Liquidity rewards](/credits/rewards) |
+| `yield` | [Yield on balances](/credits/yield) |
+| `maker_rebate` | [Maker rebates](/credits/maker-rebates) |
+| `taker_rebate` | [Taker rebates](/credits/taker-rebates) |
+| `referral_reward` | [Referral rewards](/credits/referral-rewards) |
+
+`types` accepts a comma-separated set (`types=maker_rebate,taker_rebate`) or `all`.
+
+## One leaderboard per program
+
+```bash # liquidity rewards
+curl "https://api.polynode.dev/v3/credits/leaderboard?type=reward&limit=25" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash # yield
+curl "https://api.polynode.dev/v3/credits/leaderboard?type=yield&limit=25" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash # maker rebates
+curl "https://api.polynode.dev/v3/credits/leaderboard?type=maker_rebate&limit=25" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash # taker rebates
+curl "https://api.polynode.dev/v3/credits/leaderboard?type=taker_rebate&limit=25" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash # referral rewards
+curl "https://api.polynode.dev/v3/credits/leaderboard?type=referral_reward&limit=25" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Add `window=7d` (or `24h`/`30d`), or explicit `start_ts`/`end_ts`, and `min_amount` to filter small earners. `type=all` ranks by combined credits.

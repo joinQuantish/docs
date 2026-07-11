@@ -3,6 +3,36 @@ title: "Global Credit Stats"
 openapi: "GET /v3/credits/stats"
 ---
 
-Program-wide totals and time series: how much Polymarket pays out per type, to how many wallets, at what average size.
+Program-wide totals and time series: how much Polymarket pays out per program, to how many wallets, at what average size.
 
-Two behaviors to know: `unique_recipients` is exact for all-time requests and `null` when you pass `start_ts`/`end_ts` (a windowed distinct count over the full index is not served). `interval=hour` requires a window of 7 days or less; day, week and month work over any range.
+## Credit types
+
+Every credits endpoint accepts these values in `type`/`types`:
+
+| Value | Program |
+|-------|---------|
+| `reward` | [Liquidity rewards](/credits/rewards) |
+| `yield` | [Yield on balances](/credits/yield) |
+| `maker_rebate` | [Maker rebates](/credits/maker-rebates) |
+| `taker_rebate` | [Taker rebates](/credits/taker-rebates) |
+| `referral_reward` | [Referral rewards](/credits/referral-rewards) |
+
+`types` accepts a comma-separated set (`types=maker_rebate,taker_rebate`) or `all`.
+
+## Examples
+
+Monthly payout volumes for every program:
+
+```bash
+curl "https://api.polynode.dev/v3/credits/stats?types=all&interval=month" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Taker rebates by day since launch:
+
+```bash
+curl "https://api.polynode.dev/v3/credits/stats?types=taker_rebate&interval=day" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+`unique_recipients` is exact for all-time requests and `null` when you pass `start_ts`/`end_ts`. `interval=hour` requires a window of 7 days or less.

@@ -3,4 +3,27 @@ title: "Recipient Growth"
 openapi: "GET /v3/credits/recipients/stats"
 ---
 
-New earning wallets per bucket, per credit type — a clean read on program adoption.
+New earning wallets per bucket, per program — a clean read on each program's adoption.
+
+## Credit types
+
+Every credits endpoint accepts these values in `type`/`types`:
+
+| Value | Program |
+|-------|---------|
+| `reward` | [Liquidity rewards](/credits/rewards) |
+| `yield` | [Yield on balances](/credits/yield) |
+| `maker_rebate` | [Maker rebates](/credits/maker-rebates) |
+| `taker_rebate` | [Taker rebates](/credits/taker-rebates) |
+| `referral_reward` | [Referral rewards](/credits/referral-rewards) |
+
+`types` accepts a comma-separated set (`types=maker_rebate,taker_rebate`) or `all`.
+
+## Example
+
+New referral earners per month:
+
+```bash
+curl "https://api.polynode.dev/v3/credits/recipients/stats?types=referral_reward&interval=month" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```

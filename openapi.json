@@ -8746,7 +8746,7 @@
             "name": "types",
             "in": "query",
             "required": false,
-            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "description": "Comma-separated set of credit types (One of `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`), or `all` for every type.",
             "schema": {
               "type": "string"
             }
@@ -8823,7 +8823,7 @@
             "name": "types",
             "in": "query",
             "required": false,
-            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "description": "Comma-separated set of credit types (One of `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`), or `all` for every type.",
             "schema": {
               "type": "string"
             }
@@ -8961,7 +8961,7 @@
             "name": "types",
             "in": "query",
             "required": false,
-            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "description": "Comma-separated set of credit types (One of `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`), or `all` for every type.",
             "schema": {
               "type": "string"
             }
@@ -9047,16 +9047,24 @@
             "name": "type",
             "in": "query",
             "required": false,
-            "description": "Single credit type, or `all`.",
+            "description": "One of `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`, or `all` to rank by combined credits.",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "reward",
+                "yield",
+                "maker_rebate",
+                "taker_rebate",
+                "referral_reward",
+                "all"
+              ]
             }
           },
           {
             "name": "types",
             "in": "query",
             "required": false,
-            "description": "Alternative to `type`: comma-separated set.",
+            "description": "Comma-separated set of credit types (One of `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`), or `all` for every type.",
             "schema": {
               "type": "string"
             }
@@ -9165,7 +9173,7 @@
             "name": "types",
             "in": "query",
             "required": false,
-            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "description": "Comma-separated set of credit types (One of `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`), or `all` for every type.",
             "schema": {
               "type": "string"
             }
@@ -9252,7 +9260,7 @@
             "name": "types",
             "in": "query",
             "required": false,
-            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "description": "Comma-separated set of credit types (One of `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`), or `all` for every type.",
             "schema": {
               "type": "string"
             }
@@ -9448,7 +9456,7 @@
             "name": "types",
             "in": "query",
             "required": false,
-            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "description": "Comma-separated set of credit types (One of `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`), or `all` for every type.",
             "schema": {
               "type": "string"
             }

@@ -1,0 +1,76 @@
+---
+title: "Maker Rebates"
+description: "Maker fee rebates — the largest Polymarket credit program, $135M+ paid since January 2026."
+---
+
+Since the introduction of trading fees, Polymarket rebates makers a share of the fees their filled quotes generate. Rebates are paid out in on-chain batches, typically daily. PolyNode indexes every payout: **$135.2M to 133,973 wallets since 2026-01-07**.
+
+<Note>
+Polymarket also exposes a per-date accounting lookup for makers; PolyNode proxies it at [Wallet Maker Rebates](/data/wallets/rebates). This section is the complete indexed history: lifetime totals, time windows, leaderboards and event-level filters.
+</Note>
+
+All credits endpoints take this type as `maker_rebate`.
+
+## Lifetime total for a wallet
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14/credits/totals?types=maker_rebate" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## This month's earnings for a wallet
+
+Add unix-second bounds for windowed totals:
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14/credits/totals?types=maker_rebate&start_ts=1783036800&end_ts=1785715200" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Maker Rebates leaderboard
+
+```bash
+curl "https://api.polynode.dev/v3/credits/leaderboard?type=maker_rebate&limit=25" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Windows: `window=24h|7d|30d|all`, or explicit `start_ts`/`end_ts`.
+
+## Payout history for a wallet
+
+Filterable by time and amount, sortable by `time` or `amount`:
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14/credits?types=maker_rebate&min_amount=100&sort=amount&order=desc&limit=50" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Earnings chart data
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14/credits/series?types=maker_rebate&interval=week&fill=zero" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Watch payouts land globally
+
+```bash
+curl "https://api.polynode.dev/v3/credits/events?types=maker_rebate&min_amount=1000&limit=50" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```python
+import requests
+
+BASE = "https://api.polynode.dev"
+HEADERS = {"x-api-key": "YOUR_KEY"}
+
+wallet = "0x204f72f35326db932158cba6adff0b9a1da95e14"
+totals = requests.get(
+    f"{BASE}/v3/wallets/{wallet}/credits/totals",
+    params={"types": "maker_rebate"}, headers=HEADERS,
+).json()
+print(totals["totals"]["maker_rebate"]["amount"])
+```
+
+See the [Credits API Reference](/credits/wallet-totals) for every parameter.

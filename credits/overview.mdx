@@ -1,22 +1,22 @@
 ---
 title: "Credits Overview"
-description: "Every Polymarket credit payout — rewards, yield, maker/taker rebates, referral rewards — indexed from on-chain distributor transfers and queryable in ways Polymarket's own API cannot offer."
+description: "Every Polymarket payout to users — liquidity rewards, yield, maker/taker rebates and referral rewards — indexed on-chain from the first payment ever made, with totals, leaderboards and filters Polymarket's API does not offer."
 ---
 
-Polymarket pays users five kinds of credits. Each one lands on Polygon as a batch token transfer, and polynode indexes all of them, for every wallet, from the first payout ever made:
+Polymarket pays users five kinds of credits. Each lands on Polygon as a batch token transfer, and PolyNode indexes all of them, for every wallet, from the first payout ever made:
 
-| Type | What it is | History starts |
-|------|------------|----------------|
-| `reward` | Liquidity/market rewards | 2023-11-25 |
-| `yield` | Interest paid on balances | 2025-07-17 |
-| `maker_rebate` | Maker fee rebates | 2026-01-07 |
-| `referral_reward` | Referral program earnings | 2026-03-25 |
-| `taker_rebate` | Taker fee rebates | 2026-06-20 |
+| Program | Type value | Paid out | Recipients | History starts |
+|---------|-----------|----------|------------|----------------|
+| [Liquidity Rewards](/credits/rewards) | `reward` | $28.1M | 174,850 | 2023-11-25 |
+| [Yield](/credits/yield) | `yield` | $2.74M | 321,307 | 2025-07-17 |
+| [Maker Rebates](/credits/maker-rebates) | `maker_rebate` | $135.2M | 133,973 | 2026-01-07 |
+| [Taker Rebates](/credits/taker-rebates) | `taker_rebate` | $13.7M | 36,469 | 2026-06-20 |
+| [Referral Rewards](/credits/referral-rewards) | `referral_reward` | $11.5M | 7,752 | 2026-03-25 |
 
 Polymarket's public API exposes these only as a per-wallet activity feed with no totals, no cross-wallet queries and no aggregation. The credits endpoints add:
 
 - **Totals in one call** — lifetime or any time window, per type ([Wallet Credit Totals](/credits/wallet-totals))
-- **Leaderboards** — top earners per type per window across all wallets ([Leaderboard](/credits/leaderboard))
+- **Leaderboards** — top earners per program per window across all wallets ([Leaderboard](/credits/leaderboard))
 - **Global stats and series** — program-wide payout volumes over time ([Stats](/credits/stats))
 - **A global feed** — watch credits land across every wallet, filterable by size ([Feed](/credits/feed))
 - **Full filtering** — amount bounds, amount sorting, token filter, time windows on everything
@@ -24,3 +24,18 @@ Polymarket's public API exposes these only as a per-wallet activity feed with no
 The index is built from on-chain distributor transfers, so it is a superset of Polymarket's own activity ledger: batch program payouts match Polymarket's feed exactly, and direct one-off payments from the distributor wallets (which Polymarket's feed omits) are included as well. Amounts are USD strings (payouts settle in USDC.e historically and pUSD today; both are dollar-pegged and carried in the `token` field). New credits appear within about a minute of on-chain confirmation. Internal treasury/plumbing transfers between payout infrastructure addresses are excluded from all aggregate surfaces.
 
 All endpoints require your regular API key.
+
+## Credit types
+
+Every credits endpoint accepts these values in `type`/`types`:
+
+| Value | Program |
+|-------|---------|
+| `reward` | [Liquidity rewards](/credits/rewards) |
+| `yield` | [Yield on balances](/credits/yield) |
+| `maker_rebate` | [Maker rebates](/credits/maker-rebates) |
+| `taker_rebate` | [Taker rebates](/credits/taker-rebates) |
+| `referral_reward` | [Referral rewards](/credits/referral-rewards) |
+
+`types` accepts a comma-separated set (`types=maker_rebate,taker_rebate`) or `all`.
+

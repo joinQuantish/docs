@@ -3,4 +3,34 @@ title: "Wallet Credit Totals"
 openapi: "GET /v3/wallets/{addr}/credits/totals"
 ---
 
-The endpoint the ecosystem has been missing: total credits received by a wallet, per type, in one call. Add `start_ts`/`end_ts` for time-windowed totals (for example, rebates earned this month).
+Total credits received by a wallet, per program, in one call. Add `start_ts`/`end_ts` for time-windowed totals (for example, rebates earned this month).
+
+## Credit types
+
+Every credits endpoint accepts these values in `type`/`types`:
+
+| Value | Program |
+|-------|---------|
+| `reward` | [Liquidity rewards](/credits/rewards) |
+| `yield` | [Yield on balances](/credits/yield) |
+| `maker_rebate` | [Maker rebates](/credits/maker-rebates) |
+| `taker_rebate` | [Taker rebates](/credits/taker-rebates) |
+| `referral_reward` | [Referral rewards](/credits/referral-rewards) |
+
+`types` accepts a comma-separated set (`types=maker_rebate,taker_rebate`) or `all`.
+
+## Examples
+
+All five programs at once:
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14/credits/totals" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Rebates only, June 2026:
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14/credits/totals?types=maker_rebate,taker_rebate&start_ts=1780272000&end_ts=1782950400" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```

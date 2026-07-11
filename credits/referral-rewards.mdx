@@ -1,0 +1,72 @@
+---
+title: "Referral Rewards"
+description: "Referral program earnings — fee-share payouts to referrers since March 2026."
+---
+
+Polymarket's referral program pays referrers a share of their invitees' fees (see Polymarket's referral endpoints for codes and rates). The earnings arrive as on-chain batch payouts. PolyNode indexes the full history: **$11.5M to 7,752 wallets since 2026-03-25** — top referrers have earned $600K+.
+
+All credits endpoints take this type as `referral_reward`.
+
+## Lifetime total for a wallet
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14/credits/totals?types=referral_reward" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## This month's earnings for a wallet
+
+Add unix-second bounds for windowed totals:
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14/credits/totals?types=referral_reward&start_ts=1783036800&end_ts=1785715200" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Referral Rewards leaderboard
+
+```bash
+curl "https://api.polynode.dev/v3/credits/leaderboard?type=referral_reward&limit=25" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Windows: `window=24h|7d|30d|all`, or explicit `start_ts`/`end_ts`.
+
+## Payout history for a wallet
+
+Filterable by time and amount, sortable by `time` or `amount`:
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14/credits?types=referral_reward&min_amount=100&sort=amount&order=desc&limit=50" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Earnings chart data
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14/credits/series?types=referral_reward&interval=week&fill=zero" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Watch payouts land globally
+
+```bash
+curl "https://api.polynode.dev/v3/credits/events?types=referral_reward&min_amount=1000&limit=50" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```python
+import requests
+
+BASE = "https://api.polynode.dev"
+HEADERS = {"x-api-key": "YOUR_KEY"}
+
+wallet = "0x204f72f35326db932158cba6adff0b9a1da95e14"
+totals = requests.get(
+    f"{BASE}/v3/wallets/{wallet}/credits/totals",
+    params={"types": "referral_reward"}, headers=HEADERS,
+).json()
+print(totals["totals"]["referral_reward"]["amount"])
+```
+
+See the [Credits API Reference](/credits/wallet-totals) for every parameter.

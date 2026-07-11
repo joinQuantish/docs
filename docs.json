@@ -221,6 +221,36 @@
             ]
           },
           {
+            "group": "Credits",
+            "pages": [
+              "credits/overview",
+              "credits/rewards",
+              "credits/yield",
+              {
+                "group": "Rebates",
+                "pages": [
+                  "credits/maker-rebates",
+                  "credits/taker-rebates"
+                ]
+              },
+              "credits/referral-rewards",
+              {
+                "group": "Credits API Reference",
+                "pages": [
+                  "credits/wallet-totals",
+                  "credits/wallet-events",
+                  "credits/wallet-series",
+                  "credits/leaderboard",
+                  "credits/stats",
+                  "credits/feed",
+                  "credits/distributors",
+                  "credits/tx",
+                  "credits/recipients"
+                ]
+              }
+            ]
+          },
+          {
             "group": "Fees",
             "pages": [
               "data/fees/overview",
@@ -316,21 +346,6 @@
             "group": "Tokens",
             "pages": [
               "data/tokens/info"
-            ]
-          },
-          {
-            "group": "Credits",
-            "pages": [
-              "credits/overview",
-              "credits/wallet-totals",
-              "credits/wallet-events",
-              "credits/wallet-series",
-              "credits/leaderboard",
-              "credits/stats",
-              "credits/feed",
-              "credits/distributors",
-              "credits/tx",
-              "credits/recipients"
             ]
           },
           {
