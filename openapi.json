@@ -8777,6 +8777,12 @@
               "application/json": {
                 "example": {
                   "end_ts": null,
+                  "identity": {
+                    "eoa": "0xafcd9f5f78cb559c99d93f1914880df74cc3fc21",
+                    "other_wallets": [],
+                    "username": "swisstony",
+                    "wallet_type": null
+                  },
                   "start_ts": null,
                   "total_amount": "1667868.567600",
                   "totals": {
@@ -8916,10 +8922,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
                   "count": 1,
-                  "limit": 1,
-                  "offset": 0,
                   "events": [
                     {
                       "amount": "3714.480000",
@@ -8929,9 +8932,13 @@
                       "timestamp": 1783730716,
                       "token": "pusd",
                       "tx_hash": "0xb3b589e87145a7a61324bca2a241c891fd488cf0615e5c2d7a3121b28698d7a6",
-                      "type": "maker_rebate"
+                      "type": "maker_rebate",
+                      "username": "swisstony"
                     }
-                  ]
+                  ],
+                  "limit": 1,
+                  "offset": 0,
+                  "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14"
                 }
               }
             }
@@ -9134,19 +9141,25 @@
                   "leaderboard": [
                     {
                       "count": 106,
+                      "eoa": "0x4ea8472864fc33f3ea826899e96aebd976e136b6",
                       "first_ts": 1774400703,
                       "last_ts": 1783385494,
                       "rank": 1,
                       "total": "667213.708000",
-                      "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524"
+                      "username": "0x06dc51826bc524d9a83770e7de9dd7e005b0452",
+                      "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524",
+                      "wallet_type": "safe"
                     },
                     {
                       "count": 2,
+                      "eoa": null,
                       "first_ts": 1782418339,
                       "last_ts": 1782418442,
                       "rank": 2,
                       "total": "597264.000000",
-                      "wallet": "0x2d507657ca4ebcc8f9a38f6764c07310b66dea54"
+                      "username": null,
+                      "wallet": "0x2d507657ca4ebcc8f9a38f6764c07310b66dea54",
+                      "wallet_type": null
                     }
                   ],
                   "types": [
@@ -9318,19 +9331,20 @@
               "application/json": {
                 "example": {
                   "count": 1,
-                  "next_cursor": "90017147-2043",
                   "events": [
                     {
-                      "amount": "3714.480000",
-                      "block_number": 90017147,
-                      "log_index": 2043,
-                      "recipient": "0x204f72f35326db932158cba6adff0b9a1da95e14",
-                      "timestamp": 1783730716,
+                      "amount": "1.243400",
+                      "block_number": 90017167,
+                      "log_index": 3200,
+                      "recipient": "0xdc753310a36d7509c68ece82ecc010464563e4bc",
+                      "timestamp": 1783730746,
                       "token": "pusd",
-                      "tx_hash": "0xb3b589e87145a7a61324bca2a241c891fd488cf0615e5c2d7a3121b28698d7a6",
-                      "type": "maker_rebate"
+                      "tx_hash": "0x8b63f78689846e8f6b27ed7599363133675cde8a1b46f361aa94483a96bd8b1e",
+                      "type": "maker_rebate",
+                      "username": "Tukituki"
                     }
-                  ]
+                  ],
+                  "next_cursor": "90017167-3200"
                 }
               }
             }

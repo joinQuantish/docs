@@ -5,6 +5,10 @@ openapi: "GET /v3/wallets/{addr}/credits"
 
 Every individual credit a wallet has received, filterable by program, time and amount, sortable by time or amount.
 
+<Note>
+Every event carries `username` — the recipient's Polymarket display name — where known (`null` otherwise).
+</Note>
+
 ## Credit types
 
 Every credits endpoint accepts these values in `type`/`types`:

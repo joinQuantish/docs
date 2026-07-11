@@ -20,6 +20,7 @@ Polymarket's public API exposes these only as a per-wallet activity feed with no
 - **Global stats and series** — program-wide payout volumes over time ([Stats](/credits/stats))
 - **A global feed** — watch credits land across every wallet, filterable by size ([Feed](/credits/feed))
 - **Full filtering** — amount bounds, amount sorting, token filter, time windows on everything
+- **Identity enrichment** — usernames on leaderboards and event feeds, plus each wallet's controlling EOA and other deployed Polymarket wallets on the totals endpoint
 
 The index is built from on-chain distributor transfers, so it is a superset of Polymarket's own activity ledger: batch program payouts match Polymarket's feed exactly, and direct one-off payments from the distributor wallets (which Polymarket's feed omits) are included as well. Amounts are USD strings (payouts settle in USDC.e historically and pUSD today; both are dollar-pegged and carried in the `token` field). New credits appear within about a minute of on-chain confirmation. Internal treasury/plumbing transfers between payout infrastructure addresses are excluded from all aggregate surfaces.
 

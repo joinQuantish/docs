@@ -5,6 +5,10 @@ openapi: "GET /v3/credits/leaderboard"
 
 Top earners for any credit program over 24h/7d/30d/all-time or an explicit time range.
 
+<Note>
+Leaderboard entries are identity-enriched: each row carries `username` (Polymarket display name), `eoa` (controlling account) and `wallet_type` where known. Fields are `null` for wallets without a resolved identity.
+</Note>
+
 ## Credit types
 
 Every credits endpoint accepts these values in `type`/`types`:
