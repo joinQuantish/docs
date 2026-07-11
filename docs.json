@@ -319,6 +319,21 @@
             ]
           },
           {
+            "group": "Credits",
+            "pages": [
+              "credits/overview",
+              "credits/wallet-totals",
+              "credits/wallet-events",
+              "credits/wallet-series",
+              "credits/leaderboard",
+              "credits/stats",
+              "credits/feed",
+              "credits/distributors",
+              "credits/tx",
+              "credits/recipients"
+            ]
+          },
+          {
             "group": "Perps",
             "pages": [
               "perps/overview",

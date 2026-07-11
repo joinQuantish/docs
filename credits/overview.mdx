@@ -1,0 +1,26 @@
+---
+title: "Credits Overview"
+description: "Every Polymarket credit payout — rewards, yield, maker/taker rebates, referral rewards — indexed from on-chain distributor transfers and queryable in ways Polymarket's own API cannot offer."
+---
+
+Polymarket pays users five kinds of credits. Each one lands on Polygon as a batch token transfer, and polynode indexes all of them, for every wallet, from the first payout ever made:
+
+| Type | What it is | History starts |
+|------|------------|----------------|
+| `reward` | Liquidity/market rewards | 2023-11-25 |
+| `yield` | Interest paid on balances | 2025-07-17 |
+| `maker_rebate` | Maker fee rebates | 2026-01-07 |
+| `referral_reward` | Referral program earnings | 2026-03-25 |
+| `taker_rebate` | Taker fee rebates | 2026-06-20 |
+
+Polymarket's public API exposes these only as a per-wallet activity feed with no totals, no cross-wallet queries and no aggregation. The credits endpoints add:
+
+- **Totals in one call** — lifetime or any time window, per type ([Wallet Credit Totals](/credits/wallet-totals))
+- **Leaderboards** — top earners per type per window across all wallets ([Leaderboard](/credits/leaderboard))
+- **Global stats and series** — program-wide payout volumes over time ([Stats](/credits/stats))
+- **A global feed** — watch credits land across every wallet, filterable by size ([Feed](/credits/feed))
+- **Full filtering** — amount bounds, amount sorting, token filter, time windows on everything
+
+Amounts are USD strings (payouts settle in USDC.e historically and pUSD today; both are dollar-pegged and carried in the `token` field). New credits appear within about a minute of on-chain confirmation. Internal treasury/plumbing transfers between payout infrastructure addresses are excluded from all aggregate surfaces.
+
+All endpoints require your regular API key.

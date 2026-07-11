@@ -3285,7 +3285,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "Unix timestamp — only return trades after this time"
+            "description": "Unix timestamp \u2014 only return trades after this time"
           },
           {
             "name": "end_time",
@@ -3293,7 +3293,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "Unix timestamp — only return trades before this time"
+            "description": "Unix timestamp \u2014 only return trades before this time"
           },
           {
             "name": "min_total",
@@ -3402,7 +3402,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Cursor pagination. Pass empty string `?cursor=` for the first page, then echo back `pagination.cursor` from each response. Format: `<lastTs>:<lastId>`. Each page loads at the same speed regardless of depth — recommended over offset for paging beyond ~25K results."
+            "description": "Cursor pagination. Pass empty string `?cursor=` for the first page, then echo back `pagination.cursor` from each response. Format: `<lastTs>:<lastId>`. Each page loads at the same speed regardless of depth \u2014 recommended over offset for paging beyond ~25K results."
           }
         ],
         "responses": {
@@ -3566,7 +3566,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Cursor pagination. Pass empty string `?cursor=` for the first page, then echo back `pagination.cursor` from each response. Format: `<lastTs>:<lastId>`. Each page loads at the same speed regardless of depth — recommended over offset for paging beyond ~25K results."
+            "description": "Cursor pagination. Pass empty string `?cursor=` for the first page, then echo back `pagination.cursor` from each response. Format: `<lastTs>:<lastId>`. Each page loads at the same speed regardless of depth \u2014 recommended over offset for paging beyond ~25K results."
           }
         ],
         "responses": {
@@ -4605,7 +4605,7 @@
         "tags": [
           "Onchain"
         ],
-        "summary": "Market trade history — bulk export",
+        "summary": "Market trade history \u2014 bulk export",
         "description": "Returns the entire trade history for a market token in a single response. No client-side pagination. Up to 250,000 trades per call. **Growth plan or above.**",
         "operationId": "onchain_market_trades_all",
         "parameters": [
@@ -4658,7 +4658,7 @@
         "tags": [
           "Onchain"
         ],
-        "summary": "Wallet trade history — bulk export",
+        "summary": "Wallet trade history \u2014 bulk export",
         "description": "Returns the entire trade history for a wallet in a single response. No client-side pagination. Up to 250,000 trades per call. **Growth plan or above.**",
         "operationId": "onchain_wallet_trades_all",
         "parameters": [
@@ -6767,7 +6767,7 @@
           "Perps"
         ],
         "summary": "Open interest history",
-        "description": "Open-interest time series (with mark price and funding at each sample) — history the exchange does not offer.",
+        "description": "Open-interest time series (with mark price and funding at each sample) \u2014 history the exchange does not offer.",
         "operationId": "perps_oi",
         "parameters": [
           {
@@ -7278,7 +7278,7 @@
           "Perps"
         ],
         "summary": "Screener",
-        "description": "Live cross-instrument screen: per-instrument funding rate, open interest, and the **basis** (mark minus index, in bps). Sort by `funding`, `oi`, or `basis`, and filter by `min_funding`. Computed on demand — Polymarket has no cross-instrument screen.",
+        "description": "Live cross-instrument screen: per-instrument funding rate, open interest, and the **basis** (mark minus index, in bps). Sort by `funding`, `oi`, or `basis`, and filter by `min_funding`. Computed on demand \u2014 Polymarket has no cross-instrument screen.",
         "operationId": "perps_screener",
         "parameters": [
           {
@@ -7421,7 +7421,7 @@
           "Perps"
         ],
         "summary": "Whale leaderboard",
-        "description": "Top perps accounts, ranked. `metric=equity` ranks by account equity; `metric=size` by total open notional; `metric=pnl` by total unrealized PnL. Optional `instrument` filter. **Polymarket has no perps leaderboard** — perps trades carry no account attribution, so this only exists because we snapshot every account's portfolio over time.",
+        "description": "Top perps accounts, ranked. `metric=equity` ranks by account equity; `metric=size` by total open notional; `metric=pnl` by total unrealized PnL. Optional `instrument` filter. **Polymarket has no perps leaderboard** \u2014 perps trades carry no account attribution, so this only exists because we snapshot every account's portfolio over time.",
         "operationId": "perps_leaderboard",
         "parameters": [
           {
@@ -7488,7 +7488,7 @@
           "Perps"
         ],
         "summary": "Position history",
-        "description": "A wallet's perps positions over time — how each position changed, opened, or closed, with equity and PnL trajectory. Polymarket only returns a wallet's *current* portfolio; this is the accumulated history. Filter by `instrument` and time window (`after`/`before`). A read also captures a fresh snapshot when the latest is stale, so the current state is always included.",
+        "description": "A wallet's perps positions over time \u2014 how each position changed, opened, or closed, with equity and PnL trajectory. Polymarket only returns a wallet's *current* portfolio; this is the accumulated history. Filter by `instrument` and time window (`after`/`before`). A read also captures a fresh snapshot when the latest is stale, so the current state is always included.",
         "operationId": "perps_positions_history",
         "parameters": [
           {
@@ -7581,7 +7581,7 @@
           "Perps"
         ],
         "summary": "Positioning over time",
-        "description": "Aggregate positioning for one instrument across all tracked accounts, over time: total long size, total short size, and the net. Answers 'is the crowd long or short, and how is that shifting' — impossible from Polymarket's per-account API.",
+        "description": "Aggregate positioning for one instrument across all tracked accounts, over time: total long size, total short size, and the net. Answers 'is the crowd long or short, and how is that shifting' \u2014 impossible from Polymarket's per-account API.",
         "operationId": "perps_positioning",
         "parameters": [
           {
@@ -7658,7 +7658,7 @@
           "Perps"
         ],
         "summary": "Large positions",
-        "description": "Current large open positions across all tracked accounts, notional-sorted — a live whale-position feed. Filter by `min_notional` and `instrument`.",
+        "description": "Current large open positions across all tracked accounts, notional-sorted \u2014 a live whale-position feed. Filter by `min_notional` and `instrument`.",
         "operationId": "perps_large_positions",
         "parameters": [
           {
@@ -8723,6 +8723,781 @@
           }
         }
       }
+    },
+    "/v3/wallets/{addr}/credits/totals": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Wallet Credit Totals",
+        "operationId": "credits_wallet_totals",
+        "description": "Lifetime or time-windowed totals per credit type for one wallet, in one call. Polymarket's own API only exposes these as a raw activity feed you would have to page and sum yourself.",
+        "parameters": [
+          {
+            "name": "addr",
+            "in": "path",
+            "required": true,
+            "description": "Wallet (proxy) address.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds start bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "end_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds end bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "end_ts": null,
+                  "start_ts": null,
+                  "total_amount": "1667868.567600",
+                  "totals": {
+                    "maker_rebate": {
+                      "amount": "303821.696700",
+                      "count": 130,
+                      "first_ts": 1772075366,
+                      "last_ts": 1783730716
+                    },
+                    "taker_rebate": {
+                      "amount": "1364046.870900",
+                      "count": 39,
+                      "first_ts": 1781914210,
+                      "last_ts": 1783728617
+                    }
+                  },
+                  "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v3/wallets/{addr}/credits": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Wallet Credit Events",
+        "operationId": "credits_wallet_events",
+        "description": "Individual credit events for one wallet with filters Polymarket does not offer: amount bounds, amount sorting, token filter.",
+        "parameters": [
+          {
+            "name": "addr",
+            "in": "path",
+            "required": true,
+            "description": "Wallet (proxy) address.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds start bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "end_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds end bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_amount",
+            "in": "query",
+            "required": false,
+            "description": "Minimum credit amount (USD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "max_amount",
+            "in": "query",
+            "required": false,
+            "description": "Maximum credit amount (USD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "`time` (default) or `amount`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "`desc` (default) or `asc`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Rows per page, max 500 (default 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Pagination offset.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "description": "Payout token filter: `usdce` or `pusd`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+                  "count": 1,
+                  "limit": 1,
+                  "offset": 0,
+                  "events": [
+                    {
+                      "amount": "3714.480000",
+                      "block_number": 90017147,
+                      "log_index": 2043,
+                      "recipient": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+                      "timestamp": 1783730716,
+                      "token": "pusd",
+                      "tx_hash": "0xb3b589e87145a7a61324bca2a241c891fd488cf0615e5c2d7a3121b28698d7a6",
+                      "type": "maker_rebate"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v3/wallets/{addr}/credits/series": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Wallet Credit Series",
+        "operationId": "credits_wallet_series",
+        "description": "Time-bucketed earnings series per credit type for one wallet.",
+        "parameters": [
+          {
+            "name": "addr",
+            "in": "path",
+            "required": true,
+            "description": "Wallet (proxy) address.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "description": "`hour`, `day` (default), `week`, or `month`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fill",
+            "in": "query",
+            "required": false,
+            "description": "`zero` to emit empty buckets, `skip` (default) to omit them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds start bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "end_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds end bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+                  "interval": "day",
+                  "series": [
+                    {
+                      "bucket": 1783641600,
+                      "maker_rebate": {
+                        "amount": "3857.120000",
+                        "count": 1
+                      }
+                    },
+                    {
+                      "bucket": 1783728000,
+                      "maker_rebate": {
+                        "amount": "3714.480000",
+                        "count": 1
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v3/credits/leaderboard": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Credits Leaderboard",
+        "operationId": "credits_leaderboard",
+        "description": "Top earners for any credit type over any window, across every wallet. Not possible with Polymarket's per-wallet activity feed.",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Single credit type, or `all`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "description": "Alternative to `type`: comma-separated set.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "description": "`24h`, `7d`, `30d`, or `all` (default).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds start bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "end_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds end bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_amount",
+            "in": "query",
+            "required": false,
+            "description": "Minimum total to appear (USD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Entries, max 100 (default 25).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Pagination offset.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "count": 2,
+                  "leaderboard": [
+                    {
+                      "count": 106,
+                      "first_ts": 1774400703,
+                      "last_ts": 1783385494,
+                      "rank": 1,
+                      "total": "667213.708000",
+                      "wallet": "0x06dc51826bc524d9a83770e7de9dd7e005b04524"
+                    },
+                    {
+                      "count": 2,
+                      "first_ts": 1782418339,
+                      "last_ts": 1782418442,
+                      "rank": 2,
+                      "total": "597264.000000",
+                      "wallet": "0x2d507657ca4ebcc8f9a38f6764c07310b66dea54"
+                    }
+                  ],
+                  "types": [
+                    "referral_reward"
+                  ],
+                  "window": "all"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v3/credits/stats": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Global Credit Stats",
+        "operationId": "credits_stats",
+        "description": "Program-wide aggregates per credit type: totals, unique recipients, batch transaction counts, average credit size, plus a bucketed series.",
+        "parameters": [
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "description": "`hour`, `day` (default), `week`, or `month`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds start bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "end_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds end bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "interval": "month",
+                  "series": [
+                    {
+                      "bucket": 1780272000,
+                      "taker_rebate": {
+                        "amount": "6006789.660200",
+                        "count": 63921
+                      }
+                    },
+                    {
+                      "bucket": 1782864000,
+                      "taker_rebate": {
+                        "amount": "7673425.065000",
+                        "count": 95078
+                      }
+                    }
+                  ],
+                  "totals": {
+                    "taker_rebate": {
+                      "amount": "13680214.725200",
+                      "avg_credit": "86.039627",
+                      "batch_txs": 501,
+                      "count": 158999,
+                      "first_ts": 1781914205,
+                      "last_ts": 1783728635,
+                      "unique_recipients": 36469
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v3/credits/events": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Global Credit Feed",
+        "operationId": "credits_events",
+        "description": "Most recent credit events across ALL wallets \u2014 watch large rebates or rewards land in near real time. Cursor-paginated.",
+        "parameters": [
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds start bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "end_ts",
+            "in": "query",
+            "required": false,
+            "description": "Unix seconds end bound (inclusive).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_amount",
+            "in": "query",
+            "required": false,
+            "description": "Minimum credit amount (USD) \u2014 whale filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Rows per page, max 500 (default 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque cursor from `next_cursor` of the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "count": 1,
+                  "next_cursor": "90017147-2043",
+                  "events": [
+                    {
+                      "amount": "3714.480000",
+                      "block_number": 90017147,
+                      "log_index": 2043,
+                      "recipient": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+                      "timestamp": 1783730716,
+                      "token": "pusd",
+                      "tx_hash": "0xb3b589e87145a7a61324bca2a241c891fd488cf0615e5c2d7a3121b28698d7a6",
+                      "type": "maker_rebate"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v3/credits/distributors": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Credit Distributors",
+        "operationId": "credits_distributors",
+        "description": "The on-chain payout addresses behind each credit type, with lifetime totals \u2014 full transparency into where the money comes from.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "count": 25,
+                  "distributors": [
+                    {
+                      "address": "0x3a9418b2651c8164db5ebc56f12008137865e0f7",
+                      "first_ts": 1767809883,
+                      "kind": "eoa",
+                      "last_ts": 1782417259,
+                      "status": "active",
+                      "tokens": [
+                        "usdce",
+                        "pusd"
+                      ],
+                      "total_paid": "111109788.638237",
+                      "transfers": 907905,
+                      "type": "maker_rebate"
+                    },
+                    {
+                      "address": "0xfdb1b8dc7f5789a0c9a398026585b8b10fba5507",
+                      "first_ts": 1782414209,
+                      "kind": "eoa",
+                      "last_ts": 1783730746,
+                      "status": "active",
+                      "tokens": [
+                        "pusd"
+                      ],
+                      "total_paid": "25939985.977000",
+                      "transfers": 116986,
+                      "type": "maker_rebate"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v3/credits/txs/{hash}": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Decode Payout Transaction",
+        "operationId": "credits_tx_decode",
+        "description": "Decode one payout transaction into typed credit rows: every recipient, every amount.",
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "path",
+            "required": true,
+            "description": "Transaction hash.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "tx_hash": "0xb3b589e87145a7a61324bca2a241c891fd488cf0615e5c2d7a3121b28698d7a6",
+                  "block_number": 90017147,
+                  "timestamp": 1783730716,
+                  "type": "maker_rebate",
+                  "recipients": 400,
+                  "total_amount": "187330.184700",
+                  "events": [
+                    {
+                      "amount": "3714.480000",
+                      "log_index": 2043,
+                      "recipient": "0x204f72f35326db932158cba6adff0b9a1da95e14",
+                      "timestamp": 1783730716,
+                      "token": "pusd",
+                      "type": "maker_rebate",
+                      "tx_hash": "0xb3b589e87145a7a61324bca2a241c891fd488cf0615e5c2d7a3121b28698d7a6",
+                      "block_number": 90017147
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found in the credits index"
+          }
+        }
+      }
+    },
+    "/v3/credits/recipients/stats": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Recipient Growth",
+        "operationId": "credits_recipient_stats",
+        "description": "How many wallets earned their first credit per bucket \u2014 program growth over time.",
+        "parameters": [
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated credit types: `reward`, `yield`, `maker_rebate`, `taker_rebate`, `referral_reward`. Omit or use `all` for every type.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "description": "`hour`, `day` (default), `week`, or `month`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "example": {
+                  "interval": "month",
+                  "series": [
+                    {
+                      "bucket": 1772323200,
+                      "new_recipients": 556
+                    },
+                    {
+                      "bucket": 1775001600,
+                      "new_recipients": 3101
+                    },
+                    {
+                      "bucket": 1777593600,
+                      "new_recipients": 1850
+                    },
+                    {
+                      "bucket": 1780272000,
+                      "new_recipients": 1756
+                    },
+                    {
+                      "bucket": 1782864000,
+                      "new_recipients": 489
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9291,7 +10066,7 @@
       },
       "EventStatus": {
         "type": "string",
-        "description": "Status of an event — pending (mempool) or confirmed (in a block).",
+        "description": "Status of an event \u2014 pending (mempool) or confirmed (in a block).",
         "enum": [
           "pending",
           "confirmed"
@@ -9514,7 +10289,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map.",
+            "description": "Token ID \u2192 outcome name map.",
             "additionalProperties": {
               "type": "string"
             },
@@ -9647,7 +10422,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
+            "description": "Token ID \u2192 outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
             "additionalProperties": {
               "type": "string"
             },
@@ -9867,7 +10642,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map.",
+            "description": "Token ID \u2192 outcome name map.",
             "additionalProperties": {
               "type": "string"
             },
@@ -10009,7 +10784,7 @@
               "object",
               "null"
             ],
-            "description": "Token ID → outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
+            "description": "Token ID \u2192 outcome name map (e.g. {\"123...\": \"Yes\", \"456...\": \"No\"}).",
             "additionalProperties": {
               "type": "string"
             },
@@ -10135,7 +10910,7 @@
           },
           "redeemed": {
             "type": "boolean",
-            "description": "Whether the position has been redeemed onchain (tokens burned for USDC). Only present when `redeemable` is true. Determined by checking the CTF contract balance — zero balance means fully redeemed."
+            "description": "Whether the position has been redeemed onchain (tokens burned for USDC). Only present when `redeemable` is true. Determined by checking the CTF contract balance \u2014 zero balance means fully redeemed."
           },
           "unredeemed_balance": {
             "type": "number",
