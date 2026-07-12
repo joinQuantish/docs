@@ -26,8 +26,11 @@ Resolves the slug to all token IDs for that market and returns trades across all
 |-----------|------|---------|-------------|
 | `after` | integer | -- | Start of time range (Unix timestamp) |
 | `before` | integer | -- | End of time range |
+| `min_amount_usd` | number | -- | Minimum trade size in dollars, matching the `amount_usd` response field. Decimals allowed, e.g. `99.5` |
 | `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
+
+Both the token-ID and market-slug forms accept `min_amount_usd`, so a whale feed for one market is a single call, e.g. `?min_amount_usd=100`.
 
 ## Example (by token ID)
 

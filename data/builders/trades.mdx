@@ -26,8 +26,10 @@ GET /v3/builders/{code}/trades
 | `condition_id` | string | -- | Filter by market condition ID (resolves to token IDs) |
 | `market_slug` | string | -- | Filter by market slug (resolves to token IDs) |
 | `event_slug` | string | -- | Filter by event slug (resolves to token IDs across the event) |
+| `event_id` | integer | -- | Filter by numeric event ID (same scope as `event_slug`) |
 | `side` | string | -- | `buy` or `sell`, based on the maker order side |
-| `min_amount` | integer | -- | Minimum `maker_amount_filled` (raw 6-decimal) |
+| `min_amount_usd` | number | -- | Minimum trade size in dollars, matching the `amount_usd` response field. Decimals allowed, e.g. `99.5` |
+| `min_amount` | integer | -- | Minimum `maker_amount_filled` (raw 6-decimal). Prefer `min_amount_usd` |
 | `category` | string | -- | Filter by market category. Broad categories may return `400` asking for a narrower filter. |
 | `tag_slug` | string | -- | Filter by market tag slug. Broad tags may return `400` asking for a narrower filter. |
 | `after` | integer | 0 | Start of time range (Unix timestamp) |

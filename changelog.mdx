@@ -5,6 +5,20 @@ description: "All notable changes to the PolyNode API and SDKs."
 icon: "clock-rotate-left"
 ---
 
+## 2026-07-12 - Event-scoped trades and dollar-size filtering
+
+Trade feeds can now be scoped to a whole Polymarket event and filtered by dollar size.
+
+What's new:
+
+* `event_slug` and `event_id` filters on `GET /v3/trades` and `GET /v3/wallets/{address}/trades`: one call returns trades across every market in an event, with pagination. Builder trades gain `event_id` alongside the existing `event_slug`.
+* `min_amount_usd` on global, market, market-slug, wallet, and builder trades: a dollar floor that matches the `amount_usd` field already present in every trade row. `?min_amount_usd=100` means "show me $100+ trades". Decimals allowed. The raw `min_amount` filter keeps working; `min_amount_usd` is the recommended one.
+* Trade rows across all trades endpoints are now enriched with `event_slug` and `event_id`, so any feed can be grouped by event client-side.
+* `condition_id` and `market_slug` filters on global trades are now documented (market-scoped feeds across all outcomes).
+* An event filter that matches nothing returns an empty page rather than falling back to unfiltered results, and invalid values return `400`.
+
+***
+
 ## 2026-07-11 - Perps API consistency pass
 
 A hardening pass across the whole perps surface, from a full external-style audit of the docs and live API.

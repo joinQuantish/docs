@@ -4,7 +4,7 @@ openapi: "GET /v3/trades"
 description: "Browse the full Polymarket trade history with market enrichment, computed prices, and order hashes."
 ---
 
-Returns all Polymarket fills across all wallets, enriched with market metadata. Supports time range filtering, minimum amount, and token filtering.
+Returns all Polymarket fills across all wallets, enriched with market metadata. Supports time range filtering, dollar-size filtering, and scoping by token, market, or event.
 
 ## Request
 
@@ -19,57 +19,76 @@ GET /v3/trades
 | `after` | integer | -- | Start of time range (Unix timestamp) |
 | `before` | integer | -- | End of time range (Unix timestamp) |
 | `token_id` | string | -- | Filter by outcome token |
+| `condition_id` | string | -- | Filter by market condition ID (resolves to token IDs) |
+| `market_slug` | string | -- | Filter by market slug (resolves to token IDs) |
+| `event_slug` | string | -- | Filter by event slug (resolves to token IDs across all of the event's markets) |
+| `event_id` | integer | -- | Filter by numeric event ID (same scope as `event_slug`) |
 | `builder` | string | -- | Filter by builder code (hex) |
-| `min_amount` | integer | -- | Minimum maker_amount_filled (raw 6-decimal) |
+| `side` | string | -- | `buy` or `sell`, based on the maker order side |
+| `min_amount_usd` | number | -- | Minimum trade size in dollars, matching the `amount_usd` response field. Decimals allowed, e.g. `99.5` |
+| `min_amount` | integer | -- | Minimum maker_amount_filled (raw 6-decimal). Prefer `min_amount_usd` |
 | `order` | string | `desc` | `asc` or `desc` |
 | `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
+Event filters cover events currently in Polymarket's catalog. A very large event can return `400` asking for a narrower filter (`condition_id` or `market_slug`).
+
 ## Example
 
+$100+ trades, newest first:
+
 ```bash
-curl https://api.polynode.dev/v3/trades?limit=1
+curl "https://api.polynode.dev/v3/trades?min_amount_usd=100&limit=1"
 ```
 
 ```json
 {
   "trades": [
     {
-      "id": "0xd4064c6d77afc87390ae9c371bb87d7f4687ac8f2cb1e600ad695928397c1dce_1483",
-      "maker": "0x84cfffc3f16dcc353094de30d4a45226eccd2f63",
+      "id": "0x5e5cf2c73b8d7a8d09f6397c3c32aa285b7102ab957f43a22afaf0e2a1c3476e_0x3ef6f61107628696009ccf3d343c29177a3244f5d1e92f1fd540e75f04a9f48c_1102",
+      "maker": "0xe9076a87c5ed90ef16e6fe6529c943baeca0cff6",
       "taker": "0xe2222d279d744050d28e00520010520000310f59",
-      "maker_asset_id": "0",
-      "taker_asset_id": "9593514921851392841100196009218771406639098519115981476479629056691973100726",
-      "maker_amount": 49.301,
-      "taker_amount": 70.43,
-      "fee": 0.4437,
-      "price": 0.7,
-      "size": 70.43,
-      "timestamp": "1778674687",
-      "transaction_hash": "0xd4064c6d77afc87390ae9c371bb87d7f4687ac8f2cb1e600ad695928397c1dce",
-      "order_hash": "0xad6a2b6ebf9537d72374fe77a41a7fc285906827a1adddda28948d37c09a6640",
-      "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "side": 0,
+      "maker_asset_id": "14635675870982897917581198649476127837975251193150495566552970565909631535281",
+      "taker_asset_id": "0",
+      "maker_amount": 2028.24,
+      "taker_amount": 585.671225,
+      "amount_usd": 585.671225,
+      "fee": 20.82768,
+      "price": 0.2888,
+      "size": 2028.24,
+      "timestamp": "1783824661",
+      "transaction_hash": "0x5e5cf2c73b8d7a8d09f6397c3c32aa285b7102ab957f43a22afaf0e2a1c3476e",
+      "order_hash": "0x3ef6f61107628696009ccf3d343c29177a3244f5d1e92f1fd540e75f04a9f48c",
+      "builder": "0x2c6624a23b16a2a69acd14c87b7fc03906870c851fa0a7b7f9d7be0fbbedea8a",
+      "side": 1,
       "role": "maker",
-      "direction": "BUY",
-      "market": "Will Racing Club de Lens win on 2026-05-13?",
-      "slug": "fl1-rcl-psg-2026-05-13-rcl",
-      "outcome": "No",
-      "outcome_index": 1,
-      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/league-fl1.png",
-      "condition_id": "0x8e4ef7519b5dc20cebc4c19a07abae587e4abf889e415169ec6b1477d796e1b5"
+      "direction": "SELL",
+      "market": "Will Argentina win on 2026-07-11?",
+      "slug": "fifwc-arg-che-2026-07-11-arg",
+      "outcome": "Yes",
+      "outcome_index": 0,
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/soccer ball-bba4025f77.png",
+      "condition_id": "0x95f726bbb693b945f94473908298b2389989550b08a7bfd90f97ce7ba62cb719",
+      "event_slug": "fifwc-arg-che-2026-07-11",
+      "event_id": 679992
     }
   ],
   "rows_returned": 1,
   "has_more": true,
   "offset": 0,
   "limit": 1,
-  "elapsed_ms": 2
+  "elapsed_ms": 10
 }
+```
+
+Event-scoped: every trade across all markets of one event:
+
+```bash
+curl "https://api.polynode.dev/v3/trades?event_slug=fifwc-arg-che-2026-07-11&limit=100"
 ```
 
 ## Response fields
 
-Each trade contains the same fields as [Wallet Trades](/data/wallets/trades), including market enrichment (market, slug, outcome, image, condition_id), computed price and size in USD, order_hash, and direction.
+Each trade contains the same fields as [Wallet Trades](/data/wallets/trades), including market enrichment (market, slug, outcome, image, condition_id, event_slug, event_id), computed price and size in USD, order_hash, and direction. `event_slug`/`event_id` identify the Polymarket event the market belongs to; they are null for old markets that no longer exist in Polymarket's catalog.
 
 On global trades (no wallet context), `role` is always `"maker"` and `direction` reflects the maker's action. Use the [Wallet Trades](/data/wallets/trades) endpoint for wallet-specific perspective.
