@@ -40,7 +40,7 @@ GET /v3/builders/{code}/trades
 ## Example
 
 ```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&limit=1"
+curl -H "x-api-key: pn_live_YOUR_KEY" "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&limit=1"
 ```
 
 ```json
@@ -50,15 +50,15 @@ curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e6
   "builder_logo": "https://polymarket-upload.s3.us-east-2.amazonaws.com/profile-image-4043800-ced7ecde-0754-46a1-8a16-bb6c338fbf39.png",
   "builder_name": "PolyCop",
   "builder_verified": true,
-  "elapsed_ms": 12,
+  "elapsed_ms": 134,
   "has_more": true,
   "limit": 1,
   "offset": 0,
   "rows_returned": 1,
   "trades": [
     {
-      "amount": 1.101,
-      "amount_usd": 1.08999,
+      "amount": 34.62,
+      "amount_usd": 34.58538,
       "asset": "21578184864194020862792310253337084708609281967112790860038966988826118995357",
       "builder": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
       "builder_code": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
@@ -66,28 +66,30 @@ curl "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e6
       "builder_name": "PolyCop",
       "builder_verified": true,
       "condition_id": "0x97269cbb95bd572b3dde34cdd619be278c8f13ba5e43e2e6c2d8639411128a86",
-      "direction": "BUY",
-      "fee": 0.00032,
-      "id": "0x0d57b8bd2cad026ccac902cee781becb358387c6fed98558802e0464434d4c9c_1060",
+      "direction": "SELL",
+      "event_id": 507638,
+      "event_slug": "dota2-tundra-xtreme-2026-05-22",
+      "fee": 0.00103,
+      "id": "0x5177eefeb47113ec68797a30997eadc7bc7f1e748358ea240ca4c391f29c06d6_0x95a8da83ec734acb0324ee2af0c05551a85b55ef824e0c898ed0ab613d9eab69_1025",
       "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/dota2-7ffacddb21.jpg",
       "maker": "0x952d11ebff81d6bd3185e608ed3515b94618ab8a",
-      "maker_amount": 1.08999,
-      "maker_asset_id": "0",
+      "maker_amount": 34.62,
+      "maker_asset_id": "21578184864194020862792310253337084708609281967112790860038966988826118995357",
       "market": "Dota 2: Tundra Esports vs Xtreme Gaming - Game 1 Winner",
-      "order_hash": "0x52d42aa621bd4c451151e97eb9b8a9ec4154f76da440ba31b73cebe918331ac2",
+      "order_hash": "0x95a8da83ec734acb0324ee2af0c05551a85b55ef824e0c898ed0ab613d9eab69",
       "outcome": "Tundra Esports",
       "outcome_index": 0,
-      "price": 0.99,
+      "price": 0.999,
       "role": "maker",
-      "side": 0,
-      "size": 1.101,
+      "side": 1,
+      "size": 34.62,
       "slug": "dota2-tundra-xtreme-2026-05-22-game1",
       "taker": "0xe111180000d2663c0091e4f400237545b87b996b",
-      "taker_amount": 1.101,
-      "taker_asset_id": "21578184864194020862792310253337084708609281967112790860038966988826118995357",
-      "timestamp": "1779448364",
+      "taker_amount": 34.58538,
+      "taker_asset_id": "0",
+      "timestamp": "1779449911",
       "token_id": "21578184864194020862792310253337084708609281967112790860038966988826118995357",
-      "transaction_hash": "0x0d57b8bd2cad026ccac902cee781becb358387c6fed98558802e0464434d4c9c"
+      "transaction_hash": "0x5177eefeb47113ec68797a30997eadc7bc7f1e748358ea240ca4c391f29c06d6"
     }
   ]
 }

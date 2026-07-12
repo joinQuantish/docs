@@ -35,42 +35,50 @@ Both the token-ID and market-slug forms accept `min_amount_usd`, so a whale feed
 ## Example (by token ID)
 
 ```bash
-curl https://api.polynode.dev/v3/markets/75783394880030392863380883800697645018418815910449662777195626260206142035810/trades?limit=1
+curl -H "x-api-key: pn_live_YOUR_KEY" "https://api.polynode.dev/v3/markets/75783394880030392863380883800697645018418815910449662777195626260206142035810/trades?limit=1"
 ```
 
 ```json
 {
+  "elapsed_ms": 1,
+  "has_more": true,
+  "limit": 1,
+  "offset": 0,
+  "rows_returned": 1,
   "token_id": "75783394880030392863380883800697645018418815910449662777195626260206142035810",
   "trades": [
     {
-      "id": "0xc6708a8b57ab936d8bd50be18b0bb55b64d27b5224b7c48ce487fef16fa0de0a_1077",
-      "maker": "0x3248e74f1dafd9acb332fd6a511fe7e4600baad4",
-      "taker": "0xf8f3c0269b1bff87dba772666864737b168f12a9",
-      "maker_asset_id": "0",
-      "taker_asset_id": "75783394880030392863380883800697645018418815910449662777195626260206142035810",
-      "maker_amount": 31.130816,
-      "taker_amount": 61.040815,
-      "fee": 0.0,
-      "price": 0.51,
-      "size": 61.040815,
-      "timestamp": "1778674995",
-      "transaction_hash": "0xc6708a8b57ab936d8bd50be18b0bb55b64d27b5224b7c48ce487fef16fa0de0a",
-      "order_hash": "0xf91a35be0abe447ed8c7d5e4c7511db22e0707136f3850b6708487bf2e6d834c",
+      "amount": 5000.0,
+      "amount_usd": 5.0,
+      "asset": "75783394880030392863380883800697645018418815910449662777195626260206142035810",
       "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "side": 0,
-      "role": "maker",
+      "condition_id": "0x4f05dbc6273b89aed46bb79a961c1d8771c01925d92d439e9a81fa6241900661",
       "direction": "BUY",
+      "event_id": 475423,
+      "event_slug": "dota2-aur1-liquid-2026-05-13",
+      "fee": 0.14985,
+      "id": "0x01d8b23249b1327d103d033ae9c4cff7303ff87a2cf1bcca7d53bbfb98aec6ed_0xfdc90661e12491b7b4244496eaec409d45a4df55d734244e297eb761bec220b9_1378",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/dota2-7ffacddb21.jpg",
+      "maker": "0xcf19ba47a99eee6be9925211c4f0c6cfd1c344b5",
+      "maker_amount": 5.0,
+      "maker_asset_id": "0",
       "market": "Dota 2: Aurora vs Team Liquid (BO3) - DreamLeague Group A",
-      "slug": "dota2-aur1-liquid-2026-05-13",
+      "order_hash": "0xfdc90661e12491b7b4244496eaec409d45a4df55d734244e297eb761bec220b9",
       "outcome": "Aurora",
       "outcome_index": 0,
-      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/dota2-7ffacddb21.jpg",
-      "condition_id": "0x4f05dbc6273b89aed46bb79a961c1d8771c01925d92d439e9a81fa6241900661"
+      "price": 0.001,
+      "role": "maker",
+      "side": 0,
+      "size": 5000.0,
+      "slug": "dota2-aur1-liquid-2026-05-13",
+      "taker": "0xe111180000d2663c0091e4f400237545b87b996b",
+      "taker_amount": 5000.0,
+      "taker_asset_id": "75783394880030392863380883800697645018418815910449662777195626260206142035810",
+      "timestamp": "1778692047",
+      "token_id": "75783394880030392863380883800697645018418815910449662777195626260206142035810",
+      "transaction_hash": "0x01d8b23249b1327d103d033ae9c4cff7303ff87a2cf1bcca7d53bbfb98aec6ed"
     }
-  ],
-  "rows_returned": 1,
-  "has_more": true,
-  "elapsed_ms": 30
+  ]
 }
 ```
 

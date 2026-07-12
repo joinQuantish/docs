@@ -24,7 +24,6 @@ GET /v3/trades
 | `event_slug` | string | -- | Filter by event slug (resolves to token IDs across all of the event's markets) |
 | `event_id` | integer | -- | Filter by numeric event ID (same scope as `event_slug`) |
 | `builder` | string | -- | Filter by builder code (hex) |
-| `side` | string | -- | `buy` or `sell`, based on the maker order side |
 | `min_amount_usd` | number | -- | Minimum trade size in dollars, matching the `amount_usd` response field. Decimals allowed, e.g. `99.5` |
 | `min_amount` | integer | -- | Minimum maker_amount_filled (raw 6-decimal). Prefer `min_amount_usd` |
 | `order` | string | `desc` | `asc` or `desc` |
@@ -38,7 +37,7 @@ Event filters cover events currently in Polymarket's catalog. A very large event
 $100+ trades, newest first:
 
 ```bash
-curl "https://api.polynode.dev/v3/trades?min_amount_usd=100&limit=1"
+curl -H "x-api-key: pn_live_YOUR_KEY" "https://api.polynode.dev/v3/trades?min_amount_usd=100&limit=1"
 ```
 
 ```json
@@ -84,7 +83,7 @@ curl "https://api.polynode.dev/v3/trades?min_amount_usd=100&limit=1"
 Event-scoped: every trade across all markets of one event:
 
 ```bash
-curl "https://api.polynode.dev/v3/trades?event_slug=fifwc-arg-che-2026-07-11&limit=100"
+curl -H "x-api-key: pn_live_YOUR_KEY" "https://api.polynode.dev/v3/trades?event_slug=fifwc-arg-che-2026-07-11&limit=100"
 ```
 
 ## Response fields

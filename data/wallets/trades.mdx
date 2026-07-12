@@ -36,44 +36,50 @@ GET /v3/wallets/{address}/trades
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/trades?limit=1
+curl -H "x-api-key: pn_live_YOUR_KEY" "https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/trades?limit=1"
 ```
 
 ```json
 {
   "address": "0xa9857c7bcb9bcfafd2c132ab053f34f678610058",
+  "elapsed_ms": 3,
+  "has_more": true,
+  "limit": 1,
+  "offset": 0,
+  "rows_returned": 1,
   "trades": [
     {
-      "id": "0x284b61d18c8e0a60333bfe883288c7d9861c9c07a410050f537550940038a713_951",
-      "maker": "0xa9857c7bcb9bcfafd2c132ab053f34f678610058",
-      "taker": "0xe111180000d2663c0091e4f400237545b87b996b",
-      "maker_asset_id": "0",
-      "taker_asset_id": "75783394880030392863380883800697645018418815910449662777195626260206142035810",
-      "maker_amount": 0.999999,
-      "taker_amount": 1.694914,
-      "fee": 0.01229,
-      "price": 0.59,
-      "size": 1.694914,
-      "timestamp": "1778674056",
-      "transaction_hash": "0x284b61d18c8e0a60333bfe883288c7d9861c9c07a410050f537550940038a713",
-      "order_hash": "0x21245a1d81ff19d7effcdb7e3b78d5fe66098708a7dc7cad2267f81d237acc7f",
+      "amount": 8.19,
+      "amount_usd": 4.914,
+      "asset": "31336121594291014914271611062289284423554618020629759821503694496084098706290",
       "builder": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "side": 0,
+      "condition_id": "0x7b461ba0d582c03577966cfdf0da2a5cb9696a26b954b5ed1890f82d6f2a3c88",
+      "direction": "SELL",
+      "event_id": 465162,
+      "event_slug": "nba-det-cle-2026-05-15",
+      "fee": 0.05896,
+      "id": "0xedcfd55321a267c7a200cac4069e4134d85d538e4c245fe3bf1e59ad3188acd8_0x9ed363e9c05368fba5c717b8bee355d60a579f599cb7c007d90974203896a95c_1168",
+      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/super+cool+basketball+in+red+and+blue+wow.png",
+      "maker": "0xa9857c7bcb9bcfafd2c132ab053f34f678610058",
+      "maker_amount": 8.19,
+      "maker_asset_id": "31336121594291014914271611062289284423554618020629759821503694496084098706290",
+      "market": "Pistons vs. Cavaliers",
+      "order_hash": "0x9ed363e9c05368fba5c717b8bee355d60a579f599cb7c007d90974203896a95c",
+      "outcome": "Cavaliers",
+      "outcome_index": 1,
+      "price": 0.6,
       "role": "maker",
-      "direction": "BUY",
-      "market": "Dota 2: Aurora vs Team Liquid (BO3) - DreamLeague Group A",
-      "slug": "dota2-aur1-liquid-2026-05-13",
-      "outcome": "Aurora",
-      "outcome_index": 0,
-      "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/dota2-7ffacddb21.jpg",
-      "condition_id": "0x4f05dbc6273b89aed46bb79a961c1d8771c01925d92d439e9a81fa6241900661"
+      "side": 1,
+      "size": 8.19,
+      "slug": "nba-det-cle-2026-05-15",
+      "taker": "0xe111180000d2663c0091e4f400237545b87b996b",
+      "taker_amount": 4.914,
+      "taker_asset_id": "0",
+      "timestamp": "1778754419",
+      "token_id": "31336121594291014914271611062289284423554618020629759821503694496084098706290",
+      "transaction_hash": "0xedcfd55321a267c7a200cac4069e4134d85d538e4c245fe3bf1e59ad3188acd8"
     }
-  ],
-  "rows_returned": 1,
-  "has_more": true,
-  "offset": 0,
-  "limit": 1,
-  "elapsed_ms": 40
+  ]
 }
 ```
 
@@ -156,14 +162,15 @@ Combo trades are returned in `combo_trades` so existing consumers of the standar
 | `taker` | string | Taker wallet address |
 | `maker_asset_id` | string | Asset the maker provided (`0` = USDC) |
 | `taker_asset_id` | string | Asset the taker provided (`0` = USDC) |
-| `maker_amount` | number | USD amount the maker provided |
-| `taker_amount` | number | USD amount the taker provided |
+| `maker_amount` | number | Amount the maker provided, normalized: outcome tokens, or USD when `maker_asset_id` is `0` |
+| `taker_amount` | number | Amount the taker provided, normalized: outcome tokens, or USD when `taker_asset_id` is `0` |
+| `amount_usd` | number | USD value of the fill (the USDC side of the trade). This is the value the `min_amount_usd` filter compares against |
 | `fee` | number | Fee charged (USD) |
 | `token_id` | string | Outcome token ID for the visible trade leg |
 | `asset` | string | Alias for `token_id`, included for Polymarket compatibility |
 | `amount` | number | Alias for `size`, included for Polymarket compatibility |
 | `price` | number | Computed price per outcome token (maker_amount / taker_amount or inverse) |
-| `size` | number | Number of outcome tokens traded (USD) |
+| `size` | number | Number of outcome tokens traded |
 | `timestamp` | string | Unix timestamp |
 | `transaction_hash` | string | On-chain transaction hash |
 | `order_hash` | string | Unique order hash for this fill |
@@ -182,6 +189,8 @@ Combo trades are returned in `combo_trades` so existing consumers of the standar
 | `outcome_index` | integer | Outcome position (0 or 1) |
 | `image` | string | Market image URL |
 | `condition_id` | string | Market condition ID |
+| `event_slug` | string \| null | Slug of the Polymarket event this market belongs to |
+| `event_id` | integer \| null | Numeric ID of that event. Both are null for old markets no longer in Polymarket's catalog |
 
 ### Sort fills by order hash
 
