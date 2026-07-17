@@ -3,7 +3,7 @@ title: Rate Limits
 description: Rate limiting details and best practices.
 ---
 
-PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your plan and with the endpoint class.
+V3 REST limits are shared across all API keys owned by the same account. Limits scale with your plan and with the endpoint class.
 
 ## Tier limits
 
@@ -35,14 +35,14 @@ PolyNode uses per-key rate limiting to ensure fair usage. Limits scale with your
 </Note>
 
 <Info>
-  V3 REST data endpoints require a paid plan. Heavy trade-history endpoints have a separate per-key bucket in addition to your standard V3 REST data limit. See [V3 REST data limits](#v3-rest-data-limits) below.
+  V3 REST data endpoints require a paid plan. Heavy trade-history endpoints have a separate shared account bucket in addition to your standard V3 REST data limit. See [V3 REST data limits](#v3-rest-data-limits) below.
 </Info>
 
 ## How it works
 
-- Rate limits are tracked per API key using a sliding window.
+- V3 REST limits are tracked per account using a sliding window. You can use multiple keys at the same time, but every request draws from the same account allowance.
 - V3 REST data endpoints require a paid API key. Free-tier keys receive `402 Payment Required`.
-- Heavy V3 trade-history endpoints check both your standard V3 REST data limit and the heavy endpoint bucket. The stricter remaining limit applies.
+- Heavy V3 trade-history endpoints check both your account's standard V3 REST data limit and its heavy endpoint bucket. The stricter remaining limit applies.
 - When you exceed the limit, you'll receive a `429 Too Many Requests` response.
 - The error message includes a Unix timestamp for when you can retry.
 - Successful REST responses include `x-ratelimit-limit`, `x-ratelimit-remaining`, and `x-ratelimit-reset` headers.
@@ -123,7 +123,7 @@ Standard V3 REST reads count against your plan's V3 REST data limit.
 | Growth | 2,000 req/min | 1,500 req/min |
 | Enterprise | 4,000 req/min default; custom by agreement | 1,500 req/min default; custom by agreement |
 
-Heavy V3 trade endpoints have a separate per-key bucket because trade-history scans are the highest-throughput REST surface:
+Heavy V3 trade endpoints have a separate shared account bucket because trade-history scans are the highest-throughput REST surface:
 
 - `/v3/trades`
 - `/v3/wallets/{address}/trades`

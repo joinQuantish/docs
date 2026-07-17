@@ -117,7 +117,7 @@ All Unix timestamps in responses are in **seconds** (e.g., `"1778674056"`). The 
 
 ## Rate limits
 
-V3 REST data endpoints require a paid API key and are rate limited per key.
+V3 REST data endpoints require a paid API key. Limits are shared across all API keys owned by the same account, so keys can be used at the same time without multiplying the account's throughput.
 
 | Plan | Standard V3 REST | Heavy V3 trade endpoints |
 |------|------------------|--------------------------|

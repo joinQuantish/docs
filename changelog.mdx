@@ -5,6 +5,20 @@ description: "All notable changes to the PolyNode API and SDKs."
 icon: "clock-rotate-left"
 ---
 
+## 2026-07-17 - V3 account-level rate limits
+
+V3 REST limits now apply once per account, not once per API key.
+
+What's new:
+
+* All API keys owned by the same account share the plan's rolling standard V3 REST allowance.
+* Keys can be used at the same time, but creating more keys does not increase the account's throughput.
+* Heavy trade-history endpoints keep their separate allowance, which is also shared across the account's keys.
+
+Existing API keys, request formats, and rate-limit response headers continue to work without client changes.
+
+***
+
 ## 2026-07-12 - Event-scoped trades and dollar-size filtering
 
 Trade feeds can now be scoped to a whole Polymarket event and filtered by dollar size.
