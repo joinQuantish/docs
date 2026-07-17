@@ -4,7 +4,7 @@ openapi: "GET /v1/resolve/{query}"
 description: "Instantly resolve any Polymarket wallet address, EOA, or username."
 ---
 
-Look up the full identity for any Polymarket user: preferred trading wallet, EOA (externally owned account), username, wallet type, and every Polymarket wallet they have deployed. Accepts any identifier as input and returns all fields.
+Look up the full identity for any Polymarket user: preferred trading wallet, EOA (externally owned account), username, wallet type, deployment status, and related wallets. Accepts any identifier as input and returns all fields.
 
 <Note>
 If the controlling EOA has a deployed deposit wallet, `safe` returns that deposit wallet and `type` is `"deposit_wallet"` — even when you query the EOA, username, or an older wallet. If no deposit wallet is deployed, `safe` falls back to the existing Safe/proxy wallet. The `safe` field name is kept for backward compatibility; it means the preferred Polymarket trading wallet.
@@ -29,7 +29,43 @@ Polymarket has used a few different wallet types over the years, depending on ho
 
 **"Deposit wallet" vs "beacon wallet":** if you've seen both terms, they're the same thing. Newer deposit wallets are built so Polymarket can upgrade all of them at once — that upgradeable variant is what gets called a "beacon wallet". There's also an earlier standalone variant from before that change. Both behave identically and both resolve here; you never need to tell them apart.
 
-One user can have more than one wallet — for example an old Safe from years ago plus a new deposit wallet. The `wallets` object in every response lists everything they have deployed.
+One user can have more than one wallet — for example an old Safe from years ago plus a new deposit wallet.
+
+## Wallet type, deployment, and current wallet
+
+These fields answer three separate questions:
+
+| Field | What it tells you |
+|---|---|
+| `wallet_type` | What kind of Polymarket wallet the address is: `deposit_wallet`, `safe`, or `proxy`. |
+| `deployed` | Whether the wallet contract currently exists on Polygon. |
+| `current` | Whether this is the trading-wallet address currently selected for the account. This is the address returned in the legacy top-level `safe` field. |
+
+The legacy `wallets` object remains deployed-only: an address appears there only after its contract exists on Polygon. The additive `wallet_details` list includes the current address even if it is not deployed yet, plus the user's other deployed wallets. This makes mixed accounts explicit without changing any existing field.
+
+For example, this account's current address is a deposit wallet, but its contract has not been deployed yet:
+
+```json
+{
+  "safe": "0xb8fa41b48c092ff003686ddbe64c031a6e275611",
+  "eoa": "0xf6771e0308add4131b56989ca969c84b8c9f2155",
+  "username": "hfheohebe",
+  "type": "deposit_wallet",
+  "wallets": {
+    "deposit_wallet": null,
+    "safe": null,
+    "proxy_wallet": null
+  },
+  "wallet_details": [
+    {
+      "address": "0xb8fa41b48c092ff003686ddbe64c031a6e275611",
+      "wallet_type": "deposit_wallet",
+      "deployed": false,
+      "current": true
+    }
+  ]
+}
+```
 
 ## By wallet address (Safe)
 
@@ -161,7 +197,7 @@ curl "https://api.polynode.dev/v1/resolve/Fredi9999" \
 </ResponseField>
 
 <ResponseField name="type" type="string">
-  Wallet type for the address returned in `safe`. One of `"deposit_wallet"`, `"safe"`, or `"proxy"` — see [wallet types](#understanding-polymarket-wallet-types) above.
+  Wallet type for the address returned in `safe`. One of `"deposit_wallet"`, `"safe"`, or `"proxy"` — see [wallet types](#understanding-polymarket-wallet-types) above. `null` only when the resolver cannot verify the wallet's implementation.
 </ResponseField>
 
 <ResponseField name="wallets" type="object">
@@ -171,6 +207,16 @@ curl "https://api.polynode.dev/v1/resolve/Fredi9999" \
   - `wallets.proxy_wallet` — their proxy wallet
 
   Useful when a user has more than one — for example, matching historical activity on an old Safe with current activity on a new deposit wallet.
+</ResponseField>
+
+<ResponseField name="wallet_details" type="array">
+  Status for the current wallet and every other deployed wallet associated with the EOA. Each item contains:
+  - `address` — wallet address
+  - `wallet_type` — `"deposit_wallet"`, `"safe"`, or `"proxy"`; rarely `null` when the implementation cannot be verified
+  - `deployed` — `true` when contract code currently exists on Polygon
+  - `current` — `true` for the selected trading-wallet address returned in `safe`
+
+  Use this list when you need to distinguish wallet type from deployment, or when an account has both a Safe/proxy and a deposit wallet.
 </ResponseField>
 
 ## Error responses
@@ -195,4 +241,4 @@ The resolver supports every Polymarket wallet type on Polygon: deposit wallets (
 - **Profile lookups** — show usernames alongside wallet addresses in your UI
 - **Cross-referencing** — match on-chain activity (EOA) to the preferred Polymarket trading wallet
 - **Whale tracking** — identify the EOA behind a trading wallet to track activity across protocols
-- **Multi-wallet users** — use the `wallets` object to connect a user's old Safe history with their new deposit wallet activity
+- **Multi-wallet users** — use `wallet_details` to distinguish the current wallet from other deployed wallet types

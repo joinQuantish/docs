@@ -36,7 +36,7 @@ npm install polynode-sdk@0.10.6  # TypeScript
 pip install polynode==0.10.3     # Python
 ```
 
-**If you only read data (positions, trades, /resolve):** the response shape is unchanged, with one addition. `/resolve` still returns `safe`, `eoa`, `username`, and `type` exactly as before (`safe` means the preferred Polymarket trading wallet — the deposit wallet when one is deployed), and now also includes a `wallets` object listing every wallet the user has deployed, by type.
+**If you only read data (positions, trades, /resolve):** existing fields are unchanged. `/resolve` still returns `safe`, `eoa`, `username`, and `type` exactly as before. It also returns the deployed-only `wallets` object and a `wallet_details` list with plain `wallet_type`, `deployed`, and `current` status for each relevant address.
 
 **If you call the Polymarket CLOB directly (without our SDK):** you need to implement ERC-7739 TypedDataSign wrapping for `signatureType: 3` orders. See the [signing details](#how-poly_1271-signing-works) below.
 
@@ -130,11 +130,24 @@ curl "https://api.polynode.dev/v1/resolve/0x8b60bf0f650bf7a0d93f10d72375b37de18f
   "safe": "0x8b60bf0f650bf7a0d93f10d72375b37de18f8c40",
   "eoa": "0xa60601a4d903af91855c52bfb3814f6ba342f201",
   "username": null,
-  "type": "deposit_wallet"
+  "type": "deposit_wallet",
+  "wallets": {
+    "deposit_wallet": "0x8b60bf0f650bf7a0d93f10d72375b37de18f8c40",
+    "safe": null,
+    "proxy_wallet": null
+  },
+  "wallet_details": [
+    {
+      "address": "0x8b60bf0f650bf7a0d93f10d72375b37de18f8c40",
+      "wallet_type": "deposit_wallet",
+      "deployed": true,
+      "current": true
+    }
+  ]
 }
 ```
 
-The `safe` field contains the preferred trading wallet address. If the controlling EOA has a deployed deposit wallet, `safe` is the deposit wallet. Otherwise it is the existing Safe/proxy wallet. The `type` field tells you which kind of wallet was returned.
+The `safe` field contains the preferred trading wallet address. If the controlling EOA has a deployed deposit wallet, `safe` is the deposit wallet. Otherwise it is the existing Safe/proxy wallet. The `type` field tells you which kind of wallet was returned. `deployed` and `current` are separate booleans in `wallet_details`, so an address can still be identified as a deposit wallet before its contract is deployed.
 
 | `type` value | Description |
 |---|---|
@@ -173,7 +186,7 @@ No. Safe wallets continue to work exactly as before. The SDK detects your wallet
 </Accordion>
 
 <Accordion title="Will my /resolve API responses break?">
-No field names changed. The endpoint still returns `safe`, `eoa`, `username`, and `type`. The important behavior change is that `safe` now returns the deposit wallet when the resolved EOA has one deployed.
+No. No existing field was renamed or removed. The endpoint still returns `safe`, `eoa`, `username`, `type`, and `wallets`; `wallet_details` is additive.
 </Accordion>
 
 <Accordion title="Can I still create new Safe wallets?">
@@ -185,7 +198,7 @@ Deposit wallet address derivation and detection: `>= 0.10.0`. POLY_1271 order si
 </Accordion>
 
 <Accordion title="What if a user has both a Safe and a deposit wallet?">
-For `/resolve`, the deposit wallet is returned in `safe` when it is deployed. The field name stays `safe` so existing clients do not need to parse a new field.
+For `/resolve`, the deposit wallet is returned in `safe` when it is deployed. The field name stays `safe` so existing clients do not need to parse a new field. `wallet_details` lists both addresses and shows which one is current and whether each is deployed.
 </Accordion>
 
 <Accordion title="Do deposit wallets work with V1 orders?">

@@ -3,7 +3,9 @@ title: "Identity Lookup"
 openapi: "GET /v3/identities/{addr}"
 ---
 
-One call, either direction: pass a trading wallet to get its username, controlling EOA, wallet type and the user's other deployed wallets — or pass an EOA to list every Polymarket wallet that account controls.
+One call, either direction: pass a trading wallet to get its username, controlling EOA, wallet type, deployment status, current status, and related wallets — or pass an EOA to list every Polymarket wallet that account controls.
+
+`wallet_type` tells you what kind of wallet an address is. `deployed` tells you whether its contract exists on Polygon. `current` tells you whether it is the account's selected trading-wallet address. When matched by wallet, `wallet_details` includes that address, the current address, and other deployed wallet types associated with the same EOA.
 
 ```bash
 curl "https://api.polynode.dev/v3/identities/0x204f72f35326db932158cba6adff0b9a1da95e14" \

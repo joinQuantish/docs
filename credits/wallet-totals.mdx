@@ -6,7 +6,7 @@ openapi: "GET /v3/wallets/{addr}/credits/totals"
 Total credits received by a wallet, per program, in one call. Add `start_ts`/`end_ts` for time-windowed totals (for example, rebates earned this month).
 
 <Note>
-The response includes an `identity` block: `username`, controlling `eoa`, `wallet_type`, and `other_wallets` — the user's other deployed Polymarket wallets (same controlling account). Polymarket's own API does not expose this anywhere.
+The response includes an `identity` block with `username`, controlling `eoa`, `wallet_type`, `deployed`, `current`, `wallet_details`, and `other_wallets`. `wallet_details` separates wallet type from deployment status and identifies the account's current trading wallet. Polymarket's own API does not expose this anywhere.
 </Note>
 
 ## Credit types
