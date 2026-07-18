@@ -72,6 +72,21 @@ Remove all subscriptions on this connection.
 }
 ```
 
+Pass `markets` to remove only a subset. Identifiers use the same slug, condition ID, and token ID resolver as subscribe.
+
+### Resync (PN1)
+
+Request a new ordered integrity anchor without reconnecting:
+
+```json
+{
+  "action": "resync",
+  "markets": ["73624432805780182150964443951045800666977811185963019133914618974858599458273"]
+}
+```
+
+This action is available on connections opened with `integrity=1`. Every requested market must already be subscribed. Omit `markets` or pass an empty array to resync the full current subscription. A successful `resyncing` acknowledgement always leads to a new ordered anchor and a matching completion marker. If an anchor for any requested token is already in flight, the server returns `resync_in_progress`; keep that token gated and retry after the supplied delay.
+
 ### Ping
 
 Client-initiated keepalive.
@@ -128,6 +143,20 @@ Acknowledgment after a successful subscribe. The response format differs slightl
     | `resolved_from.slugs` | number | Entries resolved from slugs |
     | `resolved_from.condition_ids` | number | Entries resolved from condition IDs |
   </Tab>
+  <Tab title="PN1 integrity">
+    ```json
+    {
+      "type": "subscribed",
+      "markets": 2,
+      "integrity": {
+        "enabled": true,
+        "protocol": "pn1"
+      }
+    }
+    ```
+
+    The acknowledgement is queued before the standalone PN1 anchor snapshots. See [Orderbook Integrity](/orderbook/integrity).
+  </Tab>
 </Tabs>
 
 <Tip>
@@ -137,6 +166,8 @@ Acknowledgment after a successful subscribe. The response format differs slightl
 ### `snapshot_batch`
 
 Orderbook snapshots delivered in batches after subscribing. For small subscriptions (under 100 tokens), snapshots arrive in a single batch almost instantly. For large subscriptions (firehose), snapshots are streamed in batches of 50 every 200ms to avoid flooding your connection.
+
+PN1 integrity connections instead receive one standalone `book_snapshot` anchor for every subscribed token, including empty books.
 
 ```json
 {
@@ -222,6 +253,7 @@ Full orderbook state for a token. Sent inside `snapshot_batch` messages after su
 | `slug` | string | URL-friendly slug for the event page on Polymarket |
 | `bids` | PriceLevel[] | Buy orders, sorted by price descending |
 | `asks` | PriceLevel[] | Sell orders, sorted by price ascending |
+| `integrity` | object | Present in PN1 mode. A full snapshot has `protocol`, `anchor: true`, `seq`, and the post-snapshot `checksum`. |
 
 Each `PriceLevel` is `{"price": "0.55", "size": "1000.00"}` where price is the probability (0 to 1) and size is the number of shares.
 
@@ -232,6 +264,8 @@ Each `PriceLevel` is `{"price": "0.55", "size": "1000.00"}` where price is the p
 ### `batch`
 
 Batched updates delivered every 250ms. Contains all changes for your subscribed tokens since the last batch. Multiple updates to the same price level within a batch window are coalesced into a single net change, reducing bandwidth without losing accuracy.
+
+With PN1, integrity metadata belongs to each depth update—not to this outer batch—because sequence continuity is per token.
 
 ```json
 {
@@ -297,6 +331,8 @@ A market's price level changed due to an order placement, cancellation, or fill.
 | `market` | string | Condition ID |
 | `slug` | string | Event slug |
 | `assets` | object[] | Array of per-level changes (see below) |
+| `asset_id` | string | PN1 only: repeats the token ID at the event level |
+| `integrity` | object | PN1 depth frames: `protocol`, `prev_seq`, `seq`, and post-update `checksum` |
 
 Each entry in `assets`:
 
@@ -314,6 +350,10 @@ Each entry in `assets`:
   Multiple levels on the same `asset_id` may appear in one batch — each represents a distinct level change. The 250ms coalescer merges repeat hits on the same `(asset_id, price, side)` to last-write-wins, so you always get the most recent size for each level.
 </Tip>
 
+<Note>
+  In PN1 mode, a depth-mutating `price_change` is split into token-scoped messages with exactly one `assets` row so each row has one unambiguous sequence and checksum. The default stream keeps the existing multi-row shape.
+</Note>
+
 #### `book_update`
 
 Incremental change to the orderbook. Apply these to the last snapshot.
@@ -327,6 +367,7 @@ Incremental change to the orderbook. Apply these to the last snapshot.
 | `slug` | string | Event slug |
 | `bids` | PriceLevel[] | Changed bid levels (size `"0"` means remove) |
 | `asks` | PriceLevel[] | Changed ask levels (size `"0"` means remove) |
+| `integrity` | object | PN1 only: `protocol`, `prev_seq`, `seq`, and the post-update `checksum` |
 
 <Warning>
   `book_update` messages are **incremental deltas**, not full replacements. To maintain an accurate orderbook:
@@ -343,6 +384,8 @@ Same schema as the initial `book_snapshot` message above.
 #### `last_trade_price`
 
 A trade executed on Polymarket. Delivered for every fill, not coalesced — each trade in a batch window is its own event.
+
+`last_trade_price` does not mutate bid/ask depth, so it never advances PN1 sequence and never carries an integrity checksum.
 
 ```json
 {
@@ -422,3 +465,12 @@ Response to a client ping.
 | `input_too_large` | Request contains an unusually large explicit identifier list. Use `markets: ["*"]` for the full firehose, or split very large explicit lists across connections. |
 | `service_warming_up` | The Orderbook Stream accepted the connection but is still loading market metadata after a restart. Retry the subscribe shortly. |
 | `session_limit` | Free tier 1-hour daily session expired (resets at midnight UTC) |
+| `invalid_integrity_option` | The `integrity` URL parameter was present but was not `0` or `1`. |
+| `integrity_unavailable` | PN1 is temporarily disabled by the service operator. Retry later or reconnect without `integrity=1`. |
+| `integrity_firehose_unsupported` | PN1 was requested with `markets:["*"]`; use an explicit list of up to 500 resolved tokens. |
+| `integrity_capacity` | The process-wide 5,000-unique-token PN1 mirror limit is full. The previous valid subscription is preserved. |
+| `resync_resolved_empty` | A non-empty PN1 resync request did not resolve to any subscribed token. The current subscription is unchanged. |
+| `resync_not_subscribed` | A PN1 resync requested a token outside the current subscription. |
+| `resync_in_progress` | An anchor is already in flight for at least one requested PN1 token. Keep the token gated and retry after `retry_after_ms`. |
+| `integrity_backpressure` | Gapless delivery can no longer be guaranteed. The socket closes; reconnect for fresh anchors. |
+| `integrity_internal_reset` | PN1 state was reset or an invariant failed. The socket closes; reconnect for fresh anchors. |

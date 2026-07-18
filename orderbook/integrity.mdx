@@ -1,0 +1,380 @@
+---
+title: "Orderbook Integrity (PN1)"
+sidebarTitle: "Integrity (PN1)"
+description: "Opt-in sequence numbers and deterministic checksums for detecting gaps or divergence in a local Orderbook Stream mirror."
+---
+
+PN1 lets a client prove that its local bid/ask depth matches the depth delivered by PolyNode. It adds a per-token sequence number and checksum to the existing Orderbook Stream without changing the default stream.
+
+Enable it with one flag:
+
+```text
+wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY&integrity=1
+```
+
+`pn1` means **PolyNode orderbook integrity protocol, version 1**. You only send `integrity=1`; the protocol name appears in server messages so the checksum bytes are unambiguous.
+
+<Note>
+  PN1 verifies the continuity and resulting state of **PolyNode-delivered depth**. It is not a Polymarket sequence number, does not call Polymarket while processing a frame, and is not a cryptographic signature. PolyNode's separate upstream accuracy monitoring remains out of band and adds no stream latency.
+</Note>
+
+## The client rule
+
+For each token:
+
+1. Accept a message with `anchor: true` as a new baseline. Replace the entire local book, compute PN1, compare the checksum, and store `seq`.
+2. For the next depth update, require `prev_seq` to equal the stored sequence.
+3. Apply every changed level. A size of `"0"` removes that price; every other size is the new absolute size.
+4. Recompute PN1 and require it to equal the message checksum.
+5. Store `seq` only after both checks pass.
+6. On any failure, stop using that token and request a new anchor.
+
+```json
+{"action":"resync","markets":["TOKEN_ID"]}
+```
+
+The server gates that token while it creates the ordered replacement anchor. It replies with `resyncing`, a `book_snapshot` anchor, then `snapshots_done` with `"reason":"resync"`. A successful `resyncing` always leads to that new anchor. If one is already in flight, `resync_in_progress` tells you to keep the token gated and retry after `retry_after_ms`.
+
+## Wire format
+
+The subscribe acknowledgement is queued before any anchors:
+
+```json
+{
+  "type": "subscribed",
+  "markets": 2,
+  "integrity": {
+    "enabled": true,
+    "protocol": "pn1"
+  }
+}
+```
+
+Every subscribed token receives a standalone snapshot, including an empty book:
+
+```json
+{
+  "type": "book_snapshot",
+  "asset_id": "TOKEN_ID",
+  "bids": [],
+  "asks": [],
+  "integrity": {
+    "protocol": "pn1",
+    "anchor": true,
+    "seq": 812,
+    "checksum": "64-lowercase-hex-characters"
+  }
+}
+```
+
+Depth mutations carry the post-update checksum and consecutive sequence:
+
+```json
+{
+  "type": "book_update",
+  "asset_id": "TOKEN_ID",
+  "bids": [{"price":"0.51","size":"25"}],
+  "asks": [],
+  "integrity": {
+    "protocol": "pn1",
+    "prev_seq": 812,
+    "seq": 813,
+    "checksum": "64-lowercase-hex-characters"
+  }
+}
+```
+
+In integrity mode, each depth-mutating `price_change` is token-scoped: it has a top-level `asset_id` and exactly one row in `assets`. This keeps verification identical for every depth frame. A non-depth `price_change` has no `integrity` object. `last_trade_price` never changes depth, never advances `seq`, and has no checksum.
+
+The normal stream (`integrity` omitted or `integrity=0`) keeps its existing payloads. Integrity mode does not support `markets:["*"]`; pass an explicit list of up to 500 resolved token IDs. The process-wide launch limit is 5,000 unique PN1 tokens.
+
+## PN1 checksum
+
+PN1 stores one canonical size for each `(side, price)` level. `B` means bid and `A` means ask.
+
+Canonical decimal rules:
+
+- Accept only a non-negative base-10 string with ASCII digits and at most one decimal point.
+- Add a missing integer zero, remove leading integer zeroes, and remove trailing fractional zeroes.
+- Remove an empty fraction and decimal point. Every representation of zero becomes `0`.
+- A canonical size of `0` removes the level.
+
+Examples: `.50`, `0.500`, and `000.5000` are all `0.5`; `01.000` is `1`.
+
+For every active level:
+
+```text
+level_hash = SHA256(
+  UTF8("pn1:level\0") || side || UTF8("\0") ||
+  UTF8(canonical_price) || UTF8("\0") || UTF8(canonical_size)
+)
+```
+
+XOR all 32-byte level hashes together. The published checksum is:
+
+```text
+SHA256(
+  UTF8("pn1:book\0") || ASCII(bid_count) || UTF8("\0") ||
+  ASCII(ask_count) || UTF8("\0") || xor_accumulator_32_bytes
+)
+```
+
+This makes an update O(changed levels), rather than O(total book depth).
+
+## Copyable reference implementation
+
+This Node.js implementation uses only the standard library and includes the fixed PN1 vectors:
+
+```javascript
+import { createHash } from "node:crypto";
+
+const sha256 = (bytes) => createHash("sha256").update(bytes).digest();
+
+function canonicalDecimal(value) {
+  if (typeof value !== "string" || !/^(?=.*\d)\d*\.?\d*$/.test(value)) {
+    throw new Error(`invalid PN1 decimal: ${JSON.stringify(value)}`);
+  }
+  let [integer = "", fraction = ""] = value.split(".");
+  integer = integer.replace(/^0+/, "") || "0";
+  fraction = fraction.replace(/0+$/, "");
+  return fraction ? `${integer}.${fraction}` : integer;
+}
+
+function levelHash(side, price, size) {
+  return sha256(Buffer.concat([
+    Buffer.from("pn1:level\0"), Buffer.from(side), Buffer.from("\0"),
+    Buffer.from(price), Buffer.from("\0"), Buffer.from(size),
+  ]));
+}
+
+function xorInto(accumulator, digest) {
+  for (let i = 0; i < 32; i++) accumulator[i] ^= digest[i];
+}
+
+class PN1Book {
+  constructor() {
+    this.bids = new Map();
+    this.asks = new Map();
+    this.xor = Buffer.alloc(32);
+  }
+
+  apply(side, rawPrice, rawSize) {
+    if (side !== "B" && side !== "A") throw new Error(`invalid PN1 side: ${side}`);
+    const price = canonicalDecimal(rawPrice);
+    const size = canonicalDecimal(rawSize);
+    const levels = side === "B" ? this.bids : this.asks;
+    const oldSize = levels.get(price);
+    if (oldSize !== undefined) xorInto(this.xor, levelHash(side, price, oldSize));
+    levels.delete(price);
+    if (size !== "0") {
+      xorInto(this.xor, levelHash(side, price, size));
+      levels.set(price, size);
+    }
+  }
+
+  replace(bids, asks) {
+    this.bids.clear(); this.asks.clear(); this.xor.fill(0);
+    for (const [side, rows] of [["B", bids], ["A", asks]]) {
+      const seen = new Set();
+      for (const { price: rawPrice, size: rawSize } of rows) {
+        const price = canonicalDecimal(rawPrice);
+        const size = canonicalDecimal(rawSize);
+        if (size === "0") continue;
+        if (seen.has(price)) throw new Error(`duplicate PN1 ${side} level: ${price}`);
+        seen.add(price);
+        this.apply(side, price, size);
+      }
+    }
+  }
+
+  checksum() {
+    return sha256(Buffer.concat([
+      Buffer.from("pn1:book\0"), Buffer.from(String(this.bids.size)), Buffer.from("\0"),
+      Buffer.from(String(this.asks.size)), Buffer.from("\0"), this.xor,
+    ])).toString("hex");
+  }
+}
+
+const vectors = [
+  [[], [], "f9990dc511a3f5eabf06565ee7f52801621e28d7f2d3509d6fbda91e561edecf"],
+  [[{price:"0.50",size:"10.000"}], [{price:"0.6000",size:"20"}], "a1ec7486bc53e14c4294f08e9298362fe7b5c6495c474e8c447e27ea976eb93a"],
+  [[{price:"0.5",size:"12.500"},{price:"00.4900",size:"3.0"}], [], "7829126b80f3eccac2ab4ecc0e999b90f061df3214db0d2717165834a57d66be"],
+];
+
+for (const [bids, asks, expected] of vectors) {
+  const book = new PN1Book();
+  book.replace(bids, asks);
+  if (book.checksum() !== expected) throw new Error("PN1 vector mismatch");
+}
+console.log("PN1 fixed vectors: OK");
+```
+
+<Accordion title="Python reference implementation">
+
+```python
+import hashlib
+
+def canonical_decimal(value: str) -> str:
+    if not isinstance(value, str) or not value or not value.isascii():
+        raise ValueError(f"invalid PN1 decimal: {value!r}")
+    if value.count(".") > 1 or any(c != "." and not c.isdigit() for c in value):
+        raise ValueError(f"invalid PN1 decimal: {value!r}")
+    integer, dot, fraction = value.partition(".")
+    if not any(c.isdigit() for c in value):
+        raise ValueError(f"invalid PN1 decimal: {value!r}")
+    integer = integer.lstrip("0") or "0"
+    fraction = fraction.rstrip("0")
+    return f"{integer}.{fraction}" if fraction else integer
+
+def level_hash(side: bytes, price: str, size: str) -> bytes:
+    return hashlib.sha256(
+        b"pn1:level\0" + side + b"\0" + price.encode() + b"\0" + size.encode()
+    ).digest()
+
+class PN1Book:
+    def __init__(self):
+        self.bids, self.asks = {}, {}
+        self.xor = bytearray(32)
+
+    def apply(self, side: bytes, raw_price: str, raw_size: str):
+        if side not in (b"B", b"A"):
+            raise ValueError(f"invalid PN1 side: {side!r}")
+        price, size = canonical_decimal(raw_price), canonical_decimal(raw_size)
+        levels = self.bids if side == b"B" else self.asks
+        old_size = levels.pop(price, None)
+        if old_size is not None:
+            self._xor(level_hash(side, price, old_size))
+        if size != "0":
+            self._xor(level_hash(side, price, size))
+            levels[price] = size
+
+    def replace(self, bids, asks):
+        self.bids, self.asks, self.xor = {}, {}, bytearray(32)
+        for side, rows in ((b"B", bids), (b"A", asks)):
+            seen = set()
+            for row in rows:
+                price = canonical_decimal(row["price"])
+                size = canonical_decimal(row["size"])
+                if size == "0":
+                    continue
+                if price in seen:
+                    raise ValueError(f"duplicate PN1 level: {price}")
+                seen.add(price)
+                self.apply(side, price, size)
+
+    def checksum(self) -> str:
+        body = (b"pn1:book\0" + str(len(self.bids)).encode() + b"\0" +
+                str(len(self.asks)).encode() + b"\0" + bytes(self.xor))
+        return hashlib.sha256(body).hexdigest()
+
+    def _xor(self, digest: bytes):
+        for i, value in enumerate(digest):
+            self.xor[i] ^= value
+
+vectors = (
+    ([], [], "f9990dc511a3f5eabf06565ee7f52801621e28d7f2d3509d6fbda91e561edecf"),
+    ([{"price":"0.50","size":"10.000"}], [{"price":"0.6000","size":"20"}],
+     "a1ec7486bc53e14c4294f08e9298362fe7b5c6495c474e8c447e27ea976eb93a"),
+    ([{"price":"0.5","size":"12.500"},{"price":"00.4900","size":"3.0"}], [],
+     "7829126b80f3eccac2ab4ecc0e999b90f061df3214db0d2717165834a57d66be"),
+)
+for bids, asks, expected in vectors:
+    book = PN1Book()
+    book.replace(bids, asks)
+    assert book.checksum() == expected
+print("PN1 fixed vectors: OK")
+```
+
+</Accordion>
+
+## Applying frames
+
+Use one `PN1Book` and stored sequence per token. The same function handles standalone anchors and updates inside a `batch`:
+
+```js
+const states = new Map();
+
+function acceptDepthFrame(update) {
+  const proof = update.integrity;
+  const token = update.asset_id ?? update.assets?.[0]?.asset_id;
+  const depthMutation = update.type === "book_update" ||
+    (update.type === "price_change" && update.assets?.some(row => row.size !== undefined));
+  if (!proof) {
+    if (depthMutation) throw new Error(`missing PN1 proof: ${token}`);
+    return; // last_trade_price or a non-depth price_change
+  }
+  if (proof.protocol !== "pn1" || !Number.isSafeInteger(proof.seq) || proof.seq < 0 ||
+      !/^[0-9a-f]{64}$/.test(proof.checksum ?? "")) {
+    throw new Error(`invalid PN1 proof: ${token}`);
+  }
+
+  if (proof.anchor === true) {
+    if (update.type !== "book_snapshot") throw new Error(`invalid anchor: ${token}`);
+    const book = new PN1Book();
+    book.replace(update.bids, update.asks);
+    if (book.checksum() !== proof.checksum) throw new Error(`bad anchor: ${token}`);
+    states.set(token, { book, seq: proof.seq, checksum: proof.checksum });
+    return;
+  }
+
+  const state = states.get(token);
+  if (!state) throw new Error(`missing anchor: ${token}`);
+  if (proof.seq === state.seq && proof.checksum === state.checksum) return;
+  if (proof.prev_seq !== state.seq) throw new Error(`sequence gap: ${token}`);
+  if (proof.seq !== proof.prev_seq + 1) throw new Error(`bad sequence: ${token}`);
+  if (update.type === "book_update") {
+    for (const row of update.bids) state.book.apply("B", row.price, row.size);
+    for (const row of update.asks) state.book.apply("A", row.price, row.size);
+  } else if (update.type === "price_change") {
+    if (update.assets.length !== 1 || update.assets[0].asset_id !== token) {
+      throw new Error(`invalid price_change: ${token}`);
+    }
+    const row = update.assets[0];
+    const side = row.side === "BUY" ? "B" : row.side === "SELL" ? "A" : null;
+    if (!side) throw new Error(`invalid side: ${token}`);
+    state.book.apply(side, row.price, row.size);
+  } else throw new Error(`unknown depth frame: ${token}`);
+  const checksum = state.book.checksum();
+  if (checksum !== proof.checksum) throw new Error(`checksum mismatch: ${token}`);
+  Object.assign(state, { seq: proof.seq, checksum });
+}
+
+function installPn1Verification(ws) {
+  const pendingResync = new Set();
+  const requestResync = token => {
+    if (pendingResync.has(token)) return;
+    pendingResync.add(token);
+    ws.send(JSON.stringify({ action: "resync", markets: [token] }));
+  };
+  const verify = update => {
+    const token = update.asset_id ?? update.assets?.[0]?.asset_id;
+    try {
+      acceptDepthFrame(update);
+      if (update.integrity?.anchor === true) pendingResync.delete(token);
+    } catch (error) {
+      states.delete(token);
+      requestResync(token);
+    }
+  };
+  ws.onmessage = ({ data }) => {
+    const message = JSON.parse(data);
+    if (message.error === "resync_in_progress") {
+      setTimeout(() => {
+        for (const token of pendingResync) {
+          ws.send(JSON.stringify({ action: "resync", markets: [token] }));
+        }
+      }, message.retry_after_ms ?? 250);
+    } else if (message.type === "batch") {
+      message.updates.forEach(verify);
+    } else if (message.type === "book_snapshot") {
+      verify(message);
+    }
+  };
+}
+
+// After opening the WebSocket: installPn1Verification(ws);
+```
+
+<Warning>
+  Never keep applying a token after a sequence or checksum failure. Gate it immediately and wait for a valid replacement anchor. If the server reports `integrity_backpressure` or `integrity_internal_reset`, reconnect; the new connection will establish fresh anchors.
+</Warning>

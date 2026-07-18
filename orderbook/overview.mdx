@@ -19,7 +19,14 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
   <Card title="Compression included" icon="compress">
     Add `&compress=zlib` to your connection URL for ~50% bandwidth savings. Recommended for production.
   </Card>
+  <Card title="Optional integrity" icon="shield-check">
+    Add one connection flag for per-token sequences and deterministic PN1 checksums. The default stream stays unchanged.
+  </Card>
 </CardGroup>
+
+<Tip>
+  Maintaining a local book? Enable [`integrity=1`](/orderbook/integrity) to detect a missing frame or incorrect local application immediately, then request a fresh ordered anchor on the same connection.
+</Tip>
 
 ## Quick start
 
@@ -216,6 +223,13 @@ With compression (~50% bandwidth savings):
 wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY&compress=zlib
 ```
 
+With opt-in local-book integrity:
+```
+wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY&integrity=1
+```
+
+Compression and integrity can be combined. See [Orderbook Integrity (PN1)](/orderbook/integrity) for the checksum algorithm and copyable verifier.
+
 ## Subscription limits
 
 Use `markets: ["*"]` for the full all-market firehose. Explicit market lists are capped at **15,000 resolved token IDs per connection** to protect low-latency fan-out; split large explicit watchlists across connections or use the firehose path when you truly need every market.
@@ -230,6 +244,8 @@ Use `markets: ["*"]` for the full all-market firehose. Explicit market lists are
 Each Polymarket market has two tokens (one per outcome). Subscribing to both tokens of a market gives you the full two-sided orderbook.
 
 Plan upgrades increase the number of concurrent Orderbook Stream connections. The explicit-list token cap is a per-connection safety limit and is not removed by upgrading.
+
+PN1 integrity connections use explicit market lists only and are initially capped at **500 resolved token IDs per connection**. The all-market firehose remains available on the normal stream.
 
 <Tip>
   **Free tier includes the full firehose.** Subscribe to every market and see the full data flow. The only limit is a 1-hour daily session so you can properly evaluate the product before upgrading.

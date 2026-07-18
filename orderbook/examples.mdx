@@ -22,7 +22,15 @@ wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY" \
 # Subscribe by token ID
 wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY" \
   -x '{"action":"subscribe","markets":["73624432805780182150964443951045800666977811185963019133914618974858599458273"]}'
+
+# Subscribe with PN1 sequence/checksum integrity
+wscat -c "wss://ob.polynode.dev/ws?key=pn_live_YOUR_KEY&integrity=1" \
+  -x '{"action":"subscribe","markets":["73624432805780182150964443951045800666977811185963019133914618974858599458273"]}'
 ```
+
+<Tip>
+  For a verified local book, use the copyable Node.js or Python implementation on [Orderbook Integrity (PN1)](/orderbook/integrity). It covers anchor validation, consecutive sequences, checksums, and targeted `resync` without adding SDK dependencies.
+</Tip>
 
 ## Finding markets
 
