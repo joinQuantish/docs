@@ -150,9 +150,11 @@ When the heavy bucket is exceeded, you'll receive a `429` response with:
 
 Most V3 list endpoints default to `limit=100` and clamp `limit` to a maximum of `300` rows per page. If you request more than the page cap, PolyNode normalizes `limit` to the maximum allowed value. Responses include the actual `limit`, `offset`, `rows_returned`, and `has_more` values.
 
-`/v3/markets/condition/{condition_id}/positions` supports tiered page sizes for holder lists: Starter keys can request up to `300` rows, Growth keys up to `1000`, and Enterprise keys up to `2000`.
+No V3 endpoint returns more than `1000` rows or buckets in one page. Cursors and offsets select where the next page starts; they do not increase its size.
 
-`/v3/wallets/{address}/pnl/events` is the exception: it defaults to `limit=5000` and clamps to a maximum of `10000` buckets.
+`/v3/markets/condition/{condition_id}/positions` supports tiered page sizes for holder lists: Starter keys can request up to `300` rows, while Growth and Enterprise keys can request up to `1000`.
+
+`/v3/wallets/{address}/pnl/events` defaults to and clamps at `limit=1000` buckets.
 
 For deep trade-history walks, prefer `after` and `before` time windows instead of very large offsets.
 
