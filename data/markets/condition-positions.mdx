@@ -23,7 +23,7 @@ GET /v3/markets/condition/{condition_id}/positions
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `sort` | string | `pnl` | Sort order. One of `pnl` (realized P&L), `amount` (current shares held), or `volume` (total bought). |
-| `limit` | integer | 100 | Rows per page. Requests are capped by API key tier: Starter `300`, Growth `1000`, Enterprise `2000`. |
+| `limit` | integer | 100 | Rows per page. Requests are capped by API key tier: Starter `300`, Growth `1000`, Enterprise `1000`. |
 | `offset` | integer | 0 | Number of rows to skip for pagination. |
 
 If `limit` is above your tier cap, PolyNode normalizes it to the maximum allowed value instead of rejecting the request. Every response includes the applied `limit`, plus `rows_returned`, `offset`, and `has_more`.
