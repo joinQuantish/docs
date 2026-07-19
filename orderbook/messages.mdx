@@ -85,7 +85,7 @@ Request a new ordered integrity anchor without reconnecting:
 }
 ```
 
-This action is available on connections opened with `integrity=1`. Every requested market must already be subscribed. Omit `markets` or pass an empty array to resync the full current subscription. A successful `resyncing` acknowledgement always leads to a new ordered anchor and a matching completion marker. If an anchor for any requested token is already in flight, the server returns `resync_in_progress`; keep that token gated and retry after the supplied delay.
+This action is available on connections opened with `integrity=1`. Every requested market must already be subscribed. Omit `markets` or pass an empty array to resync the full current subscription. After `resyncing`, expect a new ordered anchor and a matching completion marker. If that cannot complete, the socket fails closed with a terminal integrity error. If an anchor for any requested token is already in flight, the server returns `resync_in_progress`; keep that token gated and retry after the supplied delay.
 
 ### Ping
 

@@ -4,7 +4,7 @@ sidebarTitle: "Integrity (PN1)"
 description: "Opt-in sequence numbers and deterministic checksums for detecting gaps or divergence in a local Orderbook Stream mirror."
 ---
 
-PN1 lets a client prove that its local bid/ask depth matches the depth delivered by PolyNode. It adds a per-token sequence number and checksum to the existing Orderbook Stream without changing the default stream.
+PN1 lets a client verify that its local bid/ask depth matches the depth delivered by PolyNode. It adds a per-token sequence number and checksum to the existing Orderbook Stream without changing the default stream.
 
 Enable it with one flag:
 
@@ -33,7 +33,7 @@ For each token:
 {"action":"resync","markets":["TOKEN_ID"]}
 ```
 
-The server gates that token while it creates the ordered replacement anchor. It replies with `resyncing`, a `book_snapshot` anchor, then `snapshots_done` with `"reason":"resync"`. A successful `resyncing` always leads to that new anchor. If one is already in flight, `resync_in_progress` tells you to keep the token gated and retry after `retry_after_ms`.
+The server gates that token while it creates the ordered replacement anchor. It replies with `resyncing`, a `book_snapshot` anchor, then `snapshots_done` with `"reason":"resync"`. If one is already in flight, `resync_in_progress` tells you to keep the token gated and retry after `retry_after_ms`. If an acknowledged anchor cannot complete, the server fails closed with `integrity_backpressure` or `integrity_internal_reset` and closes the socket; reconnect for fresh anchors.
 
 ## Wire format
 
@@ -86,7 +86,7 @@ Depth mutations carry the post-update checksum and consecutive sequence:
 
 In integrity mode, each depth-mutating `price_change` is token-scoped: it has a top-level `asset_id` and exactly one row in `assets`. This keeps verification identical for every depth frame. A non-depth `price_change` has no `integrity` object. `last_trade_price` never changes depth, never advances `seq`, and has no checksum.
 
-The normal stream (`integrity` omitted or `integrity=0`) keeps its existing payloads. Integrity mode does not support `markets:["*"]`; pass an explicit list of up to 500 resolved token IDs. The process-wide launch limit is 5,000 unique PN1 tokens.
+The normal stream (`integrity` omitted or `integrity=0`) keeps its existing payloads. Integrity mode does not support `markets:["*"]`; pass an explicit list of up to 500 resolved token IDs. Existing account limits still apply if they are lower. The process-wide launch limit is 5,000 unique PN1 tokens.
 
 ## PN1 checksum
 
@@ -119,11 +119,27 @@ SHA256(
 )
 ```
 
-This makes an update O(changed levels), rather than O(total book depth).
+Rust is not part of the client contract. These bytes can be produced in any language with SHA-256, UTF-8/ASCII byte encoding, and byte-array XOR. The fixed vectors below let a Go, Java, C#, C++, or other implementation confirm that it produces the same result before connecting.
 
-## Copyable reference implementation
+The simplest client can recompute from its complete local book after every update in O(total depth). The incremental accumulator shown below produces the identical checksum in O(changed levels).
 
-This Node.js implementation uses only the standard library and includes the fixed PN1 vectors:
+The full-recompute functions accept the same `[{"price":"...","size":"..."}]` bid and ask arrays as a snapshot. If your local book uses maps, convert each map to those rows before calling the function.
+
+| Complete book | Expected PN1 checksum |
+| --- | --- |
+| no bids or asks | `f9990dc511a3f5eabf06565ee7f52801621e28d7f2d3509d6fbda91e561edecf` |
+| bid `0.50` / `10.000`; ask `0.6000` / `20` | `a1ec7486bc53e14c4294f08e9298362fe7b5c6495c474e8c447e27ea976eb93a` |
+| bids `0.5` / `12.500` and `00.4900` / `3.0`; no asks | `7829126b80f3eccac2ab4ecc0e999b90f061df3214db0d2717165834a57d66be` |
+
+On a live frame, compute the checksum after applying that frame and compare it to `integrity.checksum`. No REST request, Rust process, SDK, or server-side helper is involved on the client.
+
+## Copyable checksum implementations
+
+Choose the language your orderbook client already uses. Node.js and Python include both full-recompute and incremental forms; Go and Rust show the shortest full-recompute form. Every block is executable and contains the same fixed PN1 vectors.
+
+<Accordion title="Node.js checksum reference">
+
+This implementation uses only the Node.js standard library.
 
 ```javascript
 import { createHash } from "node:crypto";
@@ -149,6 +165,33 @@ function levelHash(side, price, size) {
 
 function xorInto(accumulator, digest) {
   for (let i = 0; i < 32; i++) accumulator[i] ^= digest[i];
+}
+
+function finishChecksum(bidCount, askCount, accumulator) {
+  return sha256(Buffer.concat([
+    Buffer.from("pn1:book\0"), Buffer.from(String(bidCount)), Buffer.from("\0"),
+    Buffer.from(String(askCount)), Buffer.from("\0"), accumulator,
+  ])).toString("hex");
+}
+
+// Simplest option: call this after each update using your complete local book.
+// It is O(total depth), but has no retained checksum state.
+function checksumFromScratch(bids, asks) {
+  const accumulator = Buffer.alloc(32);
+  let bidCount = 0, askCount = 0;
+  for (const [side, rows] of [["B", bids], ["A", asks]]) {
+    const seen = new Set();
+    for (const { price: rawPrice, size: rawSize } of rows) {
+      const price = canonicalDecimal(rawPrice);
+      const size = canonicalDecimal(rawSize);
+      if (size === "0") continue;
+      if (seen.has(price)) throw new Error(`duplicate PN1 ${side} level: ${price}`);
+      seen.add(price);
+      xorInto(accumulator, levelHash(side, price, size));
+      if (side === "B") bidCount++; else askCount++;
+    }
+  }
+  return finishChecksum(bidCount, askCount, accumulator);
 }
 
 class PN1Book {
@@ -188,10 +231,7 @@ class PN1Book {
   }
 
   checksum() {
-    return sha256(Buffer.concat([
-      Buffer.from("pn1:book\0"), Buffer.from(String(this.bids.size)), Buffer.from("\0"),
-      Buffer.from(String(this.asks.size)), Buffer.from("\0"), this.xor,
-    ])).toString("hex");
+    return finishChecksum(this.bids.size, this.asks.size, this.xor);
   }
 }
 
@@ -202,14 +242,21 @@ const vectors = [
 ];
 
 for (const [bids, asks, expected] of vectors) {
+  if (checksumFromScratch(bids, asks) !== expected) {
+    throw new Error("PN1 full-recompute vector mismatch");
+  }
   const book = new PN1Book();
   book.replace(bids, asks);
-  if (book.checksum() !== expected) throw new Error("PN1 vector mismatch");
+  if (book.checksum() !== expected) throw new Error("PN1 incremental vector mismatch");
 }
 console.log("PN1 fixed vectors: OK");
 ```
 
-<Accordion title="Python reference implementation">
+</Accordion>
+
+<Accordion title="Python checksum reference">
+
+This implementation uses only the Python standard library.
 
 ```python
 import hashlib
@@ -230,6 +277,37 @@ def level_hash(side: bytes, price: str, size: str) -> bytes:
     return hashlib.sha256(
         b"pn1:level\0" + side + b"\0" + price.encode() + b"\0" + size.encode()
     ).digest()
+
+def xor_into(accumulator: bytearray, digest: bytes):
+    for i, value in enumerate(digest):
+        accumulator[i] ^= value
+
+def finish_checksum(bid_count: int, ask_count: int, accumulator: bytes) -> str:
+    body = (b"pn1:book\0" + str(bid_count).encode() + b"\0" +
+            str(ask_count).encode() + b"\0" + bytes(accumulator))
+    return hashlib.sha256(body).hexdigest()
+
+# Simplest option: call this after each update using your complete local book.
+# It is O(total depth), but has no retained checksum state.
+def checksum_from_scratch(bids, asks) -> str:
+    accumulator = bytearray(32)
+    bid_count = ask_count = 0
+    for side, rows in ((b"B", bids), (b"A", asks)):
+        seen = set()
+        for row in rows:
+            price = canonical_decimal(row["price"])
+            size = canonical_decimal(row["size"])
+            if size == "0":
+                continue
+            if price in seen:
+                raise ValueError(f"duplicate PN1 level: {price}")
+            seen.add(price)
+            xor_into(accumulator, level_hash(side, price, size))
+            if side == b"B":
+                bid_count += 1
+            else:
+                ask_count += 1
+    return finish_checksum(bid_count, ask_count, accumulator)
 
 class PN1Book:
     def __init__(self):
@@ -263,13 +341,10 @@ class PN1Book:
                 self.apply(side, price, size)
 
     def checksum(self) -> str:
-        body = (b"pn1:book\0" + str(len(self.bids)).encode() + b"\0" +
-                str(len(self.asks)).encode() + b"\0" + bytes(self.xor))
-        return hashlib.sha256(body).hexdigest()
+        return finish_checksum(len(self.bids), len(self.asks), self.xor)
 
     def _xor(self, digest: bytes):
-        for i, value in enumerate(digest):
-            self.xor[i] ^= value
+        xor_into(self.xor, digest)
 
 vectors = (
     ([], [], "f9990dc511a3f5eabf06565ee7f52801621e28d7f2d3509d6fbda91e561edecf"),
@@ -279,6 +354,7 @@ vectors = (
      "7829126b80f3eccac2ab4ecc0e999b90f061df3214db0d2717165834a57d66be"),
 )
 for bids, asks, expected in vectors:
+    assert checksum_from_scratch(bids, asks) == expected
     book = PN1Book()
     book.replace(bids, asks)
     assert book.checksum() == expected
@@ -287,21 +363,311 @@ print("PN1 fixed vectors: OK")
 
 </Accordion>
 
+<Accordion title="Go full-recompute reference">
+
+Go's standard library supplies SHA-256. This version favors clarity and recomputes from the complete local book.
+
+```go
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"strconv"
+	"strings"
+)
+
+type Level struct{ Price, Size string }
+
+func canonicalDecimal(value string) (string, error) {
+	if value == "" {
+		return "", fmt.Errorf("invalid PN1 decimal: %q", value)
+	}
+	dot, digits := -1, 0
+	for i := 0; i < len(value); i++ {
+		switch b := value[i]; {
+		case b == '.':
+			if dot >= 0 {
+				return "", fmt.Errorf("invalid PN1 decimal: %q", value)
+			}
+			dot = i
+		case b >= '0' && b <= '9':
+			digits++
+		default:
+			return "", fmt.Errorf("invalid PN1 decimal: %q", value)
+		}
+	}
+	if digits == 0 {
+		return "", fmt.Errorf("invalid PN1 decimal: %q", value)
+	}
+	integer, fraction := value, ""
+	if dot >= 0 {
+		integer, fraction = value[:dot], value[dot+1:]
+	}
+	integer = strings.TrimLeft(integer, "0")
+	if integer == "" {
+		integer = "0"
+	}
+	fraction = strings.TrimRight(fraction, "0")
+	if fraction == "" {
+		return integer, nil
+	}
+	return integer + "." + fraction, nil
+}
+
+func levelHash(side byte, price, size string) [32]byte {
+	h := sha256.New()
+	h.Write([]byte("pn1:level\x00"))
+	h.Write([]byte{side, 0})
+	h.Write([]byte(price))
+	h.Write([]byte{0})
+	h.Write([]byte(size))
+	var digest [32]byte
+	copy(digest[:], h.Sum(nil))
+	return digest
+}
+
+func finishChecksum(bids, asks int, accumulator [32]byte) string {
+	h := sha256.New()
+	h.Write([]byte("pn1:book\x00"))
+	h.Write([]byte(strconv.Itoa(bids)))
+	h.Write([]byte{0})
+	h.Write([]byte(strconv.Itoa(asks)))
+	h.Write([]byte{0})
+	h.Write(accumulator[:])
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func checksumFromScratch(bids, asks []Level) (string, error) {
+	var accumulator [32]byte
+	counts := [2]int{}
+	sides := []struct {
+		tag  byte
+		rows []Level
+	}{{'B', bids}, {'A', asks}}
+	for sideIndex, side := range sides {
+		seen := map[string]bool{}
+		for _, row := range side.rows {
+			price, err := canonicalDecimal(row.Price)
+			if err != nil {
+				return "", err
+			}
+			size, err := canonicalDecimal(row.Size)
+			if err != nil {
+				return "", err
+			}
+			if size == "0" {
+				continue
+			}
+			if seen[price] {
+				return "", fmt.Errorf("duplicate PN1 level: %s", price)
+			}
+			seen[price] = true
+			digest := levelHash(side.tag, price, size)
+			for i := range accumulator {
+				accumulator[i] ^= digest[i]
+			}
+			counts[sideIndex]++
+		}
+	}
+	return finishChecksum(counts[0], counts[1], accumulator), nil
+}
+
+func main() {
+	vectors := []struct {
+		bids, asks []Level
+		expected   string
+	}{
+		{nil, nil, "f9990dc511a3f5eabf06565ee7f52801621e28d7f2d3509d6fbda91e561edecf"},
+		{[]Level{{"0.50", "10.000"}}, []Level{{"0.6000", "20"}},
+			"a1ec7486bc53e14c4294f08e9298362fe7b5c6495c474e8c447e27ea976eb93a"},
+		{[]Level{{"0.5", "12.500"}, {"00.4900", "3.0"}}, nil,
+			"7829126b80f3eccac2ab4ecc0e999b90f061df3214db0d2717165834a57d66be"},
+	}
+	for _, vector := range vectors {
+		got, err := checksumFromScratch(vector.bids, vector.asks)
+		if err != nil || got != vector.expected {
+			panic("PN1 vector mismatch")
+		}
+	}
+	fmt.Println("PN1 fixed vectors: OK")
+}
+```
+
+</Accordion>
+
+<Accordion title="Rust full-recompute reference">
+
+Rust's standard library does not include SHA-256, so add `sha2 = "0.10"` to `Cargo.toml`. No PolyNode SDK is required.
+
+```rust
+use sha2::{Digest, Sha256};
+use std::collections::HashSet;
+
+#[derive(Clone, Copy)]
+struct Level<'a> {
+    price: &'a str,
+    size: &'a str,
+}
+
+fn canonical_decimal(value: &str) -> Result<String, String> {
+    if value.is_empty() || !value.is_ascii() {
+        return Err(format!("invalid PN1 decimal: {value:?}"));
+    }
+    let mut dot = None;
+    let mut digits = 0;
+    for (index, byte) in value.bytes().enumerate() {
+        if byte == b'.' {
+            if dot.replace(index).is_some() {
+                return Err(format!("invalid PN1 decimal: {value:?}"));
+            }
+        } else if byte.is_ascii_digit() {
+            digits += 1;
+        } else {
+            return Err(format!("invalid PN1 decimal: {value:?}"));
+        }
+    }
+    if digits == 0 {
+        return Err(format!("invalid PN1 decimal: {value:?}"));
+    }
+    let (integer, fraction) = match dot {
+        Some(index) => (&value[..index], &value[index + 1..]),
+        None => (value, ""),
+    };
+    let integer = integer.trim_start_matches('0');
+    let integer = if integer.is_empty() { "0" } else { integer };
+    let fraction = fraction.trim_end_matches('0');
+    Ok(if fraction.is_empty() {
+        integer.to_string()
+    } else {
+        format!("{integer}.{fraction}")
+    })
+}
+
+fn level_hash(side: u8, price: &str, size: &str) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(b"pn1:level\0");
+    hasher.update([side]);
+    hasher.update(b"\0");
+    hasher.update(price.as_bytes());
+    hasher.update(b"\0");
+    hasher.update(size.as_bytes());
+    hasher.finalize().into()
+}
+
+fn finish_checksum(bids: usize, asks: usize, accumulator: [u8; 32]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(b"pn1:book\0");
+    hasher.update(bids.to_string().as_bytes());
+    hasher.update(b"\0");
+    hasher.update(asks.to_string().as_bytes());
+    hasher.update(b"\0");
+    hasher.update(accumulator);
+    hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+fn checksum_from_scratch(bids: &[Level<'_>], asks: &[Level<'_>]) -> Result<String, String> {
+    let mut accumulator = [0_u8; 32];
+    let mut counts = [0_usize; 2];
+    for (side_index, (side, rows)) in [(b'B', bids), (b'A', asks)].into_iter().enumerate() {
+        let mut seen = HashSet::new();
+        for row in rows {
+            let price = canonical_decimal(row.price)?;
+            let size = canonical_decimal(row.size)?;
+            if size == "0" {
+                continue;
+            }
+            if !seen.insert(price.clone()) {
+                return Err(format!("duplicate PN1 level: {price}"));
+            }
+            let digest = level_hash(side, &price, &size);
+            for (current, value) in accumulator.iter_mut().zip(digest) {
+                *current ^= value;
+            }
+            counts[side_index] += 1;
+        }
+    }
+    Ok(finish_checksum(counts[0], counts[1], accumulator))
+}
+
+fn main() {
+    let vectors = vec![
+        (
+            vec![],
+            vec![],
+            "f9990dc511a3f5eabf06565ee7f52801621e28d7f2d3509d6fbda91e561edecf",
+        ),
+        (
+            vec![Level {
+                price: "0.50",
+                size: "10.000",
+            }],
+            vec![Level {
+                price: "0.6000",
+                size: "20",
+            }],
+            "a1ec7486bc53e14c4294f08e9298362fe7b5c6495c474e8c447e27ea976eb93a",
+        ),
+        (
+            vec![
+                Level {
+                    price: "0.5",
+                    size: "12.500",
+                },
+                Level {
+                    price: "00.4900",
+                    size: "3.0",
+                },
+            ],
+            vec![],
+            "7829126b80f3eccac2ab4ecc0e999b90f061df3214db0d2717165834a57d66be",
+        ),
+    ];
+    for (bids, asks, expected) in vectors {
+        assert_eq!(checksum_from_scratch(&bids, &asks).unwrap(), expected);
+    }
+    println!("PN1 fixed vectors: OK");
+}
+```
+
+</Accordion>
+
 ## Applying frames
 
-Use one `PN1Book` and stored sequence per token. The same function handles standalone anchors and updates inside a `batch`:
+Use one `PN1Book` and stored sequence per token, per connection. This block uses the Node.js `PN1Book` above and handles standalone anchors, batched updates, targeted resync, terminal errors, and optional `compress=zlib` frames:
 
 ```js
-const states = new Map();
+import { inflateRawSync } from "node:zlib";
 
-function acceptDepthFrame(update) {
+function tokenHint(update) {
+  const token = update?.asset_id ?? update?.assets?.[0]?.asset_id;
+  return typeof token === "string" && token ? token : null;
+}
+
+function acceptDepthFrame(states, update) {
   const proof = update.integrity;
-  const token = update.asset_id ?? update.assets?.[0]?.asset_id;
-  const depthMutation = update.type === "book_update" ||
-    (update.type === "price_change" && update.assets?.some(row => row.size !== undefined));
+  const hint = tokenHint(update);
+
+  if (update.type === "last_trade_price") {
+    if (proof) throw new Error(`last_trade_price carried PN1: ${hint}`);
+    return;
+  }
   if (!proof) {
-    if (depthMutation) throw new Error(`missing PN1 proof: ${token}`);
-    return; // last_trade_price or a non-depth price_change
+    if (update.type === "price_change" && Array.isArray(update.assets) &&
+        !update.assets.some(row => row.size !== undefined || row.side !== undefined)) {
+      return; // a non-depth price_change
+    }
+    throw new Error(`missing PN1 proof: ${hint}`);
+  }
+
+  const token = update.asset_id;
+  if (typeof token !== "string" || !token) {
+    throw new Error("PN1 frame missing top-level asset_id");
   }
   if (proof.protocol !== "pn1" || !Number.isSafeInteger(proof.seq) || proof.seq < 0 ||
       !/^[0-9a-f]{64}$/.test(proof.checksum ?? "")) {
@@ -309,7 +675,8 @@ function acceptDepthFrame(update) {
   }
 
   if (proof.anchor === true) {
-    if (update.type !== "book_snapshot") throw new Error(`invalid anchor: ${token}`);
+    if (update.type !== "book_snapshot" || !Array.isArray(update.bids) ||
+        !Array.isArray(update.asks)) throw new Error(`invalid anchor: ${token}`);
     const book = new PN1Book();
     book.replace(update.bids, update.asks);
     if (book.checksum() !== proof.checksum) throw new Error(`bad anchor: ${token}`);
@@ -320,13 +687,18 @@ function acceptDepthFrame(update) {
   const state = states.get(token);
   if (!state) throw new Error(`missing anchor: ${token}`);
   if (proof.seq === state.seq && proof.checksum === state.checksum) return;
-  if (proof.prev_seq !== state.seq) throw new Error(`sequence gap: ${token}`);
+  if (!Number.isSafeInteger(proof.prev_seq) || proof.prev_seq < 0 ||
+      proof.prev_seq !== state.seq) throw new Error(`sequence gap: ${token}`);
   if (proof.seq !== proof.prev_seq + 1) throw new Error(`bad sequence: ${token}`);
   if (update.type === "book_update") {
+    if (!Array.isArray(update.bids) || !Array.isArray(update.asks)) {
+      throw new Error(`invalid book_update: ${token}`);
+    }
     for (const row of update.bids) state.book.apply("B", row.price, row.size);
     for (const row of update.asks) state.book.apply("A", row.price, row.size);
   } else if (update.type === "price_change") {
-    if (update.assets.length !== 1 || update.assets[0].asset_id !== token) {
+    if (!Array.isArray(update.assets) || update.assets.length !== 1 ||
+        update.assets[0].asset_id !== token) {
       throw new Error(`invalid price_change: ${token}`);
     }
     const row = update.assets[0];
@@ -339,41 +711,91 @@ function acceptDepthFrame(update) {
   Object.assign(state, { seq: proof.seq, checksum });
 }
 
-function installPn1Verification(ws) {
+function parsePn1Message(data) {
+  if (typeof data === "string") return JSON.parse(data);
+  let bytes;
+  if (data instanceof ArrayBuffer) bytes = Buffer.from(data);
+  else if (ArrayBuffer.isView(data)) {
+    bytes = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+  } else throw new Error("unsupported WebSocket frame type");
+  return JSON.parse(inflateRawSync(bytes).toString("utf8"));
+}
+
+function installPn1Verification(ws, {
+  onTokenInvalid = (token, error) => console.error(`PN1 gated ${token}:`, error),
+  onReconnectRequired = error => console.error("PN1 reconnect required:", error),
+} = {}) {
+  const states = new Map();
   const pendingResync = new Set();
+  let terminal = false;
+  ws.binaryType = "arraybuffer";
+
   const requestResync = token => {
+    if (typeof token !== "string" || !token) throw new Error("cannot resync unknown token");
+    states.delete(token); // gate before sending; queued deltas are now unusable
     if (pendingResync.has(token)) return;
     pendingResync.add(token);
     ws.send(JSON.stringify({ action: "resync", markets: [token] }));
   };
+
+  const failConnection = error => {
+    if (terminal) return;
+    terminal = true;
+    states.clear();
+    pendingResync.clear();
+    try { ws.close(); } finally { onReconnectRequired(error); }
+  };
+
   const verify = update => {
-    const token = update.asset_id ?? update.assets?.[0]?.asset_id;
+    const token = tokenHint(update);
     try {
-      acceptDepthFrame(update);
+      acceptDepthFrame(states, update);
       if (update.integrity?.anchor === true) pendingResync.delete(token);
     } catch (error) {
+      if (!token) throw error;
       states.delete(token);
+      // A bad replacement anchor needs a new request; queued deltas do not.
+      if (update.integrity?.anchor === true) pendingResync.delete(token);
+      onTokenInvalid(token, error);
       requestResync(token);
     }
   };
-  ws.onmessage = ({ data }) => {
-    const message = JSON.parse(data);
-    if (message.error === "resync_in_progress") {
-      setTimeout(() => {
-        for (const token of pendingResync) {
-          ws.send(JSON.stringify({ action: "resync", markets: [token] }));
-        }
-      }, message.retry_after_ms ?? 250);
-    } else if (message.type === "batch") {
-      message.updates.forEach(verify);
-    } else if (message.type === "book_snapshot") {
-      verify(message);
+
+  ws.addEventListener("message", ({ data }) => {
+    try {
+      const message = parsePn1Message(data);
+      if (message.error === "resync_in_progress") {
+        const delay = Number.isSafeInteger(message.retry_after_ms) &&
+          message.retry_after_ms >= 0 ? message.retry_after_ms : 250;
+        setTimeout(() => {
+          if (terminal) return;
+          for (const token of pendingResync) {
+            ws.send(JSON.stringify({ action: "resync", markets: [token] }));
+          }
+        }, delay);
+      } else if (message.error) {
+        failConnection(new Error(`${message.error}: ${message.message ?? ""}`));
+      } else if (message.type === "batch") {
+        if (!Array.isArray(message.updates)) throw new Error("invalid PN1 batch");
+        message.updates.forEach(verify);
+      } else if (message.type === "book_snapshot") {
+        verify(message);
+      }
+    } catch (error) {
+      failConnection(error);
     }
-  };
+  });
+
+  return { states, requestResync };
 }
 
-// After opening the WebSocket: installPn1Verification(ws);
+// After opening the WebSocket:
+// const pn1 = installPn1Verification(ws, {
+//   onReconnectRequired: error => reconnectWithACompletelyNewSocket(error),
+// });
 ```
+
+Keep your normal WebSocket `close` handler as the final reconnect trigger. A new connection and subscription establish new anchors; never reuse sequence state across sockets.
 
 <Warning>
   Never keep applying a token after a sequence or checksum failure. Gate it immediately and wait for a valid replacement anchor. If the server reports `integrity_backpressure` or `integrity_internal_reset`, reconnect; the new connection will establish fresh anchors.
