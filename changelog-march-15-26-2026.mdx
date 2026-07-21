@@ -1,0 +1,495 @@
+---
+title: "Changelog — March 15–26, 2026"
+sidebarTitle: "March 15–26, 2026"
+description: "Archived PolyNode API and SDK changes from March 15–26, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+## 2026-03-26
+
+### API — Wallet Resolver
+
+New endpoint that instantly resolves any Polymarket wallet identity. Pass a proxy wallet address, EOA address, or username and get back all three.
+
+```bash
+curl "https://api.polynode.dev/v1/resolve/DTCahill" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+```json
+{
+  "safe": "0x0ecdd241ec1bc84a40b8142bebe65787aee97514",
+  "eoa": "0xddd57cce99ca962fe23aa2da95b139f86a241459",
+  "username": "DTCahill"
+}
+```
+
+Covers ~3 million Polymarket wallets and is updated daily. Lookups are sub-millisecond. Accepts any of the three identifiers as input:
+
+- `GET /v1/resolve/{safe_address}` — proxy wallet to EOA + username
+- `GET /v1/resolve/{eoa_address}` — EOA to proxy wallet + username
+- `GET /v1/resolve/{username}` — username to both addresses (case-insensitive)
+
+See the [full documentation](/api-reference/wallets/resolve) for details.
+
+---
+
+### API — `order_hash` on Settlements and Trades
+
+Every settlement trade and confirmed trade event now includes an `order_hash` field — the EIP-712 hash that uniquely identifies a limit order on Polymarket's order book.
+
+**Why this matters:** A single limit order can be partially filled across multiple transactions. The `order_hash` stays the same across all of them, letting you track order lifecycle, group partial fills, and build order-level analytics.
+
+- **Settlement events:** `order_hash` appears on each trade inside the `trades[]` array. Available on pending (pre-chain) settlements, computed from transaction calldata before block confirmation.
+- **Trade events:** `order_hash` appears as a top-level field, extracted directly from the on-chain `OrderFilled` event log.
+
+```json
+{
+  "type": "trade",
+  "data": {
+    "order_hash": "0x916fa5c2728c93e19ea5d7c254b07234815ad01e59597573c09d852fe53ee564",
+    "maker": "0x4b8cf80092c60b9b23d22133eb63eb4508fe4d31",
+    "price": 0.71,
+    "size": 3.0
+  }
+}
+```
+
+No SDK update required — the field is automatically included in the WebSocket stream.
+
+### API — `order_hashes` on Status Updates
+
+The `status_update` event now includes an `order_hashes` field containing every EIP-712 order hash from the original pending settlement. This lets you correlate confirmed settlements back to specific limit orders without needing to store state from the initial pending event.
+
+```json
+{
+  "type": "status_update",
+  "data": {
+    "tx_hash": "0xbb26c8cd...",
+    "order_hashes": [
+      "0xafc3488df3505c4dbba8797b8b6c645630c8ee9decf811a0acc4d63fdecfdd36",
+      "0x9b5a06de7196bde87b4d8baa6cb80681151338d263fac0e643a2d53c4497e27f"
+    ],
+    "maker_wallets": ["0xd408...", "0x9443..."],
+    "latency_ms": 3959
+  }
+}
+```
+
+Purely additive. Existing clients are unaffected.
+
+---
+
+### TypeScript SDK — RedemptionWatcher Memory Management
+
+The `RedemptionWatcher` now automatically evicts resolved conditions and zero-size positions from its local watch set. This keeps memory bounded to only active, non-zero positions regardless of how long the watcher runs or how many wallets it tracks.
+
+Previously, resolved markets and fully-sold positions accumulated in memory indefinitely. For long-running services tracking thousands of wallets, this could grow to hundreds of megabytes over weeks.
+
+**What changed:**
+- Resolved conditions are removed from the index immediately after alerts fire
+- Positions that drop to zero size (full sell) are removed automatically
+- `refreshInterval` default changed from `0` (disabled) to `300_000` (5 minutes). This periodic REST refresh acts as a safety net, re-populating any positions missed during brief WebSocket disconnections.
+
+**No breaking changes.** Alert behavior is identical. If you were explicitly setting `refreshInterval: 0`, that still works.
+
+```bash
+npm install polynode-sdk@latest
+```
+
+See [RedemptionWatcher — Memory Management](/sdks/redemption-watcher#memory-management) for details.
+
+---
+
+### Trader Profile — EOA Wallet Resolution
+
+The `/v1/trader/{wallet}` endpoint now returns an `eoaWallet` field that resolves the underlying EOA (externally owned account) for Polymarket proxy wallets. This is derived onchain from the Gnosis Safe contract.
+
+```json
+{
+  "wallet": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
+  "eoaWallet": "0xb49e5499562a4bc3345c1a1f2db13a5360dfddac",
+  "name": "beachboy4",
+  ...
+}
+```
+
+For older lightweight proxy wallets, `eoaWallet` returns `null`.
+
+### Tier-Aware Rate Limits on Data-Heavy Endpoints
+
+A handful of data-heavy endpoints now have their own per-key rate limits that scale with your plan:
+
+| Tier | Limit |
+|------|-------|
+| Free | 1 req/sec |
+| Starter | 30 req/sec |
+| Growth | 50 req/sec |
+| Enterprise | 100 req/sec |
+
+Affected endpoints: `/v1/trader/{wallet}`, `/v1/trader/{wallet}/pnl`, `/v1/leaderboard`, `/v1/trending`, `/v1/activity`, `/v1/event/{slug}`, `/v1/movers`, `/v2/markets/{category}`.
+
+All other REST endpoints use your plan's standard rate limit. See [Rate Limits](/guides/rate-limits) for full details.
+
+---
+
+## 2026-03-25
+
+### TypeScript SDK — RedemptionWatcher
+
+New high-level class that monitors wallets and fires alerts the instant any position becomes redeemable on-chain.
+
+```bash
+npm install polynode-sdk@latest
+```
+
+```typescript
+import { RedemptionWatcher } from 'polynode-sdk';
+
+const watcher = new RedemptionWatcher({ apiKey: 'pn_live_...' });
+
+watcher.on('alert', (alert) => {
+  if (alert.isWinner) {
+    console.log(`${alert.wallet} can redeem "${alert.marketTitle}" — ~$${alert.estimatedPayoutUsd}`);
+  }
+});
+
+await watcher.start(['0xabc...', '0xdef...']);
+```
+
+**What it does:** Fetches wallet positions via REST, indexes by `condition_id`, subscribes to the oracle stream for `condition_resolution` events, and cross-references in real-time. Optional live position tracking via the wallets stream keeps sizes accurate as users trade.
+
+**Key features:**
+- Runtime `addWallets()` / `removeWallets()` with automatic re-subscription
+- Callback (`.on('alert', ...)`) and async iterator (`for await`) consumption
+- Winner detection with payout estimates
+- Full market metadata on every alert (title, slug, image, outcomes)
+
+See the [full documentation](/sdks/redemption-watcher) for lifecycle, configuration, and a production example.
+
+---
+
+### Oracle Stream — `condition_resolution` Event
+
+The oracle WebSocket stream now includes `condition_resolution` events. This is the on-chain signal that positions are redeemable on the Conditional Tokens contract.
+
+Previously, the stream included `resolution` events (outcome decided on the UMA adapter) but not the separate on-chain step where `reportPayouts()` is called on the CTF contract. For neg-risk markets (the majority on Polymarket), there is a ~2-3 minute gap between these two events. `condition_resolution` closes that gap.
+
+**Subscribe and filter:**
+```json
+{
+  "action": "subscribe",
+  "type": "oracle",
+  "event_types": ["condition_resolution"]
+}
+```
+
+**Payload includes:** `resolved_price`, `payouts`, `condition_id`, `question_id`, and full market metadata (title, outcomes, token IDs, image).
+
+**Use case:** Trigger redemption workflows the instant positions become redeemable, instead of polling or waiting for the Polymarket UI to update.
+
+**SDK support:** Available in Rust SDK `polynode 0.4` via `OracleEventType::ConditionResolution`. TypeScript SDK update coming soon.
+
+---
+
+### TypeScript SDK v0.4.8 — Composable Leaderboard Builder
+
+The local cache now supports composable leaderboards with multi-metric ranking, market filtering, slug pattern matching, wallet scoping, and time windows.
+
+**New:** Call `cache.leaderboard()` with no arguments to get a `LeaderboardBuilder`:
+
+```typescript
+const rows = cache.leaderboard()
+  .metrics(['total_pnl', 'volume', 'win_rate'])
+  .slugs(['*election*'])
+  .since(weekAgo)
+  .limit(10)
+  .build();
+
+// Each row: { wallet, label, rank, metrics: { total_pnl, volume, win_rate } }
+```
+
+**7 new metrics** (11 total): `roi`, `realized_pnl`, `volume`, `avg_trade_size`, `largest_win`, `largest_loss`, `market_count`.
+
+**Builder methods:**
+- `.metric()` / `.metrics()` — single or multi-metric per row
+- `.sortBy()` / `.sort('ASC' | 'DESC')` — control ranking
+- `.markets([conditionIds])` — filter by market
+- `.slugs([patterns])` — glob match on market slugs (`*election*`, `btc-*`)
+- `.category({ name, slugs })` — reusable named slug groups
+- `.wallets([addrs])` — rank a wallet subset instead of full watchlist
+- `.since(ts)` / `.until(ts)` — time window for trade metrics
+- `.limit(n)` — top N
+
+Backward compatible. Existing `cache.leaderboard('total_pnl')` still returns the same `LeaderboardEntry[]` format.
+
+```bash
+npm install polynode-sdk@0.4.8
+```
+
+Full documentation: [Local Cache — Leaderboard Builder](/sdks/local-cache#leaderboard-builder)
+
+---
+
+### WebSocket — Application-Level Keepalive
+
+Cloud platform reverse proxies (Railway, Render, Heroku, AWS ALB, fly.io) can intercept WebSocket Ping/Pong control frames, preventing the server from detecting that your client is still alive. This caused connections to drop after 1-2 minutes with an empty error and no close frame.
+
+**What changed:**
+- The server now accepts any incoming message (not just Pong frames) as proof the client is alive
+- New `{"action": "ping"}` message returns `{"type": "pong", "ts": ...}` as an application-level keepalive
+- Stale connection timeout extended from 90 seconds to 5 minutes
+- Stale disconnects now include a close frame with a reason, instead of a silent drop
+
+**If you're running on a cloud platform**, add a periodic ping to your connection:
+
+<CodeGroup>
+```python Python
+async def keepalive():
+    while True:
+        await asyncio.sleep(30)
+        await ws.send(json.dumps({"action": "ping"}))
+
+ping_task = asyncio.create_task(keepalive())
+```
+
+```javascript Node.js
+setInterval(() => ws.send(JSON.stringify({ action: "ping" })), 30000);
+```
+</CodeGroup>
+
+If you're running on bare metal or a VM with no reverse proxy in front of your client, this doesn't affect you. Standard WS Ping/Pong still works as before.
+
+See [WebSocket Overview](/websocket/overview#application-level-keepalive) for full connection examples.
+
+---
+
+### WebSocket — Reconnect Gap-Fill with `since`
+
+Subscribe messages now accept an optional `since` filter (UNIX milliseconds). When set, the initial snapshot returns all events after that timestamp instead of just the most recent N, letting you fill gaps after a disconnect or cold start without missing data.
+
+```json
+{
+  "action": "subscribe",
+  "type": "settlements",
+  "filters": { "since": 1774412600000 }
+}
+```
+
+The response is the same `snapshot` message you already handle. Existing clients are unaffected — `since` is fully optional.
+
+**Lookback windows by tier:**
+
+| Tier | Max lookback |
+|------|-------------|
+| Free | 30 seconds |
+| Starter | 2 minutes |
+| Growth | 5 minutes |
+| Enterprise | 5 minutes |
+
+If `since` is older than your tier's window, it's automatically clamped. Within the window, there is no event count limit — you get everything that matches your filters.
+
+---
+
+## 2026-03-24
+
+### API — Onchain Redemption State on Wallet Positions
+
+The `/v1/wallets/{addr}/positions` and `/v1/wallets/positions` endpoints now include onchain redemption data for resolved markets. Three new fields are returned on positions where `redeemable` is `true`:
+
+- **`redeemed`** — `true` if the wallet has burned their tokens onchain (claimed USDC payout), `false` if tokens are still held.
+- **`unredeemed_balance`** — Number of tokens still held onchain. Tells you exactly how much hasn't been claimed.
+- **`unredeemed_usd`** — USD value of unclaimed tokens ($1 per token on winning positions).
+
+This data is not available from Polymarket's API. polynode checks the Conditional Token Framework contract onchain in a single batched call, adding ~130ms only when redeemable positions are present. Active (unresolved) positions are unaffected.
+
+```bash
+curl "https://api.polynode.dev/v1/wallets/0x62d2.../positions" \
+  -H "x-api-key: pn_live_..."
+```
+
+```json
+{
+  "title": "Lana Del Rey divorce in 2025?",
+  "redeemable": true,
+  "redeemed": false,
+  "unredeemed_balance": 418.73,
+  "unredeemed_usd": 418.73,
+  "size": 418.73
+}
+```
+
+---
+
+## 2026-03-23
+
+### API — Event Search & Token IDs
+
+Two changes to event endpoints:
+
+- **New:** `GET /v1/events/search?q=...&limit=N` — search events by text query. Returns events with all sub-markets, each including `tokenId` (YES token for CLOB price history via `/v1/candles`) and current `price`. Multi-outcome events like "How many Fed rate cuts in 2026?" return as a single result with all outcomes.
+- **Updated:** `GET /v1/event/{slug}` — now includes `tokenId` on every market in the response. Previously, token IDs were not available on this endpoint.
+
+```bash
+curl "https://api.polynode.dev/v1/events/search?q=recession&limit=5" \
+  -H "x-api-key: pn_live_..."
+```
+
+Rate limit: 1 request per second per API key (shared with other enriched data endpoints).
+
+### TypeScript SDK v0.4.6
+
+- **New:** `searchEvents(query, { limit })` — typed method for event search, returns `EventSearchResponse`
+- **New types:** `EventSearchResponse`, `EventSearchResult`, `EventSearchMarket`
+- **Updated:** `EventMarket` now includes optional `tokenId` field
+
+```bash
+npm install polynode-sdk@0.4.6
+```
+
+```typescript
+const results = await pn.searchEvents('Fed rate', { limit: 5 });
+for (const event of results.events) {
+  console.log(event.title, `(${event.markets.length} outcomes)`);
+  for (const m of event.markets) {
+    // Use tokenId to fetch price history
+    const candles = await pn.candles(m.tokenId, { resolution: '1h' });
+  }
+}
+```
+
+---
+
+## 2026-03-21
+
+### TypeScript SDK v0.4.4 — Enriched Data Methods
+
+Eight new typed methods on the `PolyNode` client for all enriched data endpoints:
+
+- `leaderboard()` — top 20 traders by profit or volume, with period filtering
+- `trending()` — carousel, breaking markets, hot topics, featured events, and biggest movers
+- `activity()` — platform-wide trade feed (50 most recent)
+- `movers()` — markets with largest 24h price swings
+- `traderProfile(wallet)` — full trader stats: PnL, volume, trades, largest win
+- `traderPnl(wallet, { period })` — cumulative PnL time series
+- `event(slug)` — full event detail with all sub-markets
+- `marketsByCategory(category)` — browse markets by category
+
+All methods are fully typed with dedicated response interfaces. Install:
+
+```bash
+npm install polynode-sdk@0.4.4
+```
+
+---
+
+### TypeScript SDK v0.4.3 — Cache UI Primitives
+
+Four new features for building dashboards on top of the local cache.
+
+- **View methods** — `watchlistSummary()`, `walletDashboard()`, `leaderboard()`, `marketOverview()`. Pre-shaped data for common dashboard patterns. No SQL, no aggregation.
+- **Reactive subscriptions** — `onChange()` and `onWalletChange()` fire callbacks when new trades or settlements land from the live WebSocket stream. Returns an `unsub()` function for cleanup.
+- **Export helpers** — `exportCSV()`, `exportJSON()`, `exportRows()` dump filtered data for charting libraries, spreadsheets, or custom analysis.
+- **Query builder** — Chainable fluent API: `.wallet()`, `.side()`, `.since()`, `.market()`, `.minPnl()`, `.limit()`, `.run()`. Complex filters without writing SQL.
+
+```bash
+npm install polynode-sdk@0.4.3
+```
+
+Full documentation: [Local Cache](/sdks/local-cache)
+
+---
+
+## 2026-03-21
+
+### API — Enriched Data Endpoints
+
+Eight new REST endpoints for trader analytics, market discovery, and platform trends.
+
+- `GET /v1/leaderboard` — Top 20 traders ranked by profit or volume (daily, weekly, monthly, all-time)
+- `GET /v1/trader/{wallet}` — Full trader profile: PnL, volume, trade count, largest win, portfolio value
+- `GET /v1/trader/{wallet}/pnl` — PnL time series at 4 resolutions (1D, 1W, 1M, ALL)
+- `GET /v1/trending` — Carousel highlights, breaking markets, hot topics, featured events, biggest movers
+- `GET /v1/activity` — Platform-wide live trade feed (last 50 trades with tx hashes)
+- `GET /v1/event/{slug}` — Full event data with all sub-markets, outcome prices, condition IDs
+- `GET /v1/movers` — Markets with the largest 24h price changes
+- `GET /v2/markets/{category}` — Category market listings with counts (crypto, politics, sports, etc.)
+
+Rate limit: 1 request per second per API key. Responses cached 1-3 minutes.
+
+### TypeScript SDK v0.4.1
+
+- **Fix:** ESM imports now work correctly. v0.4.0 crashed on `cache.start()` when using `import` syntax.
+- **Fix:** Eliminated `MODULE_TYPELESS_PACKAGE_JSON` Node.js warning.
+- **New:** `getActiveTestWallet()` / `getActiveTestWallets()` — returns known-active wallet addresses for testing and examples.
+
+```bash
+npm install polynode-sdk@0.4.1
+```
+
+### API — Wallet positions fix
+
+- Fixed `firstTradeAt` / `lastTradeAt` returning `null` for certain wallets on `GET /v1/markets/{id}/positions?includeTrades=true`.
+- Added fallback query path for wallets where the primary trade lookup returns empty.
+
+### API — Per-endpoint rate limiting
+
+- `includeTrades=true` on market positions now has its own 20 req/min rate limit per key.
+- Separate bucket from standard rate limit — doesn't consume your normal quota.
+
+---
+
+## 2026-03-21
+
+### TypeScript SDK v0.4.0
+
+- **New:** Local Cache — SQLite-backed local storage for instant offline queries.
+- Backfill wallet history in seconds (1 request per wallet, up to 500 trades).
+- Live WebSocket stream keeps the cache up to date automatically.
+- Query trades, positions, and settlements locally with zero API calls.
+- Watchlist file with hot-reload and runtime add/remove API.
+- Full documentation at [Local Cache](/sdks/local-cache).
+
+### Rust SDK v0.4.0
+
+- **New:** Local Cache ported from TypeScript. Same architecture, same SQL schema, same query methods.
+- Builder pattern: `PolyNodeCache::builder(client).db_path(...).build()?`
+- `rusqlite` (bundled) + `notify` as optional dependencies behind `cache` feature flag.
+
+---
+
+## 2026-03-20
+
+### Web Frontend
+
+- Speed comparison test redesigned with 3-second warm-up period, win % scoreboard, and visual win ratio bar.
+- Updated "Run this test yourself" code snippet to match new logic.
+
+---
+
+## 2026-03-19
+
+### TypeScript SDK v0.3.0
+
+- **New:** `OrderbookEngine` — higher-level orderbook client with shared state and filtered views per component.
+- **New:** `LocalOrderbook` — local orderbook state management.
+- **New:** `ShortFormStream` — condensed event stream for bandwidth-constrained environments.
+
+### API
+
+- Orderbook REST endpoints: `/v1/orderbook/{token}`, `/v1/midpoint/{token}`, `/v1/spread/{token}`.
+- Wallet trades `limit` parameter now allows up to 1,000 (was 500).
+
+---
+
+## 2026-03-15
+
+### API v1 — Initial Public Release
+
+- **WebSocket streaming:** settlements, trades, prices, blocks, wallets, markets, large trades, oracle, chainlink
+- **REST API:** markets, search, candles, stats, settlements, wallets
+- **Orderbook streaming** via `ob.polynode.dev`
+- **RPC endpoint** via `rpc.polynode.dev` — JSON-RPC with TX #1 delivery
+- **CLI** (`pn`) — stream events, query markets, manage API keys from the terminal

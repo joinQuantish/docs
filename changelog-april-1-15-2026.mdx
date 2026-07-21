@@ -1,0 +1,400 @@
+---
+title: "Changelog — April 1–15, 2026"
+sidebarTitle: "April 1–15, 2026"
+description: "Archived PolyNode API and SDK changes from April 1–15, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+## 2026-04-15 — Trade-based candles endpoint
+
+### New: `GET /v2/onchain/candles/{token_id}`
+
+Server-built OHLCV candles from real onchain fills. Each candle includes open, high, low, close, total volume in USD and shares, separate buy and sell volume, trade count, and VWAP.
+
+Pagination is anchor-based: each request returns up to 1000 trades worth of candles, anchored at a timestamp, block number, or transaction hash. Walk older history by passing the cursor from the previous response. Same model used by major exchange APIs.
+
+```bash
+curl "https://api.polynode.dev/v2/onchain/candles/$TOKEN_ID?resolution=1h" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+Resolutions: `1m`, `5m`, `15m`, `1h`, `4h`, `1d`. Optional `gap_fill=true` for charting libraries that expect a continuous time axis. Full reference at [/api-reference/onchain/candles](/api-reference/onchain/candles).
+
+---
+
+## 2026-04-14 — Positions sort fix + `last_activity` field
+
+### Fixed: `/v2/onchain/positions` wallet queries now sort by recency
+
+When querying positions for a specific `wallet`, results are now ordered by the most recent on-chain activity for each position. Previously the `order=desc` parameter did not reflect recency, causing newer positions to appear below older ones.
+
+The most recently traded positions now appear at the top. Positions with no fill history (rare — acquired purely via split, merge, or redemption) are placed at the end.
+
+### New: `last_activity` response field
+
+Wallet queries now include a `last_activity` field on each position, containing the unix timestamp of the most recent fill for that position. Use it to display "last traded" times in your UI.
+
+```json
+{
+  "wallet": "0x4aefd329896464da0ffb16c4ebcd083a4360c181",
+  "token_id": "99969794444523158222638792918531145371262906249733117976401662588024805483979",
+  "size": 0,
+  "status": "closed",
+  "market": "Suns vs. Lakers",
+  "market_slug": "nba-phx-lal-2026-04-10",
+  "outcome": "Lakers",
+  "last_activity": 1776232830
+}
+```
+
+### Pagination behavior
+
+Wallet queries return every position for the wallet in a single response (up to 500), ordered by recency. `has_more` is always `false` and no cursor is returned — request `limit=500` once and read all results. Wallets with more than 500 lifetime positions are capped.
+
+Non-wallet queries (filtering by `market_slug`, `condition_id`, `token_id`, or `min_size` alone) continue to use cursor-based pagination.
+
+---
+
+## 2026-04-12 — SDK v0.7.0: Fee Escrow + Order History
+
+### New: Per-Order Fee Collection
+
+The trading SDK now supports optional per-order fee collection with on-chain escrow. Platforms can charge fees on trades with a single config option.
+
+```bash
+npm install polynode-sdk@0.7.0
+```
+
+```typescript
+const trader = new PolyNodeTrader({
+  polynodeKey: 'pn_live_...',
+  feeConfig: { feeBps: 50 },  // 0.5% fee
+});
+
+const result = await trader.order({
+  tokenId: '...',
+  side: 'BUY',
+  price: 0.55,
+  size: 100,
+});
+
+console.log(result.feeEscrowTxHash); // on-chain TX hash
+console.log(result.feeAmount);       // "0.0275" USDC
+```
+
+- **Automatic fee handling** -- fees are pulled into escrow before the order, distributed on fill, refunded on cancel
+- **Cancel auto-refund** -- cancelling an order automatically returns the fee to the user's wallet, inline in the same request
+- **Affiliate revenue sharing** -- split fees with partners on a per-order basis via `affiliate` and `affiliateShareBps`
+- **72-hour safety net** -- if the operator doesn't settle, users can self-refund on-chain
+- **Zero overhead when disabled** -- `feeBps: 0` (default) skips the escrow entirely with no behavior change
+- **7th approval** -- added to `ensureReady()` batch, gasless for Safe wallets
+
+### Improved: Order History
+
+Local order history now persists fee escrow data (`feeAmountRaw`, `escrowOrderId`, `feeEscrowTxHash`). Existing databases auto-migrate on first open. No action required.
+
+### SDK Releases
+
+- **TypeScript** `polynode-sdk@0.7.1` on [npm](https://www.npmjs.com/package/polynode-sdk) — adds `FeeConfig` export
+- **Rust** `polynode@0.7.1` on [crates.io](https://crates.io/crates/polynode) — fixes compile error in 0.7.0
+- **Python** `polynode@0.7.2` on [PyPI](https://pypi.org/project/polynode/) — fixes `__version__` reporting
+
+See the [Fee Escrow Guide](/guides/fee-escrow) for the full architecture, security model, and code examples.
+
+---
+
+## 2026-04-11 — polynode-charts v0.1.5
+
+### New: `createShortFormOverlay`
+
+One-liner to add price-to-beat overlays to any live chart. Renders interval buttons (5m/15m/1h), auto-discovers Polymarket short-form markets, draws a dashed price line, and shows live odds with a countdown timer.
+
+```typescript
+import { createChart, createShortFormOverlay } from 'polynode-charts'
+
+const chart = createChart('#btc')
+const series = chart.addLineSeries({ color: '#f7931a' })
+series.setLive(true)
+chart.timeScale().goLive()
+
+createShortFormOverlay(chart, series, { coin: 'btc' })
+```
+
+### Improvements
+
+- **Multi-outcome event discovery** now prioritizes genuine multi-outcome markets (`neg_risk: true`) over resolved binary matches
+- **`MarketInfo.outcome`** field identifies which side of a binary market each token represents ("Yes" or "No")
+- **Price-to-beat badge** renders correctly on the right axis for all price ranges
+- **Orderbook tooltip** no longer stays stuck after data refresh
+- **Tighter chart padding** for a denser, more professional look
+
+---
+
+## 2026-04-11 — polynode-charts v0.1.0
+
+New npm package for interactive charting in the browser. Zero dependencies, Canvas 2D rendering at 60fps, purpose-built for prediction market data and live crypto price streams.
+
+### Install
+
+```bash
+npm install polynode-charts
+```
+
+### What's included
+
+- **Candlestick, line, area, and volume** series types with smooth animation
+- **Live streaming mode** with lerp animation, pulsing dots, and auto-scroll
+- **Orderbook visualization** with depth chart and spread display
+- **Short-form market overlays** — price-to-beat lines with live odds rotation for 5m/15m/1h crypto markets
+- **Multi-outcome support** for prediction markets (up to 20+ outcomes with auto-assigned colors)
+- **Built-in data providers** — `PolynodeProvider` (REST), `PolynodeOBProvider` (WebSocket orderbook), `ShortFormProvider` (market discovery + rotation)
+- **Interactive** pan, zoom, scroll, pinch-to-zoom on mobile
+- **Crosshair** with snap-to-candle and OHLC tooltip
+
+### Quick start
+
+```typescript
+import { createChart, PolynodeProvider } from 'polynode-charts'
+
+const provider = new PolynodeProvider({ apiKey: 'pn_...' })
+const chart = createChart('#chart', {
+  rightPriceScale: { mode: 'probability' },
+})
+
+const series = chart.addCandleSeries({
+  upColor: '#22c55e',
+  downColor: '#ef4444',
+})
+
+const data = await provider.candles(tokenId, '1h')
+series.setData(data)
+```
+
+### Documentation
+
+Full docs at [Charts SDK Overview](/charts/overview), including API reference, data providers, series types, examples, and configuration.
+
+<Note>
+  `polynode-charts` is the **browser visualization** companion to `polynode-sdk` (the Node.js data SDK). They are separate npm packages. Building a frontend? Install both.
+</Note>
+
+---
+
+## 2026-04-09 — Confirmed Fills on Status Updates
+
+`status_update` events now include a `confirmed_fills` array with exact execution data from on-chain `OrderFilled` receipt logs. This is the same data source Polymarket's own APIs read.
+
+### What changed
+- `status_update` events now carry a `confirmed_fills` field — an array of per-fill objects with exact price, size, fee, order hash, maker, taker, and token ID
+- Each fill is decoded directly from `OrderFilled` receipt logs on the CTF Exchange and NegRisk CTF Exchange contracts
+- Prices match Polymarket's activity data exactly (verified across 1,300+ fills with zero price discrepancies)
+
+### Why this matters
+
+polynode detects settlements 3-5 seconds before on-chain confirmation by decoding transaction calldata from the mempool. For single-maker fills, calldata prices are exact. For multi-maker fills (~5% of trades), the calldata only has aggregate amounts, so per-maker prices are estimated within 0.01-0.04.
+
+With `confirmed_fills`, you now get both: the fast pre-confirmation signal AND the exact on-chain execution data in a single subscription. Use whichever fits your use case.
+
+### Use cases
+- **Copy trading**: Use the pending `settlement` event (speed matters, price difference is negligible)
+- **Analytics and bookkeeping**: Use `confirmed_fills` from the `status_update` (exact prices, fees, and sizes)
+- **Full lifecycle**: Track both to compare pre-confirmation estimates against final execution
+
+### Size difference vs Polymarket
+
+`confirmed_fills` reports gross token amounts from the OrderFilled event. Polymarket's activity API reports sizes net of fees. The `fee` field on each fill lets you compute the net amount if needed.
+
+### Subscribe
+
+No subscription changes needed. If you already subscribe to `settlements`, you're already receiving `status_update` events with `confirmed_fills`.
+
+```json
+{"action": "subscribe", "type": "settlements"}
+```
+
+### Documentation
+- [Status Update Event Reference](/websocket/events/status-update) — updated with `confirmed_fills` schema and examples
+- [Trade Tracking Guide](/guides/trade-tracking) — when to use pending settlements vs confirmed fills
+
+---
+
+## 2026-04-08 — Redemption Event Streaming
+
+New `redemption` event type in the WebSocket stream. Every time a user redeems their outcome tokens after a market resolves, you get a real-time event with the redeemer address, payout amount, condition ID, and full market metadata enrichment.
+
+### WebSocket Stream
+- New event type: `redemption` — available in the firehose and via `event_types` filter
+- Decoded from `PayoutRedemption` logs on the Conditional Tokens contract
+- Includes payout amount in USDC, redeemer wallet, outcome slots redeemed
+- Enriched with market title, slug, image, tokens map, neg_risk flag
+- Filter with `min_size` to see only winning redemptions, or track specific wallets
+
+### Subscribe
+
+```json
+{"action": "subscribe", "type": "settlements", "filters": {"event_types": ["redemption"]}}
+```
+
+### Documentation
+- [Redemption Event Reference](/websocket/events/redemption) — full field reference, examples, and use cases
+
+---
+
+## 2026-04-07 — Polymarket V2 Exchange Support
+
+polynode now supports the Polymarket V2 exchange system alongside V1. All V2 contracts have been identified, decoded, and verified against live mainnet data.
+
+### Settlement Stream
+- V2 settlements are detected and streamed automatically — no subscription changes needed
+- Same event types: `settlement`, `status_update`, `trade`, `deposit`
+- PolyUSD wrapping/unwrapping events now included in deposit stream
+- V2 detection is automatic alongside V1 (both supported simultaneously)
+
+### Trading SDK (Rust v0.6.0, TypeScript v0.6.0, Python v0.7.0)
+- New `ExchangeVersion::V2` / `exchangeVersion: "v2"` config option
+- V2 order signing with updated EIP-712 domain (version "2")
+- `wrapToPolyUsd()` and `unwrapFromPolyUsd()` helper methods
+- `getPolyUsdBalance()` and `getUsdceBalance()` balance checking
+- V2 approval management (PolyUSD to V2 exchange contracts)
+- One config change to switch from V1 to V2 — everything else stays the same
+
+### Documentation
+- [V2 Migration Guide](/guides/v2-migration) — what changed, what stayed the same, SDK examples
+- [PolyUSD Guide](/guides/polyusd) — how to wrap/unwrap PolyUSD with code examples
+- [V2 Technical Details](/guides/v2-details) — contract addresses, order struct, event signatures (subscribers only)
+- Deposit and settlement event pages updated with V2 notes
+
+### What We Verified
+- V2 order placement tested live on the V2 CLOB
+- EIP-712 order hash matches the live V2 exchange contract on Polygon mainnet
+- PolyUSD wrapping detected through our event pipeline in real time
+- All existing market data, token IDs, and enrichment identical between V1 and V2
+
+---
+
+## 2026-04-05 — Short-Form Docs: Full Field Reference + Orderbook Guide
+
+Updated the [Short-Form Markets](/sdks/short-form) documentation with the complete `ShortFormMarket` field reference. All 14 fields are now documented, including `conditionId`, `clobTokenIds`, `windowStart`, `windowEnd`, `outcomes`, and `outcomePrices` which were previously undocumented.
+
+Added a new **"Connect the Orderbook to Crypto Markets"** section showing how to pass `clobTokenIds` from a short-form rotation event directly to `OrderbookEngine` for real-time depth data on crypto prediction markets. Includes TypeScript and Rust examples.
+
+No SDK changes. All fields were already available in the SDK — this is a docs-only update.
+
+---
+
+## 2026-04-04 — Crypto Price Fix (All SDKs)
+
+Fixed stale price-to-beat values in short-form crypto markets. Polymarket changed the variant parameter on their crypto-price endpoint for 5-minute and hourly markets. The SDK now sends the correct values, matching what Polymarket's own frontend uses.
+
+**Affected intervals:** 5-minute and hourly. 15-minute was unaffected.
+
+```bash
+npm install polynode-sdk@0.5.9    # TypeScript
+cargo add polynode@0.5.8          # Rust
+pip install polynode==0.6.2       # Python
+```
+
+---
+
+## 2026-04-04 — TypeScript SDK v0.5.8
+
+Fixed a bug where `price_feed` events from Chainlink subscriptions were silently dropped in the TypeScript SDK. The `.on('price_feed', ...)` handler now fires correctly.
+
+```typescript
+const sub = await pn.ws
+  .subscribe('chainlink')
+  .feeds(['BTC/USD'])
+  .send();
+
+sub.on('price_feed', (event) => {
+  console.log(`${event.feed}: $${event.price}`);
+});
+```
+
+Update with `npm install polynode-sdk@0.5.8`.
+
+---
+
+## 2026-04-02 — Position Management (All SDKs)
+
+Split, merge, and convert positions directly from the SDK. No need to interact with smart contracts manually.
+
+**TypeScript** — gasless execution via the Polymarket relayer:
+```typescript
+await trader.split({ conditionId: '0x...', amount: 100 });
+await trader.merge({ conditionId: '0x...', amount: 100 });
+await trader.convert({ marketId: '0x...', outcomeIndices: [0, 1], amount: 100 });
+```
+
+**Rust & Python** — transaction builders that return ready-to-submit calldata:
+```python
+tx = build_split_txn("0x...", 100.0, neg_risk=True)
+tx = build_convert_txn("0x...", [0, 1], 100.0)
+```
+
+- [Position Management guide](/guides/position-management) — full walkthrough with examples
+- Convert is unique to neg-risk multi-outcome markets (e.g. "Who will win the World Cup?")
+- TypeScript SDK handles neg-risk vs standard market routing automatically
+
+---
+
+## 2026-04-02 — Positions Converted Event (WebSocket API)
+
+New `positions_converted` event type for tracking position conversions on neg-risk multi-outcome markets.
+
+When a trader converts NO positions into USDC + YES positions on complementary outcomes (via the NegRiskAdapter `convertPositions` function), this event fires with the full decoded details.
+
+```json
+{
+  "data": {
+    "event_type": "positions_converted",
+    "event_title": "Hungary Parliamentary Election Winner",
+    "stakeholder": "0x30cecdf29f069563ea21b8ae94492e41e53a6b2b",
+    "converted_outcomes": ["Fidesz-KDNP", "TISZA"],
+    "amount": 98,
+    "market_id": "0x355e7310dd6e18ef5fa456de7ce1331bd8c7540c...",
+    "index_set": "0x...0021",
+    "neg_risk": true
+  }
+}
+```
+
+- `converted_outcomes` decodes the bitmask into human-readable outcome names
+- `event_title` shows the parent multi-outcome event
+- Included by default in `wallets` and `markets` subscription types
+- Add explicitly via `event_types: ["positions_converted"]` for other subscription types
+- Fires ~13 times per minute across all active neg-risk markets
+
+---
+
+## 2026-04-01 — Builder Credentials (All SDKs)
+
+### TypeScript SDK v0.5.7 / Rust SDK v0.5.7 / Python SDK v0.6.1
+
+Platforms can now pass their own Polymarket builder credentials for order attribution. All volume gets credited to your builder profile on the [Builder Leaderboard](https://builders.polymarket.com).
+
+```typescript
+const trader = new PolyNodeTrader({
+  polynodeKey: 'pn_live_...',
+  builderCredentials: {
+    key: process.env.POLY_BUILDER_API_KEY,
+    secret: process.env.POLY_BUILDER_SECRET,
+    passphrase: process.env.POLY_BUILDER_PASSPHRASE,
+  },
+});
+```
+
+- Get your builder credentials at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder)
+- polynode never stores your builder credentials. They're used per-request for HMAC signing only.
+- When omitted, polynode's default builder attribution is used (orders still go through).
+
+Install:
+```bash
+npm install polynode-sdk@0.5.7    # TypeScript
+cargo add polynode@0.5.7          # Rust
+pip install polynode==0.6.1       # Python
+```
+
+---
