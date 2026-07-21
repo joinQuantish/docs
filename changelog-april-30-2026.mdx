@@ -1,0 +1,184 @@
+---
+title: "Changelog — April 30, 2026"
+sidebarTitle: "April 30, 2026"
+description: "Archived PolyNode API and SDK changes from April 30, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+## 2026-04-30 — Backtest Copy PnL: per-position metrics now match Polymarket byte-for-byte
+
+The new fields added earlier today (`avg_entry_prob_weighted`, `positions_closed` on `/v2/copy-pnl/*`) now produce values that match Polymarket's own data-api position math.
+
+Validated against `data-api.polymarket.com/positions` `realizedPnl` across 30 positions on diverse wallets (standard CTF + neg-risk markets):
+
+- **97 %** sub-penny match
+- **100 %** sub-$1 match
+- **100 %** sub-$10 match
+
+No API changes — same field names, same response shape. Existing integrations automatically benefit. Cached values progressively refresh as background scoring cycles complete.
+
+---
+
+## 2026-04-30 — BYOB Snapshot: every wallet × every period in one read
+
+New endpoint `GET /v2/copy-pnl/snapshot` returns every wallet in your tracked-wallet pool with backtest copy-PnL scores across all six time windows (`7d`, `14d`, `30d`, `60d`, `90d`, `180d`) in a single response. Built for stats-card UIs and dashboards that need the whole pool at once instead of issuing one request per period.
+
+- **One request** — no per-period round trips, no client-side stitching.
+- **Sub-second cached** — 100 wallets × 6 periods returns in ~70 ms / ~150 KB. 1000 wallets × 6 periods in ~500 ms / ~1.5 MB.
+- **Optional period subset** via `?periods=7d,30d` to drop payload when you only need one window.
+- **Per-wallet error reporting** — heavy whales that errored on the most recent refresh surface their failure reason inline, so your UI can render "X wallets retrying" instead of hiding gaps.
+
+```bash
+curl -H "x-api-key: $YOUR_KEY" \
+  "https://api.polynode.dev/v2/copy-pnl/snapshot"
+```
+
+See [BYOB — Snapshot](/api-reference/backtesting/byob-snapshot) for the full response shape and examples.
+
+---
+
+## 2026-04-30 — `/v2/onchain/markets/{token}/volume` faster
+
+Backend optimization for the market volume endpoint. Response shape and values are unchanged — same `buys`, `sells`, `total_trades`, `buy_volume_usdc`, `sell_volume_usdc`, `volume_usdc`, `found` fields. Light and empty markets see roughly halved latency. No integration changes required.
+
+---
+
+## 2026-04-30 — Wallet activity & redemptions: deep pagination unlocked
+
+Heavy wallets returning more than 1000 records on `/v2/onchain/wallets/{wallet}/redemptions` and `/v2/onchain/wallets/{wallet}/activity` now return the complete dataset:
+
+- **`offset` past 1000 now works.** Previously, pagination beyond the first 1000 records returned empty results regardless of how many records existed. You can now walk a heavy redeemer's full history with `offset=1000`, `offset=2000`, etc.
+- **No more silent truncation.** Wallets with >1000 redemptions, splits, merges, or neg-risk conversions previously had results capped at 1000. The full record set is now returned.
+
+No SDK update required. No integration changes. Same URLs, same query parameters, same response shapes — your existing code automatically benefits.
+
+```bash
+# Walk a heavy redeemer's full history:
+curl "https://api.polynode.dev/v2/onchain/wallets/{wallet}/redemptions?limit=1000&offset=0" \
+  -H "x-api-key: $YOUR_KEY"
+
+curl "https://api.polynode.dev/v2/onchain/wallets/{wallet}/redemptions?limit=1000&offset=1000" \
+  -H "x-api-key: $YOUR_KEY"
+```
+
+---
+
+## 2026-04-30 — TypeScript SDK 0.9.7
+
+Pluggable storage for Bun/Deno/edge runtime compatibility:
+
+- **`storage` config option** — pass `'memory'` for an in-memory backend (no native dependencies), a file path for SQLite (default), or your own `TradingStorage` implementation.
+- **Auto-fallback** — if `better-sqlite3` isn't available (Bun, Deno, edge runtimes), the SDK automatically falls back to in-memory storage instead of crashing.
+- **`BunSqliteBackend`** — persistent SQLite storage using Bun's built-in `bun:sqlite`. Zero native dependencies. Same schema, same persistence as the Node backend.
+- **Auto-detection** — if you don't pass a `storage` option, the SDK tries `better-sqlite3` first (Node), then `bun:sqlite` (Bun), then falls back to in-memory. Just works in both runtimes.
+- **Exported interface** — `TradingStorage`, `InMemoryStorage`, and `BunSqliteBackend` are all exported so you can use them directly or build custom adapters.
+
+```typescript
+// Bun — auto-detected, no config needed:
+const trader = new PolyNodeTrader({ /* storage auto-detects bun:sqlite */ });
+
+// Bun — explicit:
+import { PolyNodeTrader, BunSqliteBackend } from 'polynode-sdk';
+const trader = new PolyNodeTrader({
+  storage: new BunSqliteBackend('./trading.db'),
+});
+```
+
+Upgrade:
+```bash
+npm install polynode-sdk@0.9.7
+```
+
+---
+
+## 2026-04-30 — TypeScript SDK 0.9.5
+
+Bug fix release for the trading module:
+
+- **Fixed `signer.getAddress is not a function` crash** — `ensureReady()` and `linkWallet()` could throw this error with viem WalletClient signers when Polymarket packages expect an ethers-style `getAddress()` method. The SDK now ensures `getAddress()` is always available on the normalized signer, regardless of which `@polymarket/clob-client` version you have installed.
+- **Fixed signer detection logic** — a duplicate guard condition was allowing incomplete signer objects through, causing crashes instead of clean error messages.
+- **Hardened relay signer adapter** — address extraction now handles additional wallet shapes during Safe deployment and approval flows.
+
+Upgrade:
+```bash
+npm install polynode-sdk@0.9.5
+```
+
+---
+
+## 2026-04-30 — BYOB (Bring Your Own Backtest) — precomputed leaderboards
+
+The on-demand backtest endpoints answer "score this wallet" synchronously. **BYOB inverts that** — you hand us a private wallet pool, we precompute scores in the background across all six period presets, you query the resulting leaderboard with sub-second latency.
+
+Four new endpoints under `/v2/copy-pnl/`:
+
+```
+POST   /v2/copy-pnl/wallets       body: {addresses[]}    add to pool (max 1000)
+DELETE /v2/copy-pnl/wallets       body: {addresses[]}    remove from pool
+GET    /v2/copy-pnl/wallets                              list pool
+GET    /v2/copy-pnl/leaderboard   ?period=&sort_by=&order=&limit=&offset=&min_trade_count=&exclude_toxic=
+```
+
+Newly-added wallets are scored within ~30s of being added. The full pool refreshes daily in the background. Each result row includes `computed_at` so you can render freshness in your UI.
+
+Per-tenant isolation: each API key has its own private pool keyed on the SHA256 of the key. Your tracked wallets are never visible to other customers.
+
+References: [Backtesting Overview](/api-reference/backtesting/overview) · [Add Wallets](/api-reference/backtesting/byob-add-wallets) · [Remove Wallets](/api-reference/backtesting/byob-remove-wallets) · [List Wallets](/api-reference/backtesting/byob-list-wallets) · [Leaderboard](/api-reference/backtesting/byob-leaderboard)
+
+---
+
+## 2026-04-30 — On-chain wallet/market trades: deep pagination unlocked
+
+`/v2/onchain/wallets/{w}/trades` and `/v2/onchain/markets/{token}/trades` now properly paginate across the full trade history of any wallet or market, no matter how active. Previously these endpoints silently truncated heavy traders to ~2000 fills lifetime — deep `?offset=` queries returned empty.
+
+Customer-visible behavior changes:
+- Heavy wallets (e.g. 1M+ fills) now return correct, complete trade history
+- Deep `?offset=` queries return real data instead of empty arrays
+- No SDK or query-shape changes required — same `?limit=&offset=` parameters
+- Lower latency on most queries
+
+---
+
+## 2026-04-30 — Backtest Copy PnL: batch endpoint
+
+Score up to 100 wallets in one call:
+
+```
+POST /v2/copy-pnl/batch
+{ "addresses": ["0x...", ...], "from": "...", "to": "..." }
+```
+
+Same math + response shape as the single-wallet endpoint. Per-wallet errors don't fail the batch — the bad slot returns `{"wallet": "...", "error": "..."}` and the rest still come back.
+
+Reference: [Batch endpoint](/api-reference/backtesting/batch)
+
+---
+
+## 2026-04-30 — Backtest Copy PnL endpoint
+
+New paid endpoint for scoring any wallet's copy-trade quality:
+
+```
+GET /v2/copy-pnl/{wallet}?period=30d
+```
+
+Walks every fill in the requested window, applies a realistic 2% slippage on buys and sells (capped at $1.00 per share for buys), settles redemptions / merges / splits at face value, and returns:
+
+- `actual_pnl_usdc` — the wallet's cashflow PnL over the window
+- `backtest_copy_pnl_usdc` — what a copier would have earned with friction
+- `slippage_amount_usdc` — the dollar gap
+- `slippage_cost_rate_pct` — friction as a percentage of actual PnL
+- `toxic_for_copying` — `true` when the rate exceeds 15% (wallet's profit relies on execution speed; copier won't replicate)
+- `trade_count`, `applied_filters`, `sources`, optional `trades[]` drill-down
+
+**Time window options**: `?period=7d|14d|30d|60d|90d|180d` (default 30d), or `?from=&to=` with `YYYY-MM-DD` or unix seconds.
+
+**Note on PnL definition**: this returns **cashflow** PnL (real dollars moved), not Polymarket's website PnL (which marks open positions at current price). The response includes a `pnl_definition: "cashflow"` field to make this explicit. For PM-website style PnL use [Trader PnL Series](/api-reference/enriched/trader-pnl).
+
+**Limits**: paid tier required, 1 request per 5s per key, 30s server-side budget. Validated on wallets up to ~1.6M fills in the window.
+
+Full reference: [Backtest Copy PnL](/api-reference/backtesting/copy-pnl) · [Backtesting Overview](/api-reference/backtesting/overview)
+
+---
