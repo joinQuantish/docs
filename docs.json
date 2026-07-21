@@ -670,11 +670,20 @@
         "tab": "Changelog",
         "groups": [
           {
-            "group": "Changelog",
+            "group": "Current",
             "pages": [
-              "changelog",
-              "changelog-april-may-2026",
-              "changelog-march-2026"
+              "changelog"
+            ]
+          },
+          {
+            "group": "Archive",
+            "pages": [
+              "changelog-may-1-2026",
+              "changelog-april-26-30-2026",
+              "changelog-april-17-25-2026",
+              "changelog-april-1-15-2026",
+              "changelog-march-28-31-2026",
+              "changelog-march-15-26-2026"
             ]
           }
         ]

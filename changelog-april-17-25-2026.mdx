@@ -1,0 +1,363 @@
+---
+title: "Changelog — April 17–25, 2026"
+sidebarTitle: "April 17–25, 2026"
+description: "Archived PolyNode API and SDK changes from April 17–25, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+## 2026-04-25 — Pricing section retired: candles deduplicated, "Market Card" introduced
+
+The "Pricing" sidebar section has been removed. It contained two endpoints:
+
+- **`GET /v1/stats/{token_id}`** — kept, renamed to **Market Card**, moved further down the sidebar (just above "System"). This one is genuinely useful: a single call returns the condition_id, outcomes, neg-risk flag, end date, current orderbook liquidity, 24h OHLCV summary, and last price. Saves you from chaining 3–4 calls when you just need a market overview tile.
+- **`GET /v1/candles/{token_id}`** — removed from documentation. It was an in-memory rolling buffer with no historical depth, no pagination, no VWAP, and no buy/sell split. Use **`GET /v2/onchain/candles/{token_id}`** instead — same OHLCV plus VWAP, volume in shares, trade count, full history, and pagination. The endpoint itself still responds on the API for backward compatibility.
+
+---
+
+## 2026-04-25 — Wallet endpoints reorganized: V1 wallet endpoints removed from documentation
+
+The "Wallets" and "Onchain" sidebar sections have been merged into a single section called **Wallets / Positions / Onchain**. All wallet, position, and trade endpoints now live in one place — the V2 onchain endpoints.
+
+**What changed in the docs:**
+
+The seven legacy V1 wallet/market endpoints have been removed from the documentation sidebar. They were inferior duplicates of the V2 onchain equivalents — three of them returned empty or error responses, and the rest lacked PnL, average-price, current-price, and market-status fields that the V2 versions provide directly from chain data.
+
+| Removed from docs | Use instead |
+|---|---|
+| `GET /v1/wallets/{addr}/positions` | `GET /v2/onchain/positions?wallet=…` |
+| `GET /v1/wallets/{addr}/closed-positions` | `GET /v2/onchain/positions?wallet=…&status=closed` |
+| `GET /v1/wallets/positions` (multi-wallet) | Loop `GET /v2/onchain/positions?wallet=…` per wallet |
+| `GET /v1/wallets/{addr}/trades` | `GET /v2/onchain/wallets/{address}/trades` |
+| `GET /v1/markets/{id}/positions` | `GET /v2/onchain/positions?token_id=…` |
+| `GET /v1/markets/{id}/trades` | `GET /v2/onchain/markets/{token_id}/trades` |
+| `GET /v1/resolve/{query}` | `GET /v2/resolve/{query}` |
+
+**Important — backward compatibility preserved:**
+
+The V1 endpoints **still respond on the API**. We have not turned them off. If you have integrations hitting the legacy paths, they continue to work exactly as before — we just stopped surfacing them in the documentation because the V2 onchain replacements are strictly better. You should migrate, but you don't have to migrate today.
+
+**Why V2 onchain is better:**
+
+V1 wallet endpoints returned mostly social-flavored fields (bio, profile picture, pseudonym). V2 onchain endpoints return rich trading-relevant fields: `avg_price`, `realized_pnl`, `unrealized_pnl`, `current_price`, `total_bought`, `market_status`, `order_hash`, `fee`, `maker_amount`, `taker_amount`, `condition_id`, and more. Same data your equity curve, leaderboard, and PnL endpoints already use.
+
+---
+
+## 2026-04-25 — Equity Curve endpoint: faster default + four new query parameters
+
+The `/v2/trader/{wallet}/equity` endpoint is faster, more flexible, and more accurate.
+
+**Default is now realized-only.** The curve is built from completed P&L by default — the locked-in result of every closed position, partial sell, and resolution. Same query, same numbers, every time. Whales return in 1–2 seconds (was 8+).
+
+If you want mark-to-market on currently-open positions (the old behavior), pass `include_unrealized=1`. That path is still supported, just opt-in now because it adds latency and makes responses non-deterministic as live prices move.
+
+**Four new optional query parameters:**
+
+| Param | Description |
+|---|---|
+| `from=YYYY-MM-DD` | Start date (also accepts unix seconds). |
+| `to=YYYY-MM-DD` | End date (same format). |
+| `max_markets=N` | Keep only the most recent N markets the wallet has touched. |
+| `include_unrealized=1` | Mark-to-market open positions (was the old default). |
+
+All four compose. Example — fast realized-only curve over the wallet's last 50 markets in early April:
+
+```bash
+curl "https://api.polynode.dev/v2/trader/{wallet}/equity?from=2026-04-01&to=2026-04-15&max_markets=50&normalize=1" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+**New response fields:** `markets_count` (distinct outcome groups in the curve), `applied_filters` (echoes what was applied, useful for debugging), and `partial` (true if the request hit the 10-second server-side cap).
+
+**Coverage fix.** Wallets with more than 500 lifetime trades previously had positions whose first-trade timestamp wasn't found, causing those positions to be incorrectly stamped at "now" on the curve. The endpoint now walks all relevant trade history and falls back to sibling-token and redemption timestamps for positions acquired through USDC splits. Curves are dramatically more accurate for active traders.
+
+Full reference: [/api-reference/enriched/equity-curve](/api-reference/enriched/equity-curve).
+
+---
+
+## 2026-04-24 — Fee Escrow V2 live on Polygon (pUSD collateral, V2 CLOB)
+
+We've deployed a V2 variant of the Fee Escrow contract so platforms building on the V2 CLOB can charge fees in pUSD (V2's native collateral) instead of USDC.e. Both V1 and V2 are live and fully supported — there is no migration. If you're already running V1, nothing changes.
+
+**FeeEscrow V2 (new):**
+
+| Field | Value |
+|---|---|
+| Address | `0x3A43D88ef8Aae4dF5a50B3abf67122CAAeEF7c9F` |
+| Collateral | pUSD `0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB` (6 decimals) |
+| EIP-712 domain | `name="PolyNodeFeeEscrowV2"`, `version="2"`, chainId 137 |
+
+**FeeEscrow V1 (unchanged):**
+
+| Field | Value |
+|---|---|
+| Address | `0xa11D28433B79D0A88F3119b16A090075752258EA` |
+| Collateral | USDC.e `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` |
+| EIP-712 domain | `name="PolyNodeFeeEscrow"`, `version="1"`, chainId 137 |
+
+The contracts have byte-identical calldata, identical function signatures, and identical semantics. The only functional differences are the collateral token and the domain name / version. The `FeeAuth` typed-data struct is unchanged.
+
+**Opting into V2 today:**
+
+The cosigner accepts an `escrow_contract` field in `fee_auth`. Absent or set to the V1 address = V1 (default). Set to the V2 address = V2. Sign the `FeeAuth` against the V2 domain when using V2.
+
+```jsonc
+"fee_auth": {
+  "escrow_contract": "0x3A43D88ef8Aae4dF5a50B3abf67122CAAeEF7c9F",
+  "escrow_order_id": "0x...",
+  "payer":  "0xSafe...",
+  "signer": "0xEOA...",
+  "fee_amount": "27500",
+  "deadline": 1777000000,
+  "nonce": 0,
+  "signature": "0x...",                   // signed against the V2 domain
+  "affiliate": "0xPartnerWallet...",
+  "affiliate_share_bps": 10000
+}
+```
+
+**SDKs:** V2 fee escrow is wired up in all three SDKs. Set `exchangeVersion` to V2 in your `TraderConfig` and the SDK automatically signs `FeeAuth` against the V2 domain, reads nonces from the V2 contract, approves pUSD against the V2 FeeEscrow during `ensureReady()`, and tells the cosigner to route to the V2 operator. Install:
+
+```bash
+npm install polynode-sdk@0.9.2
+pip install "polynode==0.9.2"
+cargo add polynode@0.12.2
+```
+
+V1 customers: no changes, V1 stays the default. Omit `exchangeVersion` (or set it to V1) and everything keeps working exactly as before.
+
+**Validation:** 8/8 end-to-end fork tests pass against the deployed V2 contract, exercising pullFee + distribute (30/70 treasury/affiliate split) + refund + 72-hour claimRefund + every revert path (expired deadline, wrong nonce, tampered signature). The test impersonates a real on-chain pUSD whale to fund the payer. Contract bytecode is a strict 2-change diff from V1 (collateral address + domain strings).
+
+Full guide: [/guides/fee-escrow](/guides/fee-escrow).
+
+---
+
+## 2026-04-21 (late) — Unrealized P&L and market status on positions
+
+The `/v2/onchain/positions` and `/v2/wallets/{address}/positions/onchain` endpoints now return unrealized P&L, the current market price, and a status flag per position — so you don't have to fetch prices separately or special-case resolved markets in client code.
+
+**New per-position fields:**
+- `unrealized_pnl` — paper P&L on the held size at the current price. For resolved markets, uses the settlement price (1.0 for winners, 0.0 for losers). For live markets, uses the current market price. Returns 0 when `size = 0`.
+- `current_price` — the price used to compute `unrealized_pnl`. `null` when `size = 0` or no price is available.
+- `market_status` — one of `live`, `resolved-win`, `resolved-loss`, or `closed`. Lets you tell apart a live-tradable holding from a resolved-but-never-redeemed position without looking up the market separately.
+
+**New portfolio totals** on `/v2/wallets/{address}/positions/onchain`:
+- `total_unrealized_pnl`
+- `total_pnl` — `total_realized_pnl + total_unrealized_pnl`. This is the number that matches the "Profit" value shown on a Polymarket profile page.
+
+Drop-in — every existing field keeps its name and type.
+
+---
+
+## 2026-04-21 (late) — Gasless Safe wrap/unwrap via the Polymarket relayer
+
+Patch release. `wrapToPolyUsd` / `unwrapFromPolyUsd` (and their Python/Rust equivalents) now route through the Polymarket relayer automatically when called on a Safe or Proxy wallet — the flow `ensureReady` already uses. Previously these helpers sent the transaction directly from the EOA, which failed for Safe wallets because the funds live in the Safe, not on the EOA, and the EOA has no MATIC for gas.
+
+**Install:**
+```bash
+npm install polynode-sdk@0.9.1       # TypeScript
+pip install "polynode>=0.9.1"        # Python
+cargo add polynode@0.12.1            # Rust
+```
+
+**Verified end-to-end with real Safe-via-relayer transactions:**
+- TS: wrap `0xde6c02c3...`, unwrap `0x006cd3dd...`
+- Python: wrap `0x7de53811...`, unwrap `0xccf9cf32...`
+- Rust: wrap `0xd80af0f4...`, unwrap `0xd21d6ad6...`
+
+All six txs mined on Polygon with `status: 0x1`, funded by third-party relayer EOAs — your EOA only signs the Safe `execTransaction` EIP-712 payload.
+
+**Requirements for Safe wrap/unwrap:** pass `builderCredentials` in `TraderConfig`. The SDK uses your Polymarket builder HMAC key to authenticate the relayer submit. Mint one at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder).
+
+**Tip — avoid stale-cache order rejection after wrap:** after `wrapToPolyUsd()`, the V2 CLOB's cached balance view is stale for a few seconds. If you place an order immediately, the CLOB can return a cryptic `"error parsing fee rate bps"` instead of the actual "balance not yet visible". Call `await trader.refreshBalanceAllowance()` before the order, or wait ~3 seconds. This is why we don't auto-refresh in wrap — not every wrap is followed by an immediate order.
+
+**Also in this patch:**
+- **Rust:** fixed `encode_unwrap` selector (was `0x39f47693`, correct value is `0x8cc7104f`). All Rust V2 unwraps prior to 0.12.1 hit the wrong contract function and reverted on-chain.
+- **Rust:** `get_polyusd_balance()` / `get_usdce_balance()` now read the funder address (Safe) instead of the EOA. Previously they always returned 0 for Safe-wallet users.
+- **Python:** `relayer.py` module added with a minimal Python port of `@polymarket/builder-relayer-client`. Implements EIP-712 Safe tx hashing, EIP-191 personal_sign via `eth_account`, builder HMAC headers, and `/submit` + `/transaction` polling.
+
+---
+
+## 2026-04-21 — SDK V2 order flow hardening (all three SDKs)
+
+End-to-end V2 order placement verified live on `clob-v2.polymarket.com` across all three SDKs. Matched fills tagged with your builder code now appear in the V2 CLOB's `/builder/trades` attribution feed.
+
+**Install:**
+```bash
+npm install polynode-sdk@0.9.0       # TypeScript
+pip install "polynode>=0.9.0"        # Python
+cargo add polynode@0.12.0            # Rust
+```
+
+**What changed:**
+- **V2 approvals now include the V1 `NegRiskAdapter`** in the spender list. The V2 CLOB's balance-allowance check monitors this address alongside the two V2 exchanges — orders without this approval were rejected with `"not enough balance / allowance"`.
+- **New methods: `refreshBalanceAllowance()` / `getBalanceAllowance()`.** The V2 CLOB maintains a cached balance-allowance view per API key; `ensureReady()` now auto-refreshes it after setting V2 approvals so the first order after onboarding goes through.
+- **Amount math hardened against float-precision edge cases.** Raw-units now derived via string-based decimal conversion instead of `Math.trunc(x * 1e6)` (TS) / `(x * 1_000_000.0) as u64` (Rust), which could truncate to `N-1` for prices that round-trip badly through float.
+- **V2 order body now matches `@polymarket/clob-client-v2` exactly** — adds `taker`, `postOnly`, `deferExec` fields to the POST payload.
+- **`checkBalance()` is V2-aware** — reads pUSD on V2, USDC.e on V1. Previously always read USDC.e.
+- **Market neg-risk detection fix (TS).** The old check treated every market as neg-risk (truthiness of the response object rather than its `neg_risk` field), which signed orders against the wrong exchange on standard markets.
+
+**Migration:** drop-in. `trader.order(...)` signature is unchanged; if you're on V2 and your orders were going through before, they still will. If you had a custom `ensureReady`-equivalent flow, you may now drop the manual `/balance-allowance/update` call — `ensureReady()` handles it on fresh V2 approvals.
+
+The full V2 wire format, required approvals, fee math, and common failure modes are documented in each SDK at `src/trading/V2_ORDER_FLOW.md` (TS, Rust) / `polynode/trading/V2_ORDER_FLOW.md` (Python).
+
+**End-to-end verification (from each public registry, fresh sandbox, real V2 orders against `clob-v2.polymarket.com`):**
+
+| SDK | Installed from | V2 order placed | Cancelled |
+|---|---|---|---|
+| `polynode-sdk@0.9.0` | `npm install polynode-sdk` | `0xb088a702...` LIVE | ✓ |
+| `polynode 0.9.0` | `pip install polynode[trading]` | `0x4906757c...` LIVE | ✓ |
+| `polynode 0.12.0` | `cargo add polynode@0.12` | `0x6d3623c6...` LIVE | ✓ |
+
+Each sandbox pulled from the public registry, imported the SDK, placed a real V2 GTC BUY with builder attribution, confirmed `status: "live"` from the V2 CLOB, then cancelled. No local source overrides, no pre-compiled artifacts — same install path a new user follows.
+
+**Docs fix also shipped today:** the V2 section of `/sdks/trading` now inlines `ensureReady` / `ensure_ready` so a V2-first reader who pastes only that block hits a copy-paste runnable flow. Previously the snippet silently assumed the reader had already gone through the Quick Start section.
+
+---
+
+## 2026-04-20 — CLOB v2 API launched
+
+New paid REST namespace `/clobv2/*` exposing every Polymarket CLOB v2 fill, position, builder, and neg-risk event.
+
+**11 endpoints, all enriched with market metadata (question, slug, outcome, image, condition_id) inline:**
+
+- `GET /clobv2/trades` — global fills, filterable by wallet/builder/market/time/size
+- `GET /clobv2/positions` — every open/closed v2 position
+- `GET /clobv2/candles/{token_id}` — OHLCV at 1m/5m/15m/1h/4h/1d with VWAP + buy/sell split
+- `GET /clobv2/wallets/{address}/trades` — per-wallet fill history with `side`
+- `GET /clobv2/markets/{token_id}/{trades,volume,orderbook}` — per-outcome aggregates
+- `GET /clobv2/builders` — v2 builder leaderboard (v2-exclusive)
+- `GET /clobv2/neg-risk/events{,/{parent_id}/children}` — multi-outcome event drilldown
+- `GET /clobv2/volume/hourly` — platform-wide hourly volume buckets
+
+Every list response includes `count`, `pagination.{limit,offset,has_more}`, and rate-limit headers. Paid tier required; free-tier keys receive `402`. See the [overview](/api-reference/clobv2/overview) for auth + numeric-precision conventions.
+
+**`/v2/onchain/*` enrichment restored**
+
+Trades / wallet-trades / market-trades / market-volume / candles on the legacy `/v2/onchain/*` endpoints now carry `market`, `market_slug`, `outcome`, `image`, and `condition_id` inline again. These fields had been quietly lost during a backend refactor.
+
+---
+
+## 2026-04-19 — Expanded orderbook wire format + Rust SDK 0.11.0
+
+The orderbook WebSocket now delivers PM's full per-level payload so you can maintain a tick-accurate local book without REST polling. Verified at **100% best-bid / 100% best-ask** across 50 concurrent markets.
+
+**What's new in the `price_change` message**
+
+Every entry in the `assets` array now includes four extra fields:
+
+- `size` — the absolute size at that level after the change. `"0"` means the level was removed.
+- `side` — `"BUY"` (affects bids) or `"SELL"` (affects asks)
+- `best_bid`, `best_ask` — best bid/ask on the asset after the change
+
+Old clients parsing only `{asset_id, price}` are unaffected — the new fields are additive. Multiple distinct levels on the same asset may now appear in one batch; repeat hits on the same `(asset_id, price, side)` within the 250ms coalesce window still merge to last-write-wins.
+
+See the [orderbook message reference](/orderbook/messages) for the full field list.
+
+**Rust SDK 0.11.0**
+
+- `PriceChangeAsset` now carries `size`, `side`, `best_bid`, `best_ask`
+- New `LocalOrderbook::apply_price_change(&PriceChange)` — apply incremental updates directly to your local book
+- `OrderbookEngine` automatically applies `price_change` events to its shared state so every `EngineView` stays tick-accurate
+- `OrderbookUpdate::LastTradePrice(BookTrade)` — executed-trade events now deserialize cleanly (previously dropped)
+
+**Install:**
+
+```bash
+cargo add polynode@0.11.0
+```
+
+**Breaking:** none. Enum variants added are additive under existing serde routing. Explicit exhaustive matches on `OrderbookUpdate` will need to handle the new `LastTradePrice` variant — add a `_ => {}` arm or match it explicitly.
+
+---
+
+## 2026-04-19 — V2-ready SDKs released (Rust 0.9.0, TypeScript 0.8.0, Python 0.8.0)
+
+All three polynode trading SDKs are now wire-compatible with the Polymarket V2 exchange ahead of the **April 28, 2026 cutover**. Upgrade before then. V1 orders submitted after cutover will be rejected with `order_version_mismatch`.
+
+**What changed (all three SDKs):**
+
+- V2 CLOB POST body now includes `"expiration": "0"` to match `@polymarket/clob-client-v2`'s wire format
+- `OrderParams` now exposes a `builder` field (bytes32). Pass your builder code on each order to attribute trades on-chain. Defaults to zero (no attribution). Mint your V2 builder code at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder)
+- All V2 order placement paths live-verified against `clob-v2.polymarket.com`
+
+**Install:**
+
+```bash
+cargo add polynode@0.9.0          # Rust
+npm install polynode-sdk@^0.8.0   # TypeScript
+pip install "polynode>=0.8.0"     # Python
+```
+
+**Breaking (Rust only):** `OrderParams` added a required struct field. If you construct `OrderParams { ... }` explicitly without `..Default::default()`, add `builder: None` to your literal. No code change required if you use struct update syntax.
+
+See the [V2 Migration Guide](/guides/v2-migration) for the full cutover checklist, the single-line switch, and a troubleshooting reference for common V2 errors.
+
+---
+
+## 2026-04-18 — Rust SDK 0.8.1: batch orderbook API
+
+### New: batch + all-tracked queries
+
+Every per-token orderbook method on `OrderbookEngine` and `EngineView` now has a batch and an all-tracked variant. One read lock, one round-trip, results returned as a `HashMap<String, T>` keyed by token ID.
+
+```rust
+let mids   = engine.midpoints(&ids).await;       // requested tokens
+let mids   = engine.midpoints_all().await;        // every tracked token
+
+// Same shape for: spreads / best_bids / best_asks / books
+let books  = engine.books_all().await;            // full L2 for everything
+```
+
+Tokens not in local state are silently skipped, so callers can pass mixed lists without pre-filtering.
+
+### New: detect inactive markets
+
+Each tracked token now records when its local copy was last touched. Use it to find markets that have stopped moving.
+
+```rust
+use std::time::Duration;
+
+if let Some(ts) = engine.last_change("token_a").await {
+    println!("last update {:?} ago", ts.elapsed());
+}
+
+let stale = engine.inactive_since(Duration::from_secs(60)).await;
+```
+
+### New: direct state access
+
+`engine.state()` returns the underlying `Arc<RwLock<LocalOrderbook>>` so callers can hold the lock and walk the full state themselves — useful for snapshotting all tokens at one consistent moment or building custom views.
+
+```rust
+let state = engine.state();
+let guard = state.read().await;
+let mids  = guard.midpoints_all();
+let books = guard.books_all();
+```
+
+### Install
+
+```bash
+cargo add polynode@0.8.1
+```
+
+All existing per-token methods (`engine.midpoint(id)`, `engine.book(id)`, etc.) are unchanged. This release is purely additive.
+
+---
+
+## 2026-04-17 — Unrealized P&L + redemption fix
+
+### New: `unrealized_pnl` field on positions
+
+Every position returned by `/v2/onchain/positions` now includes an `unrealized_pnl` field showing the paper profit or loss on remaining open shares.
+
+- **Resolved markets**: uses the final settlement price ($1 for winners, $0 for losers)
+- **Active markets**: uses the current market price, refreshed every 15 minutes
+
+### Fixed: realized P&L for redeemed positions
+
+Positions that were closed via onchain payout redemption (rather than selling on the orderbook) now correctly reflect their realized P&L. Previously, these showed `realized_pnl: 0` even when the position had a gain or loss.
+
+---
