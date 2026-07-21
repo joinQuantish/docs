@@ -22,6 +22,7 @@ GET /v3/wallets/{address}/trades
 | `market_slug` | string | -- | Filter by market slug (resolves to token IDs) |
 | `event_slug` | string | -- | Filter by event slug (resolves to token IDs across all of the event's markets) |
 | `event_id` | integer | -- | Filter by numeric event ID (same scope as `event_slug`) |
+| `order_hash` | string | -- | Return only fills for one exact order hash (`0x` + 64 hex characters) |
 | `min_amount_usd` | number | -- | Minimum trade size in dollars, matching the `amount_usd` response field. Decimals allowed, e.g. `99.5` |
 | `min_amount` | integer | -- | Minimum `maker_amount_filled` (raw 6-decimal). Prefer `min_amount_usd` |
 | `sort_by` | string | -- | `order_hash` groups fills by limit order visually (individual fill rows, sorted by most recent order) |
@@ -33,7 +34,33 @@ GET /v3/wallets/{address}/trades
 | `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
+`order_hash` is applied in the database before pagination. Combine it with any
+other wallet-trade filter; all supplied filters are intersected. Hex characters
+are case-insensitive and the response uses the normalized lowercase hash. A
+well-formed hash with no matching fills returns `200` with an empty `trades`
+array. An empty or malformed hash returns `400`.
+
+Combo trades do not expose a Polymarket order hash, so `order_hash` cannot be
+combined with `include_combos=true`; that combination returns `400`.
+
 ## Example
+
+List every fill where one wallet participated in a specific order:
+
+```bash
+curl -H "x-api-key: pn_live_YOUR_KEY" \
+  "https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/trades?order_hash=0x9ed363e9c05368fba5c717b8bee355d60a579f599cb7c007d90974203896a95c"
+```
+
+Add filters normally—for example, maker fills for that order inside one market
+and time window:
+
+```bash
+curl -H "x-api-key: pn_live_YOUR_KEY" \
+  "https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/trades?order_hash=0x9ed363e9c05368fba5c717b8bee355d60a579f599cb7c007d90974203896a95c&side=maker&market_slug=nba-det-cle-2026-05-15&after=1778000000&order=asc"
+```
+
+The unfiltered wallet feed has the same response shape:
 
 ```bash
 curl -H "x-api-key: pn_live_YOUR_KEY" "https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/trades?limit=1"

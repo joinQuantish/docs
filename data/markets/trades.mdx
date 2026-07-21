@@ -26,11 +26,19 @@ Resolves the slug to all token IDs for that market and returns trades across all
 |-----------|------|---------|-------------|
 | `after` | integer | -- | Start of time range (Unix timestamp) |
 | `before` | integer | -- | End of time range |
+| `order_hash` | string | -- | Return only fills for one exact order hash (`0x` + 64 hex characters) |
 | `min_amount_usd` | number | -- | Minimum trade size in dollars, matching the `amount_usd` response field. Decimals allowed, e.g. `99.5` |
+| `order` | string | `desc` | `asc` or `desc` |
+| `sort_by` | string | -- | `order_hash` groups fills from the same order visually |
+| `group_by` | string | -- | `order_hash` aggregates the returned fills per order |
 | `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
-Both the token-ID and market-slug forms accept `min_amount_usd`, so a whale feed for one market is a single call, e.g. `?min_amount_usd=100`.
+Both the token-ID and market-slug forms accept `order_hash` and
+`min_amount_usd`. Filters are intersected and applied before pagination. For
+example, `?order_hash=0x...&min_amount_usd=100` returns only $100+ fills from
+that order in the selected token or market. A valid hash with no scoped fills
+returns an empty `200` page; an empty or malformed hash returns `400`.
 
 ## Example (by token ID)
 
@@ -86,6 +94,13 @@ curl -H "x-api-key: pn_live_YOUR_KEY" "https://api.polynode.dev/v3/markets/75783
 
 ```bash
 curl https://api.polynode.dev/v3/markets/slug/dota2-aur1-liquid-2026-05-13/trades?limit=5
+```
+
+## Filter a market by order hash
+
+```bash
+curl -H "x-api-key: pn_live_YOUR_KEY" \
+  "https://api.polynode.dev/v3/markets/slug/nba-det-cle-2026-05-15/trades?order_hash=0x9ed363e9c05368fba5c717b8bee355d60a579f599cb7c007d90974203896a95c"
 ```
 
 ## Response fields

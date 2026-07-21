@@ -23,16 +23,35 @@ GET /v3/trades
 | `market_slug` | string | -- | Filter by market slug (resolves to token IDs) |
 | `event_slug` | string | -- | Filter by event slug (resolves to token IDs across all of the event's markets) |
 | `event_id` | integer | -- | Filter by numeric event ID (same scope as `event_slug`) |
+| `order_hash` | string | -- | Return only fills for one exact order hash (`0x` + 64 hex characters) |
 | `builder` | string | -- | Filter by builder code (hex) |
 | `min_amount_usd` | number | -- | Minimum trade size in dollars, matching the `amount_usd` response field. Decimals allowed, e.g. `99.5` |
 | `min_amount` | integer | -- | Minimum maker_amount_filled (raw 6-decimal). Prefer `min_amount_usd` |
+| `side` | string | -- | Maker order side: `buy`, `sell`, `0`, or `1` |
+| `sort_by` | string | -- | `order_hash` groups fills from the same order visually |
+| `group_by` | string | -- | `order_hash` aggregates the returned fills per order |
 | `order` | string | `desc` | `asc` or `desc` |
 | `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
 Event filters cover events currently in Polymarket's catalog. A very large event can return `400` asking for a narrower filter (`condition_id` or `market_slug`).
 
+All supplied filters are intersected. `order_hash` is an exact, indexed filter
+applied before pagination. Hex characters are case-insensitive; malformed or
+empty hashes return `400`, while a valid hash with no fills returns an empty
+`200` page.
+
 ## Example
+
+Every fill for one order:
+
+```bash
+curl -H "x-api-key: pn_live_YOUR_KEY" \
+  "https://api.polynode.dev/v3/trades?order_hash=0x9ed363e9c05368fba5c717b8bee355d60a579f599cb7c007d90974203896a95c"
+```
+
+See [Trades by Order Hash](/data/query-catalog/trades/by-order-hash) for global,
+wallet, token, slug, pagination, and grouping recipes.
 
 $100+ trades, newest first:
 

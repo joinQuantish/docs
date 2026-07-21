@@ -135,6 +135,7 @@
               "data/query-catalog/trades",
               "data/query-catalog/trades/all-trades",
               "data/query-catalog/trades/by-wallet",
+              "data/query-catalog/trades/by-order-hash",
               "data/query-catalog/trades/by-market-token",
               "data/query-catalog/trades/by-market-slug",
               "data/query-catalog/trades/wallet-by-condition",

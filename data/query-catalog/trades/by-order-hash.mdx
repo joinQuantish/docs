@@ -1,0 +1,64 @@
+---
+title: "Trades by Order Hash"
+description: "Return every fill for an exact Polymarket order, globally or inside a wallet or market scope."
+---
+
+Canonical references: [Global Trades](/data/global/trades), [Wallet
+Trades](/data/wallets/trades), and [Market Trades](/data/markets/trades)
+
+An order can fill more than once. `order_hash` returns the raw fill rows for the
+exact order by default, so paginate the result just like any other trade feed.
+The value must be `0x` followed by 64 hexadecimal characters. Hex character
+case is accepted and normalized to lowercase.
+
+## Global order fills
+
+```bash
+curl "https://api.polynode.dev/v3/trades?order_hash=0x9ed363e9c05368fba5c717b8bee355d60a579f599cb7c007d90974203896a95c&limit=100" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## One wallet's fills for the order
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/trades?order_hash=0x9ed363e9c05368fba5c717b8bee355d60a579f599cb7c007d90974203896a95c&limit=100" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+The wallet predicate and order hash are both applied before pagination. The
+response includes fills where that wallet was maker or taker, with `role` and
+wallet-perspective `direction` preserved.
+
+## Compose wallet filters
+
+Every additional parameter is an intersection. This example returns only maker
+fills for the order, in one market, after a timestamp, worth at least $100:
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0xa9857c7bcb9bcfafd2c132ab053f34f678610058/trades?order_hash=0x9ed363e9c05368fba5c717b8bee355d60a579f599cb7c007d90974203896a95c&side=maker&market_slug=nba-det-cle-2026-05-15&after=1778000000&min_amount_usd=100&order=asc" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+You can also combine `order_hash` with `token_id`, `condition_id`,
+`event_slug`, `event_id`, `before`, `min_amount`, `sort_by=order_hash`, or
+`group_by=order_hash`.
+
+## Scope by token or market slug
+
+```bash
+curl "https://api.polynode.dev/v3/markets/31336121594291014914271611062289284423554618020629759821503694496084098706290/trades?order_hash=0x9ed363e9c05368fba5c717b8bee355d60a579f599cb7c007d90974203896a95c" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```bash
+curl "https://api.polynode.dev/v3/markets/slug/nba-det-cle-2026-05-15/trades?order_hash=0x9ed363e9c05368fba5c717b8bee355d60a579f599cb7c007d90974203896a95c" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Empty and invalid results
+
+- A well-formed order hash with no matching fills returns `200`, `trades: []`,
+  and `has_more: false`.
+- An empty, short, or non-hex hash returns `400`.
+- `order_hash` with `include_combos=true` returns `400` because combo trades do
+  not expose a Polymarket order hash.
