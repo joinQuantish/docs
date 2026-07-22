@@ -5,6 +5,25 @@ description: "Recent PolyNode API and SDK changes, with older releases preserved
 icon: "clock-rotate-left"
 ---
 
+## 2026-07-21 - Query trades by order hash
+
+V3 trade feeds can now return every fill associated with one exact Polymarket order hash.
+
+What's new:
+
+* Use `order_hash` on `GET /v3/trades`, `GET /v3/wallets/{address}/trades`, `GET /v3/markets/{token_id}/trades`, and `GET /v3/markets/slug/{slug}/trades`.
+* Wallet queries can combine `order_hash` with maker/taker role, token, condition, market, event, time, and amount filters. Filtering happens before pagination, so pages contain only matching fills.
+* `group_by=order_hash` and `sort_by=order_hash` now work consistently across global, wallet, market-token, and market-slug trade routes.
+* A valid hash with no matching fills returns an empty page. Malformed hashes return `400`.
+* Combo trades do not expose a Polymarket order hash, so combining `order_hash` with `include_combos=true` returns `400`.
+
+Docs:
+
+* [Trades by Order Hash](/data/query-catalog/trades/by-order-hash)
+* [Wallet Trades](/data/wallets/trades)
+
+***
+
 ## 2026-07-17 - V3 account-level rate limits
 
 V3 REST limits now apply once per account, not once per API key.
