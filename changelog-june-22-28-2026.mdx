@@ -1,0 +1,119 @@
+---
+title: "Changelog - June 22-28, 2026"
+sidebarTitle: "June 22-28"
+description: "Archived PolyNode API, WebSocket, Explorer, and documentation changes from June 22 through June 28, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+[Earlier: June 15-21, 2026 →](/changelog-june-15-21-2026)
+
+## 2026-06-25 - More complete winner metadata on redemption streams
+
+Improved the availability and durability of resolution metadata used to enrich live redemption events.
+
+What's improved:
+
+- Redemption conditions missing winner context are now recovered continuously without delaying event delivery, reducing the chance that later events for the same condition arrive without `payouts` or winner fields.
+- Newly resolved conditions are picked up continuously, and known resolution data is retained for future redemptions, including redemptions that occur long after resolution.
+- The improvement targets rare enrichment misses without delaying or suppressing the underlying redemption event.
+- Frames that were already emitted are not rewritten; the repair benefits subsequent live events for the condition.
+- No subscription messages, event names, filters, or payload field names changed.
+
+In the initial live-only baseline, 249 of 250 redemption events were fully enriched and one was missing resolution context. The missing condition was resolved by the new recovery path during validation. These measurements describe that validation window, not a coverage SLA.
+
+Docs: [Redemption Event](/websocket/events/redemption)
+
+---
+
+## 2026-06-24 - Builder volume normalization and Explorer correction
+
+Clarified builder-volume semantics across `GET /v3/builders`, `GET /v3/builders/{code}`, and the Explorer Builder Leaderboard.
+
+What's new in the V3 builder responses:
+
+- Side-aware local volume fields: `volume_e6`, `volume_usdc`, `buy_volume_e6`, `buy_volume_usdc`, `sell_volume_e6`, and `sell_volume_usdc`.
+- Decimal-USDC companions for the legacy raw totals: `total_maker_volume_usdc`, `total_taker_volume_usdc`, and `total_fees_usdc`.
+- Public profile context: `external_rank`, `external_volume`, and `external_active_users`.
+- Data-state fields: `stats_refreshed_at`, `stats_checked_at`, and `stats_pending`, with source labels on the list and detail responses. Builder detail also exposes `stats_source`.
+
+Field conventions:
+
+- Prefer `volume_usdc` when displaying a builder's PolyNode-attributed volume. It selects the collateral side of each fill and normalizes six-decimal units.
+- `external_volume` is the separate value from Polymarket's public builder leaderboard; it is not substituted for PolyNode's local fill volume.
+- Legacy `total_maker_volume`, `total_taker_volume`, and `total_fees` remain available as raw six-decimal values for compatibility.
+- `unique_makers` and `unique_takers` were removed because they did not represent supported exact distinct-wallet counts. `sort=makers` and `sort=takers` now return `400`; supported list sorts are `fills`, `volume`, and `fees`.
+
+The Explorer Builder Leaderboard now uses `volume_usdc` and scales legacy raw amounts correctly. This fixes displays that were previously up to `1,000,000x` too large because raw six-decimal values were being labeled as whole USDC.
+
+Docs: [Builder Leaderboard](/data/builders/list) and [Builder Detail](/data/builders/detail)
+
+---
+
+## 2026-06-24 - V3 wallet redemptions enriched with market and winner context
+
+Expanded `GET /v3/wallets/{address}/redemptions` so a redemption row can identify the market, payout, and winning outcome without a second market lookup.
+
+New additive fields include:
+
+- Accounting-safe payout aliases: `condition_id`, `payout_e6`, and `payout_usdc`.
+- Market context: `market_title`, `market_slug`, `market_image`, `event_title`, `event_slug`, and `neg_risk`.
+- Ordered outcome context: `token_ids`, `outcomes`, `payouts`, and `outcome_prices`.
+- Resolution context: `winning_outcome_index`, `winning_outcome`, `winning_token_id`, and `resolved_at`.
+
+The array fields use the same outcome order. Resolution and market fields are nullable when the corresponding metadata is unavailable. Existing fields — `id`, `timestamp`, `condition`, `payout`, and `index_sets` — remain present and unchanged.
+
+Docs: [Wallet Redemptions](/data/wallets/redemptions)
+
+---
+
+## 2026-06-24 - Redemption WebSocket winner fields restored
+
+Restored resolution enrichment on customer-facing WebSocket redemption events.
+
+What's restored when resolution context is available:
+
+- `payouts` and `outcome_prices`.
+- `winning_outcome_index`, `winning_outcome`, and `winning_token_id`.
+- The same enrichment behavior across direct `type: "redemptions"` subscriptions, wallet-filtered redemption subscriptions, and `type: "settlements"` subscriptions using `event_types: ["redemption"]`.
+
+Delivery remains unconditional: a redemption is still sent when winner metadata is not yet available, and the enrichment fields remain best-effort rather than blocking the frame. No subscription change is required.
+
+In one warmed post-release validation window, 98 of 100 live redemption events included a payout vector, and the documented settlements-plus-redemption subscription returned 5 of 5 enriched events. These measurements describe that validation window, not a coverage SLA.
+
+Docs: [Redemption Event](/websocket/events/redemption)
+
+---
+
+## 2026-06-22 - V3 wallet accounting summary
+
+Added an optional all-time accounting summary to the V3 wallet summary endpoint.
+
+What's new:
+
+- `GET /v3/wallets/{address}?include_accounting_summary=true` returns `accounting_summary`.
+- `accounting_summary.fees_paid.amount` is the exact all-time trader-paid fee total, while `fees_paid.raw` exposes the exact six-decimal value.
+- `fee_fill_count` and `order_owner_fill_count` expose the fee-bearing and total order-owner fill counts covered by the summary.
+- `order_filled_through_block` and `projector_status` describe the summary's coverage and readiness.
+- Maker rebates and rewards have explicit status fields. `not_loaded` means the source is unavailable and must not be interpreted as a zero amount.
+
+Existing default responses are unchanged. The accounting object is included only when requested.
+
+Docs: [Wallet Summary](/data/wallets/summary) and [Fees Overview](/data/fees/overview)
+
+---
+
+## 2026-06-22 - Wallet P&L and leaderboard filters clarified
+
+Completed the production handoff for time-windowed wallet P&L requests using `period` or `after`, while preserving the all-time wallet P&L response and the rest of the V3 surface.
+
+The public P&L references now make the filtering contract explicit:
+
+- Without a time parameter, `GET /v3/wallets/{address}/pnl` returns all-time P&L. `period`, `after`, and `before` select a realized-P&L time window; `include_unrealized=true` adds current unrealized P&L to a time-filtered result.
+- Wallet P&L supports `category`, `tags`/`tag_slug`, `market`/`market_slug`, `event_slug`, and `condition_id` filters.
+- All-time `wins` and `losses` are position counts. Time-windowed `wins`, `losses`, and `events` are realized-P&L event counts, so the two modes should not be compared as identical counters.
+- `GET /v3/leaderboard` supports the same primary market dimensions. Use one primary dimension per request.
+- For broad tags or categories such as `crypto`, `sports`, or `politics`, use `GET /v3/leaderboard?tags=...` or `?category=...`; the direct `/v3/tags/{slug}/leaderboard` route is intended for narrower tags.
+
+Docs: [Wallet P&L](/data/wallets/pnl), [Global Leaderboard](/data/leaderboard/global), and [Tag Leaderboard](/data/leaderboard/tag-leaderboard)
