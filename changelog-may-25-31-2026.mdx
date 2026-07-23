@@ -1,0 +1,208 @@
+---
+title: "Changelog - May 25-31, 2026"
+sidebarTitle: "May 25-31"
+description: "Archived polynode API, SDK, WebSocket, webhook, and billing changes from May 25 through May 31, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+[Earlier: May 2-24, 2026 →](/changelog-may-2-24-2026)
+
+## 2026-05-27 - More reliable sports discovery
+
+Sports and esports discovery now stays useful when Polymarket's primary event listing is incomplete or temporarily unavailable.
+
+What's improved:
+
+- `GET /v2/sports/leagues/{code}/games` resolves each public league code to its sports series, then applies `status`, `sort`, `direction`, `limit`, and `offset` consistently.
+- Responses include `series_id`, `source`, `fallback`, and `stale`, so clients can tell which source produced the result and whether a recent last-known-good response was used.
+- Known event variants such as exact-score, halftime-result, and more-markets pages are deduplicated in favor of the canonical game.
+- `GET /v2/sports/search` can fall back to alternate Polymarket event discovery instead of returning an upstream `502` immediately.
+- `GET /v2/sports/games/{slug}/history` now defaults to the full available history when no interval or timestamp range is supplied.
+- `GET /v2/sports/live` can supplement a partial sports summary with league-level event data instead of returning mostly empty arrays.
+
+If all live event sources are unavailable, the league-games route may return a recent response with `stale: true` for up to 12 hours.
+
+Docs: [Sports Markets](/api-reference/sports/sports-markets)
+
+---
+
+## 2026-05-27 - One-month USDC checkout
+
+Logged-in customers can buy one month of polynode access with USDC directly from the pricing page.
+
+What's new:
+
+- Starter, Growth, and Enterprise pricing cards offer a `Pay 1 month with USDC` option alongside normal card subscriptions.
+- USDC purchases are one-time 30-day access grants, not recurring subscriptions.
+- A later USDC purchase extends access from the end of the customer's current USDC period rather than shortening or replacing it.
+- Customers with an active card subscription are protected from accidental double payment. Trialing or past-due card users can switch to one-month USDC access.
+- Existing card checkout, account login, API keys, and plan entitlements continue to work as before.
+
+Stripe Checkout supports USDC on this path, not USDT.
+
+---
+
+## 2026-05-27 - V3 wallet P&L alignment, fees, rebates, rewards, and PolyUSD flows
+
+Updated V3 wallet accounting surfaces.
+
+What's new:
+
+- Default/all-time `GET /v3/wallets/{address}/pnl/events` now returns a single all-time bucket so it agrees with `GET /v3/wallets/{address}/pnl`.
+- Explicit time-windowed P&L events (`period`, `after`, or `before`) return realized P&L buckets and ignore timestamp-0 artifacts.
+- Added `GET /v3/wallets/{address}/fees-paid` for fee-bearing wallet fills.
+- Added `GET /v3/wallets/{address}/polyusd-flows` for wallet PolyUSD deposits and withdrawals.
+- Added `GET /v3/wallets/{address}/rebates` for maker rebates.
+- Added public reward-market configuration at `GET /v3/rewards/markets` and `GET /v3/rewards/markets/{condition_id}`.
+
+Notes:
+
+- Fees paid and maker rebates are intentionally separate surfaces. LP reward market configuration is public; per-wallet earned LP rewards require authenticated Polymarket data and are not exposed as an arbitrary-wallet lookup in the public docs.
+- `GET /v3/wallets/{address}/activity` remains the conditional-token activity feed; PolyUSD deposits and withdrawals now live in the separate wallet PolyUSD flows endpoint.
+
+---
+
+## 2026-05-26 - Webhooks beta: first observed position opens
+
+Added `position_status_change` support for watched-wallet CTF position opens and exits.
+
+What's new:
+
+- `position_status_change` now detects first observed `none` to `open` transitions for watched wallets.
+- Existing positions are established as the wallet's baseline when it is first watched, so future transitions are emitted without replaying historical opens.
+- Adding another watched wallet does not replay source activity from before that wallet's own baseline.
+- Payloads include `previous_amount`, `new_amount`, `delta_amount`, `transfer_amount`, `source`, `source_event_id`, block and transaction fields, and market enrichment.
+- Filters include `wallet_addresses`, `token_ids`, `condition_ids`, `event_slugs`, `tags`, `status_from`, and `status_to`.
+
+Beta requirement: `wallet_addresses` is required. Unfiltered global position-status webhooks are not enabled.
+
+Docs: [`position_status_change`](/webhooks/events/position-status-change)
+
+---
+
+## 2026-05-26 - Polymarket Profiles API
+
+Added a paid-plan API for apps that want users to create or change a Polymarket username from a user-owned EOA without sharing private keys or long-lived Polymarket credentials.
+
+New endpoints:
+
+- `GET /v3/polymarket/profiles/username-available` checks a requested username. Local format is 3-32 letters, numbers, or underscores; Polymarket remains the final authority.
+- `POST /v3/polymarket/profiles/username/challenge` returns the Polymarket sign-in message and polynode consent typed data for the user's wallet. Challenges expire after 10 minutes.
+- `POST /v3/polymarket/profiles/username/complete` verifies both signatures and completes the profile or username action.
+- `GET /v3/polymarket/profiles/{address}` returns normalized public profile information.
+
+The challenge and completion calls belong on your backend and must use the same polynode API key. Browser clients only sign the returned payloads; they should never receive your API key or send a private key to polynode.
+
+Docs: [Polymarket Profiles](/api-reference/polymarket-profiles/overview)
+
+---
+
+## 2026-05-26 - TypeScript SDK v0.10.13: V3 parity, resolver, and profile helpers
+
+Released a TypeScript SDK parity update for the current REST API surface.
+
+What's new:
+
+- `pn.v3` namespace for the V3 historical data API while preserving existing top-level SDK behavior.
+- Typed V3 methods for wallet summaries, wallet P&L, P&L events, wallet trades, wallet positions, global trades, global positions, market search, market price, market trades, market positions, leaderboard, tags, builders, builder trades, fees, resolutions, conditions, and token info.
+- Builder trade filters in the SDK: `tokenId`, `conditionId`, `marketSlug`, `eventSlug`, `side`, `category`, `tagSlug`, `minAmount`, `after`, `before`, `limit`, and `offset`.
+- `pn.resolve(query)` for wallet, EOA, or username resolution, returning `{ safe, eoa, username, type }`.
+- Fully typed `pn.walletOnchainPositions()` responses, including market metadata, status, price, P&L, and lifecycle timestamps.
+- V3 Polymarket profile helpers: `polymarketUsernameAvailable`, `createPolymarketUsernameChallenge`, `completePolymarketUsername`, and `polymarketProfile`.
+
+Existing `pn.market()`, `pn.wallet()`, `pn.leaderboard()`, and other top-level methods keep their historical paths and response shapes.
+
+Upgrade:
+
+```bash
+npm install polynode-sdk@0.10.13
+```
+
+Docs: [TypeScript V3 Data and Profiles](/sdks/ts/v3-data)
+
+---
+
+## 2026-05-25 - Rust SDK v0.13.5 deposit-wallet onboarding fix
+
+Released `polynode` v0.13.5 for Rust integrations using V2 deposit wallets and `POLY_1271` signatures.
+
+What's fixed:
+
+- `ensure_ready()` recognizes an already-deployed deposit wallet from its onchain contract state instead of re-entering a failed deployment loop.
+- Deposit-wallet approval batches contain only the supported V2 pUSD and Conditional Tokens approvals.
+- Nested approval batches use the correct EIP-712 encoding and normalized wallet signature format.
+- After setup, the SDK refreshes the V2 CLOB balance and allowance state for both new and already-deployed deposit wallets.
+- Orders continue to use the deposit wallet as maker, the owner EOA as signer, and signature type `3` (`POLY_1271`).
+
+Upgrade:
+
+```toml
+polynode = { version = "0.13.5", features = ["trading"] }
+```
+
+---
+
+## 2026-05-25 - Sports and esports API suite
+
+Added a game-centered API for discovering Polymarket sports markets, current prices, price history, and WebSocket subscription targets.
+
+New and expanded routes include:
+
+- `GET /v2/sports/leagues`, `/v2/sports/live`, and `/v2/sports/market-types` for discovery and overview data.
+- `GET /v2/sports/leagues/{league}/teams` and `/v2/sports/leagues/{league}/games` for league-specific coverage.
+- `GET /v2/sports/games/{slug}` for normalized game and market details.
+- `GET /v2/sports/games/{slug}/state` for one object containing metadata, score fields, markets, current prices, and an orderbook subscription payload.
+- `GET /v2/sports/games/{slug}/prices` and `/history` for current CLOB price data and batch token history.
+- `GET /v2/sports/games/{slug}/context` for generated matchup, injury, lineup, news, social, or market queries with optional game state.
+- `GET /v2/sports/search?q={query}` for sports event and team search.
+
+Game-state requests price up to 200 tokens. Batch history includes up to 20 tokens per request. Live orderbook updates use the WebSocket target and token IDs returned by the response.
+
+Docs: [Sports Markets](/api-reference/sports/sports-markets)
+
+---
+
+## 2026-05-25 - Online Search API beta
+
+Added `GET /v2/search/online` for low-volume web context and market research.
+
+The endpoint returns normalized organic results with title, URL, domain, snippet, source engines, score, category, and optional publication time. It supports:
+
+- `max_results`, default `10` and maximum `20`
+- comma-separated `engines`
+- `language`, default `en-US`
+- `time_range=day|week|month|year`
+- `safe_search=0|1|2`
+- `cache_ttl_seconds`, default `600` and maximum `3600`
+
+The beta has an additional limit of 3 requests per 10 seconds per API key. Results are best-effort and may be partial or unavailable when public search providers throttle or fail.
+
+Docs: [Online Search API](/api-reference/search-online)
+
+---
+
+## 2026-05-25 - Public plan-limit conventions clarified
+
+Consolidated the public limits into one plan table and separated Event WebSocket limits from Orderbook WebSocket limits.
+
+At the time of this release:
+
+- REST limits were 60 requests/minute on Free, 600 on Starter, 3,000 on Growth, and custom on Enterprise.
+- Event WebSocket and Orderbook WebSocket connection limits were each 1 on Free, 10 on Starter, 50 on Growth, and unlimited on Enterprise.
+- A subscription could contain up to 10,000 filter items; paid plans had unlimited session time and unlimited orderbook market subscriptions.
+- API-key allowances were 1 on Free, 3 on Starter, 10 on Growth, and 25 on Enterprise.
+- Expensive endpoints could still carry endpoint-specific caps or plan requirements in addition to the plan's main REST allowance.
+
+These are historical limits. See [Rate Limits](/guides/rate-limits) for the current contract.
+
+---
+
+## 2026-05-25 - Polygon RPC endpoint restored
+
+`https://rpc.polynode.dev` returned to service for authenticated Polygon JSON-RPC requests.
+
+The endpoint again served live chain reads such as `eth_chainId` and `eth_blockNumber` using the existing request shape and API-key authentication. No client change was required.
+
+Docs: [Polygon RPC](/rpc/overview)

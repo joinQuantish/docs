@@ -9,7 +9,7 @@ icon: "clock-rotate-left"
 
 [Newer: April 30, 2026](/changelog-april-30-2026) · [April 27 trades →](/changelog-april-27-2026-trades)
 
-## 2026-04-27 — Positions: 100% Polymarket parity, deterministic resolved-market mark, six new fields, real cursor pagination
+## 2026-04-27 — Positions: complete Polymarket parity, deterministic resolved-market mark, six new fields, real cursor pagination
 
 `/v2/onchain/positions` now matches Polymarket's `data-api` to the cent on every shared position. Verified across six wallets, 627 total shared positions, 100.00% sub-penny match on `unrealized_pnl`.
 
@@ -31,13 +31,12 @@ What's fixed on the math:
 
 ```bash
 # returns has_more: true with pagination_key now
-curl "https://api.polynode.dev/v2/onchain/trades?wallet=0x…&limit=2" -H "x-api-key: …"
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0x...&limit=2" -H "x-api-key: YOUR_KEY"
 
 # walk to the next page
-curl "https://api.polynode.dev/v2/onchain/trades?wallet=0x…&limit=2&pagination_key=2" -H "x-api-key: …"
+curl "https://api.polynode.dev/v2/onchain/trades?wallet=0x...&limit=2&pagination_key=2" -H "x-api-key: YOUR_KEY"
 ```
 
 Time filters on `/v2/onchain/trades` use **`start_time`** and **`end_time`** (unix seconds), not `from` / `to`. Documented and verified.
 
 ---
-
