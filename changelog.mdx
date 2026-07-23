@@ -24,24 +24,11 @@ Docs:
 
 ***
 
-## 2026-07-17 - V3 account-level rate limits
-
-V3 REST limits now apply once per account, not once per API key.
-
-What's new:
-
-* All API keys owned by the same account share the plan's rolling standard V3 REST allowance.
-* Keys can be used at the same time, but creating more keys does not increase the account's throughput.
-* Heavy trade-history endpoints keep their separate allowance, which is also shared across the account's keys.
-
-Existing API keys, request formats, and rate-limit response headers continue to work without client changes.
-
-***
-
 ## Earlier releases
 
 Older entries are grouped into smaller archive pages for fast, reliable loading.
 
+- [July 13-19, 2026](/changelog-july-13-19-2026)
 - [July 6-12, 2026](/changelog-july-6-12-2026)
 - [June 29-July 5, 2026](/changelog-june-29-july-5-2026)
 - [June 22-28, 2026](/changelog-june-22-28-2026)

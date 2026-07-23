@@ -7,6 +7,7 @@ icon: "clock-rotate-left"
 
 [← Back to the current changelog](/changelog)
 
+[Newer: July 13-19, 2026 ←](/changelog-july-13-19-2026) ·
 [Earlier: June 29-July 5, 2026 →](/changelog-june-29-july-5-2026)
 
 ## 2026-07-12 - Event-scoped trades and dollar-size filtering
@@ -22,6 +23,23 @@ What's new:
 - An event filter that matches nothing returns an empty page rather than falling back to unfiltered results, and invalid values return `400`.
 
 Docs: [Global Trades](/data/global/trades), [Wallet Trades](/data/wallets/trades), and [Builder Trades](/data/builders/trades)
+
+---
+
+## 2026-07-12 - Faster wallet activity and builder statistics
+
+Improved two aggregation-heavy V3 read paths without changing their request or response contracts.
+
+Release measurements:
+
+- Representative `GET /v3/wallets/{address}/activity` requests improved from 1.013 seconds to 51 ms and from 1.607 seconds to 26 ms.
+- A redemption-heavy wallet request that had previously timed out returned `200` in 16 ms.
+- A large `GET /v3/builders/{code}` statistics request improved from 131.7 seconds to 2.72 seconds.
+- Before-and-after checks returned the same row sets, values, timestamp ordering, and builder aggregates.
+
+These are measured examples, not latency guarantees. Field names, event values, pagination, and endpoint limits are unchanged.
+
+Docs: [Wallet Activity](/data/wallets/activity) and [Builder Detail](/data/builders/detail)
 
 ---
 

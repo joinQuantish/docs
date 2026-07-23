@@ -1,0 +1,174 @@
+---
+title: "Changelog - July 13-19, 2026"
+sidebarTitle: "July 13-19"
+description: "Archived PolyNode API, identity, WebSocket, orderbook, pagination, performance, and reliability changes from July 13 through July 19, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+[Earlier: July 6-12, 2026 →](/changelog-july-6-12-2026)
+
+## 2026-07-19 - Opt-in orderbook sequence and checksum verification
+
+Added PN1, an opt-in integrity protocol for clients that maintain a local copy of the Orderbook Stream.
+
+What's new:
+
+- Connect to `wss://ob.polynode.dev/ws?key=YOUR_KEY&integrity=1` to receive an ordered anchor for every subscribed token.
+- Every depth-changing frame carries a token-scoped `prev_seq`, `seq`, and deterministic post-update `checksum`. A client can detect either a missing frame or an incorrectly applied price level immediately.
+- Send `{"action":"resync","markets":["TOKEN_ID"]}` after a sequence or checksum failure. The stream gates that token, sends a replacement `book_snapshot` anchor, and confirms completion with `snapshots_done` and `reason: "resync"`.
+- If an anchor is already being prepared, `resync_in_progress` includes `retry_after_ms`. If continuity can no longer be guaranteed, `integrity_backpressure` or `integrity_internal_reset` closes the connection so the client can reconnect with fresh anchors.
+- PN1 subscriptions use explicit market lists and are initially capped at 500 resolved token IDs per connection. `markets: ["*"]` remains available on the normal stream but is not supported with `integrity=1`. Existing account limits still apply when lower.
+- `last_trade_price` and other non-depth events do not advance the depth sequence or carry a checksum.
+
+The normal stream is unchanged when `integrity` is omitted or set to `0`. PN1 verifies the continuity and resulting state of PolyNode-delivered depth; it is not a Polymarket sequence number or a cryptographic signature.
+
+Launch verification covered 368 anchors, approximately 12,800 depth updates, 543 trade messages, targeted resync, compressed and uncompressed connections, and both Node.js and Python clients. These are release-validation measurements, not throughput guarantees.
+
+Docs: [Orderbook Integrity (PN1)](/orderbook/integrity), [Orderbook Messages](/orderbook/messages), and [Orderbook Stream](/orderbook/overview)
+
+---
+
+## 2026-07-19 - Bounded concurrency for exact wallet P&L
+
+Added a short, explicit concurrency bound to `GET /v3/wallets/{address}/pnl` so bursts of expensive wallet calculations fail quickly and predictably instead of building a long queue.
+
+Client behavior:
+
+- Each account can have up to two exact wallet P&L requests running at once.
+- An additional request waits for capacity for up to 750 milliseconds. If the account's two requests are still running, it returns `429` with `error: "wallet_pnl_busy"`, `scope: "v3_pnl_account_concurrency"`, and `Retry-After: 1`.
+- A separate capacity response can return `503` with `scope: "v3_pnl_global_concurrency"`. It uses the same `wallet_pnl_busy` error and one-second retry guidance.
+- This concurrency guard is separate from requests-per-minute limits. Successful responses still include the normal rate-limit headers.
+- `GET /v3/wallets/{address}/pnl/events`, leaderboards, batch wallet reads, and trade routes are not part of this guard.
+
+Requests that proceed return the same P&L fields and values as before. In release validation, a three-request burst against a worst-case wallet returned the excess request in 781 milliseconds instead of leaving all three calculations running.
+
+Docs: [Wallet P&L](/data/wallets/pnl) and [Rate Limits](/guides/rate-limits)
+
+---
+
+## 2026-07-18 - V3 pages now have a 1,000-item ceiling
+
+Standardized the largest possible V3 response page at 1,000 rows or buckets.
+
+What's changed:
+
+- No V3 endpoint returns more than 1,000 rows or buckets in one page. Requests above an endpoint's cap are normalized to the cap instead of rejected.
+- `GET /v3/wallets/{address}/pnl/events` now defaults to `limit=1000` and clamps there, replacing its former 5,000 default and 10,000 maximum.
+- `GET /v3/markets/condition/{condition_id}/positions` keeps a 300-row Starter cap; Growth and Enterprise keys can request up to 1,000. The former Enterprise maximum was 2,000.
+- Stricter endpoint caps remain in place. Most V3 lists still cap at 300 rows, and leaderboards retain their 100-row cap.
+- Values through each endpoint's cap, cursor and offset behavior, filters, sorting, response fields, and row contents are unchanged.
+
+For a complete history, continue paging with the returned offset or cursor. For deep trade history, bounded `after` and `before` windows are usually more efficient than very large offsets.
+
+Docs: [Pagination Limits](/guides/rate-limits#pagination-limits), [Wallet P&L Time Series](/data/wallets/pnl-events), and [Condition Holders](/data/markets/condition-positions)
+
+---
+
+## 2026-07-18 - Faster token-scoped wallet trade history
+
+Improved `GET /v3/wallets/{address}/trades` when a request is narrowed to one outcome token.
+
+What's improved:
+
+- Token-scoped maker, taker, and `role=both` reads now use a faster path while preserving one row per matching wallet role.
+- Pagination remains stable and non-overlapping, including single-side maker-only and taker-only requests.
+- Token, condition, market, event, time, role, amount, grouping, sorting, and ordering filters were checked together to ensure the optimization did not change composition behavior.
+- Request parameters, response fields, formulas, caps, and broader multi-market query behavior are unchanged.
+
+In the release concurrency check, a 16-way request set improved from 51.5 ms p95 to 17.8 ms p95, with all 64 responses successful. This is a measured release result, not a latency SLA.
+
+Docs: [Wallet Trades](/data/wallets/trades)
+
+---
+
+## 2026-07-18 - Faster explicit-window P&L histories
+
+Improved `GET /v3/wallets/{address}/pnl/events` for long explicit `after`/`before` windows without changing P&L calculations or response ordering.
+
+Release measurements:
+
+- A heavy full-history control improved from 6.466 seconds to 560 milliseconds.
+- A replay of 141 previously slow request shapes completed with HTTP `200` throughout: 72 ms median, 1.483 seconds p95, 2.393 seconds p99, and 6.272 seconds maximum.
+- Responses before and after matched on deterministic fields, values, types, and ordering.
+
+The 1,000-bucket page ceiling introduced the same day applies to these histories. Use successive windows or pages when more buckets are needed.
+
+Docs: [Wallet P&L Time Series](/data/wallets/pnl-events)
+
+---
+
+## 2026-07-17 - Wallet type, deployment, and current status are separate
+
+Identity responses can now distinguish what kind of wallet an address is, whether its contract exists on Polygon, and whether it is the account's currently selected trading wallet.
+
+What's new:
+
+- `wallet_type` reports `deposit_wallet`, `safe`, or `proxy` when known.
+- `deployed` reports whether the wallet contract currently exists on Polygon.
+- `current` reports whether the address is the account's selected trading wallet.
+- The fields are additive on `GET /v3/identities/{address}`, `POST /v3/identities/batch`, `GET /v3/identities/search`, and identity-enriched credits responses.
+- `GET /v1/resolve/{query}` now includes `wallet_details`, which lists the current address and the account's other deployed wallets with `wallet_type`, `deployed`, and `current` on each item.
+
+The existing `wallets` object remains deployed-only for compatibility. This means a current deposit-wallet address can appear in `wallet_details` with `deployed: false` and `current: true` while its `wallets.deposit_wallet` value is still `null`. Legacy identities can return `null` where a status is genuinely unknown.
+
+No existing resolver or identity field was renamed or removed. TypeScript SDK `0.10.20` adds typed `KnownWallets`, `WalletDetail`, and the new `ResolveResult.wallets` and `ResolveResult.wallet_details` fields.
+
+Docs: [Resolve Wallet](/api-reference/wallets/resolve), [Identity Lookup](/identities/lookup), [Batch Resolve](/identities/batch-resolve), and [Username Search](/identities/search)
+
+---
+
+## 2026-07-17 - V3 account-level rate limits
+
+V3 REST limits now apply once per account, not once per API key.
+
+What's new:
+
+- All API keys owned by the same account share the plan's rolling standard V3 REST allowance.
+- Keys can be used at the same time, but creating more keys does not increase the account's throughput.
+- Heavy trade-history endpoints keep their separate allowance, which is also shared across the account's keys.
+
+Existing API keys, request formats, numeric plan allowances, and rate-limit response headers continue to work without client changes.
+
+Docs: [Rate Limits](/guides/rate-limits)
+
+---
+
+## 2026-07-15 - Lower settlement, status, and confirmed-trade latency
+
+Corrected two independent delivery stalls affecting the public event WebSocket.
+
+What's improved:
+
+- Settlement frames no longer accumulate behind periodic connection bookkeeping and then arrive in a burst. In a 210-second public check covering 3,743 settlements, measured delivery was 1 ms median, 3 ms p90, 15 ms p99, and 214 ms maximum.
+- Confirmed `status_update` and `trade` delivery recovered from a post-restart regression whose p90 had risen to approximately 23.7 seconds. Later windows measured status p90 at 530-842 ms and trade p90 at 491-1,066 ms.
+- Pending settlement notifications continue to lead confirmed status delivery. Follow-up windows measured a 2.9-3.3 second p90 lead.
+- A 180-second public soak delivered 4,336 settlements and 4,317 status updates across 121 blocks with no socket or parsing errors; embedded confirmation latency measured 3.096 seconds p95 and 3.794 seconds maximum.
+- A paired validation matched 257 of 257 observed pending transactions to their confirmed updates, with arrival latency of 3.003 seconds p95 and 3.221 seconds p99.
+
+Payloads, metadata enrichment, routing, compression, subscription behavior, and free-tier rules are unchanged.
+
+Docs: [Settlement Events](/websocket/events/settlement), [Status Update Events](/websocket/events/status-update), and [Trade Events](/websocket/events/trade)
+
+---
+
+## 2026-07-14 - Faster recent wallet-position pages
+
+Improved `GET /v3/wallets/{address}/positions` performance for recent, not-yet-redeemed positions, especially on wallets with long histories.
+
+One previously slow release sample improved from approximately 194 ms to 24.3 ms. Public position samples remained successful, and a combined positions/trades enrichment check passed without response differences.
+
+The endpoint's 300-row page cap, lifecycle filters, fields, values, and pagination contract are unchanged.
+
+Docs: [Wallet Positions](/data/wallets/positions)
+
+---
+
+## 2026-07-13 - V3 service incident resolved
+
+Some core V3 data requests returned `503` responses beginning at approximately 22:20 UTC, with the main service interruption lasting from approximately 23:00 to 23:51 UTC.
+
+Service was restored during the same window. Post-recovery checks returned `200` across the affected surfaces, including approximately 100 ms for a representative trades request and 36 ms for a representative positions request. Normal live-data processing also resumed.
+
+No client request, endpoint, or response-format change was required after recovery.
