@@ -1,0 +1,227 @@
+---
+title: "Changelog - July 6-12, 2026"
+sidebarTitle: "July 6-12"
+description: "Archived PolyNode API, identity, credits, perps, orderbook, and data-quality changes from July 6 through July 12, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+[Earlier: June 29-July 5, 2026 →](/changelog-june-29-july-5-2026)
+
+## 2026-07-12 - Event-scoped trades and dollar-size filtering
+
+Trade feeds can now be scoped to a whole Polymarket event and filtered by dollar size.
+
+What's new:
+
+- `event_slug` and `event_id` filters on `GET /v3/trades` and `GET /v3/wallets/{address}/trades`: one call returns trades across every market in an event, with pagination. Builder trades gain `event_id` alongside the existing `event_slug`.
+- `min_amount_usd` on global, market, market-slug, wallet, and builder trades: a dollar floor that matches the `amount_usd` field already present in every trade row. `?min_amount_usd=100` means "show me $100+ trades". Decimals are accepted. The raw `min_amount` filter keeps working; `min_amount_usd` is the recommended one.
+- Trade rows across all trades endpoints are now enriched with `event_slug` and `event_id`, so any feed can be grouped by event client-side.
+- `condition_id` and `market_slug` filters on global trades are now documented for market-scoped feeds across all outcomes.
+- An event filter that matches nothing returns an empty page rather than falling back to unfiltered results, and invalid values return `400`.
+
+Docs: [Global Trades](/data/global/trades), [Wallet Trades](/data/wallets/trades), and [Builder Trades](/data/builders/trades)
+
+---
+
+## 2026-07-11 - Credits API for rewards, yield, rebates, and referrals
+
+Added a complete indexed history of the five ways Polymarket pays users: liquidity rewards, yield, maker rebates, taker rebates, and referral rewards.
+
+Wallet routes:
+
+- `GET /v3/wallets/{address}/credits/totals` returns per-program totals for all time or a `start_ts`/`end_ts` window.
+- `GET /v3/wallets/{address}/credits` returns individual payouts with program, time, amount, token, and transaction context. It supports time and amount filters plus time- or amount-based sorting.
+- `GET /v3/wallets/{address}/credits/series` returns chart-ready earnings buckets. Use `interval=hour|day|week|month` and `fill=zero` when a continuous series is needed.
+
+Global routes:
+
+- `GET /v3/credits/leaderboard` ranks recipients by one program or combined credits over `24h`, `7d`, `30d`, all time, or an explicit window.
+- `GET /v3/credits/stats` returns program-wide totals and time series.
+- `GET /v3/credits/events` is a cursor-paginated global payout feed; `min_amount` can turn it into a large-credit monitor.
+- `GET /v3/credits/recipients/stats` shows new earning wallets per time bucket.
+- `GET /v3/credits/distributors` lists the public payout addresses and their totals.
+- `GET /v3/credits/txs/{hash}` decodes one payout transaction into its typed recipient-and-amount breakdown.
+
+Use `reward`, `yield`, `maker_rebate`, `taker_rebate`, and `referral_reward` in `type` or `types`; `types` accepts a comma-separated set or `all`. The history begins with each program's first on-chain payout, and newly confirmed credits normally become queryable within about a minute.
+
+The dataset includes the program batches visible in Polymarket's activity feed plus direct distributor payments that the feed omits. Transfers between payout-system addresses are excluded from aggregate surfaces. All payout amounts are dollar values; the `token` field distinguishes the settlement token.
+
+For global stats, `unique_recipients` is exact on all-time requests and `null` when a custom time window is supplied. Hourly stats require a window of seven days or less.
+
+Docs: [Credits Overview](/credits/overview), [Wallet Credit Totals](/credits/wallet-totals), [Credits Leaderboard](/credits/leaderboard), [Global Credit Stats](/credits/stats), and [Global Credit Feed](/credits/feed)
+
+---
+
+## 2026-07-11 - Batch identity resolution, username search, and identity-enriched credits
+
+Added three V3 identity routes for turning Polymarket wallet activity into account-level context:
+
+- `POST /v3/identities/batch` resolves up to 1,000 trading wallets per call. Unknown wallets return `null` instead of failing the whole request.
+- `GET /v3/identities/search?q=...` searches more than five million known Polymarket usernames, supports partial matches, and ranks exact matches first.
+- `GET /v3/identities/{address}` works in both directions: a trading wallet returns its username, controlling EOA, wallet type, and related wallets; an EOA returns the Polymarket wallets it controls.
+
+Credits responses are enriched at the same time: events include `username`; leaderboard rows include `username`, `eoa`, and `wallet_type`; wallet totals include an `identity` block and `other_wallets`. Fields remain `null` when an identity is unknown.
+
+The batch and search routes use the identity catalog refreshed daily. For a brand-new wallet that may not be in that catalog yet, `GET /v1/resolve/{query}` remains the deeper single-identity lookup.
+
+Docs: [Batch Resolve](/identities/batch-resolve), [Username Search](/identities/search), and [Identity Lookup](/identities/lookup)
+
+---
+
+## 2026-07-11 - Current all-time wallet P&L at request time
+
+Strengthened current P&L responses so a recently sold, resolved, or repriced position cannot leave an all-time wallet result behind the latest wallet state.
+
+What's improved:
+
+- An unwindowed `GET /v3/wallets/{address}/pnl` now computes against the current wallet state, including requests with market metadata filters.
+- The no-window summary returned by `GET /v3/wallets/{address}/pnl/events` uses the same current accounting.
+- A wallet that fully sold a position before resolution is no longer credited as though it held the winning outcome through settlement.
+- If the exact read cannot complete for an unusually large wallet, an unfiltered all-time request can use a certified current result only when it is complete and fully valued. Otherwise the API returns an unavailable response rather than stale P&L.
+- Response field names and numeric types are unchanged. Time-windowed P&L, leaderboards, block/transaction lookups, and combo routing keep their existing behavior.
+
+Docs: [Wallet P&L](/data/wallets/pnl) and [Wallet P&L Time Series](/data/wallets/pnl-events)
+
+---
+
+## 2026-07-11 - Perps API consistency and coverage pass
+
+A hardening pass across the whole perps surface, based on an external-style audit of the docs and live API.
+
+What's new:
+
+- `perps_klines` WebSocket events now carry exactly one flat candle (`[open_time, open, high, low, close, volume, trade_count]`) and are sent only when the candle's contents change. Empty and duplicate events are gone.
+- `perps_statistics` events are sent per instrument only when the statistics change, substantially reducing idle bandwidth.
+- WebSocket authentication failures are now visible: the connection opens, delivers one error frame, and closes with code `4401` for a bad or missing key or `4429` for a connection-limit failure instead of an unexplained disconnect.
+- `GET /v3/perps/funding/{instrument}` now accepts `after`/`before` in seconds or milliseconds like the other series endpoints, honors `limit`, and includes `instrument_id` and `symbol`. `start_timestamp`/`end_timestamp` keep working.
+- Klines responses now include `instrument_id` and `symbol`; `/limit-tiers` and `/assets` return the standard `{"data": [...]}` wrapper.
+- Timestamp field names are unified: `timestamp` for event/sample times and `as_of` for snapshot freshness.
+- Derived values such as aggregates, notionals, basis, and CVD are normalized to clean decimals; exchange-reported values retain their native precision.
+- Unknown query parameters now return `400` with the accepted parameter names, so a misspelled filter cannot silently return unfiltered data.
+- Transient upstream congestion returns `503` with a `Retry-After` header instead of a misleading `429`.
+- Newly activated accounts now enter position coverage on the next normal collection cadence instead of waiting for a long full pass. Coverage drift also triggers a faster complete refresh. All listed instruments measured 99.6-100.0% in the post-release validation window; that measurement is not a coverage SLA.
+- Docs now include real response examples, automatic wallet resolution, clarified book/kline streaming semantics, and explicit sort order on every series endpoint.
+
+Docs: [Perps Overview](/perps/overview), [WebSocket Channels](/perps/websocket/channels), [Funding History](/perps/market-data/funding), and [Coverage](/perps/analytics/coverage)
+
+---
+
+## 2026-07-10 - Exact wallet-position accounting and fractional resolutions
+
+Corrected `GET /v3/wallets/{address}/positions` for several lifecycle cases where balance, cost accounting, resolution, and pagination could disagree.
+
+What's improved:
+
+- A position sold completely before market resolution now keeps its actual sale P&L instead of being valued as though the wallet held the winning outcome through resolution.
+- Position accounting is brought current before applying cost-sensitive sorts or lifecycle pagination, so deep pages cannot mix a current balance with older cost values.
+- Positions present in wallet activity but temporarily absent from one response source are still returned when their current state can be established, without producing duplicate rows.
+- `status=open|closed|redeemable|redeemed` is classified before pagination using current market and payout state, making status pages consistent across offsets.
+- Resolved positions now honor the complete Conditional Tokens payout. Invalid, cancelled, or otherwise fractional resolutions use the actual payout fraction rather than assuming every result is exactly 0 or 1.
+- For a fractional payout, `won` is `null` while price, value, and realized P&L use the payout fraction. Ordinary binary winners and losers retain their existing `true`/`false` values.
+- Wallet-position envelopes now include additive `next_offset`; the endpoint continues to cap a page at 300 rows and reports the applied `limit`.
+
+No request parameter or existing field name changed. A small displayed average-price difference can still remain when PolyNode and Polymarket use different historical cost-basis conventions; that difference does not change the terminal outcome or redeemable payout.
+
+Docs: [Wallet Positions](/data/wallets/positions)
+
+---
+
+## 2026-07-10 - Perps wallet resolution and position-state correctness
+
+Improved account lookup and historical position behavior across the perps wallet and analytics routes.
+
+What's improved:
+
+- Every perps wallet route can now resolve email/social-login proxy wallets to their controlling account automatically, alongside plain EOAs, deposit wallets, and Gnosis Safes.
+- A proxy not yet known to the resolver returns a repeatable `422` with guidance to pass the signer directly; repeated lookup no longer risks a server error.
+- Current positions, size/P&L leaderboards, large-position queries, and coverage now use the latest complete wallet observation. A complete empty portfolio closes prior positions instead of leaving stale rows marked open.
+- Position-change events use stable timestamp-and-ID ordering and a deterministic identity, preventing duplicate close/reopen transitions in historical pagination.
+- Liquidation and position-event feeds ignore incomplete predecessor observations rather than manufacturing a transition from partial data.
+
+Docs: [Wallet Mapping](/perps/wallet-mapping), [Wallet Overview](/perps/wallets/overview), [Position History](/perps/analytics/position-history), and [Position Events](/perps/analytics/events)
+
+---
+
+## 2026-07-09 - Polymarket perps API
+
+Full market and account data coverage for Polymarket perpetual futures is now available under the same `/v3` surface and API keys as the rest of PolyNode.
+
+What's new:
+
+- Live market data for every listed perps instrument: tickers, orderbooks, best bid/offer, trades, 24-hour statistics, klines, funding, and a cross-instrument screener.
+- PolyNode-exclusive history the exchange does not serve: trade archive with server-side filters, open interest, volume, basis, trade-flow/CVD, and cumulative funding series.
+- Wallet endpoints with automatic address resolution: pass a Polymarket profile address or the underlying account address, singly or in a batch.
+- Cross-account analytics: whale leaderboard, smart money, positioning, large positions, position history, position events, liquidations, and a coverage transparency metric.
+- On-chain collateral data: TVL, deposits, withdrawals, top depositors/withdrawers, and per-wallet flows.
+- WebSocket streaming at `wss://perps.polynode.dev/ws`: tickers, statistics, BBO, books, trades, and klines over one connection.
+
+Docs: [Perps Overview](/perps/overview), [Quickstart](/perps/quickstart), and [Perps WebSocket](/perps/websocket/overview)
+
+---
+
+## 2026-07-09 - Multi-wallet context in `/resolve`
+
+Expanded `GET /v1/resolve/{query}` so one lookup can return every deployed Polymarket wallet associated with the account.
+
+What's new:
+
+- The additive `wallets` object contains `deposit_wallet`, `safe`, and `proxy_wallet`, each set to its deployed address or `null`.
+- Queries can still start from a trading wallet, controlling EOA, or case-insensitive username.
+- Both standalone and upgradeable deposit-wallet variants are recognized and reported as `type: "deposit_wallet"`; callers do not need to distinguish "deposit" from "beacon" wallet naming.
+- If an account has a deployed deposit wallet, the legacy top-level `safe` field continues to return that preferred trading wallet. Otherwise it falls back to the existing Safe or proxy wallet.
+- Existing `safe`, `eoa`, `username`, and `type` fields remain backward compatible. `eoa` is populated for proxy wallets whenever the owner can be recovered and remains `null` in the rare unresolved case.
+
+Docs: [Resolve Wallet](/api-reference/wallets/resolve)
+
+---
+
+## 2026-07-09 - Connection-preserving Orderbook Stream releases
+
+Orderbook Stream releases can now move new traffic to an updated version without disconnecting established WebSocket clients.
+
+What's improved:
+
+- Existing connections to `wss://ob.polynode.dev/ws` can continue naturally while new connections move to the updated service.
+- The updated stream must be warm and return matching subscription behavior before it receives new connections.
+- REST fallback follows the same active target as the WebSocket stream, avoiding stale routing after a release.
+- A brief burst of `502` responses from the REST fallback after the first transition was corrected the same day. Later failures return a controlled unavailable response instead of an abrupt empty connection.
+
+The first complete release cycle preserved all 33 established public connections through the transition and drain. That was a rollout measurement, not a connection-count or uptime guarantee.
+
+Docs: [Orderbook Stream](/orderbook/overview)
+
+---
+
+## 2026-07-06 - Visible activity and resolution times on wallet positions
+
+Added the timestamps and resolution context needed to display and verify recent closed, redeemed, and redeemable positions.
+
+What's improved on `GET /v3/wallets/{address}/positions`:
+
+- `resolved_at` is populated from current market resolution metadata with a historical fallback. At release, 99.8% of closed markets had a known resolution time.
+- New additive field `last_activity_at` exposes the time of the position's latest on-chain balance activity, including redemption or settlement activity. It is available even when no direct wallet redemption event exists.
+- `last_trade_at` now exposes the most recent fill time for the position's token.
+- `winning_outcome_index` is populated when the market's payout is known.
+- `include_combos=true` rows gain `last_update_block` and `last_activity_at` for the same client-side recency workflow.
+
+`sort=recent` already ordered rows by their latest balance-activity block and was not changed. The new `last_activity_at` field makes that ordering visible to clients instead of forcing them to treat missing timestamps as zero. Open positions continue to return `resolved_at: null` until resolution.
+
+Docs: [Wallet Positions](/data/wallets/positions)
+
+---
+
+## 2026-07-06 - Paid-plan REST limits standardized
+
+Aligned paid-plan REST provisioning and published limits so new and existing keys receive the same documented allowance:
+
+- Starter: 1,000 requests per minute.
+- Growth: 2,000 requests per minute.
+- Enterprise: 4,000 requests per minute by default, with custom capacity by agreement.
+
+Requests above the allowance return `429 Too Many Requests` with a retry time. WebSocket connections are not counted as REST requests and keep their separate plan limits.
+
+This entry records the plan allowances introduced on July 6. They were initially enforced per API key; the July 17 release changed V3 REST sharing to one allowance per account without changing the numeric plan limits.
+
+Docs: [Rate Limits](/guides/rate-limits)

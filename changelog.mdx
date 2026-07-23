@@ -38,58 +38,11 @@ Existing API keys, request formats, and rate-limit response headers continue to 
 
 ***
 
-## 2026-07-12 - Event-scoped trades and dollar-size filtering
-
-Trade feeds can now be scoped to a whole Polymarket event and filtered by dollar size.
-
-What's new:
-
-* `event_slug` and `event_id` filters on `GET /v3/trades` and `GET /v3/wallets/{address}/trades`: one call returns trades across every market in an event, with pagination. Builder trades gain `event_id` alongside the existing `event_slug`.
-* `min_amount_usd` on global, market, market-slug, wallet, and builder trades: a dollar floor that matches the `amount_usd` field already present in every trade row. `?min_amount_usd=100` means "show me $100+ trades". Decimals allowed. The raw `min_amount` filter keeps working; `min_amount_usd` is the recommended one.
-* Trade rows across all trades endpoints are now enriched with `event_slug` and `event_id`, so any feed can be grouped by event client-side.
-* `condition_id` and `market_slug` filters on global trades are now documented (market-scoped feeds across all outcomes).
-* An event filter that matches nothing returns an empty page rather than falling back to unfiltered results, and invalid values return `400`.
-
-***
-
-## 2026-07-11 - Perps API consistency pass
-
-A hardening pass across the whole perps surface, from a full external-style audit of the docs and live API.
-
-What's new:
-
-* `perps_klines` WebSocket events now carry exactly one flat candle (`[open_time, open, high, low, close, volume, trade_count]`) and are sent only when the candle's contents change. Empty and duplicate events are gone.
-* `perps_statistics` events are sent per instrument only when the statistics change, cutting idle bandwidth dramatically.
-* WebSocket authentication failures are now visible: the connection opens, delivers one error frame, and closes with code `4401` (bad or missing key) or `4429` (connection limit) instead of an unexplained disconnect.
-* `GET /v3/perps/funding/{instrument}` now accepts `after`/`before` (seconds or milliseconds) like every other series endpoint, honors `limit`, and includes `instrument_id`/`symbol`. `start_timestamp`/`end_timestamp` keep working.
-* Klines responses now include `instrument_id` and `symbol`; `/limit-tiers` and `/assets` return the standard `{"data": [...]}` wrapper.
-* Timestamp field names are unified: `timestamp` everywhere for event/sample times, `as_of` for snapshot freshness.
-* Derived values (aggregates, notionals, basis, CVD) are normalized to clean decimals; exchange-reported values keep their full native precision.
-* Unknown query parameters now return `400` with the list of accepted parameters, so a typo'd filter can never silently return unfiltered data.
-* Transient upstream congestion returns `503` with a `Retry-After` header instead of a misleading `429`.
-* Docs: real response examples on every perps endpoint, proxy-wallet resolution documented (it's automatic now), book and kline streaming semantics clarified, sort order documented on every series endpoint.
-
-***
-
-## 2026-07-09 - Polymarket perps API
-
-Full market and account data coverage for Polymarket perpetual futures, under the same `/v3` surface and API keys as everything else.
-
-What's new:
-
-* Live market data for every listed perps instrument: tickers, orderbooks, best bid/offer, trades, 24h statistics, klines, funding, and a cross-instrument screener.
-* polynode-exclusive history the exchange does not serve: trade archive with server-side filters, open-interest, volume, basis, trade-flow/CVD, and cumulative funding series.
-* Wallet endpoints with automatic address resolution — pass a Polymarket profile address or the underlying account address, single or batch.
-* Analytics that need cross-account history: whale leaderboard, smart money, positioning, large positions, position history, position events, liquidations, and a coverage transparency metric.
-* On-chain collateral data: TVL, deposits, withdrawals, top depositors/withdrawers, and per-wallet flows.
-* WebSocket streaming at `wss://perps.polynode.dev/ws`: tickers, statistics, bbo, books, trades, and klines over one connection.
-
-***
-
 ## Earlier releases
 
 Older entries are grouped into smaller archive pages for fast, reliable loading.
 
+- [July 6-12, 2026](/changelog-july-6-12-2026)
 - [June 29-July 5, 2026](/changelog-june-29-july-5-2026)
 - [June 22-28, 2026](/changelog-june-22-28-2026)
 - [June 15-21, 2026](/changelog-june-15-21-2026)
