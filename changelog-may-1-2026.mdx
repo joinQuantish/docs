@@ -43,9 +43,9 @@ The endpoint walks the full history for you. Optional `from` and `to` query para
 **Limits:**
 
 - Hard cap **250,000 trades** per call. Beyond that, response includes `"partial": true` with `"partial_reason": "hard_cap_250000"`.
-- Wall-clock budget **180 seconds**. First cold-cache calls on busy markets/heavy wallets may take **1-3 minutes**. Subsequent calls hit Redis cache and return in **under 1 second**.
+- Wall-clock budget **180 seconds**. First calls on busy markets or heavy wallets may take **1-3 minutes**. Repeated calls for the same scope and window typically return in **under 1 second**.
 - Typical payload **1-50 MB**. Worst case (capped): **100-200 MB JSON**.
-- Cache TTL **5 minutes** per `(scope, from, to)` combination. Partial results are **not cached**.
+- Results are reused for **5 minutes** per `(scope, from, to)` combination. Partial results are **not reused**.
 
 **Tier requirement:** **Growth plan ($200/mo) or above.** Starter and free tier requests receive `403`. The bulk endpoints are gated to paid plans because of their large query and payload sizes.
 

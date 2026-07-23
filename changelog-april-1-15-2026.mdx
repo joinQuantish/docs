@@ -101,7 +101,7 @@ Local order history now persists fee escrow data (`feeAmountRaw`, `escrowOrderId
 - **Rust** `polynode@0.7.1` on [crates.io](https://crates.io/crates/polynode) — fixes compile error in 0.7.0
 - **Python** `polynode@0.7.2` on [PyPI](https://pypi.org/project/polynode/) — fixes `__version__` reporting
 
-See the [Fee Escrow Guide](/guides/fee-escrow) for the full architecture, security model, and code examples.
+See the [Fee Escrow Guide](/guides/fee-escrow) for the full workflow, security model, and code examples.
 
 ---
 
@@ -172,7 +172,7 @@ const data = await provider.candles(tokenId, '1h')
 series.setData(data)
 ```
 
-### Documentation
+### Charts documentation
 
 Full docs at [Charts SDK Overview](/charts/overview), including API reference, data providers, series types, examples, and configuration.
 
@@ -206,7 +206,7 @@ With `confirmed_fills`, you now get both: the fast pre-confirmation signal AND t
 
 `confirmed_fills` reports gross token amounts from the OrderFilled event. Polymarket's activity API reports sizes net of fees. The `fee` field on each fill lets you compute the net amount if needed.
 
-### Subscribe
+### Confirmed-fill subscription
 
 No subscription changes needed. If you already subscribe to `settlements`, you're already receiving `status_update` events with `confirmed_fills`.
 
@@ -214,7 +214,7 @@ No subscription changes needed. If you already subscribe to `settlements`, you'r
 {"action": "subscribe", "type": "settlements"}
 ```
 
-### Documentation
+### Confirmed-fill documentation
 - [Status Update Event Reference](/websocket/events/status-update) — updated with `confirmed_fills` schema and examples
 - [Trade Tracking Guide](/guides/trade-tracking) — when to use pending settlements vs confirmed fills
 
@@ -231,13 +231,13 @@ New `redemption` event type in the WebSocket stream. Every time a user redeems t
 - Enriched with market title, slug, image, tokens map, neg_risk flag
 - Filter with `min_size` to see only winning redemptions, or track specific wallets
 
-### Subscribe
+### Redemption subscription
 
 ```json
 {"action": "subscribe", "type": "settlements", "filters": {"event_types": ["redemption"]}}
 ```
 
-### Documentation
+### Redemption documentation
 - [Redemption Event Reference](/websocket/events/redemption) — full field reference, examples, and use cases
 
 ---
@@ -260,7 +260,7 @@ polynode now supports the Polymarket V2 exchange system alongside V1. All V2 con
 - V2 approval management (PolyUSD to V2 exchange contracts)
 - One config change to switch from V1 to V2 — everything else stays the same
 
-### Documentation
+### V2 migration documentation
 - [V2 Migration Guide](/guides/v2-migration) — what changed, what stayed the same, SDK examples
 - [PolyUSD Guide](/guides/polyusd) — how to wrap/unwrap PolyUSD with code examples
 - [V2 Technical Details](/guides/v2-details) — contract addresses, order struct, event signatures (subscribers only)
