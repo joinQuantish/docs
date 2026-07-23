@@ -1,0 +1,44 @@
+---
+title: "Changelog - June 29-July 5, 2026"
+sidebarTitle: "June 29-July 5"
+description: "Archived polynode API and data-quality changes from June 29 through July 5, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+[Earlier: June 22-28, 2026 →](/changelog-june-22-28-2026)
+
+## 2026-06-30 - Corrected resolved-position accounting and redeemable status
+
+Corrected `GET /v3/wallets/{address}/positions` for resolved positions that still held a nonzero balance but had incomplete cost accounting.
+
+What's improved:
+
+- When a position has a known balance but its returned cost fields are incomplete, the response now recovers `avg_price`, `initial_value`, `total_bought`, `realized_pnl`, `unrealized_pnl`, and `total_pnl` from the available wallet history.
+- Resolved positions with a remaining balance now use `status: "redeemable"` for both winning and losing outcomes. A losing position remains `won: false` and correctly returns `redeemable_payout: 0`.
+- `status=closed` no longer captures these affected resolved-but-unredeemed balances, so `status=redeemable` returns both winning and losing resolved balances under the same lifecycle filter.
+- Market-holder responses use the same recovered cost basis on `GET /v3/markets/{token_id}/positions`, `GET /v3/markets/condition/{condition_id}/positions`, and `GET /v3/markets/slug/{slug}/positions`.
+- Positions whose accounting was already complete keep their existing values. No parameter, pagination, or field-name change is required for existing clients.
+
+The correction removes null or zero accounting caused by an incomplete position row. Small differences from Polymarket's displayed `avgPrice` can still occur when the two systems use different cost-basis conventions; those differences do not change the resolved outcome or redeemable payout.
+
+Docs: [Wallet Positions](/data/wallets/positions), [Token Holders](/data/markets/positions), [Condition Holders](/data/markets/condition-positions), and [Market Slug Lookup](/data/markets/by-slug)
+
+---
+
+## 2026-06-30 - More complete event and tag metadata on V3 positions
+
+Improved metadata completeness for historical and resolved position rows, especially child markets created beneath a live esports event.
+
+What's improved:
+
+- Incomplete rows can now gain `event_slug` and `tag_slugs` from their parent event when that context is available.
+- A missing `image` is recovered at the same time when the source provides one.
+- Closed and resolved child markets continue to be revisited, so historical position metadata can recover after the market leaves the current-event feed.
+- The correction is automatic. No new parameter or refresh workflow is required, and the response shape is unchanged.
+- Metadata fields remain nullable when the corresponding event context is unavailable from the source.
+
+The initial release restored complete event and tag context on the two reported examples, repaired 91 existing rows in those event families, and filled 162 additional incomplete rows in the first two broader recovery passes.
+
+Docs: [Wallet Positions](/data/wallets/positions)
