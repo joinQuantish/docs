@@ -1,9 +1,25 @@
 ---
 title: "Changelog"
 sidebarTitle: "Changelog"
-description: "Recent PolyNode API and SDK changes, with older releases preserved in linked archives."
+description: "Recent PolyNode API, SDK, account, and product changes, with older releases preserved in linked archives."
 icon: "clock-rotate-left"
 ---
+
+## 2026-07-22 - PolyNode is now part of Agg
+
+PolyNode has joined Agg and will continue as a standalone product for Polymarket data customers.
+
+What this means for customers:
+
+* Existing API and WebSocket domains, endpoints, API keys, SDK workflows, and documentation remain available. No client migration is required.
+* Current plan names and pricing remain in place, and the product stays open to all builders.
+* The near-term product focus remains faster maintenance, stronger reliability, and broader data coverage.
+
+The site-wide announcement banner now links to the full public announcement.
+
+[Read the announcement](https://www.tradingview.com/news/chainwire:7f0ceb3a3094b:0-agg-market-acquires-polynode-the-fastest-polymarket-data-api/)
+
+***
 
 ## 2026-07-21 - Query trades by order hash
 
@@ -21,6 +37,44 @@ Docs:
 
 * [Trades by Order Hash](/data/query-catalog/trades/by-order-hash)
 * [Wallet Trades](/data/wallets/trades)
+
+***
+
+## 2026-07-21 - Clearer subscription expiry and resubscription
+
+Updated how the dashboard handles an earlier paid subscription after its recorded access period ends.
+
+What's changed:
+
+* Paid access moves to the Free plan at the recorded end time rather than remaining indefinitely on an expired subscription.
+* Existing API keys stay active; they adopt the Free plan's access and limits instead of being deleted or requiring regeneration.
+* A Free account now sees **Subscribe** in Settings and is sent directly to the current pricing page, even if an older billing reference is retained on the account.
+* Starting a new subscription restores the selected paid plan through the current checkout flow.
+* A newer active subscription or another valid paid-access method takes precedence, so an older expiry cannot overwrite current access.
+* Delayed checkout, invoice, or cancellation events from the earlier subscription cannot overwrite a newer successful resubscription.
+
+Endpoint names, API-key values, plan names, and current plan prices are unchanged.
+
+[View current pricing](https://polynode.dev/pricing)
+
+***
+
+## 2026-07-20 - Updated card checkout and billing portal
+
+Moved new card purchases to the current PolyNode subscription catalog while preserving active access and in-progress checkouts during the transition.
+
+What's improved:
+
+* Starter, Growth, and Enterprise purchase buttons now open the current card checkout for the same published plan names and monthly prices.
+* The Starter plan keeps its three-day trial.
+* A checkout started from an older open browser session is translated to the corresponding current plan instead of failing on an outdated plan reference.
+* Customers who already have an active subscription are sent to the correct billing portal instead of accidentally creating a duplicate subscription.
+* Existing paid access remains valid through its recorded paid-through period.
+* Checkout, plan activation, billing-portal access, cancellation, resubscription, and delayed-event handling were validated together before release.
+
+Referral codes continue to be recorded, but the first-month referral discount is temporarily not applied in the current card checkout. New USDC purchases also remain temporarily unavailable on the website; existing USDC-paid access is unaffected.
+
+[View current pricing](https://polynode.dev/pricing)
 
 ***
 

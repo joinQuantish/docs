@@ -1,7 +1,7 @@
 ---
 title: "Changelog - July 13-19, 2026"
 sidebarTitle: "July 13-19"
-description: "Archived PolyNode API, identity, WebSocket, orderbook, pagination, performance, and reliability changes from July 13 through July 19, 2026."
+description: "Archived PolyNode API, identity, WebSocket, orderbook, website, pagination, performance, and reliability changes from July 13 through July 19, 2026."
 icon: "clock-rotate-left"
 ---
 
@@ -113,7 +113,7 @@ What's new:
 
 The existing `wallets` object remains deployed-only for compatibility. This means a current deposit-wallet address can appear in `wallet_details` with `deployed: false` and `current: true` while its `wallets.deposit_wallet` value is still `null`. Legacy identities can return `null` where a status is genuinely unknown.
 
-No existing resolver or identity field was renamed or removed. TypeScript SDK `0.10.20` adds typed `KnownWallets`, `WalletDetail`, and the new `ResolveResult.wallets` and `ResolveResult.wallet_details` fields.
+No existing resolver or identity field was renamed or removed.
 
 Docs: [Resolve Wallet](/api-reference/wallets/resolve), [Identity Lookup](/identities/lookup), [Batch Resolve](/identities/batch-resolve), and [Username Search](/identities/search)
 
@@ -150,6 +150,23 @@ What's improved:
 Payloads, metadata enrichment, routing, compression, subscription behavior, and free-tier rules are unchanged.
 
 Docs: [Settlement Events](/websocket/events/settlement), [Status Update Events](/websocket/events/status-update), and [Trade Events](/websocket/events/trade)
+
+---
+
+## 2026-07-14 - Clearer checkout returns and support feedback
+
+Improved two customer-facing website flows.
+
+What's changed:
+
+- After a successful card checkout returns to the dashboard, the page now refreshes account status for up to 30 seconds until the selected paid plan is visible. This avoids briefly showing the old plan while activation finishes.
+- The support widget now shows an on-page acknowledgement only after a message is accepted. The acknowledgement disappears when a real support reply arrives; signed-in users are also told that a reply can follow by email while they are away.
+- New USDC checkout buttons and sign-in handoffs were temporarily removed from the website. Previously stored USDC handoffs are cleared so an old browser session cannot reopen that purchase flow.
+- Existing USDC-paid access and its displayed expiration date are unchanged. Card checkout remains available.
+
+No API endpoint, API key, plan name, or existing paid entitlement changed as part of this website update.
+
+[View current pricing](https://polynode.dev/pricing)
 
 ---
 
