@@ -196,21 +196,11 @@ npm install polynode-sdk@0.10.17 ws
 ---
 
 
-## 2026-06-04 — `/resolve` prefers deployed deposit wallets
-
-`GET /v1/resolve/{query}` keeps the same response fields: `safe`, `eoa`, `username`, and `type`.
-
-The `safe` field now returns the preferred Polymarket trading wallet. If the resolved EOA has a deployed deposit wallet, `safe` is that deposit wallet and `type` is `"deposit_wallet"`. If no deposit wallet is deployed, `safe` falls back to the existing Safe/proxy wallet.
-
-This applies to address, EOA, and cached username lookups.
-
----
-
-
 ## Earlier releases
 
 Older entries are grouped into smaller archive pages for fast, reliable loading.
 
+- [June 1-7, 2026](/changelog-june-1-7-2026)
 - [May 25-31, 2026](/changelog-may-25-31-2026)
 - [May 2-24, 2026](/changelog-may-2-24-2026)
 - [May 1, 2026](/changelog-may-1-2026)

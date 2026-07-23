@@ -1,0 +1,88 @@
+---
+title: "Changelog - June 1-7, 2026"
+sidebarTitle: "June 1-7"
+description: "Archived polynode API and WebSocket changes from June 1 through June 7, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+[Earlier: May 25-31, 2026 →](/changelog-may-25-31-2026)
+
+## 2026-06-07 - Fresher short-form crypto candles and window prices
+
+Short-form crypto candles and price-to-beat responses now follow the same live Chainlink price stream used by polynode's 1-second tick history.
+
+What's improved:
+
+- `GET /v1/crypto/candles` returns approximately 30 five-minute OHLC candles, covering about 2.5 hours.
+- Candle responses refresh about every 5 seconds instead of every 30 seconds.
+- `symbol` accepts both bare asset symbols such as `BTC` and feed names such as `BTC/USD`.
+- `GET /v1/crypto/price` uses the live tick history for market-window opening prices and completed closing prices when that history is available.
+- Existing price response fields and completed/incomplete flags remain compatible.
+
+Supported assets remain `BTC`, `ETH`, `SOL`, `BNB`, `XRP`, `DOGE`, and `HYPE`.
+
+Docs: [Oracle Candles](/api-reference/crypto/candles) and [Price to Beat](/api-reference/crypto/price)
+
+---
+
+## 2026-06-06 - Outcome-enriched redemption WebSocket events
+
+Redemption events can now identify the resolved outcome directly, without requiring a separate market lookup.
+
+New additive fields, when resolution metadata is available:
+
+- `token_ids`: ordered token IDs for the market
+- `outcomes`: ordered outcome labels
+- `payouts`: ordered payout numerators
+- `outcome_prices`: normalized payout values, including fractional split outcomes
+- `winning_outcome_index`, `winning_outcome`, and `winning_token_id` when exactly one outcome has a non-zero payout
+
+Wallet attribution is also corrected for redemptions routed through Polymarket protocol contracts, so wallet-filtered subscriptions identify the actual user wallet rather than an intermediate contract.
+
+Existing redemption fields are unchanged. If resolution metadata is unavailable, the new enrichment fields are omitted rather than populated with guessed values.
+
+Docs: [Redemption Event](/websocket/events/redemption)
+
+---
+
+## 2026-06-04 - `/resolve` prefers deployed deposit wallets
+
+`GET /v1/resolve/{query}` keeps the same response fields: `safe`, `eoa`, `username`, and `type`.
+
+The legacy `safe` field now means the preferred Polymarket trading wallet. If the resolved EOA has a deployed deposit wallet, `safe` is that deposit wallet and `type` is `"deposit_wallet"`. If no deposit wallet is deployed, `safe` falls back to the existing Safe or proxy wallet.
+
+This applies to address, EOA, and cached username lookups. No request change is required.
+
+Docs: [Resolve Wallet](/api-reference/wallets/resolve)
+
+---
+
+## 2026-06-03 - Historical 1-second crypto price ticks
+
+Added `GET /v1/crypto/ticks` for chart backfill using the same crypto price events delivered by the `price_feed` WebSocket stream.
+
+Request contract:
+
+- Required `symbol`: `BTC`, `ETH`, `SOL`, `BNB`, `XRP`, `DOGE`, or `HYPE`
+- Required `from` and `to` as Unix timestamps in milliseconds
+- Optional `limit`, default `10,000` and maximum `100,000`
+- Optional `source`: `chainlink_data_streams` or `polymarket_chainlink`
+- Maximum range of 24 hours per request
+
+Responses include `count`, `truncated`, and ordered `ticks`. Each tick includes a replay-safe `id`, `timestamp_ms`, source label, and the same feed, price, bid, ask, and timestamp values used by the live stream.
+
+If `truncated` is `true`, narrow the time range or increase the limit. Ranges before collection began return an empty `ticks` array. BTC may contain multiple sources for the same second, so use `source` or deduplicate by `timestamp_ms` when a chart needs exactly one point per second.
+
+Docs: [Historical Price Ticks](/api-reference/crypto/ticks)
+
+---
+
+## 2026-06-03 - V2 onchain API service restored
+
+Restored the shared `/v2/onchain/*` serving path after requests began returning `502`, including tags, trades, and both wallet-position route forms.
+
+After recovery, the affected routes returned normal `200` responses again with their existing request and response formats. No API-key or client change was required.
+
+Large uncached V2 wallet-position histories could still take tens of seconds at this point in the release history. For bounded reads, prefer the paginated `GET /v2/onchain/positions?wallet=...` route and request only the page size needed.
