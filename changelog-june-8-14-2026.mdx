@@ -1,0 +1,239 @@
+---
+title: "Changelog - June 8-14, 2026"
+sidebarTitle: "June 8-14"
+description: "Archived PolyNode API, WebSocket, orderbook, and SDK changes from June 8 through June 14, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+[Earlier: June 1-7, 2026 →](/changelog-june-1-7-2026)
+
+## 2026-06-14 - V3 pagination and Orderbook Stream limits documented
+
+Expanded the public limit reference so clients can choose page sizes and WebSocket subscription shapes without relying on trial and error.
+
+The documented contract:
+
+- Most V3 list endpoints default to `limit=100` and clamp requests to a maximum of `300` rows per page.
+- `GET /v3/wallets/{address}/pnl/events` is the high-volume exception: it defaults to `5,000` buckets and allows up to `10,000`.
+- `GET /v3/markets/condition/{condition_id}/positions` allows up to `300` rows on Starter, `1,000` on Growth, and `2,000` on Enterprise.
+- Explicit Orderbook Stream lists are capped at `15,000` resolved token IDs per connection. Use `markets: ["*"]` for the dedicated all-market firehose path.
+- Plan upgrades increase concurrent Orderbook Stream connections: Free has `1`, Starter `10`, Growth `50`, and Enterprise is unlimited. The explicit-list cap remains per connection on every plan.
+- A `service_warming_up` Orderbook Stream error means market metadata is still loading after a restart; retry the subscription shortly.
+
+For deep trade-history walks, bounded `after` and `before` windows are preferred over very large offsets.
+
+Docs: [Rate Limits](/guides/rate-limits) and [Orderbook Stream Overview](/orderbook/overview)
+
+---
+
+## 2026-06-13 - Settlement WebSocket delivery and metadata hardening
+
+Pending settlement delivery no longer waits for an optional metadata refresh. This prevents a temporary metadata miss from dropping or delaying the transaction frame customers use for the pre-confirmation head start.
+
+What's improved:
+
+- Pending `settlement` events are delivered immediately after in-memory enrichment, even when an optional market field is temporarily unavailable.
+- Missing metadata is refreshed outside the delivery path for subsequent events, so a slow metadata provider cannot add latency to settlement fan-out.
+- Metadata completeness checks now cover `market_title`, `outcome`, `market_slug`, `condition_id`, `token_ids`, `outcomes`, `tokens`, and each trade's outcome label.
+- Confirmed `status_update` events use the same metadata checks and remain pairable to the pending event by `tx_hash`.
+- Subscription acknowledgements are sent before initial snapshot frames, giving raw WebSocket clients a deterministic subscribe lifecycle.
+
+No subscription format changed. Enrichment fields remain additive and may be omitted briefly during metadata warmup rather than blocking the core settlement event.
+
+Docs: [Settlement Event](/websocket/events/settlement) and [Status Update Event](/websocket/events/status-update)
+
+---
+
+## 2026-06-13 - Open-but-silent Orderbook Stream connections fixed
+
+Fixed a failure mode where an Orderbook Stream socket could remain open after its delivery path had ended, leaving the client connected but no longer receiving updates.
+
+What's improved:
+
+- Reconnects and resubscriptions now replace stale delivery state cleanly instead of reusing a connection that can no longer forward updates.
+- Large explicit subscriptions continue receiving batches after reconnect and resubscribe cycles.
+- Connections that cannot continue delivery are cleaned up instead of appearing healthy while silently stalled.
+- Existing message types, subscribe payloads, snapshots, and batch formats are unchanged.
+
+The TypeScript and Python SDKs released earlier in the week automatically replay active subscriptions after reconnect; raw clients should continue to reconnect and resubscribe when the socket actually closes.
+
+Docs: [Orderbook Stream Overview](/orderbook/overview) and [Orderbook Messages](/orderbook/messages)
+
+---
+
+## 2026-06-12 - Higher V3 REST limits
+
+Raised and standardized the public V3 data allowances across paid plans.
+
+New standard V3 limits:
+
+- Starter: `1,000` requests per minute
+- Growth: `2,000` requests per minute
+- Enterprise: `4,000` requests per minute by default, with custom capacity by agreement
+
+Heavy trade-history routes use a separate allowance because they scan the largest histories:
+
+- Starter: `1,000` requests per minute
+- Growth: `1,500` requests per minute
+- Enterprise: `1,500` requests per minute by default, with custom capacity by agreement
+
+The heavy group includes global, wallet, combo-wallet, market-token, market-slug, and builder trade-history routes. Requests must pass both the standard V3 allowance and the heavy-route allowance.
+
+Successful responses expose `x-ratelimit-limit`, `x-ratelimit-remaining`, and `x-ratelimit-reset`. Exceeded allowances return `429`; V3 data routes require a paid API key and return `402 Payment Required` for Free-tier keys. Event and Orderbook WebSocket limits are unchanged.
+
+Docs: [Rate Limits](/guides/rate-limits)
+
+---
+
+## 2026-06-12 - Combo redemption, resolution, and P&L semantics
+
+Hardened combo position accounting after a combo resolves or is redeemed.
+
+What's improved:
+
+- Router, direct, and auto-redeemer paths are normalized into public `PositionRedeemed` activity with `side: "Redeem"`.
+- Redemption activity includes `payout_usdc` when available and reports the underlying module kind as `Combinatorial`, `Binary`, or `NegRisk`.
+- Fully redeemed winners return `RESOLVED_WIN`; fully redeemed losers return `RESOLVED_LOSS`.
+- Winning redemptions settle realized P&L as payout minus weighted-average entry basis, with zero remaining open entry cost.
+- `entry_avg_price_usdc` remains the historical weighted-average entry price after a position closes instead of being cleared.
+- Resolved leg metadata can include `RESOLVED_WIN` / `RESOLVED_LOSS`, `leg_resolved_at`, and `leg_current_price`.
+
+These changes affect dedicated combo position/activity routes and the additive combo branches returned by `include_combos=true`.
+
+Docs: [Combo Overview](/data/combos/overview), [Wallet Combo Positions](/data/combos/wallet-positions), and [Wallet Combo Activity](/data/combos/wallet-activity)
+
+---
+
+## 2026-06-12 - Faster V3 builder trade time filters
+
+Improved reliability and latency for time-filtered builder trade lookups.
+
+What's improved:
+
+- `GET /v3/builders/{code}/trades?after=...` now returns consistently for high-volume builders instead of timing out on large builder histories.
+- `after` / `before` filters now work efficiently with broad `tag_slug` or `category` filters when a time bound is provided.
+- Time windows outside a builder's activity range return a normal empty response instead of an internal timeout.
+- Invalid millisecond timestamps now return a structured `400` with a hint to use Unix seconds.
+
+No response fields or pagination semantics changed.
+
+---
+
+## 2026-06-11 - Direct Chainlink coverage for all seven crypto feeds
+
+Expanded the `price_feed` WebSocket and crypto history APIs to use fresh Chainlink Data Streams coverage for every supported asset.
+
+What's improved:
+
+- `BTC/USD`, `ETH/USD`, `SOL/USD`, `BNB/USD`, `XRP/USD`, `DOGE/USD`, and `HYPE/USD` now receive direct updates at approximately one tick per second.
+- Price events include real bid and ask values for all seven feeds.
+- An unfiltered `type: "chainlink"` subscription returns all seven feeds; use `filters.feeds` to select individual feeds.
+- `GET /v1/crypto/price`, `GET /v1/crypto/ticks`, and `GET /v1/crypto/candles` use the same fresh tick archive, with the Polymarket mirror retained as a fallback source.
+- New five-minute and fifteen-minute windows receive their opening tick at the window boundary, avoiding the prior relay-related freshness delay.
+
+No WebSocket message shape or REST request format changed.
+
+Docs: [Price Feed Event](/websocket/events/price-feed), [Historical Price Ticks](/api-reference/crypto/ticks), [Oracle Candles](/api-reference/crypto/candles), and [Price to Beat](/api-reference/crypto/price)
+
+---
+
+## 2026-06-11 - Polymarket combos: V3 API and WebSocket event references
+
+Added public documentation for Polymarket combo / combinatorial position support.
+
+What's new:
+
+- New combo API group in the API Reference.
+- `GET /v3/combos/markets` for observed combo markets and legs.
+- `GET /v3/combos/activity` for combo lifecycle activity by market, condition, position, or wallet.
+- `GET /v3/wallets/{address}/combos/positions` for combo-only wallet positions.
+- `GET /v3/wallets/{address}/combos/trades` for combo-only wallet trades.
+- `GET /v3/wallets/{address}/combos/activity` for combo-only wallet lifecycle activity.
+- `GET /v3/wallets/{address}/combos/summary` for combo-only wallet P&L summary.
+- `include_combos=true` on wallet summary, wallet P&L, wallet positions, and wallet trades for additive standard + combo responses.
+- New WebSocket event reference pages for `combo_execution`, `combo_status_update`, `combo_lifecycle`, and `combo_approval`.
+
+Notes:
+
+- Existing wallet endpoints keep their default response behavior. Combo data is included only when explicitly requested or when using dedicated combo endpoints.
+- If a wallet has no combo exposure, `include_combos=true` returns a normal successful response with a zero combo contribution.
+
+---
+
+## 2026-06-09 - Deposit-wallet trading fixes in both SDKs
+
+Released `polynode-sdk@0.10.18` for TypeScript and `polynode==0.10.7` for Python.
+
+What's fixed:
+
+- `ensureReady()` / `ensure_ready()` now detects deployed Polymarket deposit wallets (`POLY_1271`) correctly.
+- V2 type-3 orders use the deposit wallet as both maker and signer, matching Polymarket's expected order payload.
+- Existing local credentials created with the previous wallet classification can be repaired by rerunning the SDK readiness method.
+
+Upgrade:
+
+```bash
+npm install polynode-sdk@0.10.18 ws
+pip install --upgrade polynode==0.10.7
+```
+
+---
+
+## 2026-06-09 - Python SDK v0.10.6 WebSocket resilience
+
+Released `polynode==0.10.6` for Python WebSocket consumers.
+
+What's new:
+
+- Event-stream subscriptions preserve frames that arrive before the subscribe acknowledgement, so handlers attached immediately after `await ...send()` still receive initial snapshot/live events.
+- Default event WebSocket subscribe timeout is now 30s and configurable with `WsOptions(subscribe_timeout=...)`.
+- Orderbook `subscribe()` now resolves only after the server acknowledges the subscription, and rejects promptly on server errors, disconnects, or timeout.
+- Orderbook `unsubscribe(token_ids)` can remove a subset of tokens; `unsubscribe()` with no arguments remains the full unsubscribe behavior.
+- Added protocol regression tests for snapshot-before-ack, pending-subscribe errors, timeout handling, and partial unsubscribe behavior.
+
+Upgrade:
+
+```bash
+pip install --upgrade polynode==0.10.6
+```
+
+---
+
+## 2026-06-09 - TypeScript SDK v0.10.17 WebSocket resilience
+
+Released `polynode-sdk@0.10.17` for Node/TypeScript WebSocket consumers.
+
+What's new:
+
+- Event-stream subscriptions preserve frames that arrive before the subscribe acknowledgement, so handlers attached immediately after `await subscribe(...).send()` still receive initial snapshot/live events.
+- Default WebSocket subscribe timeout is now 30s and configurable with `subscribeTimeoutMs`.
+- Orderbook `subscribe()` now resolves only after the server acknowledges the subscription.
+- Orderbook reconnects replay the active token list without replacing existing handlers.
+- Orderbook `unsubscribe(tokenIds)` can remove a subset of tokens; `unsubscribe()` with no arguments remains the full unsubscribe behavior.
+- Added SDK protocol tests and a live orderbook soak test for multi-token subscribe, partial unsubscribe/resubscribe, snapshots, live batches, protocol errors, unexpected unsubscribe frames, and disconnects.
+
+Upgrade:
+
+```bash
+npm install polynode-sdk@0.10.17 ws
+```
+
+---
+
+## 2026-06-08 - Atomic Orderbook Stream resubscriptions
+
+Orderbook resubscriptions now keep the last valid market set active until a replacement set resolves successfully.
+
+What's improved:
+
+- A transient unresolved slug, condition ID, or token list no longer clears the connection's working subscription.
+- An invalid replacement does not interrupt updates for the last valid token set.
+- Upstream reconnects and market-rotation churn are absorbed by PolyNode while the downstream WebSocket remains on one stable logical subscription.
+- Full-market and large watchlist traffic received broader throughput and backlog handling improvements, reducing stream stalls during bursts.
+- Plan connection caps are enforced consistently without changing the existing subscribe payload or event formats.
+
+Clients can continue using the existing `subscribe` and `unsubscribe` messages. For SDK consumers, the June 9 releases add acknowledgement-aware subscribe calls and automatic subscription replay after reconnect.
+
+Docs: [Orderbook Stream Overview](/orderbook/overview)
