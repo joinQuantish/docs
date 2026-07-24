@@ -107,6 +107,7 @@ GET https://rpc.polynode.dev/v1/stats
   "avg_latency_ms": 2450,
   "peers": 13,
   "mapped_validators": 4,
+  "unique_mapped_peers": 2,
   "latest_block": 90801900,
   "p2p_latest_block": 90801898,
   "reference_latest_block": 90801900,
@@ -117,4 +118,4 @@ GET https://rpc.polynode.dev/v1/stats
 }
 ```
 
-`latest_block` is the serving tip. The separate P2P and reference fields make sparse P2P full-block observations visible without allowing `eth_blockNumber` or validator targeting to remain stale.
+`latest_block` is the serving tip. The separate P2P and reference fields make sparse P2P full-block observations visible without allowing `eth_blockNumber` or validator targeting to remain stale. `mapped_validators` counts validator labels; `unique_mapped_peers` counts distinct peer connections behind those mappings, because one gossip or sentry peer can relay blocks from several authors.
