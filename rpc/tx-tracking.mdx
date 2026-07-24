@@ -104,6 +104,17 @@ GET https://rpc.polynode.dev/v1/stats
   "first_position_rate": 0.897,
   "total_expired": 2,
   "pending": 0,
-  "avg_latency_ms": 2450
+  "avg_latency_ms": 2450,
+  "peers": 13,
+  "mapped_validators": 4,
+  "latest_block": 90801900,
+  "p2p_latest_block": 90801898,
+  "reference_latest_block": 90801900,
+  "p2p_head_lag_blocks": 2,
+  "p2p_head_age_seconds": 4,
+  "reference_head_age_seconds": 1,
+  "uptime_seconds": 272500
 }
 ```
+
+`latest_block` is the serving tip. The separate P2P and reference fields make sparse P2P full-block observations visible without allowing `eth_blockNumber` or validator targeting to remain stale.
