@@ -9,3 +9,21 @@ Canonical reference: [Wallet Combo Redemptions](/data/combos/wallet-redemptions)
 curl "https://api.polynode.dev/v3/wallets/0xf83ec0e37ac9eece71c064507270e9001a734663/combos/redemptions?redemption_scope=full&limit=25" \
   -H "x-api-key: $POLYNODE_API_KEY"
 ```
+
+For a one-row explanation of each wallet redemption, select the counts, transition, and compact destination holding:
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0xc82f0a25aad828f59347670e63ead5ea144466a7/combos/redemptions?limit=100" \
+  -H "x-api-key: $POLYNODE_API_KEY" \
+  | jq '.redemptions[] | {
+      tx_hash,
+      redemption_scope,
+      leg_transition,
+      source_leg_count,
+      removed_leg_count,
+      remaining_leg_count,
+      remaining_combo
+    }'
+```
+
+Use the canonical [combo redemptions recipe](/data/query-catalog/combos/redemptions) when you also need per-leg token IDs, result, price, and follow-up market queries.

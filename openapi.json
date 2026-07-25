@@ -5186,7 +5186,7 @@
           "V3 Combos"
         ],
         "summary": "Combo redemptions and reductions",
-        "description": "List full combo redemptions, partial combo reductions, and related lifecycle transformations with exact on-chain condition and position lineage.",
+        "description": "List full combo redemptions, partial combo reductions, and related lifecycle transformations with exact on-chain condition and position lineage, before/removed/remaining leg counts, canonical market token IDs, per-leg result and price context, and a compact remaining-combo holding when applicable.",
         "operationId": "v3_combo_redemptions",
         "parameters": [
           {
@@ -5357,7 +5357,7 @@
           "V3 Combos"
         ],
         "summary": "Wallet combo redemptions and reductions",
-        "description": "List full combo redemptions, partial reductions, and related transformations for one wallet with exact condition and position lineage.",
+        "description": "List full combo redemptions, partial reductions, and related transformations for one wallet with exact condition and position lineage, before/removed/remaining leg counts, canonical market token IDs, per-leg result and price context, and a compact remaining-combo holding when applicable.",
         "operationId": "v3_wallet_combo_redemptions",
         "parameters": [
           {
@@ -11800,6 +11800,97 @@
           }
         }
       },
+      "ComboRedemptionLegEvent": {
+        "type": "object",
+        "description": "Public Polymarket event metadata associated with a combo leg.",
+        "properties": {
+          "event_id": {"type": "string"},
+          "event_slug": {"type": "string"},
+          "event_title": {"type": "string"},
+          "event_image": {"type": "string"}
+        }
+      },
+      "ComboRedemptionLegMarket": {
+        "type": "object",
+        "description": "Public Polymarket market metadata and current resolution state for a combo leg.",
+        "properties": {
+          "market_id": {"type": "string"},
+          "slug": {"type": "string"},
+          "title": {"type": "string"},
+          "outcome": {"type": "string"},
+          "image_url": {"type": "string"},
+          "icon_url": {"type": "string"},
+          "category": {"type": "string"},
+          "subcategory": {"type": "string"},
+          "tags": {
+            "type": "array",
+            "items": {}
+          },
+          "end_date": {"type": "string", "format": "date-time"},
+          "active": {"type": "boolean"},
+          "closed": {"type": "boolean"},
+          "accepting_orders": {"type": "boolean"},
+          "resolved": {"type": "boolean"},
+          "winning_outcome_index": {"type": "integer", "minimum": 0},
+          "event": {"$ref": "#/components/schemas/ComboRedemptionLegEvent"}
+        }
+      },
+      "ComboRedemptionLeg": {
+        "type": "object",
+        "description": "One selected standard-market outcome represented inside a combo redemption.",
+        "required": ["leg_index"],
+        "properties": {
+          "leg_index": {"type": "integer", "minimum": 0},
+          "leg_position_id": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Combo-contract position identifier for this leg. This is distinct from market_token_id."
+          },
+          "leg_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{64}$"},
+          "leg_outcome_index": {"type": "integer", "minimum": 0},
+          "leg_outcome_label": {"type": "string"},
+          "leg_status": {"type": "string"},
+          "leg_resolved_at": {"type": "string", "format": "date-time"},
+          "market_token_id": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Canonical Polymarket CLOB token ID for the selected outcome."
+          },
+          "leg_result": {
+            "type": "string",
+            "enum": ["won", "lost", "resolved", "pending"]
+          },
+          "leg_current_price": {
+            "type": "string",
+            "pattern": "^(0\\.[0-9]{4}|1\\.0000)$",
+            "description": "Best available selected-outcome price from 0.0000 to 1.0000."
+          },
+          "leg_price_source": {
+            "type": "string",
+            "enum": ["settlement", "clob_mid", "last_fill", "polymarket_market"]
+          },
+          "market": {"$ref": "#/components/schemas/ComboRedemptionLegMarket"}
+        }
+      },
+      "ComboRedemptionRemainingCombo": {
+        "type": "object",
+        "description": "Compact destination-combo holding created by a partial redemption. This is not a positions, cost-basis, or P&L record.",
+        "required": ["combo_condition_id", "combo_position_id"],
+        "properties": {
+          "combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
+          "combo_position_id": {"type": "string", "pattern": "^[0-9]+$"},
+          "shares_created": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]{6}$"
+          },
+          "current_wallet_balance": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]{6}$"
+          },
+          "still_held": {"type": "boolean"},
+          "status": {"type": "string", "enum": ["OPEN", "CLOSED"]}
+        }
+      },
       "ComboRedemption": {
         "type": "object",
         "description": "One chain-derived combo redemption, post-resolution compression, or related lifecycle transformation.",
@@ -11920,12 +12011,33 @@
           "lineage_event_id": {"type": "string"},
           "lineage_status": {"type": "string"},
           "lineage": {"type": "object", "additionalProperties": true},
-          "legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
-          "full_legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
-          "source_legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
-          "remaining_legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
-          "removed_legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
-          "residual_legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+          "source_leg_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of legs in the source combo immediately before this operation."
+          },
+          "removed_leg_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of source legs removed by this operation."
+          },
+          "remaining_leg_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of legs left in the destination combo; zero for a full redemption."
+          },
+          "leg_transition": {
+            "type": "string",
+            "pattern": "^[0-9]+_to_[0-9]+$",
+            "description": "Compact before-to-after leg count, for example 3_to_2 or 3_to_0."
+          },
+          "legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
+          "full_legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
+          "source_legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
+          "remaining_legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
+          "removed_legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
+          "residual_legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
+          "remaining_combo": {"$ref": "#/components/schemas/ComboRedemptionRemainingCombo"},
           "metadata_coverage": {
             "type": "string",
             "enum": ["complete", "missing_source_legs", "missing_reduced_legs"]
