@@ -5,6 +5,26 @@ description: "Recent PolyNode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-07-25 - Full and partial combo redemption lineage
+
+Added dedicated combo redemption endpoints without changing existing position or activity responses.
+
+What's new:
+
+* `GET /v3/combos/redemptions` returns combo redemption and reduction history across wallets.
+* `GET /v3/wallets/{address}/combos/redemptions` returns the same canonical history for one wallet.
+* Every row identifies its `redemption_scope` as `full`, `partial`, or `transformation`, includes matching boolean flags, and exposes `redemption_evidence`.
+* `Compressed` rows identify terminal or partial post-resolution transitions. `Extracted` rows expose smaller-combo lineage without being mislabeled as redemption payouts.
+* Full redemptions map router and auto-redeemer activity to the actual user and combo position while preserving Polymarket's `PositionRedeemed` event shape.
+* Partial reductions expose the full, reduced, residual, parent, child, source, and destination identifiers emitted on chain. When leg metadata is available, `remaining_legs`, `removed_legs`, and `residual_legs` show how the combo changed.
+* Filters cover wallet, any condition in the lineage, any position in the transition, event kind, scope, type, transaction hash, and time range.
+
+Existing standard positions, combo positions, and combo activity contracts are unchanged.
+
+Docs: [Combo Redemptions](/data/combos/redemptions) and [Wallet Combo Redemptions](/data/combos/wallet-redemptions)
+
+***
+
 ## 2026-07-22 - PolyNode is now part of Agg
 
 PolyNode has joined Agg and will continue as a standalone product for Polymarket data customers.

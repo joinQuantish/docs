@@ -80,3 +80,5 @@ curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d1
 Combo redemptions are normalized to match Polymarket's public combo activity shape. Router and auto-redeemer paths are returned as `event_kind: "PositionRedeemed"` with `side: "Redeem"` and the underlying module kind, such as `Combinatorial`, `Binary`, or `NegRisk`. The raw router/auto-redeemer contract path is used internally for indexing but is not the public event kind.
 
 When leg metadata is available, redemption rows include resolved leg statuses and `leg_current_price` values in the `legs` array.
+
+For terminal-versus-partial redemption evidence—and the reduced/residual condition IDs needed to identify a three-leg combo becoming a two-leg combo—use [Wallet Combo Redemptions](/data/combos/wallet-redemptions).
