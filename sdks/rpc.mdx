@@ -7,7 +7,7 @@ icon: "plug"
 
 Both SDKs include a method to send HTTP JSON-RPC requests through `rpc.polynode.dev`. Transaction submission is sent over PolyNode's P2P path toward the current block-producing validator plus backup peers. A small set of chain/peer/gas methods is served from local state; other safe reads proxy to the configured Polygon upstream.
 
-The endpoint currently supports HTTP only, with a limit of 2 HTTP requests/second per client IP. WebSocket `eth_subscribe`/`newHeads` is not live on this endpoint.
+The endpoint currently supports HTTP only, with a limit of 50 HTTP requests/second per account for active Growth and Enterprise accounts. WebSocket `eth_subscribe`/`newHeads` is not live on this endpoint.
 
 ## Usage
 

@@ -30,7 +30,7 @@ Requests without a valid key receive a `-32000` error.
 
 ## Rate Limit
 
-All keys are rate-limited to **2 HTTP requests per second** per client IP. Exceeding this returns a `-32005` error. A rejected attempt does not extend the limiter window.
+Active Growth and Enterprise accounts are rate-limited to **50 requests per second** per account. Exceeding this returns a `-32005` error.
 
 Batch requests count as one HTTP request and may contain up to **1,000 JSON-RPC calls**. Calls within a batch are processed sequentially.
 
@@ -170,7 +170,7 @@ Batch requests count as a single HTTP request against the rate limit and are cap
 | Code | Meaning |
 |------|---------|
 | `-32000` | Missing or invalid API key |
-| `-32005` | Rate limit exceeded (max 2 req/s) |
+| `-32005` | Rate limit exceeded (max 50 requests/second) |
 | `-32600` | Invalid request, including an oversized batch |
 | `-32601` | Method not available |
 | `-32602` | Invalid parameters |
