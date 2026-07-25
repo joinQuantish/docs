@@ -11,3 +11,42 @@ curl "https://api.polynode.dev/v3/combos/redemptions?redemption_scope=partial&li
 ```
 
 To locate a post-resolution two-out-of-three transition from either side of its lineage, pass the original or reduced combo condition as `condition_id`. Use `event_kind=Extracted` separately for structural reduction without redemption evidence.
+
+## What happened in the redemption?
+
+Use the count fields for the compact answer, then inspect the removed and remaining legs only when you need market details:
+
+```bash
+curl "https://api.polynode.dev/v3/combos/redemptions?tx_hash=0xe73ed3c24d1ca763984df61fad854479c45ea67b555ebaa547c994aa777add0c" \
+  -H "x-api-key: $POLYNODE_API_KEY" \
+  | jq '.redemptions[] | {
+      tx_hash,
+      redemption_scope,
+      leg_transition,
+      source_leg_count,
+      removed_leg_count,
+      remaining_leg_count,
+      removed_legs: [.removed_legs[] | {
+        leg_outcome_label,
+        market_token_id,
+        leg_result,
+        leg_current_price,
+        leg_price_source
+      }],
+      remaining_legs: [.remaining_legs[] | {
+        leg_outcome_label,
+        market_token_id,
+        leg_result,
+        leg_current_price,
+        leg_price_source
+      }],
+      remaining_combo
+    }'
+```
+
+- `3_to_0` with `redemption_scope=full` means the whole three-leg combo was redeemed.
+- `3_to_2` with `redemption_scope=partial` means one leg was removed and a two-leg combo remained.
+- `remaining_combo.still_held` tells you whether the wallet currently has a positive destination-combo balance when that balance is available.
+- `market_token_id` is the standard token to pass to [`GET /v3/markets/{token_id}/price`](/data/markets/price) or [`GET /v1/orderbook/{token_id}`](/api-reference/orderbook/order-book).
+
+To reconstruct multiple steps, fetch the wallet's rows and follow each row's `source_position_id` into a later row's `destination_position_id`. This keeps each API item scoped to one redemption while still supporting lifecycle analysis across calls.

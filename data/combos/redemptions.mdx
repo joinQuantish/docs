@@ -56,6 +56,10 @@ curl "https://api.polynode.dev/v3/combos/redemptions?wallet=0xf83ec0e37ac9eece71
   "combo_condition_id": "0x03c90d5cf41198141f9d85cee33943b3750000000000000000000000000000",
   "combo_position_id": "1712167034491293012950849257976671163728504435933953725817269660684235309057",
   "payout_usdc": "0.001749",
+  "source_leg_count": 3,
+  "removed_leg_count": 3,
+  "remaining_leg_count": 0,
+  "leg_transition": "3_to_0",
   "legs": [
     {"leg_index": 0, "leg_outcome_label": "Yes"},
     {"leg_index": 1, "leg_outcome_label": "No"},
@@ -98,10 +102,43 @@ A non-terminal `Compressed` row proves that post-resolution processing changed a
   "amount_usdc": "392.295381",
   "position_amount_usdc": "392.295381",
   "collateral_out_usdc": "0.000000",
+  "source_leg_count": 5,
+  "removed_leg_count": 4,
+  "remaining_leg_count": 1,
+  "leg_transition": "5_to_1",
   "full_legs": [{"leg_index": 0, "leg_outcome_label": "Spain"}],
   "source_legs": [{"leg_index": 0, "leg_outcome_label": "Spain"}],
-  "remaining_legs": [{"leg_index": 0, "leg_outcome_label": "Argentina"}],
+  "remaining_legs": [
+    {
+      "leg_index": 0,
+      "leg_position_id": "607054667337535653336040312390449441244232932993621750080905322313694576640",
+      "leg_condition_id": "0x4a0aa5a56b98476ffbab967ba0eb70d35794ad0f154fbce5b976d6053bb47808",
+      "leg_outcome_index": 0,
+      "leg_outcome_label": "Argentina",
+      "market_token_id": "67596909630505748192273119086224135081859582478741941473155557882450542807607",
+      "leg_result": "won",
+      "leg_current_price": "1.0000",
+      "leg_price_source": "settlement",
+      "market": {
+        "title": "Argentina vs. Cabo Verde: Team to Advance",
+        "slug": "fifwc-arg-cvi-2026-07-03-team-to-advance",
+        "active": true,
+        "closed": true,
+        "accepting_orders": false,
+        "resolved": true,
+        "winning_outcome_index": 0
+      }
+    }
+  ],
   "removed_legs": [{"leg_index": 0, "leg_outcome_label": "Spain"}],
+  "remaining_combo": {
+    "combo_condition_id": "0x03f20b4d62f602343ec586eb21b1fd88320000000000000000000000000000",
+    "combo_position_id": "1784593540973682895298448580384733359095951577285561914582372891673092947969",
+    "shares_created": "392.295381",
+    "current_wallet_balance": "873.364653",
+    "still_held": true,
+    "status": "OPEN"
+  },
   "metadata_coverage": "complete",
   "tx_hash": "0xe73ed3c24d1ca763984df61fad854479c45ea67b555ebaa547c994aa777add0c",
   "log_index": 559,
@@ -117,8 +154,38 @@ For a combo reduced to a smaller combo—for example, three legs reduced to two:
 - `full_legs` and `source_legs` preserve that pre-transition combo context.
 - `remaining_legs` and `removed_legs` compare the indexed leg registries.
 - `source_position_id` and `destination_position_id` provide the exact ERC-1155 transition.
+- `source_leg_count`, `removed_leg_count`, and `remaining_leg_count` answer how many legs the operation started with, removed, and left behind. `leg_transition` is the compact form, such as `3_to_2`.
+- `remaining_combo` is a compact holding snapshot for the destination combo. It does not include entry price, cost basis, or P&L and is not a replacement for the positions endpoint.
 
 `has_collateral_payout` and `collateral_out_usdc` tell you whether compression also emitted collateral. A zero collateral amount can still be a real partial resolution: the surviving value moved entirely into the reduced combo position.
+
+For a full redemption, `remaining_leg_count` is `0`, `removed_leg_count` equals the source leg count, and `remaining_combo` is omitted. If a partial redemption's current destination balance is unavailable, `remaining_combo` still includes its condition, position, and `shares_created`; balance-dependent fields are omitted rather than assumed to be zero.
+
+## Leg identifiers, result, and price
+
+Each object in `legs`, `full_legs`, `source_legs`, `remaining_legs`, `removed_legs`, and `residual_legs` can include:
+
+| Field | Description |
+|-------|-------------|
+| `leg_position_id` | Position ID used by the combo contract for this leg |
+| `leg_condition_id` | Standard market condition ID |
+| `leg_outcome_index` | Selected outcome index within the standard market |
+| `leg_outcome_label` | Selected outcome label |
+| `market_token_id` | Canonical Polymarket CLOB token ID for the selected outcome. Use this with price, order-book, trade, and candle endpoints. |
+| `leg_result` | `won`, `lost`, `resolved`, or `pending` for the selected outcome |
+| `leg_current_price` | Best available canonical price for the selected outcome, formatted from `0.0000` to `1.0000` |
+| `leg_price_source` | `settlement`, `clob_mid`, `last_fill`, or `polymarket_market` |
+| `market.active` | Whether Polymarket marks the market active |
+| `market.closed` | Whether the market is closed |
+| `market.accepting_orders` | Whether the market currently accepts orders |
+| `market.resolved` | Whether a final result is known |
+| `market.winning_outcome_index` | Winning outcome index when one unique winner is known |
+
+`settlement` is the terminal `0` or `1` outcome value. `clob_mid` is the current order-book midpoint. `last_fill` is the most recent trade price when a midpoint is unavailable. `polymarket_market` is Polymarket's market-level outcome price fallback.
+
+`market_token_id` is intentionally distinct from `leg_position_id`. The former is the standard market token accepted by price and order-book endpoints; the latter is the combo contract's leg identifier.
+
+Permissionless combo markets can contain an on-chain leg that has no corresponding Polymarket CLOB market or order book. In that case, the exact `leg_position_id` remains present while `market_token_id`, `leg_result`, `leg_current_price`, `leg_price_source`, and standard market metadata are omitted rather than inferred.
 
 ## Structural extraction is not a redemption
 

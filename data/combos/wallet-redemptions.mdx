@@ -1,7 +1,7 @@
 ---
 title: "Wallet Combo Redemptions"
 openapi: "GET /v3/wallets/{address}/combos/redemptions"
-description: "List full combo redemptions and partial combo reductions for one wallet."
+description: "List full combo redemptions and partial combo reductions for one wallet with exact leg changes."
 ---
 
 Returns the canonical combo redemption and reduction history for one wallet. This is the wallet-scoped form of [`GET /v3/combos/redemptions`](/data/combos/redemptions).
@@ -52,6 +52,18 @@ curl "https://api.polynode.dev/v3/wallets/0xc82f0a25aad828f59347670e63ead5ea1444
       "full_combo_condition_id": "0x0387525b6b182939b62c8ffd3f64c703aa0000000000000000000000000000",
       "reduced_combo_condition_id": "0x03f20b4d62f602343ec586eb21b1fd88320000000000000000000000000000",
       "amount_usdc": "392.295381",
+      "source_leg_count": 5,
+      "removed_leg_count": 4,
+      "remaining_leg_count": 1,
+      "leg_transition": "5_to_1",
+      "remaining_combo": {
+        "combo_condition_id": "0x03f20b4d62f602343ec586eb21b1fd88320000000000000000000000000000",
+        "combo_position_id": "1784593540973682895298448580384733359095951577285561914582372891673092947969",
+        "shares_created": "392.295381",
+        "current_wallet_balance": "873.364653",
+        "still_held": true,
+        "status": "OPEN"
+      },
       "tx_hash": "0xe73ed3c24d1ca763984df61fad854479c45ea67b555ebaa547c994aa777add0c",
       "log_index": 559,
       "block_number": 89561963
@@ -73,5 +85,8 @@ curl "https://api.polynode.dev/v3/wallets/0xc82f0a25aad828f59347670e63ead5ea1444
 - Use `event_kind=Extracted` for structural full/reduced/residual lineage. Extraction is marked as a reduction, but not as a redemption.
 - Use the default `all` when reconstructing the wallet's complete combo redemption and transformation history.
 - Use the global endpoint when the wallet is unknown or when correlating one condition, position, or transaction across wallets.
+- Read `source_leg_count`, `removed_leg_count`, `remaining_leg_count`, and `leg_transition` when you only need to know what changed in that redemption.
+- Read `market_token_id`, `leg_result`, `leg_current_price`, and `leg_price_source` on each leg when you need an actionable standard-market identifier and outcome state.
+- Read `remaining_combo` to see the resulting combo position and whether the wallet still holds a positive balance. Use the combo positions endpoint for full position, cost, and P&L context.
 
 Existing standard and combo position endpoints are unchanged.

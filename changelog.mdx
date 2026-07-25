@@ -17,6 +17,10 @@ What's new:
 * `Compressed` rows identify terminal or partial post-resolution transitions. `Extracted` rows expose smaller-combo lineage without being mislabeled as redemption payouts.
 * Full redemptions map router and auto-redeemer activity to the actual user and combo position while preserving Polymarket's `PositionRedeemed` event shape.
 * Partial reductions expose the full, reduced, residual, parent, child, source, and destination identifiers emitted on chain. When leg metadata is available, `remaining_legs`, `removed_legs`, and `residual_legs` show how the combo changed.
+* `source_leg_count`, `removed_leg_count`, `remaining_leg_count`, and `leg_transition` report the exact before-and-after leg change, such as `5_to_1` or `4_to_0`.
+* Enriched legs can include the canonical `market_token_id`, selected-outcome `leg_result`, `leg_current_price`, and `leg_price_source` for follow-up price, order-book, trade, or candle queries.
+* Partial reductions include a compact `remaining_combo` with the destination condition and position, shares created, and current wallet balance and holding status when available.
+* Permissionless on-chain legs that do not have a Polymarket CLOB market retain their exact `leg_position_id`; standard-market token, result, and price fields are omitted instead of being guessed.
 * Filters cover wallet, any condition in the lineage, any position in the transition, event kind, scope, type, transaction hash, and time range.
 
 Existing standard positions, combo positions, and combo activity contracts are unchanged.
