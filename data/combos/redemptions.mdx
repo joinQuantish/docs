@@ -1,0 +1,179 @@
+---
+title: "Combo Redemptions"
+openapi: "GET /v3/combos/redemptions"
+description: "Query terminal combo redemptions, partial post-resolution compression, and exact on-chain lineage."
+---
+
+Returns the canonical combo redemption, post-resolution compression, and condition-lineage feed across wallets. For matching events, the response preserves Polymarket's public combo activity fields and adds explicit evidence plus condition and position lineage.
+
+This endpoint is additive. It does not change standard positions or combo position responses.
+
+Use [`GET /v3/combos/activity`](/data/combos/activity) for ordinary combo acquisition and burn activity such as `PositionsSplit` and `PositionsMerged`. This endpoint is scoped to terminal redemptions, post-resolution compression, and the module-level transformations needed to explain redemption lineage.
+
+## Request
+
+```
+GET /v3/combos/redemptions
+```
+
+No filter is required. Use the filters below for wallet, market, position, transaction, event, scope, or time-bounded reads.
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `wallet` | string | -- | Wallet address |
+| `market_id` | string | -- | One or more comma-separated combo condition IDs. Matches any condition in the lineage. |
+| `condition_id` | string | -- | Combo condition ID. Matches the source, full, parent, reduced, residual, child, or destination condition. |
+| `position_id` | string | -- | Decimal ERC-1155 position ID. Matches the primary, source, destination, or underlying position. |
+| `event_kind` | string | -- | `PositionRedeemed`, `Compressed`, `Extracted`, `Unwrapped`, or another supported combo lifecycle event |
+| `redemption_scope` | string | `all` | `full`, `partial`, `transformation`, or `all` |
+| `redemption_type` | string | `all` | `FULL_COMBO`, `PARTIAL_COMBO`, `COMBO_TRANSFORMATION`, or `all` |
+| `tx_hash` | string | -- | Exact Polygon transaction hash |
+| `after` | integer | -- | Inclusive Unix timestamp in seconds |
+| `before` | integer | -- | Inclusive Unix timestamp in seconds |
+| `limit` | integer | 100 | Results per page, max 300 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Full redemptions
+
+```bash
+curl "https://api.polynode.dev/v3/combos/redemptions?wallet=0xf83ec0e37ac9eece71c064507270e9001a734663&redemption_scope=full&limit=25" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```json
+{
+  "event_kind": "PositionRedeemed",
+  "redemption_scope": "full",
+  "redemption_type": "FULL_COMBO",
+  "redemption_evidence": "terminal_position_redeemed",
+  "is_full_combo_redemption": true,
+  "is_partial_combo_redemption": false,
+  "is_terminal_redemption": true,
+  "is_partial_combo_reduction": false,
+  "has_collateral_payout": true,
+  "combo_condition_id": "0x03c90d5cf41198141f9d85cee33943b3750000000000000000000000000000",
+  "combo_position_id": "1712167034491293012950849257976671163728504435933953725817269660684235309057",
+  "payout_usdc": "0.001749",
+  "legs": [
+    {"leg_index": 0, "leg_outcome_label": "Yes"},
+    {"leg_index": 1, "leg_outcome_label": "No"},
+    {"leg_index": 2, "leg_outcome_label": "No"}
+  ]
+}
+```
+
+`PositionRedeemed` proves that the entire referenced combo position was redeemed. A terminal `Compressed` event whose destination position is `0` is also classified as `full`, with `redemption_evidence: "terminal_compression"`. Router and auto-redeemer transactions use the user-facing wallet rather than attributing the redemption to an intermediary contract.
+
+## Partial post-resolution redemptions
+
+```bash
+curl "https://api.polynode.dev/v3/combos/redemptions?redemption_scope=partial&event_kind=Compressed&limit=25" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+A non-terminal `Compressed` row proves that post-resolution processing changed an old combo position into a smaller combo position. The leg arrays below are abbreviated:
+
+```json
+{
+  "event_kind": "Compressed",
+  "type": "COMPRESS",
+  "side": "Compress",
+  "wallet_address": "0xc82f0a25aad828f59347670e63ead5ea144466a7",
+  "redemption_scope": "partial",
+  "redemption_type": "PARTIAL_COMBO",
+  "redemption_evidence": "post_resolution_compression",
+  "is_full_combo_redemption": false,
+  "is_partial_combo_redemption": true,
+  "is_terminal_redemption": false,
+  "is_partial_combo_reduction": true,
+  "has_collateral_payout": false,
+  "combo_condition_id": "0x03f20b4d62f602343ec586eb21b1fd88320000000000000000000000000000",
+  "combo_position_id": "1784593540973682895298448580384733359095951577285561914582372891673092947968",
+  "full_combo_condition_id": "0x0387525b6b182939b62c8ffd3f64c703aa0000000000000000000000000000",
+  "reduced_combo_condition_id": "0x03f20b4d62f602343ec586eb21b1fd88320000000000000000000000000000",
+  "source_position_id": "1596031307328819069153563606934811624985504858539062944212408350305599619073",
+  "destination_position_id": "1784593540973682895298448580384733359095951577285561914582372891673092947969",
+  "amount_usdc": "392.295381",
+  "position_amount_usdc": "392.295381",
+  "collateral_out_usdc": "0.000000",
+  "full_legs": [{"leg_index": 0, "leg_outcome_label": "Spain"}],
+  "source_legs": [{"leg_index": 0, "leg_outcome_label": "Spain"}],
+  "remaining_legs": [{"leg_index": 0, "leg_outcome_label": "Argentina"}],
+  "removed_legs": [{"leg_index": 0, "leg_outcome_label": "Spain"}],
+  "metadata_coverage": "complete",
+  "tx_hash": "0xe73ed3c24d1ca763984df61fad854479c45ea67b555ebaa547c994aa777add0c",
+  "log_index": 559,
+  "block_number": 89561963
+}
+```
+
+For a combo reduced to a smaller combo—for example, three legs reduced to two:
+
+- `full_combo_condition_id` identifies the pre-transition combo consumed by this compression.
+- `reduced_combo_condition_id` identifies the surviving smaller combo.
+- `combo_condition_id`, `combo_position_id`, and `legs` retain Polymarket's basic record for the surviving combo.
+- `full_legs` and `source_legs` preserve that pre-transition combo context.
+- `remaining_legs` and `removed_legs` compare the indexed leg registries.
+- `source_position_id` and `destination_position_id` provide the exact ERC-1155 transition.
+
+`has_collateral_payout` and `collateral_out_usdc` tell you whether compression also emitted collateral. A zero collateral amount can still be a real partial resolution: the surviving value moved entirely into the reduced combo position.
+
+## Structural extraction is not a redemption
+
+`Extracted` returns `full_combo_condition_id`, `reduced_combo_condition_id`, and `residual_combo_condition_id`, which is useful for reconstructing a larger combo into smaller branches. It is classified as:
+
+```json
+{
+  "event_kind": "Extracted",
+  "redemption_scope": "transformation",
+  "redemption_type": "COMBO_TRANSFORMATION",
+  "redemption_evidence": "condition_extraction",
+  "is_partial_combo_redemption": false,
+  "is_partial_combo_reduction": true
+}
+```
+
+This distinction is intentional: `Extracted` proves exact condition lineage, but it does not prove a redemption payout. Use `Compressed` for a partial post-resolution transition and `PositionRedeemed` or terminal compression for a terminal redemption.
+
+## Scope meanings
+
+| Scope | Meaning |
+|-------|---------|
+| `full` | A complete combo position was redeemed (`PositionRedeemed`) or terminally compressed to position `0`. |
+| `partial` | A non-terminal post-resolution `Compressed` event changed the old combo into a reduced combo. |
+| `transformation` | A non-redemption lifecycle transformation such as extract, inject, wrap, unwrap, convert, or condition/event split/merge. |
+
+## Evidence and lineage fields
+
+| Field | Description |
+|-------|-------------|
+| `redemption_evidence` | Why the row is classified as terminal, partial, extraction, injection, or another transformation |
+| `is_terminal_redemption` | `true` for terminal `PositionRedeemed` or terminal compression |
+| `is_partial_combo_reduction` | `true` for a smaller-combo compression or structural extraction |
+| `has_collateral_payout` | Whether `payout_usdc` or `collateral_out_usdc` is positive |
+| `lineage_event_id` | Stable transaction-hash/log-index identifier |
+| `full_combo_condition_id` | Pre-transition full/source combo condition for this event |
+| `parent_combo_condition_id` | Parent condition for condition/event operations |
+| `source_combo_condition_id` | Condition consumed by the operation |
+| `reduced_combo_condition_id` | Smaller combo condition produced by a reduction |
+| `residual_combo_condition_id` | Residual condition emitted by extract/inject |
+| `child_yes_combo_condition_id` / `child_no_combo_condition_id` | Child conditions emitted by condition splits/merges |
+| `destination_combo_condition_id` | Primary destination condition when one exists |
+| `source_position_id` / `destination_position_id` | Exact position transition when present |
+| `underlying_position_id` | Standard underlying position for wrap/unwrap operations |
+
+Condition-to-position mapping is deterministic: the combo condition occupies the high 31 bytes of the position ID and the outcome index occupies the low byte. This lets historical full redemptions map to their combo without re-indexing unrelated contracts.
+
+For a chain of multiple compressions, `full_combo_condition_id` is the immediate pre-transition combo on each row, not a guessed earliest ancestor. Follow `source_position_id` and `destination_position_id` across rows when the chain facts are available; the endpoint does not invent a root parlay identifier that the contract did not emit.
+
+## Metadata coverage
+
+`metadata_coverage` describes the leg expansion available for that row:
+
+- `complete`: the required combo leg registries are available.
+- `missing_source_legs`: the source condition is known on chain, but its leg metadata is not yet available.
+- `missing_reduced_legs`: the reduction is known on chain, but the reduced combo's leg metadata is not yet available.
+
+The condition and position lineage remains chain-derived even when descriptive leg metadata is incomplete.

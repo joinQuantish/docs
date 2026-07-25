@@ -1,0 +1,13 @@
+---
+title: "Combo Redemptions"
+description: "Query terminal redemptions, post-resolution compression, and combo lineage across wallets."
+---
+
+Canonical reference: [Combo Redemptions](/data/combos/redemptions)
+
+```bash
+curl "https://api.polynode.dev/v3/combos/redemptions?redemption_scope=partial&limit=25" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+To locate a post-resolution two-out-of-three transition from either side of its lineage, pass the original or reduced combo condition as `condition_id`. Use `event_kind=Extracted` separately for structural reduction without redemption evidence.

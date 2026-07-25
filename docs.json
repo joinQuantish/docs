@@ -189,10 +189,12 @@
               "data/query-catalog/combos",
               "data/query-catalog/combos/markets",
               "data/query-catalog/combos/activity",
+              "data/query-catalog/combos/redemptions",
               "data/query-catalog/combos/wallet-summary",
               "data/query-catalog/combos/wallet-positions",
               "data/query-catalog/combos/wallet-trades",
               "data/query-catalog/combos/wallet-activity",
+              "data/query-catalog/combos/wallet-redemptions",
               "data/query-catalog/combos/include-combos"
             ]
           },
@@ -278,10 +280,12 @@
               "data/combos/overview",
               "data/combos/markets",
               "data/combos/activity",
+              "data/combos/redemptions",
               "data/combos/wallet-summary",
               "data/combos/wallet-positions",
               "data/combos/wallet-trades",
-              "data/combos/wallet-activity"
+              "data/combos/wallet-activity",
+              "data/combos/wallet-redemptions"
             ]
           },
           {

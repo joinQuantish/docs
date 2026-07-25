@@ -5180,6 +5180,329 @@
         ]
       }
     },
+    "/v3/combos/redemptions": {
+      "get": {
+        "tags": [
+          "V3 Combos"
+        ],
+        "summary": "Combo redemptions and reductions",
+        "description": "List full combo redemptions, partial combo reductions, and related lifecycle transformations with exact on-chain condition and position lineage.",
+        "operationId": "v3_combo_redemptions",
+        "parameters": [
+          {
+            "name": "wallet",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{40}$"
+            },
+            "description": "Wallet address"
+          },
+          {
+            "name": "market_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "One or more comma-separated combo condition IDs. Matches any condition in the lineage."
+          },
+          {
+            "name": "condition_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{62}$"
+            },
+            "description": "Combo condition ID. Matches source, full, parent, reduced, residual, child, and destination conditions."
+          },
+          {
+            "name": "position_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            },
+            "description": "Primary, source, destination, or underlying position ID"
+          },
+          {
+            "name": "event_kind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PositionRedeemed",
+                "Compressed",
+                "ConvertedOnEvent",
+                "ConvertedToYesBasket",
+                "Extracted",
+                "Injected",
+                "MergedFromYesBasket",
+                "MergedOnCondition",
+                "MergedOnEvent",
+                "SplitOnCondition",
+                "SplitOnEvent",
+                "Unwrapped",
+                "Wrapped",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "redemption_scope",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["full", "partial", "transformation", "all"],
+              "default": "all"
+            },
+            "description": "full = terminal redemption; partial = non-terminal post-resolution compression; transformation = non-redemption lifecycle lineage"
+          },
+          {
+            "name": "redemption_type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["FULL_COMBO", "PARTIAL_COMBO", "COMBO_TRANSFORMATION", "all"],
+              "default": "all"
+            }
+          },
+          {
+            "name": "tx_hash",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{64}$"
+            },
+            "description": "Exact Polygon transaction hash"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
+            "description": "Inclusive Unix timestamp in seconds"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
+            "description": "Inclusive Unix timestamp in seconds"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 300
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Combo redemptions and reductions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "redemptions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ComboRedemption"
+                      }
+                    },
+                    "rows_returned": {"type": "integer"},
+                    "has_more": {"type": "boolean"},
+                    "offset": {"type": "integer"},
+                    "limit": {"type": "integer"},
+                    "position_type": {"type": "string", "const": "combo"},
+                    "source": {"type": "string", "const": "v3.combos.redemptions"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Invalid filter"},
+          "401": {"description": "Unauthorized"},
+          "503": {"description": "Combo read model unavailable"}
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v3/wallets/{address}/combos/redemptions": {
+      "get": {
+        "tags": [
+          "V3 Combos"
+        ],
+        "summary": "Wallet combo redemptions and reductions",
+        "description": "List full combo redemptions, partial reductions, and related transformations for one wallet with exact condition and position lineage.",
+        "operationId": "v3_wallet_combo_redemptions",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{40}$"
+            },
+            "description": "Wallet address"
+          },
+          {
+            "name": "market_id",
+            "in": "query",
+            "schema": {"type": "string"},
+            "description": "One or more comma-separated combo condition IDs. Matches any condition in the lineage."
+          },
+          {
+            "name": "condition_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{62}$"
+            },
+            "description": "Combo condition ID. Matches any condition in the lineage."
+          },
+          {
+            "name": "position_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            },
+            "description": "Primary, source, destination, or underlying position ID"
+          },
+          {
+            "name": "event_kind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PositionRedeemed",
+                "Compressed",
+                "ConvertedOnEvent",
+                "ConvertedToYesBasket",
+                "Extracted",
+                "Injected",
+                "MergedFromYesBasket",
+                "MergedOnCondition",
+                "MergedOnEvent",
+                "SplitOnCondition",
+                "SplitOnEvent",
+                "Unwrapped",
+                "Wrapped",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "redemption_scope",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["full", "partial", "transformation", "all"],
+              "default": "all"
+            },
+            "description": "full = terminal redemption; partial = non-terminal post-resolution compression; transformation = non-redemption lifecycle lineage"
+          },
+          {
+            "name": "redemption_type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["FULL_COMBO", "PARTIAL_COMBO", "COMBO_TRANSFORMATION", "all"],
+              "default": "all"
+            }
+          },
+          {
+            "name": "tx_hash",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{64}$"
+            },
+            "description": "Exact Polygon transaction hash"
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {"type": "integer", "format": "int64", "minimum": 0},
+            "description": "Inclusive Unix timestamp in seconds"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {"type": "integer", "format": "int64", "minimum": 0},
+            "description": "Inclusive Unix timestamp in seconds"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {"type": "integer", "default": 100, "minimum": 1, "maximum": 300}
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {"type": "integer", "default": 0, "minimum": 0}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet combo redemptions and reductions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "address": {"type": "string"},
+                    "redemptions": {
+                      "type": "array",
+                      "items": {"$ref": "#/components/schemas/ComboRedemption"}
+                    },
+                    "rows_returned": {"type": "integer"},
+                    "has_more": {"type": "boolean"},
+                    "offset": {"type": "integer"},
+                    "limit": {"type": "integer"},
+                    "position_type": {"type": "string", "const": "combo"},
+                    "source": {"type": "string", "const": "v3.wallet_combos.redemptions"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Invalid wallet address or filter"},
+          "401": {"description": "Unauthorized"},
+          "503": {"description": "Combo read model unavailable"}
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v3/rewards/markets": {
       "get": {
         "tags": [
@@ -11475,6 +11798,139 @@
             "type": "integer",
             "description": "Unix timestamp of the holder's most recent trade on this market. Only present when `includeTrades=true`."
           }
+        }
+      },
+      "ComboRedemption": {
+        "type": "object",
+        "description": "One chain-derived combo redemption, post-resolution compression, or related lifecycle transformation.",
+        "required": [
+          "position_type",
+          "is_combo",
+          "id",
+          "type",
+          "event_kind",
+          "side",
+          "module_kind",
+          "user_address",
+          "wallet_address",
+          "combo_condition_id",
+          "module_id",
+          "timestamp",
+          "tx_hash",
+          "log_index",
+          "block_number",
+          "redemption_scope",
+          "redemption_type",
+          "redemption_evidence",
+          "is_full_combo_redemption",
+          "is_partial_combo_redemption",
+          "is_terminal_redemption",
+          "is_partial_combo_reduction",
+          "has_collateral_payout",
+          "lineage_event_id",
+          "lineage_status",
+          "legs",
+          "full_legs",
+          "source_legs",
+          "remaining_legs",
+          "removed_legs",
+          "residual_legs",
+          "metadata_coverage",
+          "parity_status"
+        ],
+        "properties": {
+          "position_type": {"type": "string", "const": "combo"},
+          "is_combo": {"type": "boolean", "const": true},
+          "id": {"type": "string", "description": "Stable public log identifier."},
+          "type": {"type": "string", "description": "Polymarket-compatible activity type."},
+          "event_kind": {
+            "type": "string",
+            "enum": [
+              "PositionRedeemed",
+              "Compressed",
+              "ConvertedOnEvent",
+              "ConvertedToYesBasket",
+              "Extracted",
+              "Injected",
+              "MergedFromYesBasket",
+              "MergedOnCondition",
+              "MergedOnEvent",
+              "SplitOnCondition",
+              "SplitOnEvent",
+              "Unwrapped",
+              "Wrapped"
+            ]
+          },
+          "side": {"type": "string"},
+          "module_kind": {"type": "string", "const": "Combinatorial"},
+          "user_address": {"type": "string", "pattern": "^0x[a-f0-9]{40}$"},
+          "wallet_address": {"type": "string", "pattern": "^0x[a-f0-9]{40}$"},
+          "combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
+          "combo_position_id": {"type": "string", "pattern": "^[0-9]+$"},
+          "combo_outcome_index": {"type": "integer", "minimum": 0, "maximum": 255},
+          "module_id": {"type": "integer", "const": 3},
+          "amount_usdc": {"type": "string"},
+          "payout_usdc": {"type": "string"},
+          "position_amount_usdc": {"type": "string"},
+          "collateral_out_usdc": {"type": "string"},
+          "timestamp": {"type": "integer", "format": "int64"},
+          "tx_dttm": {"type": "string", "format": "date-time"},
+          "tx_hash": {"type": "string", "pattern": "^0x[a-f0-9]{64}$"},
+          "log_index": {"type": "integer"},
+          "block_number": {"type": "integer", "format": "int64"},
+          "redemption_scope": {
+            "type": "string",
+            "enum": ["full", "partial", "transformation"],
+            "description": "Terminal redemption, non-terminal post-resolution compression, or non-redemption lifecycle transformation."
+          },
+          "redemption_type": {
+            "type": "string",
+            "enum": ["FULL_COMBO", "PARTIAL_COMBO", "COMBO_TRANSFORMATION"]
+          },
+          "redemption_evidence": {
+            "type": "string",
+            "enum": [
+              "terminal_position_redeemed",
+              "terminal_compression",
+              "post_resolution_compression",
+              "condition_extraction",
+              "condition_injection",
+              "lifecycle_transformation"
+            ]
+          },
+          "is_full_combo_redemption": {"type": "boolean"},
+          "is_partial_combo_redemption": {"type": "boolean"},
+          "is_terminal_redemption": {"type": "boolean"},
+          "is_partial_combo_reduction": {"type": "boolean"},
+          "has_collateral_payout": {"type": "boolean"},
+          "source_event_kind": {"type": "string"},
+          "full_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$", "description": "Pre-transition full/source combo for this event; not a guessed earliest ancestor."},
+          "parent_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
+          "source_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
+          "reduced_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
+          "residual_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
+          "child_yes_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
+          "child_no_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
+          "destination_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
+          "source_position_id": {"type": "string", "pattern": "^[0-9]+$"},
+          "destination_position_id": {"type": "string", "pattern": "^[0-9]+$"},
+          "underlying_position_id": {"type": "string", "pattern": "^[0-9]+$"},
+          "event_id": {"type": "string"},
+          "condition_index": {"type": "integer"},
+          "lineage_event_id": {"type": "string"},
+          "lineage_status": {"type": "string"},
+          "lineage": {"type": "object", "additionalProperties": true},
+          "legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+          "full_legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+          "source_legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+          "remaining_legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+          "removed_legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+          "residual_legs": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+          "metadata_coverage": {
+            "type": "string",
+            "enum": ["complete", "missing_source_legs", "missing_reduced_legs"]
+          },
+          "parity_status": {"type": "string"}
         }
       },
       "WalletActivity": {

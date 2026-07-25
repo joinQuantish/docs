@@ -1,0 +1,77 @@
+---
+title: "Wallet Combo Redemptions"
+openapi: "GET /v3/wallets/{address}/combos/redemptions"
+description: "List full combo redemptions and partial combo reductions for one wallet."
+---
+
+Returns the canonical combo redemption and reduction history for one wallet. This is the wallet-scoped form of [`GET /v3/combos/redemptions`](/data/combos/redemptions).
+
+## Request
+
+```
+GET /v3/wallets/{address}/combos/redemptions
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `market_id` | string | -- | One or more comma-separated combo condition IDs; matches any lineage condition |
+| `condition_id` | string | -- | Combo condition ID; matches any lineage condition |
+| `position_id` | string | -- | Primary, source, destination, or underlying position ID |
+| `event_kind` | string | -- | Filter by canonical event kind |
+| `redemption_scope` | string | `all` | `full`, `partial`, `transformation`, or `all` |
+| `redemption_type` | string | `all` | `FULL_COMBO`, `PARTIAL_COMBO`, `COMBO_TRANSFORMATION`, or `all` |
+| `tx_hash` | string | -- | Exact Polygon transaction hash |
+| `after` | integer | -- | Inclusive Unix timestamp in seconds |
+| `before` | integer | -- | Inclusive Unix timestamp in seconds |
+| `limit` | integer | 100 | Results per page, max 300 |
+| `offset` | integer | 0 | Pagination offset |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0xc82f0a25aad828f59347670e63ead5ea144466a7/combos/redemptions?redemption_scope=partial&limit=25" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```json
+{
+  "address": "0xc82f0a25aad828f59347670e63ead5ea144466a7",
+  "redemptions": [
+    {
+      "event_kind": "Compressed",
+      "redemption_scope": "partial",
+      "redemption_type": "PARTIAL_COMBO",
+      "redemption_evidence": "post_resolution_compression",
+      "is_full_combo_redemption": false,
+      "is_partial_combo_redemption": true,
+      "is_terminal_redemption": false,
+      "is_partial_combo_reduction": true,
+      "has_collateral_payout": false,
+      "full_combo_condition_id": "0x0387525b6b182939b62c8ffd3f64c703aa0000000000000000000000000000",
+      "reduced_combo_condition_id": "0x03f20b4d62f602343ec586eb21b1fd88320000000000000000000000000000",
+      "amount_usdc": "392.295381",
+      "tx_hash": "0xe73ed3c24d1ca763984df61fad854479c45ea67b555ebaa547c994aa777add0c",
+      "log_index": 559,
+      "block_number": 89561963
+    }
+  ],
+  "rows_returned": 1,
+  "has_more": false,
+  "offset": 0,
+  "limit": 25,
+  "position_type": "combo",
+  "source": "v3.wallet_combos.redemptions"
+}
+```
+
+## Choosing this endpoint
+
+- Use `redemption_scope=full` for terminal whole-combo redemptions.
+- Use `redemption_scope=partial` for post-resolution compression into a smaller combo, including a three-leg combo becoming a two-leg combo when Polymarket emits that transition.
+- Use `event_kind=Extracted` for structural full/reduced/residual lineage. Extraction is marked as a reduction, but not as a redemption.
+- Use the default `all` when reconstructing the wallet's complete combo redemption and transformation history.
+- Use the global endpoint when the wallet is unknown or when correlating one condition, position, or transaction across wallets.
+
+Existing standard and combo position endpoints are unchanged.
