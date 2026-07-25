@@ -185,6 +185,8 @@ Each object in `legs`, `full_legs`, `source_legs`, `remaining_legs`, `removed_le
 
 `market_token_id` is intentionally distinct from `leg_position_id`. The former is the standard market token accepted by price and order-book endpoints; the latter is the combo contract's leg identifier.
 
+Permissionless combo markets can contain an on-chain leg that has no corresponding Polymarket CLOB market or order book. In that case, the exact `leg_position_id` remains present while `market_token_id`, `leg_result`, `leg_current_price`, `leg_price_source`, and standard market metadata are omitted rather than inferred.
+
 ## Structural extraction is not a redemption
 
 `Extracted` returns `full_combo_condition_id`, `reduced_combo_condition_id`, and `residual_combo_condition_id`, which is useful for reconstructing a larger combo into smaller branches. It is classified as:
