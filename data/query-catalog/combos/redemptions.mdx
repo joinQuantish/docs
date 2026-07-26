@@ -5,6 +5,8 @@ description: "Query terminal redemptions, post-resolution compression, and combo
 
 Canonical reference: [Combo Redemptions](/data/combos/redemptions)
 
+This recipe turns a combo lifecycle record into a direct before-and-after answer. Polymarket's public combo activity API identifies a `REDEEM` or `COMPRESS` operation and the legs on the reported combo. polynode additionally returns the source combo, removed legs, remaining legs, exact leg counts, and destination holding in the same row.
+
 ```bash
 curl "https://api.polynode.dev/v3/combos/redemptions?redemption_scope=partial&limit=25" \
   -H "x-api-key: $POLYNODE_API_KEY"
@@ -48,5 +50,7 @@ curl "https://api.polynode.dev/v3/combos/redemptions?tx_hash=0xe73ed3c24d1ca7639
 - `3_to_2` with `redemption_scope=partial` means one leg was removed and a two-leg combo remained.
 - `remaining_combo.still_held` tells you whether the wallet currently has a positive destination-combo balance when that balance is available.
 - `market_token_id` is the standard token to pass to [`GET /v3/markets/{token_id}/price`](/data/markets/price) or [`GET /v1/orderbook/{token_id}`](/api-reference/orderbook/order-book).
+
+For a UI, `redemption_scope` plus `leg_transition` is usually enough to display "full 3-leg redemption" or "5 legs became 1." For analytics or automation, use `source_position_id`, `destination_position_id`, and the changed-leg arrays so no transition has to be inferred from titles or current position state.
 
 To reconstruct multiple steps, fetch the wallet's rows and follow each row's `source_position_id` into a later row's `destination_position_id`. This keeps each API item scoped to one redemption while still supporting lifecycle analysis across calls.

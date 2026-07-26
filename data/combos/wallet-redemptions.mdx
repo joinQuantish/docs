@@ -6,6 +6,10 @@ description: "List full combo redemptions and partial combo reductions for one w
 
 Returns the canonical combo redemption and reduction history for one wallet. This is the wallet-scoped form of [`GET /v3/combos/redemptions`](/data/combos/redemptions).
 
+In plain language, each row tells you whether the wallet redeemed its entire combo or removed settled legs and kept a smaller combo. The compact fields answer how many legs changed; the leg arrays and position IDs provide the exact market and on-chain details for follow-up queries.
+
+Unlike a basic combo activity row, the response makes the before-and-after transition explicit. See [How this differs from Polymarket combo activity](/data/combos/redemptions#how-this-differs-from-polymarket-combo-activity) for the consumer and developer comparison.
+
 ## Request
 
 ```
@@ -88,5 +92,7 @@ curl "https://api.polynode.dev/v3/wallets/0xc82f0a25aad828f59347670e63ead5ea1444
 - Read `source_leg_count`, `removed_leg_count`, `remaining_leg_count`, and `leg_transition` when you only need to know what changed in that redemption.
 - Read `market_token_id`, `leg_result`, `leg_current_price`, and `leg_price_source` on each leg when you need an actionable standard-market identifier and outcome state.
 - Read `remaining_combo` to see the resulting combo position and whether the wallet still holds a positive balance. Use the combo positions endpoint for full position, cost, and P&L context.
+
+For a consumer-facing summary, display `redemption_scope` and `leg_transition` first. For a developer workflow, use the source and destination IDs as stable joins, then use `market_token_id` from each changed leg with price, order-book, trade, or candle endpoints.
 
 Existing standard and combo position endpoints are unchanged.

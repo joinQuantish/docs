@@ -9,6 +9,8 @@ icon: "clock-rotate-left"
 
 Added dedicated combo redemption endpoints without changing existing position or activity responses.
 
+Polymarket's public [combo activity API](https://docs.polymarket.com/api-reference/core/get-user-combo-activity) reports combo lifecycle events and the legs attached to the reported combo. These endpoints preserve that basic record and add an explicit before-and-after explanation, so users do not have to infer whether a redemption was full or partial by joining activity and position data.
+
 What's new:
 
 * `GET /v3/combos/redemptions` returns combo redemption and reduction history across wallets.
@@ -22,6 +24,8 @@ What's new:
 * Partial reductions include a compact `remaining_combo` with the destination condition and position, shares created, and current wallet balance and holding status when available.
 * Permissionless on-chain legs that do not have a Polymarket CLOB market retain their exact `leg_position_id`; standard-market token, result, and price fields are omitted instead of being guessed.
 * Filters cover wallet, any condition in the lineage, any position in the transition, event kind, scope, type, transaction hash, and time range.
+
+From a consumer perspective, `3_to_0` means the whole three-leg combo was redeemed, while `5_to_1` means four legs were removed and a one-leg combo remained. From a developer perspective, the source and destination IDs, separate changed-leg arrays, and `remaining_combo` snapshot make that transition usable in one response.
 
 Existing standard positions, combo positions, and combo activity contracts are unchanged.
 

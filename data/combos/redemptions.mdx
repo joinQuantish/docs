@@ -4,11 +4,38 @@ openapi: "GET /v3/combos/redemptions"
 description: "Query terminal combo redemptions, partial post-resolution compression, and exact on-chain lineage."
 ---
 
-Returns the canonical combo redemption, post-resolution compression, and condition-lineage feed across wallets. For matching events, the response preserves Polymarket's public combo activity fields and adds explicit evidence plus condition and position lineage.
+Use this endpoint to answer one question: after a user's combo (parlay) was processed, was the whole position redeemed, or were settled legs removed and a smaller combo left behind?
+
+The response preserves Polymarket's public combo activity fields and adds the explicit before-and-after transition. That includes what the combo contained before the operation, which legs were removed, what remained, and whether the resulting combo is still held.
 
 This endpoint is additive. It does not change standard positions or combo position responses.
 
 Use [`GET /v3/combos/activity`](/data/combos/activity) for ordinary combo acquisition and burn activity such as `PositionsSplit` and `PositionsMerged`. This endpoint is scoped to terminal redemptions, post-resolution compression, and the module-level transformations needed to explain redemption lineage.
+
+## The consumer view
+
+- A **full redemption** means the complete combo was consumed. `remaining_leg_count` is `0`, and there is no remaining combo position.
+- A **partial redemption** means post-resolution compression removed one or more settled legs and produced a smaller combo. `remaining_combo` identifies the resulting position and, when available, whether the wallet still holds it.
+- A **transformation** changes combo structure but is not evidence of a redemption payout. These rows are kept separate so extraction or wrapping is not mistaken for money being redeemed.
+
+For example, `leg_transition: "5_to_1"` means a five-leg combo became a one-leg combo. Four legs were removed, one leg remained, and the user may still hold the new one-leg position.
+
+## How this differs from Polymarket combo activity
+
+Polymarket provides a public [combo activity endpoint](https://docs.polymarket.com/api-reference/core/get-user-combo-activity) and [combo positions endpoint](https://docs.polymarket.com/api-reference/core/get-user-combo-positions). The activity response supplies the lifecycle event, reported combo identifiers, amount or payout, transaction details, and a per-leg breakdown.
+
+polynode preserves that basic record and adds the transaction-level interpretation needed to explain the redemption directly:
+
+| Question | Polymarket combo activity | polynode combo redemptions |
+|----------|----------------------------|----------------------------|
+| What operation happened? | `REDEEM`, `COMPRESS`, and other lifecycle types | Preserved as `type` and `event_kind` |
+| Was the whole combo redeemed or did a smaller combo remain? | Inferred from the operation and surrounding position state | Explicit `redemption_scope`, `redemption_type`, and terminal/partial flags |
+| What did the operation start with and produce? | The activity row identifies the reported combo | Explicit source, full, reduced, and destination condition and position IDs |
+| How many legs were removed and left? | Not explicit in the activity row | `source_leg_count`, `removed_leg_count`, `remaining_leg_count`, and `leg_transition` |
+| Which exact legs changed? | One `legs` array for the reported combo | Separate `source_legs`, `removed_legs`, and `remaining_legs` arrays |
+| Does the user still hold the resulting combo? | Requires a combo-position lookup | Compact `remaining_combo` snapshot when the balance is available |
+
+In the public `5_to_1` transaction used below, Polymarket reports a `COMPRESS` event with the resulting one-leg combo. polynode also identifies the consumed five-leg combo, the four removed legs, the exact source-to-destination position transition, and the remaining holding. This removes the need to reconstruct the change from separate activity and position records.
 
 ## Request
 
