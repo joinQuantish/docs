@@ -1,12 +1,18 @@
 ---
 title: "Wallet Redemptions"
 openapi: "GET /v3/wallets/{address}/redemptions"
-description: "Get all redemption events for a wallet. Redemptions occur when a wallet claims payouts from resolved markets."
+description: "Get all direct and AutoRedeemer-attributed payout redemptions for a wallet."
 ---
 
-Returns redemption events where the wallet claimed payouts from resolved market conditions.
-Rows are enriched with market and resolution metadata when available so clients can identify
-the winning outcome without a second market lookup. The original response fields remain
+Returns all indexed redemption events attributed to the wallet across direct Conditional
+Tokens, negative-risk, and AutoRedeemer execution paths. AutoRedeemer rows use the beneficiary
+wallet rather than the protocol contract address, so the result remains complete when the
+protocol submits the underlying claim. Direct and AutoRedeemer rows are merged across all time
+before sorting and pagination.
+
+Every row includes `transaction_hash`, `block_number`, `log_index`, `redemption_source`, and
+`source_event`. Rows are enriched with market and resolution metadata when available so clients
+can identify the winning outcome without a second market lookup. Existing response fields remain
 present and unchanged.
 
 ## Request
@@ -23,6 +29,7 @@ GET /v3/wallets/{address}/redemptions
 | `before` | integer | -- | End of time range |
 | `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
+| `order` | string | `desc` | Sort order: `asc` or `desc` |
 
 ## Example
 
@@ -58,11 +65,21 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
       "winning_outcome_index": 0,
       "winning_outcome": "Yes",
       "winning_token_id": "92311850691119989700494243314039291208974625045063458908184129720108035114164",
-      "resolved_at": "2026-05-28T04:49:07.589252+00:00"
+      "resolved_at": "2026-05-28T04:49:07.589252+00:00",
+      "transaction_hash": "0x6173027f191670852e049df6ded0b353069a531f5ea647220bdcb64ab634348e",
+      "redemption_source": "direct_neg_risk",
+      "source_event": "NegRiskAdapter.PayoutRedemption",
+      "block_number": 85805783,
+      "log_index": 3244
     }
   ],
   "rows_returned": 1,
   "has_more": true,
+  "next_offset": 1,
+  "offset": 0,
+  "limit": 1,
+  "order": "desc",
+  "source": "v3.wallet_redemptions_unified",
   "elapsed_ms": 3
 }
 ```
@@ -75,7 +92,7 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
 | `timestamp` | string | Unix timestamp |
 | `condition` | string | Market condition ID that was redeemed |
 | `payout` | string | Exact raw payout amount in six-decimal integer units. Preserved for backwards compatibility. |
-| `index_sets` | array | Which outcome index sets were redeemed |
+| `index_sets` | array \| null | Which outcome index sets were redeemed. AutoRedeemer lifecycle rows may not expose this value. |
 | `condition_id` | string | Alias of `condition`, matching the WebSocket redemption payload naming. |
 | `payout_e6` | string | Alias of `payout`; exact six-decimal payout amount for accounting-safe comparisons. |
 | `payout_usdc` | number | Human-readable payout amount in USDC. |
@@ -93,3 +110,13 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
 | `winning_outcome` | string \| null | Label of the winning outcome. |
 | `winning_token_id` | string \| null | Token ID of the winning outcome. |
 | `resolved_at` | string \| null | ISO timestamp for when the market resolution metadata indicates the condition became resolved. |
+| `transaction_hash` | string | Polygon transaction hash containing the redemption event. |
+| `redemption_source` | string | Normalized execution path: `direct_ctf`, `direct_neg_risk`, `direct_other`, `auto_binary`, `auto_neg_risk`, or `auto_combo`. |
+| `source_event` | string | Exact protocol event family used to attribute the redemption. |
+| `block_number` | integer | Polygon block containing the source event. |
+| `log_index` | integer | Source event log index. Combine with `transaction_hash` for an exact event identity. |
+
+AutoRedeemer binary and negative-risk rows carry the market condition directly. Generic combo
+redemptions resolve their condition through the canonical combo redemption mapping. A transaction
+can contain multiple legitimate redemption events, so clients should identify rows by
+`transaction_hash` plus `log_index`, not by payout amount.
