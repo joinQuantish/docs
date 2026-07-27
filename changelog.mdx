@@ -5,6 +5,23 @@ description: "Recent PolyNode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-07-27 - Complete wallet redemptions with transaction hashes
+
+`GET /v3/wallets/{address}/redemptions` now returns redemptions attributed to the wallet across direct, negative-risk, and AutoRedeemer execution paths.
+
+What's new:
+
+* Direct and AutoRedeemer redemptions are merged across all indexed history before pagination.
+* Every row includes `transaction_hash`, `block_number`, and `log_index` for exact onchain event identification.
+* `redemption_source` distinguishes `direct_ctf`, `direct_neg_risk`, `auto_binary`, `auto_neg_risk`, and `auto_combo` rows. `source_event` preserves the protocol event family.
+* AutoRedeemer activity is attributed to the beneficiary wallet instead of the protocol contract address.
+* Existing redemption and market-enrichment fields remain compatible. `index_sets` can be null when the AutoRedeemer lifecycle event does not expose it.
+* `order=asc|desc`, `next_offset`, and deterministic cross-source pagination are now explicit in the response contract.
+
+Docs: [Wallet Redemptions](/data/wallets/redemptions)
+
+***
+
 ## 2026-07-25 - Full and partial combo redemption lineage
 
 Added dedicated combo redemption endpoints without changing existing position or activity responses.
