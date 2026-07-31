@@ -524,6 +524,7 @@
             "group": "Crypto Price Streaming",
             "pages": [
               "crypto/overview",
+              "crypto/twap",
               "crypto/feeds",
               "crypto/event-format",
               "crypto/rest-api"

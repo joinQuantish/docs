@@ -12,12 +12,16 @@ icon: "code"
   "type": "price_feed",
   "feed": "ETH/USD",
   "timestamp": 1774672089,
+  "is_twap": false,
+  "twap_window_seconds": null,
   "data": {
     "feed": "ETH/USD",
     "price": 1989.49,
     "bid": 1989.49,
     "ask": 1989.49,
-    "timestamp": 1774672089
+    "timestamp": 1774672089,
+    "is_twap": false,
+    "twap_window_seconds": null
   }
 }
 ```
@@ -34,6 +38,14 @@ icon: "code"
 
 <ResponseField name="timestamp" type="number" required>
   Observation timestamp in Unix seconds. Top-level convenience field, same value as `data.timestamp`.
+</ResponseField>
+
+<ResponseField name="is_twap" type="boolean" required>
+  `true` for a Chainlink-computed TWAP and `false` for a spot price.
+</ResponseField>
+
+<ResponseField name="twap_window_seconds" type="30 | 60 | null" required>
+  Chainlink TWAP lookback window. `null` on spot events.
 </ResponseField>
 
 <ResponseField name="data" type="object" required>
@@ -57,6 +69,14 @@ icon: "code"
     <ResponseField name="timestamp" type="number" required>
       Observation timestamp in Unix seconds.
     </ResponseField>
+
+    <ResponseField name="is_twap" type="boolean" required>
+      `true` for a TWAP event and `false` for a spot event.
+    </ResponseField>
+
+    <ResponseField name="twap_window_seconds" type="30 | 60 | null" required>
+      TWAP lookback window. `null` on spot events.
+    </ResponseField>
   </Expandable>
 </ResponseField>
 
@@ -64,4 +84,5 @@ icon: "code"
 
 - **Update rate**: approximately 1 update per second per feed.
 - **No snapshot**: unlike settlement subscriptions, price feed subscriptions do not include an initial snapshot. The first event arrives with the next price observation (~1 second after subscribing).
-- **Deduplication**: if you subscribe to all feeds, BTC/USD may arrive at a slightly higher rate (~2/second) due to multiple upstream sources. Your application should deduplicate by timestamp if needed.
+- **TWAP windows**: when you subscribe to both windows, key state by `feed` and `twap_window_seconds`. See [Chainlink TWAP Prices](/crypto/twap).
+- **Deduplication**: include `feed`, `twap_window_seconds`, and `timestamp` in a TWAP deduplication key.

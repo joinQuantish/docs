@@ -116,6 +116,10 @@ Always match by `fill.maker`, never by `fill.taker`. The `taker` field is the co
 
 ### Chainlink price feed
 
+This unchanged subscription follows the default Chainlink stream. See
+[Chainlink TWAP Prices](/crypto/twap) to select the 30-second window, the
+60-second window, or both during the August transition.
+
 ```javascript
 const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
