@@ -9,6 +9,10 @@ icon: "coins"
 
 All feeds update at approximately 1 tick per second. Prices are quoted in USD.
 
+The same seven feed names apply to spot, 30-second TWAP, and 60-second TWAP
+events. See [Chainlink TWAP Prices](/crypto/twap) for the August 4 test window,
+August 7 cutover, and `twap_windows` filter.
+
 ### BTC/USD
 
 Bitcoin. The most liquid and widely traded crypto asset.
@@ -168,4 +172,6 @@ Omit the `feeds` filter:
 {"action": "subscribe", "type": "chainlink"}
 ```
 
-You'll receive ~7 events per second (one per feed). At approximately 200 bytes per event, that's under 1.5 KB/s of bandwidth.
+Through August 6, the default stream sends one spot series per feed. Starting
+August 7 at 00:00 UTC, it sends both TWAP windows per feed. Select `[30]` or
+`[60]` when your application needs only one market-duration mapping.

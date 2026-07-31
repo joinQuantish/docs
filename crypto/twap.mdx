@@ -1,0 +1,162 @@
+---
+title: "Chainlink TWAP Prices"
+sidebarTitle: "TWAP Transition"
+description: "Test 30-second and 60-second Chainlink TWAP prices on August 4 and prepare for Polymarket's August 7 resolution change."
+icon: "wave-square"
+---
+
+Polymarket is changing affected crypto up-or-down markets from a single
+snapshot-in-time price to a Chainlink-computed time-weighted average price
+(TWAP). Polymarket says this change is intended to protect market integrity by
+reducing the effect of one instant on market resolution.
+
+polynode does not calculate or approximate the TWAP. Chainlink computes it,
+Polymarket publishes it, and the existing polynode `chainlink` subscription
+delivers it with additive source identity fields.
+
+## Schedule
+
+| Date and time | polynode behavior |
+|---|---|
+| **August 4, 2026** | Polymarket is scheduled to make production 30-second and 60-second TWAP updates available. You can test them explicitly with `twap_windows`. |
+| **August 7, 2026 at 00:00 UTC** | Polymarket switches affected markets to TWAP resolution. At the same time, polynode's default `chainlink` subscription switches from spot prices to both TWAP windows. |
+
+The August 7 change does not alter Polymarket order books or polynode orderbook
+subscriptions. It changes the Chainlink reference price used by affected market
+resolution.
+
+Sources: [Polymarket's transition announcement](https://x.com/polymarketdevs/status/2082813706996772881),
+[Polymarket's Chainlink TWAP guide](https://docs.polymarket.com/market-data/chainlink-twap),
+and [the published market-window mapping](https://x.com/devjoshstevens/status/2082820700876746877).
+
+## Choose a window
+
+Polymarket's published mapping is:
+
+| Market duration | Chainlink TWAP lookback |
+|---|---|
+| 5-minute crypto up-or-down | 30 seconds |
+| 15-minute and 4-hour crypto up-or-down | 60 seconds |
+
+The lookback is not an update cadence. Do not infer a window from how often an
+event arrives. Use `twap_window_seconds` on every event.
+
+### 30-second TWAP
+
+```json
+{
+  "action": "subscribe",
+  "type": "chainlink",
+  "filters": {
+    "feeds": ["BTC/USD"],
+    "twap_windows": [30]
+  }
+}
+```
+
+### 60-second TWAP
+
+```json
+{
+  "action": "subscribe",
+  "type": "chainlink",
+  "filters": {
+    "feeds": ["BTC/USD"],
+    "twap_windows": [60]
+  }
+}
+```
+
+### Both windows
+
+```json
+{
+  "action": "subscribe",
+  "type": "chainlink",
+  "filters": {
+    "feeds": ["BTC/USD", "ETH/USD"],
+    "twap_windows": [30, 60]
+  }
+}
+```
+
+`twap_windows` accepts only `30`, `60`, or both. Omit `feeds` to receive every
+available pair. Omit `twap_windows` to follow the default stream.
+
+The subscription acknowledgement confirms the selection:
+
+```json
+{
+  "type": "subscribed",
+  "subscription_type": "chainlink",
+  "price_source": "both",
+  "twap_windows": [30, 60]
+}
+```
+
+For a default subscription, `price_source` is `follow_main` and
+`twap_windows` is `null`.
+
+<Note>
+  An explicit TWAP subscription is accepted before August 4, but no TWAP event
+  can arrive until Polymarket activates the production feed. TWAP subscriptions
+  start with the next update and have no snapshot, history, or replay.
+</Note>
+
+## Event identity
+
+The existing event type, feed names, numeric price fields, and timestamp remain
+unchanged. Two additive fields identify the source:
+
+```json
+{
+  "type": "price_feed",
+  "feed": "BTC/USD",
+  "timestamp": 1785178800,
+  "is_twap": true,
+  "twap_window_seconds": 30,
+  "data": {
+    "feed": "BTC/USD",
+    "price": 65000.5,
+    "bid": 65000.5,
+    "ask": 65000.5,
+    "timestamp": 1785178800,
+    "is_twap": true,
+    "twap_window_seconds": 30
+  }
+}
+```
+
+For spot events, `is_twap` is `false` and `twap_window_seconds` is `null`. For
+TWAP events, `is_twap` is `true`, `twap_window_seconds` is `30` or `60`, and
+`price`, `bid`, and `ask` carry the same Chainlink-computed TWAP value.
+
+When you request both windows, two events for one feed are distinct TWAP
+observations, not duplicate ticks. Key application state by `feed` and
+`twap_window_seconds`. Include `timestamp` when deduplicating repeated delivery.
+
+## Existing subscriptions
+
+Existing clients can keep this subscription unchanged:
+
+```json
+{"action": "subscribe", "type": "chainlink"}
+```
+
+It continues to deliver spot events through August 6. On August 7 at 00:00 UTC,
+it begins delivering both 30-second and 60-second TWAP events. The WebSocket
+URL, API key, subscription type, and existing JSON fields do not change. You do
+not need to reconnect or resubscribe for the cutover.
+
+If your strategy uses one market duration, add the matching `twap_windows`
+filter before August 7 so your code receives only that window.
+
+## Price-to-beat
+
+Do not calculate a market's price-to-beat from the live event cadence. The
+polynode short-form SDKs continue to obtain `priceToBeat` from Polymarket's
+published crypto-price response for that market window. Use the matching TWAP
+stream to track the reference price during the market:
+
+- use `[30]` for 5-minute markets;
+- use `[60]` for 15-minute and 4-hour markets.

@@ -7,6 +7,14 @@ icon: "chart-line"
 
 Stream real-time crypto prices over WebSocket. 7 feeds, ~1 update per second each.
 
+<Warning>
+  **Chainlink TWAP transition:** production 30-second and 60-second TWAP testing
+  begins August 4, 2026. Polymarket and polynode switch affected crypto
+  up-or-down markets and the default price stream on August 7, 2026 at 00:00
+  UTC. See [Chainlink TWAP Prices](/crypto/twap) for the exact schedule,
+  subscription filters, and additive event fields.
+</Warning>
+
 ## Connection
 
 ```
@@ -122,12 +130,16 @@ Every price update arrives as a `price_feed` event:
   "type": "price_feed",
   "feed": "BTC/USD",
   "timestamp": 1774672588,
+  "is_twap": false,
+  "twap_window_seconds": null,
   "data": {
     "feed": "BTC/USD",
     "price": 66225.49,
     "bid": 66221.69,
     "ask": 66229.46,
-    "timestamp": 1774672588
+    "timestamp": 1774672588,
+    "is_twap": false,
+    "twap_window_seconds": null
   }
 }
 ```
