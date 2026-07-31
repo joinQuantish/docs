@@ -2815,19 +2815,6 @@
               "default": 10000
             },
             "description": "Maximum ticks to return"
-          },
-          {
-            "name": "source",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "chainlink_data_streams",
-                "polymarket_chainlink"
-              ]
-            },
-            "description": "Optional feed source filter"
           }
         ],
         "responses": {
@@ -2842,7 +2829,7 @@
             }
           },
           "400": {
-            "description": "Invalid symbol, time range, limit, or source"
+            "description": "Invalid symbol, time range, or limit"
           }
         }
       }

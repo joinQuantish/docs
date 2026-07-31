@@ -7,14 +7,15 @@ icon: "clock-rotate-left"
 
 ## 2026-07-31 - Chainlink TWAP streams and August 7 cutover
 
-Polymarket is changing affected crypto up-or-down markets from a single
+Affected Polymarket crypto up-or-down markets are changing from a single
 snapshot-in-time price to a Chainlink-computed time-weighted average price to
-protect market integrity.
+protect market integrity. The values delivered by polynode are Chainlink
+prices; polynode does not calculate the TWAP.
 
 What's new:
 
 * Starting August 4, use `twap_windows: [30]`, `[60]`, or `[30, 60]` on the existing `chainlink` WebSocket subscription to test the production TWAP streams.
-* Polymarket maps the 30-second lookback to 5-minute markets and the 60-second lookback to 15-minute and 4-hour markets.
+* The published mapping uses the 30-second lookback for 5-minute markets and the 60-second lookback for 15-minute and 4-hour markets.
 * On August 7 at 00:00 UTC, polynode's default `chainlink` subscription switches from spot to both TWAP windows alongside Polymarket's resolution change.
 * Every price event now includes additive `is_twap` and `twap_window_seconds` fields. Existing event fields, feed names, API keys, and subscription messages remain compatible.
 * Existing WebSocket connections do not need to reconnect or resubscribe at cutover. Clients that need one market duration can select its window explicitly.

@@ -117,7 +117,6 @@ Historical 1-second ticks for the same crypto feeds available on the `price_feed
 | `from` | Yes | Start of range as Unix milliseconds |
 | `to` | Yes | End of range as Unix milliseconds |
 | `limit` | No | Max ticks to return. Default 10000, max 100000 |
-| `source` | No | Optional source filter: `chainlink_data_streams` or `polymarket_chainlink` |
 
 ```bash
 curl -H "x-api-key: YOUR_API_KEY" \
@@ -134,7 +133,6 @@ curl -H "x-api-key: YOUR_API_KEY" \
   "limit": 5,
   "count": 5,
   "truncated": true,
-  "source": null,
   "ticks": [
     {
       "id": "1780458962000-0",
@@ -142,7 +140,6 @@ curl -H "x-api-key: YOUR_API_KEY" \
       "feed": "BTC/USD",
       "timestamp": 1780458962,
       "timestamp_ms": 1780458962000,
-      "source": "chainlink_data_streams",
       "data": {
         "feed": "BTC/USD",
         "price": 65869.02124677686,
@@ -156,7 +153,7 @@ curl -H "x-api-key: YOUR_API_KEY" \
 ```
 </Expandable>
 
-If `truncated` is `true`, request a narrower range or increase `limit`. BTC/USD can include more than one source for the same second; use the `source` parameter or deduplicate by `timestamp_ms` if your chart needs exactly one point per second.
+If `truncated` is `true`, request a narrower range or increase `limit`.
 
 ---
 

@@ -10,22 +10,22 @@ snapshot-in-time price to a Chainlink-computed time-weighted average price
 (TWAP). Polymarket says this change is intended to protect market integrity by
 reducing the effect of one instant on market resolution.
 
-polynode does not calculate or approximate the TWAP. Chainlink computes it,
-Polymarket publishes it, and the existing polynode `chainlink` subscription
-delivers it with additive source identity fields.
+These are Chainlink prices. polynode does not calculate or approximate the
+TWAP. Chainlink computes each value, and the existing polynode `chainlink`
+subscription delivers it with additive TWAP identity fields.
 
 ## Schedule
 
 | Date and time | polynode behavior |
 |---|---|
-| **August 4, 2026** | Polymarket is scheduled to make production 30-second and 60-second TWAP updates available. You can test them explicitly with `twap_windows`. |
-| **August 7, 2026 at 00:00 UTC** | Polymarket switches affected markets to TWAP resolution. At the same time, polynode's default `chainlink` subscription switches from spot prices to both TWAP windows. |
+| **August 4, 2026** | Production Chainlink 30-second and 60-second TWAP streams become available for testing. Select them explicitly with `twap_windows`. |
+| **August 7, 2026 at 00:00 UTC** | Affected markets switch to Chainlink TWAP resolution. At the same time, polynode's default `chainlink` subscription switches from spot prices to both TWAP windows. |
 
-The August 7 change does not alter Polymarket order books or polynode orderbook
-subscriptions. It changes the Chainlink reference price used by affected market
-resolution.
+The August 7 change does not alter market order books or polynode orderbook
+subscriptions. It changes the Chainlink reference price used to resolve the
+affected markets.
 
-Sources: [Polymarket's transition announcement](https://x.com/polymarketdevs/status/2082813706996772881),
+Schedule references: [Polymarket's transition announcement](https://x.com/polymarketdevs/status/2082813706996772881),
 [Polymarket's Chainlink TWAP guide](https://docs.polymarket.com/market-data/chainlink-twap),
 and [the published market-window mapping](https://x.com/devjoshstevens/status/2082820700876746877).
 
@@ -99,14 +99,15 @@ For a default subscription, `price_source` is `follow_main` and
 
 <Note>
   An explicit TWAP subscription is accepted before August 4, but no TWAP event
-  can arrive until Polymarket activates the production feed. TWAP subscriptions
-  start with the next update and have no snapshot, history, or replay.
+  arrives until the production Chainlink TWAP streams go live. TWAP
+  subscriptions start with the next update and have no snapshot, history, or
+  replay.
 </Note>
 
 ## Event identity
 
 The existing event type, feed names, numeric price fields, and timestamp remain
-unchanged. Two additive fields identify the source:
+unchanged. Two additive fields identify the price type and TWAP window:
 
 ```json
 {
@@ -154,9 +155,9 @@ filter before August 7 so your code receives only that window.
 ## Price-to-beat
 
 Do not calculate a market's price-to-beat from the live event cadence. The
-polynode short-form SDKs continue to obtain `priceToBeat` from Polymarket's
-published crypto-price response for that market window. Use the matching TWAP
-stream to track the reference price during the market:
+polynode short-form SDKs continue to expose `priceToBeat` for each market
+window. Use the matching Chainlink TWAP stream to track the reference price
+during the market:
 
 - use `[30]` for 5-minute markets;
 - use `[60]` for 15-minute and 4-hour markets.

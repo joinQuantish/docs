@@ -22,10 +22,6 @@ Returns historical 1-second price ticks for the same crypto feeds available on t
   Maximum ticks to return. Max 100000.
 </ParamField>
 
-<ParamField query="source" type="string">
-  Optional feed source filter. Valid values are `chainlink_data_streams` and `polymarket_chainlink`.
-</ParamField>
-
 <RequestExample>
 ```bash
 curl -H "x-api-key: YOUR_API_KEY" \
@@ -43,7 +39,6 @@ curl -H "x-api-key: YOUR_API_KEY" \
   "limit": 5,
   "count": 5,
   "truncated": true,
-  "source": null,
   "ticks": [
     {
       "id": "1780458962000-0",
@@ -51,7 +46,6 @@ curl -H "x-api-key: YOUR_API_KEY" \
       "feed": "BTC/USD",
       "timestamp": 1780458962,
       "timestamp_ms": 1780458962000,
-      "source": "chainlink_data_streams",
       "data": {
         "feed": "BTC/USD",
         "price": 65869.02124677686,
@@ -102,7 +96,9 @@ console.log(points.at(0), points.at(-1));
 
 ## Pair with the live stream
 
-The response uses the same event shape as the WebSocket `price_feed` stream. The main difference is that historical responses include an `id`, `timestamp_ms`, and optional `source` label for replay and deduplication.
+The response uses the same Chainlink price event shape as the WebSocket
+`price_feed` stream. Historical responses also include an `id` and
+`timestamp_ms` for replay and deduplication.
 
 ```javascript
 const ws = new WebSocket("wss://ws.polynode.dev/ws?key=YOUR_API_KEY");
@@ -126,7 +122,3 @@ ws.addEventListener("message", (event) => {
   console.log(point);
 });
 ```
-
-<Note>
-  BTC/USD can include more than one source for the same second. Deduplicate by `timestamp_ms` or choose a single `source` when your chart needs exactly one point per second.
-</Note>
