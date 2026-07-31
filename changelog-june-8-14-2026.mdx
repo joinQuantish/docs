@@ -121,17 +121,18 @@ No response fields or pagination semantics changed.
 
 ---
 
-## 2026-06-11 - Direct Chainlink coverage for all seven crypto feeds
+## 2026-06-11 - Chainlink coverage for all seven crypto feeds
 
-Expanded the `price_feed` WebSocket and crypto history APIs to use fresh Chainlink Data Streams coverage for every supported asset.
+Expanded the `price_feed` WebSocket and crypto history APIs to deliver fresh
+Chainlink prices for every supported asset.
 
 What's improved:
 
-- `BTC/USD`, `ETH/USD`, `SOL/USD`, `BNB/USD`, `XRP/USD`, `DOGE/USD`, and `HYPE/USD` now receive direct updates at approximately one tick per second.
+- `BTC/USD`, `ETH/USD`, `SOL/USD`, `BNB/USD`, `XRP/USD`, `DOGE/USD`, and `HYPE/USD` now receive updates at approximately one tick per second.
 - Price events include real bid and ask values for all seven feeds.
 - An unfiltered `type: "chainlink"` subscription returns all seven feeds; use `filters.feeds` to select individual feeds.
-- `GET /v1/crypto/price`, `GET /v1/crypto/ticks`, and `GET /v1/crypto/candles` use the same fresh tick archive, with the Polymarket mirror retained as a fallback source.
-- New five-minute and fifteen-minute windows receive their opening tick at the window boundary, avoiding the prior relay-related freshness delay.
+- `GET /v1/crypto/price`, `GET /v1/crypto/ticks`, and `GET /v1/crypto/candles` provide consistent Chainlink prices across the crypto API.
+- New five-minute and fifteen-minute windows receive their opening tick at the window boundary, avoiding the prior freshness delay.
 
 No WebSocket message shape or REST request format changed.
 

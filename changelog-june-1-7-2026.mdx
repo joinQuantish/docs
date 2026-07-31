@@ -70,12 +70,14 @@ Request contract:
 - Required `symbol`: `BTC`, `ETH`, `SOL`, `BNB`, `XRP`, `DOGE`, or `HYPE`
 - Required `from` and `to` as Unix timestamps in milliseconds
 - Optional `limit`, default `10,000` and maximum `100,000`
-- Optional `source`: `chainlink_data_streams` or `polymarket_chainlink`
 - Maximum range of 24 hours per request
 
-Responses include `count`, `truncated`, and ordered `ticks`. Each tick includes a replay-safe `id`, `timestamp_ms`, source label, and the same feed, price, bid, ask, and timestamp values used by the live stream.
+Responses include `count`, `truncated`, and ordered `ticks`. Each tick includes
+a replay-safe `id`, `timestamp_ms`, and the same Chainlink feed, price, bid,
+ask, and timestamp values used by the live stream.
 
-If `truncated` is `true`, narrow the time range or increase the limit. Ranges before collection began return an empty `ticks` array. BTC may contain multiple sources for the same second, so use `source` or deduplicate by `timestamp_ms` when a chart needs exactly one point per second.
+If `truncated` is `true`, narrow the time range or increase the limit. Ranges
+before collection began return an empty `ticks` array.
 
 Docs: [Historical Price Ticks](/api-reference/crypto/ticks)
 
