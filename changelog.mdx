@@ -18,10 +18,60 @@ What's new:
 * The published mapping uses the 30-second lookback for 5-minute markets and the 60-second lookback for 15-minute and 4-hour markets.
 * On August 7 at 00:00 UTC, polynode's default `chainlink` subscription switches from spot to both TWAP windows alongside Polymarket's resolution change.
 * Every price event now includes additive `is_twap` and `twap_window_seconds` fields. Existing event fields, feed names, API keys, and subscription messages remain compatible.
+* Chainlink spot events now emit one canonical price update instead of duplicate events for the same tick.
 * Existing WebSocket connections do not need to reconnect or resubscribe at cutover. Clients that need one market duration can select its window explicitly.
 * The orderbook stream is unaffected.
 
 Docs: [Chainlink TWAP Prices](/crypto/twap)
+
+***
+
+## 2026-07-30 - Faster PolyUSD flows and P&L leaderboards
+
+High-volume V3 wallet and leaderboard requests now complete faster. Returned
+data, field names, ordering, filters, and pagination behavior remain
+compatible.
+
+What's improved:
+
+* A representative large-wallet `GET /v3/wallets/{address}/polyusd-flows` request improved from 8.29 seconds to 3.34 seconds.
+* A representative filtered `GET /v3/leaderboard` request improved from 10.0 seconds to 0.59 seconds.
+* A representative global top-100 leaderboard request improved from 7.17 seconds to 0.14 seconds.
+
+Docs: [Wallet PolyUSD Flows](/data/wallets/polyusd-flows), [Global Leaderboard](/data/leaderboard/global), and [Tag Leaderboard](/data/leaderboard/tag-leaderboard)
+
+***
+
+## 2026-07-29 - Faster V3 wallet-position pages
+
+Further improved `GET /v3/wallets/{address}/positions` performance for wallets
+with long histories and deep result pages.
+
+What's improved:
+
+* Representative pages improved from 18.36 seconds to 1.89 seconds, 6.24 seconds to 0.36 seconds, and 2.90 seconds to 0.54 seconds.
+* A representative deep request that previously timed out completed in 1.32 seconds.
+* In the post-release sample, the observed `504` rate fell from 2.69% to 0.23%, while successful requests had a 283 ms p95 response time.
+
+Fields, values, row ordering, result counts, filters, and pagination remain
+compatible. No client changes are required.
+
+Docs: [Wallet Positions](/data/wallets/positions)
+
+***
+
+## 2026-07-28 - Broader wallet resolution and safer token-price responses
+
+Existing wallet and token lookup endpoints now handle two previously
+incomplete edge cases without changing their response contracts.
+
+What's improved:
+
+* `GET /v1/resolve/{query}` can now resolve the controlling EOA for older proxy-wallet addresses, along with the associated username when available.
+* `GET /v3/tokens/{token_id}` and `GET /v3/markets/{token_id}/price` now return the established numeric `0` price instead of a `502` when a token exists but no current price has been established yet.
+* Existing fields, API-key behavior, and not-found responses remain compatible.
+
+Docs: [Resolve Wallet](/api-reference/wallets/resolve), [Token Info](/data/tokens/info), and [Token Price](/data/markets/price)
 
 ***
 
