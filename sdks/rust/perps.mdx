@@ -51,7 +51,7 @@ async fn main() -> polynode::Result<()> {
 
 One subscribe request can be partially accepted. Inspect `ack.channels` and `ack.rejected`.
 
-Each `PerpsEvent::Book` is a complete replacement, not an incremental patch. `perps.book("BTC-USD").await` returns the latest managed copy.
+Each `PerpsEvent::Book` is a complete replacement, not an incremental patch. `perps.book("BTC-USD").await` returns the latest managed copy, or `None` until the first book event arrives. A successful acknowledgement confirms the channel, not book readiness; use the [V3 perps orderbook](/perps/market-data/book) when startup needs immediate state.
 
 The client reconnects and resubscribes after non-terminal disconnects, but replay is not guaranteed. `PerpsReconnectNotice.gap_possible` is true; use V3 REST to backfill if completeness matters. Authentication (`4401`) and connection-limit (`4429`) closes are terminal until the failing condition changes.
 

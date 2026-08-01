@@ -167,6 +167,8 @@ The registered executor accepts wire-format query names. This is useful when one
 
 `group_by=order_hash` and `sort_by=order_hash` are supported on the global, wallet, market-token, and market-slug trade routes.
 
+Grouped trade responses use a smaller envelope than ungrouped list responses. They include `trades`, `rows_returned`, and `grouped_by` (plus the route identifier where applicable), but omit `limit`, `offset`, and `has_more`. The request's `limit` and `offset` still select the page. If you page grouped results, track those values in your application and stop after an empty `trades` array instead of waiting for `has_more`.
+
 ## Read perps through V3
 
 Perps REST data uses the same executor and API key:

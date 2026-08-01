@@ -8,7 +8,9 @@ icon: "shapes"
 WebSocket events are Pydantic models selected by `event_type`:
 
 ```python
-def handle_event(event) -> None:
+from polynode.types.events import PolyNodeEvent
+
+def handle_event(event: PolyNodeEvent) -> None:
     match event.event_type:
         case "settlement":
             print(event.tx_hash, event.taker_size)

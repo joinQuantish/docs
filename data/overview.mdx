@@ -109,7 +109,7 @@ Endpoints fall into three envelope shapes:
 | Named list | `POST /v3/wallets/batch` | `"wallets": [...]` |
 | Generic list | Everything else (fees, resolutions, splits, merges, NRC, activity, redemptions, tag-leaderboard, tag-markets, market-positions, condition-positions, market-by-condition, market-search, tokens/info) | `"data": [...]` |
 
-All list responses also include `rows_returned`, `has_more`, `offset`, `limit`, `elapsed_ms`.
+Standard ungrouped list responses also include `rows_returned`, `has_more`, `offset`, `limit`, and `elapsed_ms`. Grouped trade responses are the exception: with `group_by=order_hash`, the response includes `trades`, `rows_returned`, `grouped_by`, and `elapsed_ms`, but omits `has_more`, `offset`, and `limit`.
 
 ## Timestamps
 
@@ -133,7 +133,7 @@ All list endpoints support:
 - `?limit=N` — results per page (default 100, max 300)
 - `?offset=N` — skip N results
 
-Responses include the actual `limit` used, plus `has_more: true/false` to indicate if more pages exist. For deep trade-history walks, prefer `after` and `before` time windows instead of very large offsets.
+Ungrouped responses include the actual `limit` used, plus `has_more: true/false` to indicate if more pages exist. Grouped trade requests still accept `limit` and `offset`, but their responses omit those fields and `has_more`; track the requested values and stop after an empty `trades` array. For deep trade-history walks, prefer `after` and `before` time windows instead of very large offsets.
 
 ## Response format
 

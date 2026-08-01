@@ -8,7 +8,7 @@ description: "Every perps WebSocket channel and its payload."
 | `perps_tickers` | all instruments | Ticker updates: index/mark/last/mid price, open interest, funding rate, next funding |
 | `perps_statistics` | all instruments | Rolling 24h stats per instrument, sent when they change |
 | `perps_bbo:<instrument>` | one instrument | Best bid/offer changes |
-| `perps_book:<instrument>` | one instrument | Complete top-20 snapshot on subscribe **and on every update** — replace your local book, never merge |
+| `perps_book:<instrument>` | one instrument | Complete top-20 snapshot whenever published — replace your local book, never merge |
 | `perps_trades:<instrument>` | one instrument | Executions as they print |
 | `perps_klines:<instrument>:<interval>` | one instrument | The current candle, sent whenever it changes; intervals `1m` and `1h` |
 
@@ -57,7 +57,7 @@ description: "Every perps WebSocket channel and its payload."
 }
 ```
 
-`perps_book:<instrument>` — **every message is a complete snapshot** of the top 20 levels per side, including the one you get immediately on subscribe. Replace your local book with each message; merging messages as if they were deltas will accumulate stale levels and cross the book:
+`perps_book:<instrument>` — **every delivered message is a complete snapshot** of the top 20 levels per side. A successful subscription acknowledgement does not guarantee that the first snapshot has arrived. Replace your local book with each message; merging messages as if they were deltas will accumulate stale levels and cross the book. Fetch the [REST book](/perps/market-data/book) if startup requires immediate state:
 
 ```json
 {
