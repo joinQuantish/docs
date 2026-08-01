@@ -11,12 +11,16 @@ On August 1, 2026, we raced PolyNode, Struct, and Polymarket RTDS from one Node.
 This is a PolyNode-run, point-in-time smoke test. Alchemy supplied the independent confirmed-event denominator; it was not used as a live latency lane. All claims below are limited to the recorded configuration, window, and network vantage point.
 </Info>
 
+<Tip>
+**Key takeaways.** PolyNode pending beat RTDS activity on all 17,777 shared transactions by 1.984 seconds median, showing an earlier actionable stream than RTDS in this window. PolyNode `status_update`—emitted when a pending transaction was confirmed in a Polygon block—beat Struct confirmed on all 18,041 matched transactions by 3.963 seconds median. PolyNode and Struct each covered 100% of confirmed fills, while RTDS covered 98.537% of eligible transactions and Struct's documented pending path was not observed.
+</Tip>
+
 <CardGroup cols={2}>
   <Card title="100% confirmed coverage" icon="circle-check">
     PolyNode and Struct each represented all 48,281 confirmed fills after exact record reconciliation.
   </Card>
-  <Card title="3.86 second median lead" icon="bolt">
-    PolyNode's fill stream arrived first for 98.995% of exact fill pairs.
+  <Card title="3.96-second confirmation lead" icon="bolt">
+    PolyNode `status_update` beat Struct confirmed for every matched transaction.
   </Card>
   <Card title="1.98 seconds before RTDS" icon="gauge-high">
     PolyNode pending arrived first for every RTDS overlap in the headline window.
@@ -45,7 +49,7 @@ The word "trade" does not identify the same lifecycle stage in every feed. We fi
 | Confirmed fill | `trade` | Confirmed `OrderFilled`, plus the corresponding `OrdersMatched` representation | Not used for fill completeness | Transaction hash + canonical log index |
 | Completeness truth | Polygon `OrderFilled` logs through Alchemy | Same | Same | Transaction hash + block-global log index |
 
-PolyNode [`status_update`](/websocket/events/status-update) is the transaction-level confirmation comparison requested for Struct confirmed. PolyNode [`trade`](/websocket/events/trade) is the stricter fill-level comparison. PolyNode [`settlement`](/websocket/events/settlement) with `status=pending` is the pre-confirmation path.
+PolyNode [`status_update`](/websocket/events/status-update) means that a previously pending transaction was confirmed in a Polygon block. It is therefore the transaction-level equivalent used against Struct confirmed. It does not identify every individual fill inside that transaction; PolyNode [`trade`](/websocket/events/trade) is the stricter fill-level comparison. PolyNode [`settlement`](/websocket/events/settlement) with `status=pending` is the pre-confirmation path.
 
 RTDS activity is useful as a public timing baseline, but we do not label it as either pending or confirmed. Its official schema is not an exact semantic equivalent of both stages.
 
@@ -103,11 +107,13 @@ Every callback was stamped immediately with `process.hrtime.bigint()` in the sam
 | Comparison: left vs right | Samples | Median left lead | P95 left lead | Left first |
 |---|---:|---:|---:|---:|
 | PolyNode pending vs PolyNode `status_update` | 18,041 | +2.148 s | +3.189 s | 100.00% |
-| PolyNode `status_update` vs Struct confirmed | 18,041 | +3.963 s | +5.083 s | 100.00% |
+| ★ **PolyNode block confirmation (`status_update`) vs Struct confirmed** | 18,041 | +3.963 s | +5.083 s | 100.00% |
 | PolyNode confirmed fill vs Struct confirmed record | 48,281 | +3.862 s | +5.061 s | 99.00% |
-| PolyNode pending vs RTDS activity | 17,777 | +1.984 s | +2.858 s | 100.00% |
-| PolyNode `status_update` vs RTDS activity | 17,777 | -0.171 s | +0.428 s | 34.48% |
+| ★ **PolyNode pre-confirmation (pending) vs RTDS activity** | 17,777 | +1.984 s | +2.858 s | 100.00% |
+| PolyNode block confirmation (`status_update`) vs RTDS activity | 17,777 | -0.171 s | +0.428 s | 34.48% |
 | Struct confirmed vs RTDS activity | 17,777 | -4.118 s | -2.964 s | 0.00% |
+
+★ The two primary comparisons: PolyNode's confirmed-transaction signal against Struct confirmed, and PolyNode's pre-confirmation signal against RTDS activity.
 
 The RTDS comparison is an important check against overclaiming. RTDS activity arrived **171 ms before** PolyNode `status_update` at the median and won 65.52% of their overlaps. It is therefore wrong to describe PolyNode confirmation as several seconds ahead of RTDS. The several-second confirmed advantage is against Struct; the PolyNode advantage against RTDS belongs to the pending signal.
 
