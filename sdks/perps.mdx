@@ -14,7 +14,7 @@ The V3 perps WebSocket is a separate stream for perps market data. The SDK clien
 | `perps_tickers` | all instruments | index, mark, last, and mid prices; open interest and funding |
 | `perps_statistics` | all instruments | rolling statistics |
 | `perps_bbo:<instrument>` | one instrument | best bid and offer |
-| `perps_book:<instrument>` | one instrument | complete top-of-book depth snapshot |
+| `perps_book:<instrument>` | one instrument | complete top-of-book depth snapshot when published |
 | `perps_trades:<instrument>` | one instrument | executions |
 | `perps_klines:<instrument>:1m` | one instrument | current 1-minute candle |
 | `perps_klines:<instrument>:1h` | one instrument | current 1-hour candle |
@@ -147,9 +147,11 @@ A subscription acknowledgement can accept some channels and reject others. Alway
 
 Do not treat a resolved subscribe call as proof that every requested channel was accepted.
 
-## Complete books replace state
+## Book events replace state
 
-Every `perps_book` event is a complete replacement snapshot, including the first message after subscription. Replace the prior bids and asks; do not merge it as a delta.
+Every received `perps_book` event is a complete replacement snapshot. Replace the prior bids and asks; do not merge it as a delta.
+
+A successful subscription acknowledgement confirms that the channel is active; it does not mean a book snapshot has already arrived. The managed cache returns no book until the first `perps_book` event. If startup requires state within a fixed readiness deadline, read the [V3 perps orderbook](/perps/market-data/book) and replace it with subsequent WebSocket snapshots.
 
 The managed clients retain the latest complete book:
 

@@ -37,7 +37,7 @@ perps.onMessage((message) => {
 
 One subscribe request can be partially accepted. Always inspect `ack.channels` and `ack.rejected` rather than assuming every requested channel is active.
 
-Every `perps_book` event is a complete replacement for that instrument's cached book, not an incremental patch. `perps.book('BTC-USD')` returns the latest managed copy.
+Every `perps_book` event is a complete replacement for that instrument's cached book, not an incremental patch. `perps.book('BTC-USD')` returns the latest managed copy, or `null` until the first book event arrives. A successful acknowledgement confirms the channel, not book readiness; use the [V3 perps orderbook](/perps/market-data/book) when startup needs immediate state.
 
 The client reconnects and resubscribes after non-terminal disconnects, but the stream does not promise replay. A `reconnect` notice has `gap_possible: true`; backfill through V3 REST if completeness matters. Authentication (`4401`) and connection-limit (`4429`) closes are terminal until the caller changes the failing condition.
 
