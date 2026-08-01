@@ -1,60 +1,64 @@
 ---
-title: "TypeScript — Overview"
+title: "TypeScript SDK"
 sidebarTitle: "Overview"
+description: "Install polynode-sdk 0.12 and make a first V3 request from Node.js."
+icon: "js"
 ---
 
-<Info>
-**Placing orders?** See [Trading](/sdks/ts/trading) for `PolyNodeTrader`, V2 order placement (`exchangeVersion: 'v2'`), builder attribution, and PolyUSD wrapping.
-</Info>
+`polynode-sdk` is the Node.js client for PolyNode's V3 API, event stream, PN1 orderbook, perps stream, short-form markets, and trading helpers.
 
 ## Install
 
-
 ```bash
-npm install polynode-sdk ws
+npm install polynode-sdk@^0.12.2 ws
 ```
 
-Requires Node.js 18+. The `ws` package provides WebSocket support for Node.js.
+Node.js 18 or newer is required. The package supports ESM imports and CommonJS runtime loading. The examples use ESM.
 
+```json package.json
+{
+  "type": "module"
+}
+```
 
+Keep your key server-side:
 
-## Quick Start
+```bash
+export POLYNODE_API_KEY="pn_live_..."
+```
 
+## First request
 
 ```typescript
 import { PolyNode } from 'polynode-sdk';
 
-const pn = new PolyNode({ apiKey: 'pn_live_...' });
+const apiKey = process.env.POLYNODE_API_KEY;
+if (!apiKey) throw new Error('Set POLYNODE_API_KEY');
 
-// Fetch top markets
-const markets = await pn.markets({ count: 10 });
-console.log(`${markets.count} markets, ${markets.total} total`);
-
-// Search
-const results = await pn.search('bitcoin');
-console.log(results.results[0].question);
+const pn = new PolyNode({ apiKey });
+const stats = await pn.v3.stats();
+console.log(stats);
 ```
 
-## V3 Quick Start
+## Client surfaces
 
-The original `pn.market`, `pn.wallet`, and other top-level methods keep their legacy behavior. Use `pn.v3` when you want the newer paginated historical data endpoints.
+| Entry point | Use it for |
+| --- | --- |
+| `pn.v3` | Complete V3 API registry and typed convenience methods |
+| `pn.ws` | Settlements, confirmations, Chainlink prices, combos, and other events |
+| `pn.orderbook` | Raw orderbook messages |
+| `new OrderbookEngine(...)` | Managed local books and PN1 integrity |
+| `pn.perps` | Managed V3 perps WebSocket |
+| `pn.ws.shortForm(...)` | Rotating 5m, 15m, 1h, and 4h crypto markets |
+| `new PolyNodeTrader(...)` | Current V2 order and position operations |
 
-```typescript
-// Wallet P&L and enriched positions
-const summary = await pn.v3.wallet('0xa9857c7bcb9bcfafd2c132ab053f34f678610058');
-const positions = await pn.v3.walletPositions(summary.address, {
-  status: 'open',
-  sort: 'size',
-  limit: 25,
-});
+Each WebSocket is independent. Close the subscription or client you opened when your process shuts down.
 
-// Builder-attributed fills
-const trades = await pn.v3.builderTrades('0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df', {
-  marketSlug: 'dota2-tundra-xtreme-2026-05-22-game1',
-  limit: 50,
-});
-
-// Resolve wallet identifiers
-const resolved = await pn.resolve('alice123');
-console.log(resolved.safe, resolved.eoa, resolved.username, resolved.type);
-```
+<CardGroup cols={2}>
+  <Card title="V3 API" icon="database" href="/sdks/ts/v3-data">Call any registered V3 operation.</Card>
+  <Card title="Settlement stream" icon="bolt" href="/sdks/ts/websocket">Subscribe with replay and overflow visibility.</Card>
+  <Card title="Short-form and TWAP" icon="clock" href="/sdks/ts/short-form">Rotate with the correct Chainlink window.</Card>
+  <Card title="PN1 orderbook" icon="book-open" href="/sdks/ts/orderbook">Maintain fail-closed local state.</Card>
+  <Card title="Perps stream" icon="chart-line" href="/sdks/ts/perps">Subscribe to tickers, books, trades, and klines.</Card>
+  <Card title="Trading and fees" icon="arrow-right-arrow-left" href="/sdks/ts/trading">Use the current V2 defaults safely.</Card>
+</CardGroup>

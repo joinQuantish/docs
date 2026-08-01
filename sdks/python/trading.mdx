@@ -1,260 +1,53 @@
 ---
-title: "Python — Trading"
-sidebarTitle: "Trading"
+title: "Python Trading and Fees"
+sidebarTitle: "Trading & Fees"
+description: "Use Python's V2 trading defaults and keep protocol fees, builder attribution, and application fees distinct."
+icon: "arrow-right-arrow-left"
 ---
 
-## Trading
-
-<Warning>
-**Polymarket V2 cutover: April 28, 2026 at ~11am UTC.** Set `exchange_version=ExchangeVersion.V2` in your `TraderConfig` before cutover. V1 orders submitted after April 28 will be rejected with `order_version_mismatch`. Pass your V2 builder code (mint at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder)) via `OrderParams.builder`. See the [V2 Migration Guide](/guides/v2-migration).
-</Warning>
-
-<Info>
-**Deposit wallets supported.** The SDK auto-detects Safe proxy and deposit wallet users. No code changes needed for existing integrations. See the [Deposit Wallets guide](/guides/deposit-wallets).
-</Info>
-
-Place orders on Polymarket with local credential custody and builder attribution. Supports both the current exchange and the [Polymarket V2 exchange](/guides/v2-migration). See also: [PolyUSD Guide](/guides/polyusd) for V2 collateral wrapping. Requires the trading extras:
+Install the optional trading dependencies. Quote the extra so shells such as zsh do not treat brackets as a filename pattern:
 
 ```bash
-pip install polynode[trading]
+python -m pip install "polynode[trading]>=0.12.2,<0.13"
 ```
 
-### Generate a Wallet
+Polymarket V2 is the default:
 
 ```python
-import asyncio
-from polynode.trading import PolyNodeTrader
-
-async def main():
-    wallet = await PolyNodeTrader.generate_wallet()
-    print(f"Address: {wallet.address}")
-    print(f"Private key: {wallet.private_key}")
-    # BACK UP THE PRIVATE KEY — it cannot be recovered
-
-asyncio.run(main())
-```
-
-### One-Call Onboarding
-
-```python
-from polynode.trading import PolyNodeTrader, TraderConfig
-
-trader = PolyNodeTrader(TraderConfig(polynode_key="pn_live_..."))
-
-# Auto-detects wallet type, deploys Safe if needed, sets approvals, creates CLOB credentials
-status = await trader.ensure_ready("0xYourPrivateKey...")
-print(f"Wallet: {status.wallet}")
-print(f"Funder: {status.funder_address}")
-print(f"Type: {status.signature_type.name}")  # POLY_GNOSIS_SAFE
-print(f"Actions: {status.actions}")
-```
-
-### Place Orders
-
-```python
-from polynode.trading import OrderParams
-
-result = await trader.order(OrderParams(
-    token_id="51037625779056581606819614184446816710505006861008496087735536016411882582167",
-    side="BUY",
-    price=0.55,
-    size=100,
-))
-print(f"Success: {result.success}, Order ID: {result.order_id}")
-```
-
-### Cancel Orders
-
-```python
-# Cancel one
-cancel = await trader.cancel_order("order-id-here")
-
-# Cancel all
-cancel = await trader.cancel_all()
-
-# Cancel all in a market
-cancel = await trader.cancel_all(market="condition-id")
-```
-
-### Open Orders
-
-```python
-orders = await trader.get_open_orders()
-for o in orders:
-    print(f"{o.side} {o.original_size} @ {o.price} — {o.status}")
-```
-
-### Pre-Trade Checks
-
-```python
-# Check token approvals
-approvals = await trader.check_approvals()
-print(f"All approved: {approvals.all_approved}")
-
-# Check balances
-balance = await trader.check_balance()
-print(f"USDC: {balance.usdc}, MATIC: {balance.matic}")
-```
-
-### Wallet Management
-
-```python
-# Link existing credentials (no signing needed)
-trader.link_credentials(
-    wallet="0x...",
-    api_key="...",
-    api_secret="...",
-    api_passphrase="...",
-)
-
-# Export for backup
-exported = trader.export_wallet()
-# Import on another machine
-trader.import_wallet(exported)
-
-# List all linked wallets
-wallets = trader.get_linked_wallets()
-```
-
-### Address Derivation
-
-```python
-from polynode.trading import derive_safe_address, derive_proxy_address, derive_deposit_wallet_address
-
-eoa = "0xacd89cFCB82Ae1f843467D56b58796bb928C9E1A"
-safe = derive_safe_address(eoa)              # Gnosis Safe proxy address
-proxy = derive_proxy_address(eoa)            # Legacy proxy address
-deposit = derive_deposit_wallet_address(eoa) # Deposit wallet address (newer accounts)
-```
-
-### Polymarket V2 Exchange
-
-To trade on the Polymarket V2 exchange, set `exchange_version` on your `TraderConfig`:
-
-```python
-from polynode.trading import TraderConfig, ExchangeVersion
-
-config = TraderConfig(
-    polynode_key="pn_live_...",
-    exchange_version=ExchangeVersion.V2,
-)
-trader = PolyNodeTrader(config)
-```
-
-V2 uses PolyUSD (a 1:1 USDC.e wrapper) as collateral. You must wrap USDC.e into PolyUSD before placing orders. Amounts are in raw 6-decimal units (`1_000_000` = $1):
-
-```python
-# Wrap 100 USDC.e → PolyUSD (100 * 1e6 = 100_000_000 raw units)
-tx_hash = await trader.wrap_to_polyusd(100_000_000)
-
-# Unwrap 50 PolyUSD → USDC.e
-tx_hash = await trader.unwrap_from_polyusd(50_000_000)
-
-# Balance getters are synchronous and return raw 6-decimal integers
-polyusd_raw = trader.get_polyusd_balance()
-usdce_raw = trader.get_usdce_balance()
-print(f"PolyUSD: ${polyusd_raw / 1e6:.6f}, USDC.e: ${usdce_raw / 1e6:.6f}")
-```
-
-See the [V2 Migration Guide](/guides/v2-migration) for details on the Polymarket V2 exchange upgrade.
-
-### Fee Escrow
-
-Charge per-order fees with on-chain escrow. Fees are pulled before the order, distributed on fill, and refunded on cancel. See the [Fee Escrow Guide](/guides/fee-escrow) for the full architecture and security model.
-
-```python
-from polynode.trading import PolyNodeTrader, TraderConfig, FeeConfig
+import os
+from polynode.trading import ExchangeVersion, PolyNodeTrader, TraderConfig
 
 trader = PolyNodeTrader(TraderConfig(
-    polynode_key="pn_live_...",
-    fee_config=FeeConfig(fee_bps=50),  # 0.5% platform fee on every order (yours; separate from Polymarket's protocol fee and V2 builder rev share)
+    polynode_key=os.environ["POLYNODE_API_KEY"],
+    exchange_version=ExchangeVersion.V2,  # Optional: already the default
 ))
 
-result = await trader.order(OrderParams(
-    token_id="...",
-    side="BUY",
-    price=0.55,
-    size=100,
-))
-
-print(f"Fee TX: {result.fee_escrow_tx_hash}")  # on-chain pullFee TX
-print(f"Fee: {result.fee_amount} USDC")        # fee amount charged
-
-# Cancel → fee is automatically refunded
-await trader.cancel_order(result.order_id)
+ready = await trader.ensure_ready(os.environ["POLYGON_PRIVATE_KEY"])
+print("funder address", ready.funder_address)
 ```
 
-Set `fee_bps=0` or omit `fee_config` to skip your platform fee entirely. This only turns off **your** fee — Polymarket's protocol fee and (on V2) the builder rev share are charged independently by the CLOB. Per-order overrides:
+`ensure_ready()` can deploy or approve wallet contracts and is state-changing for a new wallet. After the returned funder address is funded, `order(...)` places a real order:
 
 ```python
-result = await trader.order(OrderParams(
-    token_id="...",
-    side="BUY",
-    price=0.55,
-    size=100,
-    fee_config=FeeConfig(
-        fee_bps=100,                             # 1% for this order
-        affiliate="0xPartnerWallet...",           # partner address
-        affiliate_share_bps=5000,                 # 50/50 split
-    ),
-))
+import os
+from polynode.trading import OrderParams
+
+try:
+    result = await trader.order(OrderParams(
+        token_id=os.environ["POLYMARKET_TOKEN_ID"],
+        side="BUY",
+        price=0.55,
+        size=10,
+        type="GTC",
+        post_only=True,
+    ))
+    if not result.success:
+        raise RuntimeError(result.error or "Order rejected")
+    print(result.order_id)
+finally:
+    trader.close()
 ```
 
-### Configuration
+V2 protocol fees are applied by Polymarket at match time. Do not add legacy `fee_rate_bps`, `nonce`, or `taker` fields to a V2 signed order. `builder_code` attributes eligible volume; it does not itself charge an application fee. `fee_config` is separate and disabled unless you configure it.
 
-```python
-from polynode.trading import TraderConfig, SignatureType, ExchangeVersion, FeeConfig
-
-config = TraderConfig(
-    polynode_key="pn_live_...",                          # for builder attribution
-    db_path="./polynode-trading.db",                     # local SQLite storage
-    cosigner_url="https://trade.polynode.dev",           # co-signer proxy
-    fallback_direct=True,                                 # direct CLOB if co-signer down
-    default_signature_type=SignatureType.POLY_GNOSIS_SAFE,  # Safe (2), Proxy (1), or EOA (0)
-    rpc_url="https://polygon-bor-rpc.publicnode.com",    # for on-chain reads
-    exchange_version=ExchangeVersion.V1,                  # default; set to V2 for the Polymarket V2 exchange
-    fee_config=FeeConfig(fee_bps=50),                     # optional: 0.5% platform fee on every order (yours, not Polymarket's)
-)
-
-trader = PolyNodeTrader(config)
-```
-
-### Signature Types
-
-| Type | Value | Description |
-|------|-------|-------------|
-| `SignatureType.EOA` | 0 | Direct EOA signing (user pays gas for approvals) |
-| `SignatureType.POLY_PROXY` | 1 | Legacy Polymarket proxy wallet |
-| `SignatureType.POLY_GNOSIS_SAFE` | 2 | Gnosis Safe (default, gasless onboarding) |
-| `SignatureType.POLY_1271` | 3 | Deposit wallet (newer Polymarket accounts, V2 only) |
-
-### Privy Signer (Server-Side Wallets)
-
-Use Privy-managed wallets for headless server-side trading. No private key needed — signing is done through Privy's wallet API:
-
-```python
-from polynode.trading import PolyNodeTrader, TraderConfig
-from polynode.trading.privy import PrivySigner, PrivyConfig
-
-signer = PrivySigner(
-    PrivyConfig(
-        app_id="your-privy-app-id",
-        app_secret="your-privy-app-secret",
-        authorization_key="wallet-auth:your-authorization-key",
-    ),
-    wallet_id="your-privy-wallet-id",
-    wallet_address="0xYourWalletAddress",
-)
-
-trader = PolyNodeTrader(TraderConfig(polynode_key="pn_live_..."))
-status = await trader.ensure_ready(signer)
-result = await trader.order(OrderParams(token_id="...", side="BUY", price=0.50, size=100))
-```
-
-The Privy signer implements the same `RouterSigner` interface and works with all trading methods (`ensure_ready`, `order`, `cancel_all`, etc.). Gnosis Safe wallets (type 2) are fully gasless.
-
-### Cleanup
-
-```python
-trader.close()  # closes SQLite, clears active signer
-```
+Read [Trading and fees](/sdks/trading) before running state-changing examples. It covers funding, cancellation, builder overrides, V2 fee behavior, position operations, and cleanup.

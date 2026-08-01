@@ -7,6 +7,7 @@
  * runnable examples against the live API with the test key.
  *
  * Usage: node test-examples.mjs [--verbose] [--file path/to/file.mdx]
+ *        node test-examples.mjs [--verbose] [--dir path/to/docs]
  */
 
 import { readFileSync, readdirSync, statSync, writeFileSync, unlinkSync } from 'fs';
@@ -20,12 +21,16 @@ if (!TEST_KEY) {
 }
 const TIMEOUT_MS = 8000;
 const WS_AUTO_CLOSE_MS = 5000;
-const NODE_PATH = '/home/polygon/node_modules';
 const DOCS_DIR = new URL('.', import.meta.url).pathname;
+const NODE_PATH = process.env.POLYNODE_DOCS_NODE_PATH || join(DOCS_DIR, 'node_modules');
+const TMP_DIR = process.env.POLYNODE_DOCS_TMP_DIR || DOCS_DIR;
 
 const VERBOSE = process.argv.includes('--verbose');
 const FILE_FILTER = process.argv.includes('--file')
   ? process.argv[process.argv.indexOf('--file') + 1]
+  : null;
+const DIR_FILTER = process.argv.includes('--dir')
+  ? process.argv[process.argv.indexOf('--dir') + 1]
   : null;
 
 // ─── Collect .mdx files ───────────────────────────────────────────────
@@ -55,20 +60,22 @@ function extractCodeBlocks(filePath) {
   let lang = null;
   let blockLines = [];
   let startLine = 0;
+  let fenceIndent = '';
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
     if (!inBlock) {
-      const match = line.match(/^```(javascript|typescript|js|ts)(\s|$)/);
+      const match = line.match(/^(\s*)```(javascript|typescript|js|ts)(\s|$)/);
       if (match) {
         inBlock = true;
-        lang = match[1];
+        fenceIndent = match[1];
+        lang = match[2];
         blockLines = [];
         startLine = i + 1; // 1-indexed
       }
     } else {
-      if (line.startsWith('```')) {
+      if (line.startsWith(`${fenceIndent}\`\`\``)) {
         inBlock = false;
         blocks.push({
           code: blockLines.join('\n'),
@@ -77,7 +84,9 @@ function extractCodeBlocks(filePath) {
           file: filePath,
         });
       } else {
-        blockLines.push(line);
+        blockLines.push(line.startsWith(fenceIndent)
+          ? line.slice(fenceIndent.length)
+          : line);
       }
     }
   }
@@ -91,6 +100,32 @@ function isRunnable(block) {
 
   // Skip empty
   if (!code) return false;
+
+  // Never execute examples that can mutate product, wallet, order, webhook,
+  // key, or position state. Static/compile validation covers these blocks.
+  const stateChangingPatterns = [
+    /\bPolyNodeTrader\b/,
+    /\bPolyNodeCache\b/,
+    /\bRedemptionWatcher\b/,
+    /\.order\s*\(/,
+    /\.placeOrder\s*\(/,
+    /\.place_order\s*\(/,
+    /\.cancelOrder\s*\(/,
+    /\.cancel_order\s*\(/,
+    /\.cancelAll\s*\(/,
+    /\.cancel_all\s*\(/,
+    /\.ensureReady\s*\(/,
+    /\.ensure_ready\s*\(/,
+    /\.createKey\s*\(/,
+    /\.create_key\s*\(/,
+    /\.addWallets\s*\(/,
+    /\.add_wallets\s*\(/,
+    /\.removeWallets\s*\(/,
+    /\.remove_wallets\s*\(/,
+    /\bmethod\s*:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i,
+    /\bfetch\s*\([^)]*\b(?:POST|PUT|PATCH|DELETE)\b/is,
+  ];
+  if (stateChangingPatterns.some((pattern) => pattern.test(code))) return false;
 
   // Skip single-line snippets
   const nonEmptyLines = code.split('\n').filter(l => l.trim()).length;
@@ -129,7 +164,7 @@ function isRunnable(block) {
     (code.includes('function ') && code.includes('(') && /\w+\(\)/.test(code));
 
   // Fragments referencing external variables without setup
-  const EXTERNAL_VARS = ['pn.', 'sub.', 'trader.', 'watcher.', 'stream.', 'cache.', 'book.', 'wallet.', 'engine.', 'ob.', 'provider.', 'chart.', 'series.', 'sf.', 'orderbook.'];
+  const EXTERNAL_VARS = ['pn.', 'sub.', 'trader.', 'watcher.', 'stream.', 'perps.', 'cache.', 'book.', 'wallet.', 'engine.', 'ob.', 'provider.', 'chart.', 'series.', 'sf.', 'orderbook.'];
   const refsExternal = EXTERNAL_VARS.some(v => code.includes(v));
 
   // ws.send / ws.on without creating ws
@@ -139,10 +174,10 @@ function isRunnable(block) {
   );
 
   // Top-level await on undefined vars (e.g. `await pn.foo()`, `await trader.order()`)
-  const awaitOnExternal = /await\s+(pn|trader|watcher|stream|cache|PolyNodeTrader|provider|sf)\b/.test(code);
+  const awaitOnExternal = /await\s+(pn|trader|watcher|stream|perps|cache|PolyNodeTrader|provider|sf)\b/.test(code);
 
   // Result/const assignment using undefined vars
-  const assignFromExternal = /(?:const|let|var)\s+\w+\s*=\s*(?:await\s+)?(pn|trader|watcher|stream|sub|cache|engine|ob|provider|chart|series|sf)\./.test(code);
+  const assignFromExternal = /(?:const|let|var)\s+\w+\s*=\s*(?:await\s+)?(pn|trader|watcher|stream|perps|sub|cache|engine|ob|provider|chart|series|sf)\./.test(code);
 
   // `for await (... of X)` where X is undefined
   const forAwaitExternal = /for\s+await\s+\(.*\bof\s+(sub|watcher|stream|cache)\b/.test(code);
@@ -160,7 +195,9 @@ function isRunnable(block) {
   // References undefined standalone variables (not obj.method, just bare variable usage)
   const usesUndefinedStandalone = (
     (/\bpending\b/.test(code) && !code.includes('const pending') && !code.includes('let pending')) ||
-    (/\bheaders\b/.test(code) && !code.includes('const headers') && !code.includes('let headers') && !code.includes('"Content-Type"'))
+    (/\bheaders\b/.test(code) && !code.includes('const headers') && !code.includes('let headers') && !code.includes('"Content-Type"')) ||
+    (/\bapiKey\b/.test(code) && !/(?:const|let|var)\s+apiKey\b/.test(code)) ||
+    (/\btokenId\b/.test(code) && !/(?:const|let|var)\s+tokenId\b/.test(code))
   );
 
   // ws.send immediately after new WebSocket without waiting for open (will crash)
@@ -356,7 +393,7 @@ function hasTopLevelAwait(code) {
 function executeBlock(block) {
   const code = replaceKeys(block.code);
   const wrapped = wrapCode(code, block.lang);
-  const tmpFile = join(DOCS_DIR, `.polynode-doc-test-${Date.now()}-${Math.random().toString(36).slice(2)}.cjs`);
+  const tmpFile = join(TMP_DIR, `.polynode-doc-test-${Date.now()}-${Math.random().toString(36).slice(2)}.cjs`);
 
   try {
     writeFileSync(tmpFile, wrapped, 'utf-8');
@@ -366,6 +403,7 @@ function executeBlock(block) {
       env: {
         ...process.env,
         NODE_PATH,
+        POLYNODE_API_KEY: TEST_KEY,
         NODE_TLS_REJECT_UNAUTHORIZED: '1',
       },
       encoding: 'utf-8',
@@ -407,7 +445,7 @@ function executeBlock(block) {
 function main() {
   console.log('polynode docs example tester');
   console.log('═'.repeat(50));
-  console.log(`Test key: ${TEST_KEY.slice(0, 20)}...`);
+  console.log('Test key: loaded (redacted)');
   console.log(`Timeout: ${TIMEOUT_MS}ms per example`);
   console.log(`WS auto-close: ${WS_AUTO_CLOSE_MS}ms`);
   console.log();
@@ -416,6 +454,8 @@ function main() {
   let mdxFiles;
   if (FILE_FILTER) {
     mdxFiles = [join(DOCS_DIR, FILE_FILTER)];
+  } else if (DIR_FILTER) {
+    mdxFiles = walkDir(join(DOCS_DIR, DIR_FILTER));
   } else {
     mdxFiles = walkDir(DOCS_DIR);
   }

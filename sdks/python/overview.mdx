@@ -1,91 +1,67 @@
 ---
-title: "Python — Overview"
+title: "Python SDK"
 sidebarTitle: "Overview"
+description: "Install polynode 0.12 and make a first V3 request from Python."
+icon: "python"
 ---
+
+`polynode` provides synchronous and asynchronous V3 clients plus async event, orderbook, short-form, and perps streams.
 
 ## Install
 
+```bash
+python -m pip install --upgrade "polynode>=0.12.2,<0.13"
+```
+
+Python 3.10 or newer is required. Keep your API key outside source control:
 
 ```bash
-pip install polynode
+export POLYNODE_API_KEY="pn_live_..."
 ```
 
-Requires Python 3.10+. For trading support (order placement on Polymarket):
-
-```bash
-pip install polynode[trading]
-```
-
-
-
-## Quick Start
-
+## First request
 
 ```python
+import os
 from polynode import PolyNode
 
-pn = PolyNode(api_key="pn_live_...")
-
-# Fetch top markets
-markets = pn.markets(count=10)
-print(f"{markets.count} markets, {markets.total} total")
-
-# Search
-results = pn.search("bitcoin")
-print(results.results[0].question)
-
-pn.close()
+with PolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
+    stats = pn.v3.execute("GET /v3/stats")
+    print(stats)
 ```
 
-### Context Manager
-
-```python
-with PolyNode(api_key="pn_live_...") as pn:
-    status = pn.status()
-    print(f"Tracking {status.state.market_count} markets")
-```
-
-### Sports and Online Context
-
-Available in `polynode>=0.10.5`.
-
-```python
-from polynode import PolyNode
-
-with PolyNode(api_key="pn_live_...") as pn:
-    state = pn.sports_game_state(
-        "nba-cle-nyk-2026-05-31",
-        price_limit_tokens=20,
-    )
-
-    context = pn.sports_game_context(
-        "nba-cle-nyk-2026-05-31",
-        sources=["online"],
-        query_set="injuries",
-        max_queries=2,
-        max_per_query=5,
-        include_state=True,
-    )
-
-    web = pn.search_online(
-        "Cavaliers Knicks injury news",
-        max_results=5,
-    )
-```
-
-### Async Client
-
-Every method is available in both sync and async variants:
+Use `AsyncPolyNode` in an async application:
 
 ```python
 import asyncio
+import os
 from polynode import AsyncPolyNode
 
-async def main():
-    async with AsyncPolyNode(api_key="pn_live_...") as pn:
-        status = await pn.status()
-        markets = await pn.markets(count=3)
-        print(f"{status.state.market_count} markets, {status.ws_subscribers} ws subs")
+async def main() -> None:
+    async with AsyncPolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
+        stats = await pn.v3.execute("GET /v3/stats")
+        print(stats)
 
 asyncio.run(main())
 ```
+
+## Client surfaces
+
+| Entry point | Use it for |
+| --- | --- |
+| `pn.v3` | Complete V3 API registry |
+| `pn.ws` | Settlements, confirmations, Chainlink prices, combos, and other events |
+| `pn.orderbook` | Raw orderbook messages |
+| `OrderbookEngine(...)` | Managed local books and PN1 integrity |
+| `pn.perps` | Managed V3 perps WebSocket |
+| `pn.ws.short_form(...)` | Rotating 5m, 15m, 1h, and 4h crypto markets |
+| `PolyNodeTrader(...)` | Current V2 order and position operations |
+
+<CardGroup cols={2}>
+  <Card title="V3 API" icon="database" href="/sdks/python/v3-api">Call any registered V3 operation.</Card>
+  <Card title="Settlement stream" icon="bolt" href="/sdks/python/websocket">Subscribe with replay and overflow visibility.</Card>
+  <Card title="Short-form and TWAP" icon="clock" href="/sdks/python/short-form">Rotate with the correct Chainlink window.</Card>
+  <Card title="PN1 orderbook" icon="book-open" href="/sdks/python/orderbook">Maintain fail-closed local state.</Card>
+  <Card title="Perps stream" icon="chart-line" href="/sdks/python/perps">Subscribe to tickers, books, trades, and klines.</Card>
+  <Card title="Trading and fees" icon="arrow-right-arrow-left" href="/sdks/python/trading">Use the current V2 defaults safely.</Card>
+</CardGroup>

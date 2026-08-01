@@ -1,0 +1,261 @@
+---
+title: "Perps WebSocket"
+sidebarTitle: "Perps Stream"
+description: "Stream Polymarket perps tickers, BBO, complete books, trades, statistics, and klines with managed resubscription."
+icon: "chart-line"
+---
+
+The V3 perps WebSocket is a separate stream for perps market data. The SDK client handles authentication, waits for control-message acknowledgements, preserves unknown additive messages, reconnects, and resubscribes to the channels you accepted.
+
+## Channels
+
+| Channel | Scope | Data |
+| --- | --- | --- |
+| `perps_tickers` | all instruments | index, mark, last, and mid prices; open interest and funding |
+| `perps_statistics` | all instruments | rolling statistics |
+| `perps_bbo:<instrument>` | one instrument | best bid and offer |
+| `perps_book:<instrument>` | one instrument | complete top-of-book depth snapshot |
+| `perps_trades:<instrument>` | one instrument | executions |
+| `perps_klines:<instrument>:1m` | one instrument | current 1-minute candle |
+| `perps_klines:<instrument>:1h` | one instrument | current 1-hour candle |
+
+Use the SDK channel helpers to avoid formatting mistakes.
+
+## Connect and subscribe
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { PolyNode, perpsChannels } from 'polynode-sdk';
+
+    const apiKey = process.env.POLYNODE_API_KEY;
+    if (!apiKey) throw new Error('Set POLYNODE_API_KEY');
+    const pn = new PolyNode({ apiKey });
+    const perps = pn.configurePerps({ queueCapacity: 4096 });
+
+    const hello = await perps.connect();
+    console.log('channel limit', hello.max_subscriptions);
+
+    const ack = await perps.subscribe([
+      perpsChannels.tickers,
+      perpsChannels.bbo('BTC-USD'),
+      perpsChannels.book('BTC-USD'),
+      perpsChannels.trades('BTC-USD'),
+      perpsChannels.klines('BTC-USD', '1m'),
+    ]);
+    console.log('accepted', ack.channels, 'rejected', ack.rejected);
+
+    perps.onMessage((message) => {
+      if (message.type === 'event') {
+        console.log(message.channel, message.data);
+      } else if (message.type === 'reconnect') {
+        console.warn(message.message, message.channels);
+      } else if (message.type === 'lag_warning') {
+        console.warn('upstream events dropped', message.dropped_events);
+      }
+    });
+
+    process.once('SIGINT', () => perps.disconnect());
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import asyncio
+    import os
+    from polynode import AsyncPolyNode, PerpsEvent, perps_channels
+
+    async def main() -> None:
+        async with AsyncPolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
+            perps = pn.perps
+            hello = await perps.connect()
+            print("channel limit", hello.max_subscriptions)
+
+            ack = await perps.subscribe([
+                perps_channels.tickers,
+                perps_channels.bbo("BTC-USD"),
+                perps_channels.book("BTC-USD"),
+                perps_channels.trades("BTC-USD"),
+                perps_channels.klines("BTC-USD", "1m"),
+            ])
+            print("accepted", ack.channels, "rejected", ack.rejected)
+
+            try:
+                async for message in perps:
+                    if isinstance(message, PerpsEvent):
+                        print(message.channel, message.data)
+                    elif message.type in ("reconnect", "lag_warning"):
+                        print(message)
+            finally:
+                await perps.disconnect()
+
+    asyncio.run(main())
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::{
+        bbo_channel, book_channel, klines_channel, trades_channel,
+        PerpsEvent, PerpsMessage, PolyNodeClient,
+    };
+
+    #[tokio::main]
+    async fn main() -> polynode::Result<()> {
+        let client = PolyNodeClient::new(
+            std::env::var("POLYNODE_API_KEY").expect("Set POLYNODE_API_KEY")
+        )?;
+        let mut perps = client.perps_stream().await?;
+        let ack = perps.subscribe(vec![
+            "perps_tickers".into(),
+            bbo_channel("BTC-USD")?,
+            book_channel("BTC-USD")?,
+            trades_channel("BTC-USD")?,
+            klines_channel("BTC-USD", "1m")?,
+        ]).await?;
+        println!("accepted {:?}, rejected {:?}", ack.channels, ack.rejected);
+
+        while let Some(message) = perps.next().await {
+            match message? {
+                PerpsMessage::Event(PerpsEvent::Ticker(ticker)) => {
+                    println!("{:?} {}", ticker.symbol, ticker.mark_price);
+                }
+                PerpsMessage::Event(PerpsEvent::Trades(trades)) => {
+                    println!("{} trades", trades.data.len());
+                }
+                PerpsMessage::Reconnected(notice) => eprintln!("{}", notice.message),
+                PerpsMessage::LagWarning(warning) => {
+                    eprintln!("upstream events dropped: {}", warning.dropped_events);
+                }
+                _ => {}
+            }
+        }
+        perps.close().await?;
+        Ok(())
+    }
+    ```
+  </Tab>
+</Tabs>
+
+The initial connection returns a hello message with the server's channel limit and currently active channels. `subscribe()` returns only after the server responds.
+
+## Partial acceptance
+
+A subscription acknowledgement can accept some channels and reject others. Always inspect both lists:
+
+- `channels` contains the accepted channels that the SDK will restore after reconnect
+- `rejected` contains `{ channel, reason }` entries
+- `active_subscriptions` is the resulting server-side count
+
+Do not treat a resolved subscribe call as proof that every requested channel was accepted.
+
+## Complete books replace state
+
+Every `perps_book` event is a complete replacement snapshot, including the first message after subscription. Replace the prior bids and asks; do not merge it as a delta.
+
+The managed clients retain the latest complete book:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const latest = perps.book('BTC-USD');
+    console.log(latest?.bids[0], latest?.asks[0]);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    latest = perps.book("BTC-USD")
+    if latest:
+        print(latest["bids"][0], latest["asks"][0])
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    if let Some(latest) = perps.book("BTC-USD").await {
+        println!("{:?} {:?}", latest.bids.first(), latest.asks.first());
+    }
+    ```
+  </Tab>
+</Tabs>
+
+Perps prices and quantities are decimal strings. Preserve them as exact values for trading, accounting, and comparisons.
+
+## Reconnect and gaps
+
+Automatic reconnect is enabled by default. After reconnect, the SDK resubscribes only the previously accepted channels and emits an explicit reconnect notice.
+
+The perps WebSocket does not replay messages missed while disconnected. Every reconnect notice sets `gap_possible` to `true`. Recover state as follows:
+
+- ticker, BBO, statistics, and book consumers can wait for a fresh event or refetch the matching REST endpoint
+- book consumers should discard the old book and wait for a new complete snapshot
+- trades and klines consumers should use the V3 REST routes to fill the time interval if continuity matters
+
+See [Perps market data](/perps/overview) for REST endpoints.
+
+## Backpressure and lag
+
+Two different warnings can occur:
+
+| Signal | Meaning | Response |
+| --- | --- | --- |
+| `lag_warning` | the server reports that upstream events were dropped for this connection | refetch affected state and reduce work in the read loop |
+| local queue overflow callback | TypeScript or Python evicted an old buffered message because the application did not consume fast enough | refetch affected state and move work to a bounded worker queue |
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    perps.onOverflow((notice) => {
+      console.error('local messages dropped', notice.droppedMessages);
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    perps.on_overflow(
+        lambda notice: print("local messages dropped", notice.dropped_messages)
+    )
+    ```
+  </Tab>
+  <Tab title="Rust">
+    Rust uses a bounded, backpressured receiver and does not silently evict local messages. Keep the `next()` loop responsive.
+  </Tab>
+</Tabs>
+
+## Terminal closes
+
+Authentication close code `4401` and connection-cap close code `4429` are terminal. The SDK does not loop forever on credentials or account limits that require user action.
+
+Correct the API key or close another connection before starting a new client.
+
+## Unknown messages
+
+Additive protocol messages remain observable:
+
+- TypeScript: `message.type === 'unknown'`
+- Python: `PerpsUnknownMessage`
+- Rust: `PerpsMessage::Unknown`
+
+Upgrade the SDK when you see one. Avoid logging credentials or an unbounded raw payload.
+
+## Unsubscribe and close
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    await perps.unsubscribe([perpsChannels.book('BTC-USD')]);
+    perps.disconnect();
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    await perps.unsubscribe([perps_channels.book("BTC-USD")])
+    await perps.disconnect()
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    perps.unsubscribe(vec![book_channel("BTC-USD")?]).await?;
+    perps.close().await?;
+    ```
+  </Tab>
+</Tabs>
+
+For channel payloads and instrument identifiers, see [Perps WebSocket channels](/perps/websocket/channels).

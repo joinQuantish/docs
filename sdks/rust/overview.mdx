@@ -1,78 +1,62 @@
 ---
-title: "Rust — Overview"
+title: "Rust SDK"
 sidebarTitle: "Overview"
+description: "Install polynode 0.15 and make a first V3 request with Tokio."
+icon: "rust"
 ---
+
+The Rust crate provides Tokio clients for the complete V3 registry, event streaming, PN1 orderbooks, perps, short-form markets, and optional trading and cache features.
 
 ## Install
 
+```toml Cargo.toml
+[dependencies]
+polynode = "0.15.2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+```
+
+Keep the key outside source control:
 
 ```bash
-cargo add polynode
+export POLYNODE_API_KEY="pn_live_..."
 ```
 
-The core crate has zero required feature flags. Optional features unlock additional capabilities:
+## First request
 
-| Feature | What it adds |
-|---------|-------------|
-| `cache` | Local SQLite cache with watchlist, backfill, and P&L computation |
-| `trading` | Order placement, wallet management, credential custody |
-| `privy` | Privy-based signer (requires `trading`) |
-
-Enable features in your `Cargo.toml`:
-
-```toml
-[dependencies]
-polynode = { version = "0.12.0", features = ["trading", "cache"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-```
-
-
-
-## Quick Start
-
-
-```rust,no_run
-use polynode::PolyNodeClient;
+```rust
+use polynode::{PolyNodeClient, V3RequestOptions};
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = PolyNodeClient::new("pn_live_YOUR_KEY")?;
-
-    // Fetch top 5 markets by volume
-    let markets = client.markets(Some(5)).await?;
-    println!("{} markets returned", markets.count);
-
-    // Search for a market
-    let results = client.search("bitcoin", Some(3), None).await?;
-    for r in &results.results {
-        println!("{}", r.question.as_deref().unwrap_or("untitled"));
-    }
-
+    let api_key = std::env::var("POLYNODE_API_KEY")
+        .expect("Set POLYNODE_API_KEY");
+    let client = PolyNodeClient::new(api_key)?;
+    let stats = client
+        .v3()
+        .execute_named("GET /v3/stats", V3RequestOptions::default())
+        .await?;
+    println!("{stats:#}");
     Ok(())
 }
 ```
 
+## Client surfaces
 
+| Entry point | Use it for |
+| --- | --- |
+| `client.v3()` | Complete V3 API registry |
+| `client.stream(...)` | Settlements, confirmations, Chainlink prices, combos, and other events |
+| `client.orderbook_stream(...)` | Raw orderbook messages |
+| `OrderbookEngine::connect(...)` | Managed local books and PN1 integrity |
+| `client.perps_stream()` | Managed V3 perps WebSocket |
+| `client.short_form(...)` | Rotating 5m, 15m, 1h, and 4h crypto markets |
+| `PolyNodeTrader` | Current V2 trading with the `trading` feature |
 
-## Client Configuration
-
-
-Use the builder for full control over endpoints and timeouts:
-
-```rust,no_run
-use polynode::PolyNodeClient;
-use std::time::Duration;
-
-# fn example() -> polynode::Result<()> {
-let client = PolyNodeClient::builder("pn_live_YOUR_KEY")
-    .base_url("https://api.polynode.dev")
-    .ws_url("wss://ws.polynode.dev/ws")
-    .ob_url("wss://ob.polynode.dev/ws")
-    .rpc_url("https://rpc.polynode.dev")
-    .timeout(Duration::from_secs(15))
-    .build()?;
-# Ok(())
-# }
-```
-
-All URLs default to the production endpoints shown above.
+<CardGroup cols={2}>
+  <Card title="V3 API" icon="database" href="/sdks/rust/v3-api">Call any registered V3 operation.</Card>
+  <Card title="Settlement stream" icon="bolt" href="/sdks/rust/websocket">Subscribe with replay and backpressure.</Card>
+  <Card title="Short-form and TWAP" icon="clock" href="/sdks/rust/short-form">Rotate with the correct Chainlink window.</Card>
+  <Card title="PN1 orderbook" icon="book-open" href="/sdks/rust/orderbook">Maintain fail-closed local state.</Card>
+  <Card title="Perps stream" icon="chart-line" href="/sdks/rust/perps">Subscribe to tickers, books, trades, and klines.</Card>
+  <Card title="Trading and fees" icon="arrow-right-arrow-left" href="/sdks/rust/trading">Enable the trading feature and use V2 defaults.</Card>
+</CardGroup>

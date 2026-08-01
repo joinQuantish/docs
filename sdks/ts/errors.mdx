@@ -1,20 +1,51 @@
 ---
-title: "TypeScript — Error Handling"
-sidebarTitle: "Error Handling"
+title: "TypeScript Errors"
+sidebarTitle: "Errors"
+description: "Handle HTTP, WebSocket, reconnect, overflow, and orderbook-integrity failures in TypeScript."
+icon: "triangle-exclamation"
 ---
 
-## Error Handling
-
-
 ```typescript
-import { PolyNode, ApiError, WsError } from 'polynode-sdk';
+import {
+  ApiError,
+  OrderbookIntegrityError,
+  PolyNodeError,
+  WsError,
+} from 'polynode-sdk';
 
 try {
-  await pn.market('invalid-id');
-} catch (err) {
-  if (err instanceof ApiError) {
-    console.log(err.status);  // 404
-    console.log(err.message); // "Market not found"
+  await pn.v3.stats();
+} catch (error) {
+  if (error instanceof ApiError) {
+    console.error({
+      status: error.status,
+      code: error.code,
+      hint: error.hint,
+      requestId: error.requestId,
+      retryAfter: error.retryAfter,
+      rateLimit: error.rateLimit,
+      method: error.safeMethod,
+      url: error.safeUrl,
+    });
+  } else if (error instanceof WsError) {
+    console.error(error.code, error.message);
+  } else if (error instanceof OrderbookIntegrityError) {
+    console.error(error.code, error.token, error.message);
+  } else if (error instanceof PolyNodeError) {
+    console.error(error.code, error.message);
   }
+  throw error;
 }
 ```
+
+Safe V3 reads retry transient transport failures and retryable statuses. State-changing V3 calls are never retried automatically. After a mutation timeout, check whether the resource changed before submitting it again.
+
+WebSocket reconnect and data-quality signals are separate from thrown errors:
+
+- `pn.ws.onReplay(...)` reports best-effort settlement replay;
+- `sub.onOverflow(...)` reports local event loss;
+- `perps.onReconnect(...)` reports a possible perps gap;
+- `perps.onOverflow(...)` reports local perps loss;
+- `integrity_error` moves an affected PN1 book away from `ready` until a fresh anchor succeeds.
+
+Log request IDs and redacted safe URLs, but never log API keys, private keys, builder credentials, CLOB secrets, or signed payloads.

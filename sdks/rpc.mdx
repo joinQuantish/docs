@@ -1,38 +1,36 @@
 ---
-title: "RPC Proxy"
+title: "RPC Helper"
 sidebarTitle: "RPC"
-description: "JSON-RPC calls through PolyNode's optimized Polygon RPC endpoint"
+description: "Make authenticated Polygon JSON-RPC requests from TypeScript, Python, or Rust."
 icon: "plug"
 ---
 
-Both SDKs include a method to send HTTP JSON-RPC requests through `rpc.polynode.dev`. Transaction submission is sent over PolyNode's P2P path toward the current block-producing validator plus backup peers. A small set of chain/peer/gas methods is served from local state; other safe reads proxy to the configured Polygon upstream.
+Every SDK includes an HTTP JSON-RPC helper for `rpc.polynode.dev`. It is useful for Polygon reads that complement market data.
 
-The endpoint currently supports HTTP only, with a limit of 50 HTTP requests/second per account for active Growth and Enterprise accounts. WebSocket `eth_subscribe`/`newHeads` is not live on this endpoint.
+<CodeGroup>
+```typescript TypeScript
+const blockNumber = await pn.rpc('eth_blockNumber');
+const balance = await pn.rpc('eth_getBalance', ['0xabc...', 'latest']);
+console.log({ blockNumber, balance });
+```
 
-## Usage
+```python Python
+block_number = pn.rpc("eth_blockNumber")
+balance = pn.rpc("eth_getBalance", ["0xabc...", "latest"])
+print(block_number, balance)
+```
 
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    // Block number (served locally, no external call)
-    const blockNum = await pn.rpc('eth_blockNumber');
+```rust Rust
+let block_number = client
+    .rpc_call("eth_blockNumber", serde_json::json!([]))
+    .await?;
+let balance = client
+    .rpc_call("eth_getBalance", serde_json::json!(["0xabc...", "latest"]))
+    .await?;
+println!("{block_number} {balance}");
+```
+</CodeGroup>
 
-    // Gas price (from PolyNode's gas oracle)
-    const gasPrice = await pn.rpc('eth_gasPrice');
+The SDK helper uses HTTP. It does not provide WebSocket `eth_subscribe`. Never log raw signed transactions or private keys, and confirm chain ID, nonce, fees, and destination before using any state-changing RPC method.
 
-    // Read calls (proxied to public RPC)
-    const balance = await pn.rpc('eth_getBalance', ['0xabc...', 'latest']);
-    const block = await pn.rpc('eth_getBlockByNumber', ['latest', false]);
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    let block_num = client.rpc_call("eth_blockNumber", serde_json::json!([])).await?;
-    let gas_price = client.rpc_call("eth_gasPrice", serde_json::json!([])).await?;
-    let balance = client.rpc_call("eth_getBalance",
-        serde_json::json!(["0xabc...", "latest"])).await?;
-    ```
-  </Tab>
-</Tabs>
-
-See the [RPC documentation](/rpc/overview) for the full list of supported methods and limitations.
+See the [RPC documentation](/rpc/overview) for supported methods, limits, and transaction guidance.

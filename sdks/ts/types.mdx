@@ -1,80 +1,46 @@
 ---
-title: "TypeScript — Types"
+title: "TypeScript Types"
 sidebarTitle: "Types"
+description: "Narrow event unions, preserve unknown additive messages, and keep exact numeric wire values."
+icon: "shapes"
 ---
 
-## TypeScript Types
-
-
-All event types are exported and fully typed:
+Event messages use a discriminated `event_type` union:
 
 ```typescript
-import type {
-  SettlementEvent,
-  TradeEvent,
-  StatusUpdateEvent,
-  BlockEvent,
-  PositionChangeEvent,
-  DepositEvent,
-  OracleEvent,
-  PriceFeedEvent,
-  PolyNodeEvent,     // union of all events
+import type { PolyNodeEvent } from 'polynode-sdk';
 
-  // Orderbook types
-  OrderbookLevel,
-  BookSnapshot,
-  BookUpdate,
-  PriceChange,
-  OrderbookUpdate,   // union of snapshot | update | price_change
-  OrderbookOptions,
-
-  // Enriched data types
-  LeaderboardResponse,
-  LeaderboardTrader,
-  TrendingResponse,
-  ActivityResponse,
-  ActivityTrade,
-  MoversResponse,
-  MoverMarket,
-  TraderProfile,
-  TraderPnlResponse,
-  EventDetailResponse,
-  EventSearchResponse,
-  EventSearchResult,
-  EventSearchMarket,
-  MarketsByCategoryResponse,
-
-  // Wallet helpers
-  ResolveResult,
-  WalletOnchainPositionsParams,
-  WalletOnchainPositionsResponse,
-  WalletOnchainPosition,
-
-  // V3 data API
-  V3Trade,
-  V3GroupedOrderTrade,
-  V3TradesResponse,
-  V3Position,
-  V3PositionsResponse,
-  V3WalletSummary,
-  V3WalletPnl,
-  V3WalletPnlEventsResponse,
-  V3MarketMetadata,
-  V3MarketSearchRow,
-  V3MarketPosition,
-  V3MarketPrice,
-  V3TokenInfo,
-  V3Builder,
-  V3BuilderTradesResponse,
-  V3FeeEvent,
-  V3ResolutionEvent,
-
-  // V3 Polymarket profiles
-  V3PolymarketUsernameAvailableResponse,
-  V3PolymarketUsernameChallengeResponse,
-  V3PolymarketUsernameCompleteResponse,
-  V3PolymarketProfile,
-} from 'polynode-sdk';
+function handleEvent(event: PolyNodeEvent): void {
+  switch (event.event_type) {
+    case 'settlement':
+      console.log(event.tx_hash, event.taker_size);
+      break;
+    case 'status_update':
+      console.log(event.tx_hash, event.block_number);
+      break;
+    case 'price_feed':
+      console.log(event.feed, event.price, event.twap_window_seconds);
+      break;
+    case 'unknown':
+      console.log(event.wire_event_type, event.raw);
+      break;
+    default:
+      console.log(event.event_type);
+  }
+}
 ```
 
-V3 response envelopes use the same pagination fields as the REST API: `rows_returned`, `has_more`, `offset`, `limit`, and `elapsed_ms`.
+The union includes fills, settlements, trades, status updates, blocks, position changes, deposits, splits, merges, conversions, redemptions, combo execution/status/lifecycle/approval events, oracle events, Chainlink price feeds, and an `unknown` variant.
+
+Unknown additive events and fields are preserved so a compatible server addition does not require dropping the payload. Treat `unknown` as observable data, not as a fatal protocol error.
+
+Orderbook `price` and `size` values and perps prices/quantities are exact decimal strings. Keep them as strings or convert with a decimal library; do not use JavaScript `number` for exact accounting.
+
+V3 generic calls return wire JSON. Supply a type argument only when your application owns and validates the corresponding schema:
+
+```typescript
+type Stats = { trades: string; wallets: string };
+const stats = await pn.v3.execute<Stats>('GET /v3/stats');
+```
+
+See [event reference](/websocket/events/settlement), [orderbook protocol](/orderbook/overview), and [perps channels](/perps/websocket/channels) for wire fields.

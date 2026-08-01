@@ -1,0 +1,48 @@
+---
+title: "TypeScript Perps Stream"
+sidebarTitle: "Perps Stream"
+description: "Subscribe to managed perps tickers, BBO, full books, trades, statistics, and klines."
+icon: "chart-line"
+---
+
+The V3 perps WebSocket is separate from the event and prediction-market orderbook sockets.
+
+```typescript
+import { PolyNode, perpsChannels } from 'polynode-sdk';
+
+const apiKey = process.env.POLYNODE_API_KEY;
+if (!apiKey) throw new Error('Set POLYNODE_API_KEY');
+const pn = new PolyNode({ apiKey });
+
+const perps = pn.configurePerps({ queueCapacity: 4096 });
+perps.onReconnect((notice) => console.warn('gap possible', notice));
+perps.onOverflow((notice) => console.error('local overflow', notice));
+
+const ack = await perps.subscribe([
+  perpsChannels.tickers,
+  perpsChannels.bbo('BTC-USD'),
+  perpsChannels.book('BTC-USD'),
+  perpsChannels.trades('BTC-USD'),
+  perpsChannels.klines('BTC-USD', '1m'),
+]);
+
+if (ack.rejected.length) console.warn('rejected channels', ack.rejected);
+
+perps.onMessage((message) => {
+  if (message.type === 'event') {
+    console.log(message.channel, message.data);
+  }
+});
+```
+
+One subscribe request can be partially accepted. Always inspect `ack.channels` and `ack.rejected` rather than assuming every requested channel is active.
+
+Every `perps_book` event is a complete replacement for that instrument's cached book, not an incremental patch. `perps.book('BTC-USD')` returns the latest managed copy.
+
+The client reconnects and resubscribes after non-terminal disconnects, but the stream does not promise replay. A `reconnect` notice has `gap_possible: true`; backfill through V3 REST if completeness matters. Authentication (`4401`) and connection-limit (`4429`) closes are terminal until the caller changes the failing condition.
+
+```typescript
+perps.disconnect();
+```
+
+See the [shared perps guide](/sdks/perps) for channel definitions, lag behavior, and lifecycle details.

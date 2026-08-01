@@ -1,0 +1,82 @@
+---
+title: "TypeScript Short-Form and TWAP"
+sidebarTitle: "Short-Form & TWAP"
+description: "Rotate TypeScript subscriptions across short-form crypto markets with the correct Chainlink TWAP window."
+icon: "clock"
+---
+
+Polymarket's short-form crypto markets change identifiers at fixed boundaries. The managed stream discovers the active market, chooses the correct Chainlink selection, and replaces the subscription when the boundary arrives.
+
+<Warning>
+Starting **August 7, 2026 at 00:00 UTC**, use a 30-second TWAP for 5-minute markets and a 60-second TWAP for 15-minute and 4-hour markets. One-hour markets continue to use the default spot feed.
+</Warning>
+
+| Market interval | Chainlink selection |
+| --- | --- |
+| `5m` | `30` seconds |
+| `15m` | `60` seconds |
+| `1h` | default spot feed |
+| `4h` | `60` seconds |
+
+## Managed rotation
+
+```typescript
+import { PolyNode } from 'polynode-sdk';
+
+const apiKey = process.env.POLYNODE_API_KEY;
+if (!apiKey) throw new Error('Set POLYNODE_API_KEY');
+const pn = new PolyNode({ apiKey });
+
+const stream = pn.ws.shortForm('5m', {
+  coins: ['btc', 'eth', 'sol'],
+});
+
+stream.on('rotation', (rotation) => {
+  console.log({
+    windowStart: rotation.windowStart,
+    windowEnd: rotation.windowEnd,
+    markets: rotation.markets.map((market) => ({
+      coin: market.coin,
+      slug: market.slug,
+      feed: market.chainlinkFeed,
+      twapWindowSeconds: market.twapWindowSeconds,
+      priceToBeat: market.priceToBeat,
+    })),
+  });
+});
+
+stream.on('settlement', (event) => console.log(event));
+stream.on('error', (error) => console.error(error));
+```
+
+At every boundary the helper closes its dedicated socket, opens a new one, and subscribes to the new market identifiers and price selection. Consumers do not manually calculate the next slug, but they should handle a normal connection transition around rotation.
+
+Supported assets are BTC, ETH, SOL, XRP, DOGE, HYPE, and BNB.
+
+## Explicit Chainlink selection
+
+Use one Chainlink subscription per event socket. Combine feeds and windows in the same subscription when you need several:
+
+```typescript
+const prices = await pn.ws
+  .subscribe('chainlink')
+  .feeds(['BTC/USD', 'ETH/USD'])
+  .twapWindows([30, 60])
+  .send();
+
+console.log({ source: prices.priceSource, windows: prices.twapWindows });
+prices.on('price_feed', (event) => {
+  console.log(event.feed, event.price, event.is_twap, event.twap_window_seconds);
+});
+```
+
+Do not create two competing Chainlink selections on one `PolyNodeWS`. Use another client connection if the selections must be isolated.
+
+## Cleanup
+
+```typescript
+stream.stop();
+pn.ws.disconnect();
+```
+
+Read the [shared short-form guide](/sdks/short-form) for market fields, manual mode, and orderbook integration.

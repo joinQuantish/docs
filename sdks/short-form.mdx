@@ -1,500 +1,141 @@
 ---
-title: "Short-Form Markets"
-sidebarTitle: "Short-Form Markets"
-description: "Auto-rotating streams for 5-minute, 15-minute, and hourly crypto prediction markets"
+title: "Short-Form Markets and Chainlink TWAP"
+sidebarTitle: "Short-Form and TWAP"
+description: "Follow rotating 5-minute, 15-minute, 1-hour, and 4-hour crypto markets with the matching Chainlink price window."
 icon: "clock"
 ---
 
-Short-form markets are Polymarket's Chainlink-based crypto prediction markets that rotate on fixed intervals. Bitcoin, Ethereum, Solana, XRP, Dogecoin, Hyperliquid, and BNB each have active 5-minute, 15-minute, and 1-hour "Up or Down" markets running continuously.
+The managed short-form stream discovers the active Polymarket crypto market, subscribes to its settlements, follows the matching Chainlink price source, and rotates to the next market window.
 
-The SDK handles everything: discovering the current window's markets, subscribing for real-time events, and automatically rotating to the next window when the current one expires. You get enriched market data including the **price-to-beat** (Chainlink opening price), live odds, liquidity, and volume with zero additional latency.
+Starting **August 7, 2026 at 00:00 UTC**, affected Polymarket short-form markets resolve against Chainlink-computed time-weighted average prices. Current SDKs select the required lookback automatically:
 
-<CardGroup cols={3}>
-  <Card title="5-Minute" icon="bolt">
-    New market every 300 seconds. 7 coins.
-  </Card>
-  <Card title="15-Minute" icon="clock">
-    New market every 900 seconds. 7 coins.
-  </Card>
-  <Card title="1-Hour" icon="hourglass">
-    New market every 3600 seconds. 7 coins.
-  </Card>
-</CardGroup>
+| Market duration | Chainlink price selection |
+| --- | --- |
+| 5 minutes | 30-second TWAP |
+| 15 minutes | 60-second TWAP |
+| 1 hour | spot / default stream |
+| 4 hours | 60-second TWAP |
 
-## Quick Start
+`30` and `60` are lookback windows, not publication intervals. Read [Polymarket's August 7 announcement](https://x.com/polymarketdevs/status/2082813706996772881), the [PolyNode transition guide](/crypto/twap), and [Polymarket's Chainlink TWAP guide](https://docs.polymarket.com/market-data/chainlink-twap) for the schedule and underlying price semantics.
+
+<Info>
+  Use TypeScript `0.12.0+`, Python `0.12.0+`, or Rust `0.15.0+`. Earlier versions do not implement the complete interval-to-TWAP mapping and rotation behavior documented here.
+</Info>
+
+## Managed stream
+
+Choose an interval and, optionally, a subset of supported assets. The default is all seven: BTC, ETH, SOL, XRP, DOGE, HYPE, and BNB.
 
 <Tabs>
   <Tab title="TypeScript">
     ```typescript
-    import { PolyNodeWS } from 'polynode-sdk';
+    import { PolyNode } from 'polynode-sdk';
 
-    const ws = new PolyNodeWS('pn_live_...', 'wss://ws.polynode.dev/ws');
+    const apiKey = process.env.POLYNODE_API_KEY;
+    if (!apiKey) throw new Error('Set POLYNODE_API_KEY');
+    const pn = new PolyNode({ apiKey });
 
-    const stream = ws.shortForm('15m', { coins: ['btc', 'eth', 'sol'] });
+    const stream = pn.ws.shortForm('5m', { coins: ['btc', 'eth'] });
 
-    stream.on('rotation', (r) => {
-      console.log(`New window: ${r.timeRemaining}s remaining`);
-      for (const m of r.markets) {
-        console.log(`${m.coin}: beat $${m.priceToBeat} | ${(m.upOdds * 100).toFixed(0)}% up`);
+    stream.on('rotation', (rotation) => {
+      console.log('window', rotation.windowStart, rotation.windowEnd);
+      for (const market of rotation.markets) {
+        console.log({
+          coin: market.coin,
+          slug: market.slug,
+          priceToBeat: market.priceToBeat,
+          twapWindowSeconds: market.twapWindowSeconds,
+          upOdds: market.upOdds,
+          timeRemaining: rotation.timeRemaining,
+        });
       }
     });
 
-    stream.on('settlement', (event) => {
-      console.log(`${event.outcome} $${event.taker_size} on ${event.market_title}`);
+    stream.on('price_feed', (price) => {
+      console.log(price.feed, price.price, price.twap_window_seconds);
     });
+    stream.on('settlement', (event) => console.log(event.status, event.tx_hash));
+    stream.on('error', (error) => console.error(error.message));
+
+    process.once('SIGINT', () => stream.stop());
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import asyncio
+    import os
+    from polynode import AsyncPolyNode
+
+    async def main() -> None:
+        async with AsyncPolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
+            stream = pn.ws.short_form("5m", coins=["btc", "eth"])
+
+            def on_rotation(rotation) -> None:
+                for market in rotation.markets:
+                    print(
+                        market.coin,
+                        market.slug,
+                        market.price_to_beat,
+                        market.twap_window_seconds,
+                        rotation.time_remaining,
+                    )
+
+            stream.on("rotation", on_rotation)
+            stream.on(
+                "price_feed",
+                lambda price: print(
+                    price.feed, price.price, price.twap_window_seconds
+                ),
+            )
+            stream.on("settlement", lambda event: print(event.status, event.tx_hash))
+            stream.on("error", lambda error: print(error))
+
+            try:
+                await asyncio.Event().wait()
+            finally:
+                stream.stop()
+
+    asyncio.run(main())
     ```
   </Tab>
   <Tab title="Rust">
     ```rust
-    use polynode::{PolyNodeClient, ShortFormInterval, ShortFormMessage, Coin};
-
-    let client = PolyNodeClient::new("pn_live_...")?;
-
-    let mut stream = client
-        .short_form(ShortFormInterval::FifteenMin)
-        .coins(&[Coin::Btc, Coin::Eth, Coin::Sol])
-        .start()
-        .await?;
-
-    while let Some(msg) = stream.next().await {
-        match msg {
-            ShortFormMessage::Rotation(r) => {
-                println!("New window: {}s remaining", r.time_remaining);
-                for m in &r.markets {
-                    println!("{}: beat ${:?} | {:.0}% up",
-                        m.coin.id(), m.price_to_beat, m.up_odds * 100.0);
-                }
-            }
-            ShortFormMessage::Event(e) => println!("{:?}", e),
-            ShortFormMessage::Error(e) => eprintln!("{}", e),
-        }
-    }
-    ```
-  </Tab>
-</Tabs>
-
-## Live Output
-
-Here's actual output from a live 15-minute stream with BTC, ETH, and SOL:
-
-```json Rotation Event
-{
-  "interval": "15m",
-  "timeRemaining": 51,
-  "windowStart": 1774072800,
-  "windowEnd": 1774073700,
-  "marketCount": 3
-}
-```
-
-Each market in the rotation includes enrichment data at zero cost:
-
-```json BTC Market
-{
-  "coin": "btc",
-  "slug": "btc-updown-15m-1774072800",
-  "title": "Bitcoin Up or Down - March 21, 2:00AM-2:15AM ET",
-  "conditionId": "0x037ad8cf0b1d7dc7febd2a46c400398838163dc3...",
-  "clobTokenIds": ["11496172...", "66255671..."],
-  "upOdds": 0.845,
-  "downOdds": 0.155,
-  "priceToBeat": 70694.18,
-  "liquidity": 9833.25,
-  "volume24h": 51679.05
-}
-```
-
-```json ETH Market
-{
-  "coin": "eth",
-  "slug": "eth-updown-15m-1774072800",
-  "title": "Ethereum Up or Down - March 21, 2:00AM-2:15AM ET",
-  "upOdds": 0.365,
-  "downOdds": 0.635,
-  "priceToBeat": 2152.93,
-  "liquidity": 2289.0,
-  "volume24h": 14602.61
-}
-```
-
-```json SOL Market
-{
-  "coin": "sol",
-  "slug": "sol-updown-15m-1774072800",
-  "title": "Solana Up or Down - March 21, 2:00AM-2:15AM ET",
-  "upOdds": 0.955,
-  "downOdds": 0.045,
-  "priceToBeat": 89.97,
-  "liquidity": 3004.32,
-  "volume24h": 4953.08
-}
-```
-
-Settlement events flow in real-time as trades happen. Here's a real settlement captured from the live stream:
-
-```json Settlement Event
-{
-  "event_type": "settlement",
-  "status": "pending",
-  "event_slug": "btc-updown-15m-1774073700",
-  "event_title": "Bitcoin Up or Down - March 21, 2:15AM-2:30AM ET",
-  "market_slug": "btc-updown-15m-1774073700",
-  "market_title": "Bitcoin Up or Down - March 21, 2:15AM-2:30AM ET",
-  "outcome": "Down",
-  "taker_side": "SELL",
-  "taker_size": 7.58,
-  "taker_price": 0.33,
-  "taker_wallet": "0xe49b2c1ca08c4aef70c061ef9cfcabbcea638973",
-  "taker_base_fee": 1000,
-  "tick_size": 0.01,
-  "neg_risk": false,
-  "condition_id": "0x037ad8cf0b1d7dc7febd2a46c400398838163dc3...",
-  "detected_at": 1774074055797,
-  "tx_hash": "0x726b5ba5d7c48d277f7923a9482a3f7f1fcfac36...",
-  "outcomes": ["Up", "Down"],
-  "trades": [
-    {
-      "maker": "0xd44e29936409019f93993de8bd603ef6cb1bb15e",
-      "taker": "0xe49b2c1ca08c4aef70c061ef9cfcabbcea638973",
-      "outcome": "Down",
-      "side": "BUY",
-      "price": 0.37,
-      "size": 5,
-      "maker_amount": "1850000",
-      "taker_amount": "5000000"
-    }
-  ]
-}
-```
-
-<Tip>In a 25-second test, the 15-minute stream received **157 settlement events** across 3 coins. The 5-minute stream received **323 events** across 2 coins in 20 seconds. These markets are very active.</Tip>
-
-## Intervals
-
-| Interval | Code | Window | Slug Pattern |
-|----------|------|--------|--------------|
-| 5 minutes | `'5m'` / `FiveMin` | 300s | `btc-updown-5m-{timestamp}` |
-| 15 minutes | `'15m'` / `FifteenMin` | 900s | `btc-updown-15m-{timestamp}` |
-| 1 hour | `'1h'` / `Hourly` | 3600s | `bitcoin-up-or-down-march-21-2026-2am-et` |
-
-### Slug Calculator
-
-Pick a coin and interval to see the current market slug. Updates live with a countdown to the next window.
-
-<div id="slug-calc"></div>
-
-The slug pattern is deterministic: `{coin}-updown-{interval}-{windowTimestamp}`. Compute it yourself:
-
-```javascript
-const now = Math.floor(Date.now() / 1000);
-const window5m = Math.floor(now / 300) * 300;
-const window15m = Math.floor(now / 900) * 900;
-
-console.log(`btc-updown-5m-${window5m}`);   // current BTC 5m slug
-console.log(`eth-updown-15m-${window15m}`);  // current ETH 15m slug
-```
-
-<Tip>You don't need to compute slugs manually. The SDK's `shortForm()` handles discovery automatically and gives you the `slug`, `conditionId`, and `clobTokenIds` on every rotation event.</Tip>
-
-## Supported Coins
-
-All 7 Chainlink-tracked coins are supported:
-
-| Coin | ID | Symbol |
-|------|----|--------|
-| Bitcoin | `btc` / `Coin::Btc` | BTC |
-| Ethereum | `eth` / `Coin::Eth` | ETH |
-| Solana | `sol` / `Coin::Sol` | SOL |
-| XRP | `xrp` / `Coin::Xrp` | XRP |
-| Dogecoin | `doge` / `Coin::Doge` | DOGE |
-| Hyperliquid | `hype` / `Coin::Hype` | HYPE |
-| BNB | `bnb` / `Coin::Bnb` | BNB |
-
-If no coins are specified, all 7 are subscribed.
-
-## Market Enrichments
-
-Every `ShortFormMarket` includes these fields, all populated during discovery with zero hot-path cost:
-
-<ResponseField name="coin" type="string">
-  Coin identifier (`'btc'`, `'eth'`, `'sol'`, etc.).
-</ResponseField>
-
-<ResponseField name="slug" type="string">
-  Market URL slug (e.g., `'btc-updown-15m-1774072800'`).
-</ResponseField>
-
-<ResponseField name="title" type="string">
-  Human-readable market title (e.g., "Bitcoin Up or Down - March 21, 2:00AM-2:15AM ET").
-</ResponseField>
-
-<ResponseField name="conditionId" type="string">
-  The Polymarket condition ID. Use this to subscribe via the main WebSocket with `condition_ids` filters.
-</ResponseField>
-
-<ResponseField name="clobTokenIds" type="string[]">
-  The two CLOB token IDs (Up and Down outcomes). Pass these directly to `OrderbookEngine.subscribe()` to get real-time orderbook data for this market. See [Orderbook + Short-Form](#orderbook--short-form) below.
-</ResponseField>
-
-<ResponseField name="outcomes" type="string[]">
-  Outcome labels, always `["Up", "Down"]`.
-</ResponseField>
-
-<ResponseField name="outcomePrices" type="number[]">
-  Raw outcome prices from the CLOB, matching the `outcomes` array order.
-</ResponseField>
-
-<ResponseField name="windowStart" type="number">
-  Unix timestamp (seconds) when this market window opened.
-</ResponseField>
-
-<ResponseField name="windowEnd" type="number">
-  Unix timestamp (seconds) when this market window closes.
-</ResponseField>
-
-<ResponseField name="priceToBeat" type="number | null">
-  The Chainlink opening price for this window. For "Up" to win, the closing price must exceed this value. Fetched once per rotation via the Polymarket crypto-price API.
-</ResponseField>
-
-<ResponseField name="upOdds" type="number">
-  Probability (0-1) that "Up" wins, derived from the market's outcome prices. For example, `0.845` means the market prices an 84.5% chance of Up.
-</ResponseField>
-
-<ResponseField name="downOdds" type="number">
-  Probability (0-1) that "Down" wins. Always `1 - upOdds`.
-</ResponseField>
-
-<ResponseField name="liquidity" type="number">
-  Market liquidity in USD, from the Gamma API response. No extra call.
-</ResponseField>
-
-<ResponseField name="volume24h" type="number">
-  24-hour trading volume in USD across all windows for this coin's series. No extra call.
-</ResponseField>
-
-<ResponseField name="timeRemaining" type="number">
-  Seconds remaining in the current window. Computed client-side (zero cost). Available on the `rotation` event and as a live getter on the stream.
-</ResponseField>
-
-<Note>
-  None of these enrichments touch the event hot path. `priceToBeat` is one HTTP call per coin per rotation (e.g., 7 calls every 15 minutes). Everything else is parsed from data already fetched during discovery or computed locally.
-</Note>
-
-## Events
-
-### rotation
-
-Emitted once per window when new markets are discovered and subscribed.
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    stream.on('rotation', (r) => {
-      console.log(r.interval);       // '15m'
-      console.log(r.timeRemaining);  // 847
-      console.log(r.markets.length); // 7
-
-      for (const m of r.markets) {
-        console.log(m.coin, m.priceToBeat, m.upOdds);
-      }
-    });
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    ShortFormMessage::Rotation(r) => {
-        println!("{}s left, {} markets", r.time_remaining, r.markets.len());
-        for m in &r.markets {
-            println!("{}: ${:?}, {:.0}% up",
-                m.coin.id(), m.price_to_beat, m.up_odds * 100.0);
-        }
-    }
-    ```
-  </Tab>
-</Tabs>
-
-### settlement
-
-The primary event. Fired when a trade is detected on any subscribed short-form market. Includes the full settlement payload with market metadata, wallet addresses, trade size, and outcome.
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    stream.on('settlement', (event) => {
-      console.log(event.market_slug);  // 'btc-updown-15m-1774072800'
-      console.log(event.outcome);      // 'Up' or 'Down'
-      console.log(event.taker_size);   // 12.5
-      console.log(event.status);       // 'pending' or 'confirmed'
-    });
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    ShortFormMessage::Event(PolyNodeEvent::Settlement(s)) => {
-        println!("{} {} ${:.2}",
-            s.outcome.as_deref().unwrap_or("?"),
-            s.taker_side,
-            s.taker_size);
-    }
-    ```
-  </Tab>
-</Tabs>
-
-### error
-
-Non-fatal errors (e.g., a coin's market not found). The stream continues operating.
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    stream.on('error', (err) => {
-      console.error(err.message);
-    });
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    ShortFormMessage::Error(msg) => {
-        eprintln!("Warning: {}", msg);
-    }
-    ```
-  </Tab>
-</Tabs>
-
-## Time Remaining
-
-In TypeScript, `stream.timeRemaining` is a live getter that always returns the current seconds remaining:
-
-```typescript
-// Check anytime — no network call, pure local math
-setInterval(() => {
-  console.log(`${stream.timeRemaining}s until next rotation`);
-}, 1000);
-```
-
-In Rust, `time_remaining` is provided on each `RotationInfo`. Compute it manually between rotations:
-
-```rust
-let remaining = rotation.window_end - (SystemTime::now()
-    .duration_since(UNIX_EPOCH).unwrap().as_secs() as i64);
-```
-
-## Options
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    const stream = ws.shortForm('15m', {
-      coins: ['btc', 'eth'],         // default: all 7
-      apiBaseUrl: 'https://api.polynode.dev', // default
-      rotationBuffer: 3,             // seconds after window end before discovering next
-    });
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    let stream = client
-        .short_form(ShortFormInterval::FifteenMin)
-        .coins(&[Coin::Btc, Coin::Eth])   // default: all 7
-        .rotation_buffer(3)                 // seconds, default: 3
-        .start()
-        .await?;
-    ```
-  </Tab>
-</Tabs>
-
-## How It Works
-
-<Steps>
-  <Step title="Discovery">
-    On start and at each rotation, the SDK fetches market data from the Gamma API proxy. For 5m and 15m markets, it constructs deterministic slugs like `btc-updown-15m-{timestamp}`. For hourly markets, it queries by series. All 7 coins are fetched in parallel.
-  </Step>
-  <Step title="Enrichment">
-    In parallel with discovery, the SDK fetches the Chainlink opening price (price-to-beat) for each coin. Odds, liquidity, and volume are parsed from the existing Gamma response. No extra network calls for these.
-  </Step>
-  <Step title="Subscribe">
-    The SDK subscribes to settlements with slug filters for all discovered markets on the existing WebSocket connection. Events start flowing immediately.
-  </Step>
-  <Step title="Rotate">
-    A timer fires at `windowEnd + 3 seconds`. The SDK unsubscribes, re-discovers the next window's markets, and resubscribes. A `rotation` event is emitted with the new market data.
-  </Step>
-</Steps>
-
-## Cleanup
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    stream.stop();        // cancel timer, unsubscribe
-    ws.disconnect();      // close WebSocket
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    stream.stop().await;  // cancel task, close WS
-    ```
-  </Tab>
-</Tabs>
-
-## Full Example: Price Tracker
-
-A complete example that tracks all 7 coins on 5-minute windows and logs the price-to-beat vs current odds:
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    import { PolyNodeWS } from 'polynode-sdk';
-
-    const ws = new PolyNodeWS('pn_live_...', 'wss://ws.polynode.dev/ws');
-    const stream = ws.shortForm('5m');
-
-    stream.on('rotation', (r) => {
-      console.log(`\n--- New 5m window | ${r.timeRemaining}s remaining ---`);
-      for (const m of r.markets) {
-        const dir = m.upOdds > 0.5 ? 'UP' : 'DOWN';
-        const pct = Math.max(m.upOdds, m.downOdds) * 100;
-        console.log(`  ${m.coin.toUpperCase().padEnd(5)} $${m.priceToBeat?.toFixed(2) ?? '?'} → ${dir} ${pct.toFixed(0)}% | $${m.liquidity.toFixed(0)} liq`);
-      }
-    });
-
-    stream.on('settlement', (e) => {
-      console.log(`  Trade: ${e.outcome} $${e.taker_size?.toFixed(2)} on ${e.event_slug}`);
-    });
-
-    // Countdown
-    setInterval(() => {
-      process.stdout.write(`\r  ${stream.timeRemaining}s remaining   `);
-    }, 1000);
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    use polynode::{PolyNodeClient, ShortFormInterval, ShortFormMessage, Coin};
+    use polynode::{
+        Coin, PolyNodeClient, PolyNodeEvent, ShortFormInterval, ShortFormMessage,
+    };
 
     #[tokio::main]
     async fn main() -> polynode::Result<()> {
-        let client = PolyNodeClient::new("pn_live_...")?;
+        let client = PolyNodeClient::new(
+            std::env::var("POLYNODE_API_KEY").expect("Set POLYNODE_API_KEY")
+        )?;
         let mut stream = client
             .short_form(ShortFormInterval::FiveMin)
+            .coins(&[Coin::Btc, Coin::Eth])
             .start()
             .await?;
 
-        while let Some(msg) = stream.next().await {
-            match msg {
-                ShortFormMessage::Rotation(r) => {
-                    println!("\n--- New 5m window | {}s remaining ---", r.time_remaining);
-                    for m in &r.markets {
-                        println!("  {} ${:.2} → {:.0}% up | ${:.0} liq",
-                            m.coin.id(),
-                            m.price_to_beat.unwrap_or(0.0),
-                            m.up_odds * 100.0,
-                            m.liquidity);
+        while let Some(message) = stream.next().await {
+            match message {
+                ShortFormMessage::Rotation(rotation) => {
+                    for market in rotation.markets {
+                        println!(
+                            "{} {} {:?} {:?}",
+                            market.coin.id(),
+                            market.slug,
+                            market.price_to_beat,
+                            market.twap_window_seconds,
+                        );
                     }
                 }
-                ShortFormMessage::Event(e) => {
-                    // process settlement events
+                ShortFormMessage::PriceFeed(price) => {
+                    println!("{} {} {:?}", price.feed, price.price, price.twap_window_seconds);
                 }
-                ShortFormMessage::Error(e) => eprintln!("  warn: {}", e),
+                ShortFormMessage::Event(PolyNodeEvent::Settlement(event)) => {
+                    println!("{:?} {}", event.status, event.tx_hash);
+                }
+                ShortFormMessage::Error(error) => eprintln!("{error}"),
+                _ => {}
             }
         }
         Ok(())
@@ -503,134 +144,156 @@ A complete example that tracks all 7 coins on 5-minute windows and logs the pric
   </Tab>
 </Tabs>
 
-### Live Output (all 7 coins, 5m)
+## What rotation means
 
-```
---- New 5m window | 193s remaining ---
-  BTC   $70697.94 → DOWN 53% | $23248 liq
-  ETH   $2153.39 → DOWN 51% | $30702 liq
-  BNB   $642.23 → DOWN 55% | $9798 liq
-  HYPE  $39.34 → DOWN 50% | $419 liq
-  XRP   $1.45 → DOWN 51% | $10924 liq
-  DOGE  $0.09 → DOWN 59% | $9800 liq
-  SOL   $89.97 → UP 51% | $10977 liq
-  Trade: Down $30.00 on btc-updown-5m-1774074300
-  Trade: Down $30.00 on btc-updown-5m-1774074300
-  Trade: Down $15.00 on btc-updown-5m-1774074300
+Market slugs and outcome-token IDs change at every boundary. Chainlink selection is also scoped to the WebSocket connection. The managed helper therefore owns a dedicated socket and performs this sequence at each boundary:
 
---- 397 trades in 15s | 179s remaining ---
-```
+1. close the old dedicated socket
+2. discover the new market slugs and token IDs
+3. connect a replacement socket
+4. subscribe to `settlements` for the exact new slugs
+5. subscribe to the interval's exact Chainlink TWAP window, when applicable
+6. emit `rotation` with the new market metadata
 
-### Live Output (Rust, all 3 intervals)
+This reconnect is expected and necessary. Do not place unrelated subscriptions on the managed stream's dedicated connection; the helper isolates it for you.
 
-```
-=== Testing 5m ===
-ROTATION: 5m | 249s remaining | 2 markets
-  btc | btc-updown-5m-1774074300 | beat $70697.94 | 48% up | $23248 liq
-  eth | eth-updown-5m-1774074300 | beat $2153.39 | 50% up | $30702 liq
-  Events in 10s: 388
+If discovery or subscription fails, the helper emits an error. Keep the error handler visible in production and restart the stream if it stops.
 
-=== Testing 15m ===
-ROTATION: 15m | 239s remaining | 2 markets
-  btc | btc-updown-15m-1774073700 | beat $70714.31 | 68% up | $9883 liq
-  eth | eth-updown-15m-1774073700 | beat $2152.36 | 88% up | $3028 liq
-  Events in 10s: 73
+## Rotation payload
 
-=== Testing 1h ===
-ROTATION: 1h | 2029s remaining | 2 markets
-  btc | bitcoin-up-or-down-march-21-2026-2am-et | beat $70697.94 | 70% up | $10652 liq
-  eth | ethereum-up-or-down-march-21-2026-2am-et | beat $2153.39 | 52% up | $7162 liq
-  Events in 10s: 20
-```
+Each discovered market includes the fields needed to connect other user-facing components:
 
-## Connect the Orderbook to Crypto Markets
+| Field | Meaning |
+| --- | --- |
+| `slug` / `conditionId` | current Polymarket market identifiers |
+| `clobTokenIds` | outcome token IDs for orderbook or trading calls |
+| `chainlinkFeed` | canonical feed, such as `BTC/USD` |
+| `twapWindowSeconds` | `30`, `60`, or `null` for the 1-hour spot/default stream |
+| `priceToBeat` | opening Chainlink reference when available |
+| `upOdds` / `downOdds` | current outcome probabilities |
+| `liquidity` / `volume24h` | current market metadata |
+| `feesEnabled` / `takerBaseFee` | fee metadata returned for the market |
 
-<Info>
-  **Want depth data for crypto markets?** Every `ShortFormMarket` in the rotation event includes `clobTokenIds` — the token IDs for both Up and Down outcomes. Pass them straight to `OrderbookEngine` and you get live orderbook depth, bid/ask spreads, and price moves alongside your settlement stream. One setup, three real-time feeds.
-</Info>
+Python and Rust expose the same fields in `snake_case`. Rust's `RotationInfo` also exposes `twap_window_seconds` for the selected interval.
 
-Here's the full pattern: short-form discovers markets, hands the token IDs to the orderbook engine, and both streams run in parallel.
+## Choose another interval
 
 <Tabs>
   <Tab title="TypeScript">
     ```typescript
-    import { PolyNodeWS, OrderbookEngine } from 'polynode-sdk';
-
-    const KEY = 'pn_live_...';
-    const ws = new PolyNodeWS(KEY, 'wss://ws.polynode.dev/ws');
-    const engine = new OrderbookEngine({ apiKey: KEY, compress: true });
-
-    // 1. Start the short-form stream
-    const stream = ws.shortForm('5m', { coins: ['btc', 'eth'] });
-
-    // 2. On each rotation, subscribe the orderbook to the new markets
-    stream.on('rotation', async (r) => {
-      const tokenIds = r.markets.flatMap(m => m.clobTokenIds);
-      await engine.subscribe(tokenIds);
-
-      for (const m of r.markets) {
-        console.log(`${m.coin}: beat $${m.priceToBeat} | ${(m.upOdds * 100).toFixed(0)}% up`);
-      }
-    });
-
-    // 3. Orderbook events
-    engine.on('ready', () => console.log(`${engine.size} books loaded`));
-    engine.on('price', (p) => {
-      for (const a of p.assets) {
-        console.log(`Book: ${a.outcome} = ${a.price}`);
-      }
-    });
-
-    // 4. Settlement events (trades happening on these markets)
-    stream.on('settlement', (e) => {
-      console.log(`Trade: ${e.outcome} $${e.taker_size} on ${e.event_slug}`);
-    });
+    const fiveMinute = pn.ws.shortForm('5m');
+    const fifteenMinute = pn.ws.shortForm('15m');
+    const hourly = pn.ws.shortForm('1h');
+    const fourHour = pn.ws.shortForm('4h');
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    five_minute = pn.ws.short_form("5m")
+    fifteen_minute = pn.ws.short_form("15m")
+    hourly = pn.ws.short_form("1h")
+    four_hour = pn.ws.short_form("4h")
     ```
   </Tab>
   <Tab title="Rust">
     ```rust
-    use polynode::{PolyNodeClient, ShortFormInterval, ShortFormMessage, OrderbookEngine, Coin};
-
-    let client = PolyNodeClient::new("pn_live_...")?;
-    let mut engine = OrderbookEngine::new("pn_live_...", true)?;
-
-    let mut stream = client
-        .short_form(ShortFormInterval::FiveMin)
-        .coins(&[Coin::Btc, Coin::Eth])
-        .start()
-        .await?;
-
-    while let Some(msg) = stream.next().await {
-        match msg {
-            ShortFormMessage::Rotation(r) => {
-                // Pass token IDs from the rotation to the orderbook engine
-                let token_ids: Vec<&str> = r.markets.iter()
-                    .flat_map(|m| m.clob_token_ids.iter().map(|s| s.as_str()))
-                    .collect();
-                engine.subscribe(&token_ids).await?;
-
-                for m in &r.markets {
-                    println!("{}: beat ${:?} | {:.0}% up",
-                        m.coin.id(), m.price_to_beat, m.up_odds * 100.0);
-                }
-            }
-            ShortFormMessage::Event(e) => { /* handle settlements */ }
-            ShortFormMessage::Error(e) => eprintln!("{}", e),
-        }
-    }
+    let five_minute = client.short_form(ShortFormInterval::FiveMin);
+    let fifteen_minute = client.short_form(ShortFormInterval::FifteenMin);
+    let hourly = client.short_form(ShortFormInterval::Hourly);
+    let four_hour = client.short_form(ShortFormInterval::FourHour);
     ```
   </Tab>
 </Tabs>
 
-<Tip>
-  This gives you three real-time feeds from one setup: **settlements** (trade flow), **orderbook** (depth and price moves), and **rotation enrichments** (odds, liquidity, price-to-beat). Add a `chainlink` subscription on the same WebSocket connection for the underlying asset price too.
-</Tip>
+Each managed stream owns its own connection. If you need several intervals, monitor connection usage and stop streams you no longer need.
 
-### What you get
+## Subscribe to TWAP prices manually
 
-| Stream | Source | Data |
-|--------|--------|------|
-| Settlements | `stream.on('settlement')` | Every trade on the crypto market: size, price, side, wallet |
-| Orderbook | `engine.on('price')` | Bid/ask depth, price changes, spread |
-| Market info | `stream.on('rotation')` | Price-to-beat, odds, liquidity, volume, time remaining |
-| Crypto price | Chainlink subscription | Underlying BTC/ETH/SOL price at ~1/sec |
+Use a manual Chainlink subscription when you want price events without managed market discovery. Combine every feed and lookback needed on that socket into one subscription.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const prices = await pn.ws.subscribe('chainlink')
+      .feeds(['BTC/USD', 'ETH/USD'])
+      .twapWindows([30, 60])
+      .send();
+
+    console.log(prices.priceSource, prices.twapWindows, prices.warnings);
+    prices.on('price_feed', (event) => {
+      const key = `${event.feed}:${event.twap_window_seconds}:${event.timestamp}`;
+      console.log(key, event.price);
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    prices = await (
+        pn.ws.subscribe("chainlink")
+        .feeds(["BTC/USD", "ETH/USD"])
+        .twap_windows([30, 60])
+        .send()
+    )
+    print(prices.price_source, prices.twap_windows, prices.warnings)
+    prices.on(
+        "price_feed",
+        lambda event: print(
+            event.feed, event.twap_window_seconds, event.timestamp, event.price
+        ),
+    )
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::ws::{Subscription, SubscriptionType};
+
+    let ack = stream.subscribe_with_ack(
+        Subscription::new(SubscriptionType::Chainlink)
+            .feeds(vec!["BTC/USD".into(), "ETH/USD".into()])
+            .twap_windows(vec![30, 60]),
+    ).await?;
+    println!("{:?} {:?} {:?}", ack.price_source, ack.twap_windows, ack.warnings);
+    ```
+  </Tab>
+</Tabs>
+
+On every price event, inspect `is_twap` and `twap_window_seconds`; do not infer the price type from arrival frequency. If both windows are selected, key state by feed, window, and timestamp.
+
+## Connect the current market to the orderbook
+
+Use the rotation payload's outcome token IDs. Replace the previous token set whenever `rotation` fires:
+
+```typescript
+import { OrderbookEngine } from 'polynode-sdk';
+
+const engine = new OrderbookEngine({ apiKey, integrity: true });
+
+stream.on('rotation', async ({ markets }) => {
+  const tokenIds = markets.flatMap((market) => market.clobTokenIds);
+  await engine.subscribe(tokenIds);
+});
+```
+
+See [Orderbook streaming and PN1](/sdks/orderbook) for readiness, integrity errors, and cleanup.
+
+## Shutdown
+
+Stop every managed stream you create. This cancels its rotation timer, removes subscriptions, and closes its dedicated connection.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    stream.stop();
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    stream.stop()
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    stream.stop().await;
+    ```
+  </Tab>
+</Tabs>

@@ -1,0 +1,60 @@
+---
+title: "Rust Perps Stream"
+sidebarTitle: "Perps Stream"
+description: "Subscribe to managed Rust perps tickers, BBO, full books, trades, statistics, and klines."
+icon: "chart-line"
+---
+
+```rust
+use polynode::{
+    bbo_channel, book_channel, klines_channel, ticker_channel, trades_channel,
+    PerpsMessage, PolyNodeClient,
+};
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let client = PolyNodeClient::new(
+        std::env::var("POLYNODE_API_KEY").expect("Set POLYNODE_API_KEY")
+    )?;
+    let mut perps = client.perps_stream().await?;
+
+    let ack = perps.subscribe(vec![
+        ticker_channel(),
+        bbo_channel("BTC-USD")?,
+        book_channel("BTC-USD")?,
+        trades_channel("BTC-USD")?,
+        klines_channel("BTC-USD", "1m")?,
+    ]).await?;
+
+    if !ack.rejected.is_empty() {
+        eprintln!("rejected channels: {:?}", ack.rejected);
+    }
+
+    while let Some(message) = perps.next().await {
+        match message? {
+            PerpsMessage::Event(event) => println!("{event:?}"),
+            PerpsMessage::Reconnected(notice) => {
+                eprintln!("gap possible: {}", notice.gap_possible);
+            }
+            PerpsMessage::LagWarning(warning) => eprintln!("{warning:?}"),
+            PerpsMessage::Unknown { raw, decode_error } => {
+                println!("unknown: {raw} {decode_error:?}");
+            }
+            _ => {}
+        }
+    }
+
+    perps.close().await?;
+    Ok(())
+}
+```
+
+One subscribe request can be partially accepted. Inspect `ack.channels` and `ack.rejected`.
+
+Each `PerpsEvent::Book` is a complete replacement, not an incremental patch. `perps.book("BTC-USD").await` returns the latest managed copy.
+
+The client reconnects and resubscribes after non-terminal disconnects, but replay is not guaranteed. `PerpsReconnectNotice.gap_possible` is true; use V3 REST to backfill if completeness matters. Authentication (`4401`) and connection-limit (`4429`) closes are terminal until the failing condition changes.
+
+The bounded receive channel applies backpressure. Poll `next()` continuously and move slow work to a bounded worker pipeline.
+
+See the [shared perps guide](/sdks/perps) for channel definitions and lifecycle details.

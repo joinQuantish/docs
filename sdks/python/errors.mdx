@@ -1,19 +1,47 @@
 ---
-title: "Python — Error Handling"
-sidebarTitle: "Error Handling"
+title: "Python Errors"
+sidebarTitle: "Errors"
+description: "Handle HTTP, WebSocket, reconnect, overflow, and orderbook-integrity failures in Python."
+icon: "triangle-exclamation"
 ---
 
-## Error Handling
-
-
 ```python
-from polynode import PolyNode, ApiError, WsError, PolyNodeError
+from polynode import ApiError, PolyNodeError, WsError
+from polynode.orderbook_integrity import OrderbookIntegrityError
 
 try:
-    pn.market("invalid-id")
-except ApiError as e:
-    print(e.status)   # 404
-    print(e.message)  # "Market not found"
-except PolyNodeError as e:
-    print(e.message)  # base error class
+    result = pn.v3.execute("GET /v3/stats")
+except ApiError as error:
+    print({
+        "status": error.status,
+        "code": error.code,
+        "hint": error.hint,
+        "request_id": error.request_id,
+        "retry_after": error.retry_after,
+        "rate_limit": error.rate_limit,
+        "safe_method": error.safe_method,
+        "safe_url": error.safe_url,
+    })
+    raise
+except WsError as error:
+    print(error.code, error.message)
+    raise
+except OrderbookIntegrityError as error:
+    print(error.code, error.token, str(error))
+    raise
+except PolyNodeError as error:
+    print(error.message)
+    raise
 ```
+
+Safe V3 reads retry transient failures and retryable statuses. State-changing calls are never retried automatically. After a mutation timeout, verify current state before submitting it again.
+
+Also observe non-exception delivery signals:
+
+- `pn.ws.on_replay(...)` for best-effort settlement replay;
+- `sub.on_overflow(...)` for local event loss;
+- `perps.on_reconnect(...)` for a possible perps gap;
+- `perps.on_overflow(...)` for local perps loss;
+- `integrity_error` for PN1 books that are gated until a fresh anchor succeeds.
+
+Log request IDs and redacted safe URLs, never API keys, private keys, CLOB secrets, builder credentials, or signed payloads.

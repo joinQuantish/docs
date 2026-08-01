@@ -1,0 +1,262 @@
+---
+title: "Complete V3 API"
+sidebarTitle: "V3 API"
+description: "Call every current V3 route from TypeScript, Python, or Rust through the shared 120-operation registry."
+icon: "database"
+---
+
+Every SDK ships the same V3 operation registry. In TypeScript 0.12.2, Python 0.12.2, and Rust 0.15.2 it contains 120 operations, so new and less-common routes do not have to wait for a language-specific helper.
+
+Use a named helper when one exists and improves readability. Use the registered executor for complete coverage.
+
+## What is covered
+
+| Family | Operations | Examples |
+| --- | ---: | --- |
+| Wallets | 15 | summary, P&L, positions, trades, fees, rewards, redemptions, activity |
+| Wallet combos | 5 | positions, activity, trades, redemptions, summary |
+| Global combos | 3 | markets, activity, redemptions |
+| Markets | 11 | search, metadata, candles, price, positions, trades |
+| Rewards, tokens, and tags | 6 | reward configs, token metadata, tag leaderboards |
+| Global data | 8 | stats, leaderboard, trades, positions, fees, resolutions, conditions |
+| Builders | 3 | directory, builder details, attributed trades |
+| Webhooks | 9 | create, list, update, test, rotate secret, deliveries |
+| Credits | 9 | wallet totals and series, feed, leaderboard, distributors, transactions |
+| Identities and profiles | 7 | identity search, batches, Polymarket profiles and username flow |
+| Perps | 44 | instruments, market data, wallets, analytics, collateral flows, exchange metadata |
+
+The registry is the SDK contract for route availability. Endpoint reference pages remain the source for request fields and response shapes.
+
+## Discover operations
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { V3_OPERATION_COUNT, V3_OPERATIONS } from 'polynode-sdk';
+
+    console.log(V3_OPERATION_COUNT); // 120 in polynode-sdk 0.12.2
+    for (const operation of V3_OPERATIONS.filter((item) => item.domain === 'perps')) {
+      console.log(operation.method, operation.path);
+    }
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    from polynode import V3_OPERATION_COUNT, V3_OPERATIONS
+
+    print(V3_OPERATION_COUNT)  # 120 in polynode 0.12.2
+    for operation in V3_OPERATIONS:
+        if operation.domain == "perps":
+            print(operation.method, operation.path)
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::{V3_OPERATIONS, V3_OPERATION_COUNT};
+
+    fn main() {
+        println!("{V3_OPERATION_COUNT}"); // 120 in polynode 0.15.2
+        for operation in V3_OPERATIONS.iter().filter(|item| item.domain == "perps") {
+            println!("{} {}", operation.method, operation.path);
+        }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Call a registered route
+
+Operation names use the exact `METHOD /v3/path` form shown by the registry. Pass template fields separately; the SDK URL-encodes them.
+
+The following request reads a wallet's combo summary:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { PolyNode } from 'polynode-sdk';
+
+    const apiKey = process.env.POLYNODE_API_KEY;
+    if (!apiKey) throw new Error('Set POLYNODE_API_KEY');
+    const pn = new PolyNode({ apiKey });
+
+    const wallet = '0xa9857c7bcb9bcfafd2c132ab053f34f678610058';
+    const summary = await pn.v3.execute(
+      'GET /v3/wallets/{address}/combos/summary',
+      { pathParams: { address: wallet } },
+    );
+    console.log(summary);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import os
+    from polynode import PolyNode
+
+    wallet = "0xa9857c7bcb9bcfafd2c132ab053f34f678610058"
+    with PolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
+        summary = pn.v3.execute(
+            "GET /v3/wallets/{address}/combos/summary",
+            path_params={"address": wallet},
+        )
+        print(summary)
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::{PolyNodeClient, V3RequestOptions};
+
+    #[tokio::main]
+    async fn main() -> polynode::Result<()> {
+        let client = PolyNodeClient::new(
+            std::env::var("POLYNODE_API_KEY").expect("Set POLYNODE_API_KEY")
+        )?;
+        let summary = client.v3().execute_named(
+            "GET /v3/wallets/{address}/combos/summary",
+            V3RequestOptions::default().path_param(
+                "address",
+                "0xa9857c7bcb9bcfafd2c132ab053f34f678610058",
+            ),
+        ).await?;
+        println!("{summary:#}");
+        Ok(())
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Add query parameters
+
+The registered executor accepts wire-format query names. This is useful when one example should translate directly across all three SDKs.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const trades = await pn.v3.execute('GET /v3/trades', {
+      query: {
+        limit: 50,
+        sort_by: 'order_hash',
+        group_by: 'order_hash',
+      },
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    trades = pn.v3.execute(
+        "GET /v3/trades",
+        query={
+            "limit": 50,
+            "sort_by": "order_hash",
+            "group_by": "order_hash",
+        },
+    )
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    let trades = client.v3().execute_named(
+        "GET /v3/trades",
+        V3RequestOptions::default()
+            .query_param("limit", 50_u64)
+            .query_param("sort_by", "order_hash")
+            .query_param("group_by", "order_hash"),
+    ).await?;
+    ```
+  </Tab>
+</Tabs>
+
+`group_by=order_hash` and `sort_by=order_hash` are supported on the global, wallet, market-token, and market-slug trade routes.
+
+## Read perps through V3
+
+Perps REST data uses the same executor and API key:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const ticker = await pn.v3.execute(
+      'GET /v3/perps/tickers/{instrument}',
+      { pathParams: { instrument: 'BTC-USD' } },
+    );
+    console.log(ticker);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    ticker = pn.v3.execute(
+        "GET /v3/perps/tickers/{instrument}",
+        path_params={"instrument": "BTC-USD"},
+    )
+    print(ticker)
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    let ticker = client.v3().execute_named(
+        "GET /v3/perps/tickers/{instrument}",
+        V3RequestOptions::default().path_param("instrument", "BTC-USD"),
+    ).await?;
+    println!("{ticker:#}");
+    ```
+  </Tab>
+</Tabs>
+
+See the [Perps API](/perps/overview) for instruments, response fields, filters, and freshness behavior. For live updates, use the [SDK perps stream](/sdks/perps).
+
+## TypeScript convenience methods
+
+TypeScript also has typed helpers for frequently used V3 routes:
+
+```typescript
+const wallet = await pn.v3.wallet('0x...');
+const positions = await pn.v3.walletPositions(wallet.address, {
+  status: 'open',
+  sort: 'size',
+  limit: 25,
+});
+const trades = await pn.v3.walletTrades(wallet.address, {
+  groupBy: 'order_hash',
+  sortBy: 'order_hash',
+  limit: 50,
+});
+const combos = await pn.v3.execute(
+  'GET /v3/wallets/{address}/combos/positions',
+  { pathParams: { address: wallet.address }, query: { limit: 25 } },
+);
+```
+
+Use `execute()` whenever a route is in `pn.v3.operations` but does not have a dedicated helper.
+
+## Retries and mutations
+
+The V3 clients:
+
+- retry safe reads after transient transport errors, `408`, `425`, `429`, and server errors
+- honor `Retry-After` within the configured retry ceiling
+- use the registry's retry policy for the two read-only batch POST operations
+- never retry state-changing requests automatically
+- expose the status, request ID, retry metadata, and a credential-redacted request URL on structured V3 errors
+
+<Warning>
+  A timeout on a webhook create, update, delete, test, secret rotation, or profile mutation is an ambiguous result. Check the resource before trying the mutation again.
+</Warning>
+
+## Precision
+
+V3 responses may contain exact decimal and large integer values. TypeScript and Rust retain raw V3 JSON values without forcing monetary fields through binary floating point. Python decodes JSON decimal fractions as `Decimal`.
+
+Preserve decimal strings or decimal objects until display. Do not convert identifiers, raw amounts, or exact prices to a JavaScript `number` merely for convenience.
+
+## Raw additive routes
+
+`request()` is an escape hatch for a newly additive `/v3/` route before the published registry is updated. It is restricted to the client's configured origin and keeps credentials out of query strings.
+
+Prefer `execute()` / `execute_named()` for registered routes because the registry supplies the correct retry policy.
+
+## Reference
+
+- [V3 Data API](/data/overview)
+- [Combos](/data/combos/overview)
+- [Fees](/data/fees/overview)
+- [Perps](/perps/overview)
+- [Webhooks](/webhooks/overview)

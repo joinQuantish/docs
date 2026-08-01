@@ -1,0 +1,84 @@
+---
+title: "Python V3 API"
+sidebarTitle: "V3 API"
+description: "Use synchronous or asynchronous Python clients for all 120 registered V3 operations."
+icon: "database"
+---
+
+Python 0.12.2 exposes the complete shared V3 operation registry through both `PolyNode` and `AsyncPolyNode`. V3 JSON decimal fractions are decoded as `Decimal` so money and prices are not silently rounded through binary floating point.
+
+## Discover operations
+
+```python
+from polynode import V3_OPERATION_COUNT, V3_OPERATIONS
+
+print(V3_OPERATION_COUNT)  # 120 in 0.12.2
+for operation in V3_OPERATIONS:
+    print(operation.method, operation.path, operation.domain)
+```
+
+## Synchronous requests
+
+```python
+import os
+from polynode import PolyNode
+
+address = "0xa9857c7bcb9bcfafd2c132ab053f34f678610058"
+
+with PolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
+    combo_summary = pn.v3.execute(
+        "GET /v3/wallets/{address}/combos/summary",
+        path_params={"address": address},
+    )
+    trades = pn.v3.execute(
+        "GET /v3/trades",
+        query={
+            "limit": 50,
+            "sort_by": "order_hash",
+            "group_by": "order_hash",
+        },
+    )
+    print(combo_summary, trades)
+```
+
+## Asynchronous requests
+
+```python
+import asyncio
+import os
+from polynode import AsyncPolyNode
+
+async def main() -> None:
+    async with AsyncPolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
+        ticker = await pn.v3.execute(
+            "GET /v3/perps/tickers/{instrument}",
+            path_params={"instrument": "BTC-USD"},
+        )
+        print(ticker)
+
+asyncio.run(main())
+```
+
+Use the exact `METHOD /v3/path` name from `V3_OPERATIONS`. Path and query values are encoded separately.
+
+## Retry and precision behavior
+
+Safe reads retry transient failures and respect `Retry-After` within the configured ceiling. State-changing calls are never retried automatically. After a mutation timeout, inspect the resource before trying again.
+
+```python
+from polynode import ApiError
+
+try:
+    stats = pn.v3.execute("GET /v3/stats")
+except ApiError as error:
+    print({
+        "status": error.status,
+        "code": error.code,
+        "request_id": error.request_id,
+        "retry_after": error.retry_after,
+        "safe_url": error.safe_url,
+    })
+    raise
+```
+
+See the [complete V3 guide](/sdks/v3-api) and [V3 endpoint reference](/data/overview).
