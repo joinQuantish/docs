@@ -55,6 +55,7 @@
   },
   "chain_ground_truth": {
     "provider": "Alchemy Polygon RPC",
+    "role": "Benchmark-only confirmed-event verifier; not part of PolyNode production ingestion, status_update generation, WebSocket delivery, or latency timing",
     "from_block": 91254927,
     "to_block": 91255524,
     "from_block_hash": "0xbb804d865236a2f51e164ae6bec18046a167d874f7539caeb9140e317a7243c2",
