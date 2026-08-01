@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "case_study": "polynode-struct-rtds-websocket-benchmark",
+  "measured_date": "2026-08-01",
+  "headline_core_interval_utc": {
+    "from": "2026-08-01T12:30:08.435Z",
+    "to": "2026-08-01T12:45:08.523Z"
+  },
+  "audit_completed_at": "2026-08-01T12:57:05Z",
+  "provenance": {
+    "struct_upstream_repository": "https://github.com/structbuild/polymarket-rtds-vs-struct-benchmark",
+    "struct_upstream_base_commit": "be622c1edafb977e76c1126c797b2b01f926f9f9",
+    "extended_harness_commit": "4df16e1c2c6a8b51728842b8031d027382910dd0",
+    "index_ts_sha256": "1bca4336ec9802f3d3a357e7e90dcd7039d04a304061904d67fd2e00180acd72",
+    "analysis_ts_sha256": "739142263587a8d3ac6bd6dba80df56db81fcaf9c755cf6aa41b5ebca6c65e50",
+    "runtime": "node v24.14.0 linux x64",
+    "struct_sdk": "0.6.7"
+  },
+  "config": {
+    "duration_sec": 900,
+    "warmup_sec": 12,
+    "confirmation_tail_sec": 30,
+    "boundary_guard_blocks": 2,
+    "struct": {
+      "room": "polymarket_trades",
+      "filters": {
+        "status": "all",
+        "subscribe_all": true
+      },
+      "trade_type_filter": null,
+      "acknowledged_subscribe_all": true,
+      "rejected": []
+    },
+    "polynode": {
+      "subscription": {
+        "action": "subscribe",
+        "type": "trades"
+      }
+    },
+    "rtds": {
+      "subscriptions": [
+        {
+          "topic": "activity",
+          "type": "trades"
+        },
+        {
+          "topic": "activity",
+          "type": "orders_matched"
+        }
+      ],
+      "heartbeat": "polymarket-lowercase",
+      "silence_reconnect_sec": 5
+    },
+    "arrival_clock": "process.hrtime.bigint() in one process"
+  },
+  "chain_ground_truth": {
+    "provider": "Alchemy Polygon RPC",
+    "from_block": 91254927,
+    "to_block": 91255524,
+    "from_block_hash": "0xbb804d865236a2f51e164ae6bec18046a167d874f7539caeb9140e317a7243c2",
+    "to_block_hash": "0x6c6430ba8787382151e0d16c8ace6268f204d70d98e94a3ad719c713dfe09a67",
+    "transactions": 18041,
+    "fills": 48281,
+    "fills_by_contract": {
+      "0xe111180000d2663c0091e4f400237545b87b996b": 39150,
+      "0xe2222d279d744050d28e00520010520000310f59": 9131
+    },
+    "anchor_hashes_rechecked": true
+  },
+  "coverage": {
+    "polynode_pending_transactions": { "seen": 18041, "eligible": 18041, "pct": 100 },
+    "polynode_status_update_transactions": { "seen": 18041, "eligible": 18041, "pct": 100 },
+    "polynode_confirmed_fills": { "seen": 48281, "eligible": 48281, "pct": 100 },
+    "struct_pending_transactions": { "seen": 0, "eligible": 18041, "pct": 0 },
+    "struct_confirmed_transactions": { "seen": 18041, "eligible": 18041, "pct": 100 },
+    "struct_combined_confirmed_fills": {
+      "seen": 48281,
+      "eligible": 48281,
+      "pct": 100,
+      "order_filled_records": 30240,
+      "orders_matched_records": 18041,
+      "unmatched_records": 0,
+      "index_order_hash_mismatches": 0
+    },
+    "rtds_activity_transactions": {
+      "seen": 17777,
+      "eligible": 18041,
+      "pct": 98.53666648190233,
+      "missing": 264
+    }
+  },
+  "latency_ms": {
+    "sign": "right arrival minus left arrival; positive means left first",
+    "polynode_pending_vs_status_update": {
+      "samples": 18041,
+      "left_first_pct": 100,
+      "median": 2147.840026,
+      "p95": 3188.775993
+    },
+    "polynode_status_update_vs_struct_confirmed": {
+      "samples": 18041,
+      "left_first_pct": 100,
+      "median": 3963.141553,
+      "p95": 5083.438531
+    },
+    "polynode_trade_vs_struct_confirmed_record": {
+      "samples": 48281,
+      "left_first": 47796,
+      "right_first": 485,
+      "left_first_pct": 98.9954640541828,
+      "median": 3862.266719,
+      "p95": 5061.075874,
+      "min": -2187.137525,
+      "max": 8310.50943
+    },
+    "polynode_pending_vs_rtds": {
+      "samples": 17777,
+      "left_first_pct": 100,
+      "median": 1984.044862,
+      "p95": 2858.4846318
+    },
+    "polynode_status_update_vs_rtds": {
+      "samples": 17777,
+      "left_first_pct": 34.48275862068966,
+      "median": -170.797936,
+      "p95": 427.6532834
+    },
+    "struct_confirmed_vs_rtds": {
+      "samples": 17777,
+      "left_first_pct": 0,
+      "median": -4117.521383,
+      "p95": -2963.65036
+    }
+  },
+  "adverse_polynode_fill_blocks": [
+    { "from_block": 91254964, "to_block": 91254965, "struct_first_fills": 149 },
+    { "from_block": 91255009, "to_block": 91255010, "struct_first_fills": 136 },
+    { "from_block": 91255121, "to_block": 91255122, "struct_first_fills": 200 }
+  ],
+  "rtds_silent_stalls": [
+    {
+      "attempt": 1,
+      "last_activity_block": 91255272,
+      "first_activity_block_after_recovery": 91255277,
+      "missing_blocks_inclusive": [91255273, 91255276],
+      "missing_transactions": 187,
+      "observed_gap_ms": 7204
+    },
+    {
+      "attempt": 2,
+      "last_activity_block": 91255476,
+      "first_activity_block_after_recovery": 91255481,
+      "missing_blocks_inclusive": [91255477, 91255480],
+      "missing_transactions": 77,
+      "observed_gap_ms": 6966
+    },
+    {
+      "attempt": 3,
+      "inside_eligible_window": false,
+      "missing_transactions": 0,
+      "observed_gap_ms": 6656
+    }
+  ],
+  "retained_run_inventory": {
+    "windows": 10,
+    "core_duration_sec": 1995,
+    "chain_transactions": 39992,
+    "chain_fills": 107210,
+    "struct_pending_events": 0,
+    "phases": [
+      { "name": "instrumentation-smokes", "windows": 2, "duration_sec": 60, "transactions": 871, "fills": 2433 },
+      { "name": "exact-struct-methodology-suite", "windows": 5, "duration_sec": 675, "transactions": 13595, "fills": 36466, "rtds_heartbeat": "struct-uppercase" },
+      { "name": "official-heartbeat-control", "windows": 1, "duration_sec": 180, "transactions": 3673, "fills": 9832, "rtds_coverage_pct": 56.003267084127415 },
+      { "name": "recovery-shakedown", "windows": 1, "duration_sec": 180, "transactions": 3812, "fills": 10198, "rtds_coverage_pct": 93.9401888772298 },
+      { "name": "headline", "windows": 1, "duration_sec": 900, "transactions": 18041, "fills": 48281, "rtds_coverage_pct": 98.53666648190233 }
+    ]
+  },
+  "full_headline_artifact_sha256": {
+    "REPORT.md": "aaf4ecbb96d449895e33abf1f5ffa81bbcb9f3b76da622b47bca0cf764b71404",
+    "events.ndjson": "8ffa5871918fbf5b09b56e3f4868e4d9d533074a5891dd12e4e537dea7af6892",
+    "latency_samples.csv": "fe0e806ee025041cd9176d55a8de2bd839947eb23024857a92a153d8638f3ee3",
+    "manifest.json": "fc327518fc4d508d51a9c969ded4ae6afa912d3b492f22c19901430add3eccca",
+    "missing.json": "6dcbb29a560e53b237fc070cbffde553aa2b3badc3044ed4ac36ab9967e8984c",
+    "raw_frames.ndjson": "b5d3efea91c10035c6cb24a70b76c028a0401b31bec7c156a0659a7af51235e3",
+    "rpc_logs.json": "0b4362c3e729f428077ea56aa860ec3651c37b258495cf53e9a8568eb9a7ac83",
+    "summary.json": "f5ef495adf1362cd9f1b442a0d68bc1b0824705275e79874c010f33e132d3287"
+  },
+  "integrity": {
+    "typescript_check": "passed",
+    "analysis_tests": "3 passed",
+    "git_diff_check": "passed",
+    "credential_scan": "passed",
+    "rpc_errors": 0,
+    "unmatched_struct_confirmed_records": 0,
+    "block_anchor_recheck": "passed"
+  }
+}
