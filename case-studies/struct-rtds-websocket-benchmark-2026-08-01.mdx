@@ -1,0 +1,367 @@
+---
+title: "WebSocket latency and completeness: PolyNode, Struct, and RTDS"
+sidebarTitle: "PolyNode vs Struct and RTDS"
+description: "A reproducible August 1, 2026 benchmark of pending detection, confirmed fills, and on-chain completeness."
+icon: "stopwatch"
+---
+
+On August 1, 2026, we raced PolyNode, Struct, and Polymarket RTDS from one Node.js process, then checked every eligible result against Polygon logs obtained through an external Alchemy RPC. The headline window covered **18,041 transactions and 48,281 fills over 598 fully observed Polygon blocks**.
+
+<Info>
+This is a PolyNode-run, point-in-time smoke test. Alchemy supplied the independent confirmed-event denominator; it was not used as a live latency lane. All claims below are limited to the recorded configuration, window, and network vantage point.
+</Info>
+
+<CardGroup cols={2}>
+  <Card title="100% confirmed coverage" icon="circle-check">
+    PolyNode and Struct each represented all 48,281 confirmed fills after exact record reconciliation.
+  </Card>
+  <Card title="3.86 second median lead" icon="bolt">
+    PolyNode's fill stream arrived first for 98.995% of exact fill pairs.
+  </Card>
+  <Card title="1.98 seconds before RTDS" icon="gauge-high">
+    PolyNode pending arrived first for every RTDS overlap in the headline window.
+  </Card>
+  <Card title="No Struct pending events" icon="ban">
+    Struct returned confirmed data but no pending events under its documented `status: "all"` request.
+  </Card>
+</CardGroup>
+
+## What the test establishes
+
+In this window, PolyNode's confirmation signal beat Struct's confirmed signal for all **18,041** matched transactions by **3.963 seconds median**. At exact fill granularity, PolyNode beat Struct on **47,796 of 48,281 fills**, or **98.995%**, by **3.862 seconds median**.
+
+PolyNode pending also arrived before RTDS activity for every one of their **17,777** shared transactions, by **1.984 seconds median**. RTDS was not a complete denominator: even with a five-second silence watchdog and automatic resubscription, it represented **17,777 of 18,041** eligible transactions.
+
+We did **not** find evidence that Struct was missing confirmed transactions or fills. Struct's documented pending path, however, produced no events in the headline run or any retained test window. That result supports the narrow statement that we could not reproduce Struct pending delivery with the documented request on a fresh, credited account. It does not establish why the events were absent.
+
+## Signal mapping
+
+The word "trade" does not identify the same lifecycle stage in every feed. We fixed the mapping before collecting data.
+
+| Question | PolyNode | Struct | RTDS | Join key |
+|---|---|---|---|---|
+| Pending detection | `settlement` with `status=pending` | `received_at` present and `block` absent | `activity/trades` or `activity/orders_matched` as a baseline only | Transaction hash |
+| Transaction confirmation | `status_update` | First confirmed record carrying `block` | Activity arrival as a baseline only | Transaction hash |
+| Confirmed fill | `trade` | Confirmed `OrderFilled`, plus the corresponding `OrdersMatched` representation | Not used for fill completeness | Transaction hash + canonical log index |
+| Completeness truth | Polygon `OrderFilled` logs through Alchemy | Same | Same | Transaction hash + block-global log index |
+
+PolyNode [`status_update`](/websocket/events/status-update) is the transaction-level confirmation comparison requested for Struct confirmed. PolyNode [`trade`](/websocket/events/trade) is the stricter fill-level comparison. PolyNode [`settlement`](/websocket/events/settlement) with `status=pending` is the pre-confirmation path.
+
+RTDS activity is useful as a public timing baseline, but we do not label it as either pending or confirmed. Its official schema is not an exact semantic equivalent of both stages.
+
+## Headline run
+
+| Property | Recorded value |
+|---|---|
+| Core interval | 2026-08-01 12:30:08.435–12:45:08.523 UTC |
+| Host clock zone | Europe/Berlin, UTC+02:00 |
+| Runtime | Node.js v24.14.0 on Linux x64 |
+| Struct SDK | 0.6.7 |
+| Eligible blocks | 91,254,927–91,255,524 inclusive |
+| Boundary hashes | `0xbb804d…24c2` through `0x6c6430…9a67` |
+| Core / warm-up / confirmation tail | 900 / 12 / 30 seconds |
+| Chain truth | 18,041 transactions / 48,281 `OrderFilled` logs |
+| RTDS heartbeat | Official lowercase `ping`, pong-paced |
+| RTDS recovery | Reconnect and resubscribe after 5 seconds without global activity |
+| Struct request | `status: "all"`, `subscribe_all: true`, no trade-type filter |
+
+We re-read both boundary blocks from Alchemy after analysis. Their hashes still matched the recorded manifest.
+
+## Coverage results
+
+Coverage is measured only inside the fully observed block window. Transaction coverage asks whether a feed surfaced a transaction at least once. Fill coverage requires every individual on-chain execution.
+
+| Path | Unit | Seen | Coverage | Missing |
+|---|---:|---:|---:|---:|
+| PolyNode pending settlement | Transaction | 18,041 / 18,041 | 100.000% | 0 |
+| PolyNode `status_update` | Transaction | 18,041 / 18,041 | 100.000% | 0 |
+| PolyNode confirmed `trade` | Fill | 48,281 / 48,281 | 100.000% | 0 |
+| Struct pending | Transaction | 0 / 18,041 | 0.000% | 18,041 |
+| Struct confirmed | Transaction | 18,041 / 18,041 | 100.000% | 0 |
+| Struct combined confirmed record | Fill | 48,281 / 48,281 | 100.000% | 0 |
+| RTDS activity | Transaction | 17,777 / 18,041 | 98.537% | 264 |
+
+The PolyNode pending row means that every transaction later present in the chain denominator had an earlier PolyNode pending sighting. Confirmed logs cannot prove completeness for pending transactions that never reach the chain.
+
+### Why Struct's strict `OrderFilled` count initially looked low
+
+Struct emitted 30,240 `OrderFilled` records and 18,041 `OrdersMatched` records for the 48,281 chain fills. Counting only its `OrderFilled` type would incorrectly report 62.63% coverage.
+
+For each transaction, Struct's `OrdersMatched` record carried the taker order hash corresponding to one on-chain `OrderFilled`. We fetched every receipt, translated Struct's receipt-local log indexes to Polygon's block-global indexes, and mapped `OrdersMatched` by unique transaction and order hash. All 48,281 records reconciled with:
+
+- zero unmatched records;
+- zero index/order-hash mismatches;
+- 30,240 direct receipt-index mappings;
+- 18,041 unique `OrdersMatched` mappings.
+
+The defensible conclusion is therefore **100% Struct confirmed-fill coverage**, not 62.63%.
+
+## Latency results
+
+Every callback was stamped immediately with `process.hrtime.bigint()` in the same process. A positive lead means the left-hand path arrived first. Missing events never become artificial zero-latency samples.
+
+| Comparison: left vs right | Samples | Median left lead | P95 left lead | Left first |
+|---|---:|---:|---:|---:|
+| PolyNode pending vs PolyNode `status_update` | 18,041 | +2.148 s | +3.189 s | 100.00% |
+| PolyNode `status_update` vs Struct confirmed | 18,041 | +3.963 s | +5.083 s | 100.00% |
+| PolyNode confirmed fill vs Struct confirmed record | 48,281 | +3.862 s | +5.061 s | 99.00% |
+| PolyNode pending vs RTDS activity | 17,777 | +1.984 s | +2.858 s | 100.00% |
+| PolyNode `status_update` vs RTDS activity | 17,777 | -0.171 s | +0.428 s | 34.48% |
+| Struct confirmed vs RTDS activity | 17,777 | -4.118 s | -2.964 s | 0.00% |
+
+The RTDS comparison is an important check against overclaiming. RTDS activity arrived **171 ms before** PolyNode `status_update` at the median and won 65.52% of their overlaps. It is therefore wrong to describe PolyNode confirmation as several seconds ahead of RTDS. The several-second confirmed advantage is against Struct; the PolyNode advantage against RTDS belongs to the pending signal.
+
+### Adverse fill windows
+
+Struct arrived first for 485 fills across 203 transactions. Those losses were concentrated in six blocks: 91,254,964–91,254,965, 91,255,009–91,255,010, and 91,255,121–91,255,122. The worst observed PolyNode loss was 2.187 seconds.
+
+Outside those blocks, PolyNode won every exact fill pair. We include the clusters because a median alone would hide them.
+
+## RTDS continuity
+
+The RTDS socket silently stopped delivering global activity three times without first producing an error or close event. The watchdog terminated the open socket and resubscribed each time.
+
+| Stall | Last observed block | First block after recovery | Missing eligible blocks | Missing transactions | Activity gap |
+|---:|---:|---:|---|---:|---:|
+| 1 | 91,255,272 | 91,255,277 | 91,255,273–91,255,276 | 187 | 7.204 s |
+| 2 | 91,255,476 | 91,255,481 | 91,255,477–91,255,480 | 77 | 6.966 s |
+| 3 | After the eligible window | After the eligible window | None eligible | 0 | 6.656 s |
+
+The final RTDS coverage was therefore 98.537%, not 100%. The [264 missing transaction hashes](/assets/case-studies/2026-08-01-websocket-benchmark/rtds-missing-transactions.json) are published as a machine-readable audit file.
+
+## Exact collection method
+
+### Requests sent
+
+The final run used these literal harness excerpts. `args.structStatus` was `all`, and `args.tradeTypes` was unset.
+
+<Tabs>
+  <Tab title="Struct">
+    ```ts
+    const filters: Record<string, unknown> = {
+      status: args.structStatus,
+      subscribe_all: true,
+    };
+    if (args.tradeTypes?.length) filters.trade_types = args.tradeTypes;
+    const ack = await socket.subscribe("polymarket_trades", filters as never);
+    ```
+  </Tab>
+  <Tab title="PolyNode">
+    ```ts
+    const request = { action: "subscribe", type: "trades" };
+    socket.send(JSON.stringify(request));
+    ```
+  </Tab>
+  <Tab title="Polymarket RTDS">
+    ```ts
+    const request = {
+      action: "subscribe",
+      subscriptions: [
+        { topic: "activity", type: "trades" },
+        { topic: "activity", type: "orders_matched" },
+      ],
+    };
+    current.send(JSON.stringify(request));
+    ```
+  </Tab>
+</Tabs>
+
+Struct acknowledged `subscribe_all: true`, returned an empty `rejected` array, and streamed confirmed records. Its acknowledgment did not echo the requested `status` field.
+
+<Accordion title="Run the PolyNode side">
+  This minimal Node.js client uses the same `trades` subscription and keeps the three lifecycle signals separate. See [WebSocket subscriptions](/websocket/subscribing) for server-side filters.
+
+  ```bash
+  npm install ws
+  ```
+
+  ```js
+  import WebSocket from "ws";
+
+  const apiKey = process.env.POLYNODE_API_KEY;
+  if (!apiKey) throw new Error("Missing POLYNODE_API_KEY");
+
+  const endpoint = new URL("wss://ws.polynode.dev/ws");
+  endpoint.searchParams.set("key", apiKey);
+
+  const ws = new WebSocket(endpoint);
+
+  ws.on("open", () => {
+    ws.send(JSON.stringify({ action: "subscribe", type: "trades" }));
+  });
+
+  ws.on("message", (raw) => {
+    const message = JSON.parse(raw.toString());
+    const items = Array.isArray(message.events) ? message.events : [message];
+
+    for (const item of items) {
+      const event = item?.data ?? item;
+      if (!event || typeof event !== "object") continue;
+
+      if (event.event_type === "settlement" && event.status === "pending") {
+        console.log("pending", event.tx_hash);
+      } else if (event.event_type === "status_update") {
+        console.log("confirmed transaction", event.tx_hash);
+      } else if (event.event_type === "trade") {
+        console.log("confirmed fill", event.tx_hash, event.log_index);
+      }
+    }
+  });
+  ```
+</Accordion>
+
+### Immediate, same-clock stamping
+
+```ts
+function now(): Stamp {
+  return { monoNs: process.hrtime.bigint().toString(), wallMs: Date.now() };
+}
+
+socket.on("message", (raw: RawData) => {
+  const stamp = now();
+  const text = raw.toString();
+  // Parsing and normalization follow the arrival stamp.
+});
+```
+
+Wall time remains in the artifacts for human auditing. All latency math uses the monotonic nanosecond value.
+
+### Lifecycle classification
+
+```ts
+const isPending = event.received_at != null && event.block == null;
+recorder.event(
+  "struct",
+  isPending ? "pending" : "confirmed",
+  "trade_stream_update",
+  {
+    tx_hash: normalizeHash(event.hash),
+    log_index: numeric(event.log_index),
+    block_number: numeric(event.block),
+    order_hash: normalizeHash(event.order_hash),
+    trade_type: typeof event.trade_type === "string"
+      ? event.trade_type
+      : undefined,
+    status: isPending ? "pending" : "confirmed",
+  },
+  stamp,
+);
+
+if (eventType === "settlement") {
+  recorder.event(
+    "polynode",
+    fields.status === "pending" ? "pending" : "settlement_other",
+    eventType,
+    fields,
+    stamp,
+  );
+} else if (eventType === "status_update") {
+  recorder.event("polynode", "confirmed", eventType, fields, stamp);
+} else if (eventType === "trade") {
+  recorder.event("polynode", "confirmed_fill", eventType, fields, stamp);
+}
+```
+
+This preserves the pending/confirmed classification in [Struct's published benchmark](https://github.com/structbuild/polymarket-rtds-vs-struct-benchmark) while keeping PolyNode's transaction confirmation separate from its individual fills.
+
+### Independent denominator and block boundaries
+
+After all three sockets were active and the 12-second warm-up finished, the harness read the Polygon tip and armed the first eligible block at `tip + 2`. At core completion, it ended the denominator at `tip - 2`, then kept sockets open for 30 seconds.
+
+The harness queried every known current and legacy Polymarket CLOB exchange for `OrderFilled` logs. It then fetched every eligible receipt. The headline window happened to contain only V2 fills: 39,150 from the standard exchange and 9,131 from the neg-risk exchange.
+
+Each confirmed fill was keyed as:
+
+```ts
+function fillKey(txHash: string, logIndex: number): string {
+  return `${txHash}:${logIndex}`;
+}
+
+// Exact latency field used inside the sample object:
+left_lead_ms: Number(rightNs - leftNs) / 1_000_000,
+```
+
+Using only transaction hash would have hidden missing fills because every transaction in this window contained multiple `OrderFilled` logs.
+
+### Reproduction command
+
+```bash
+npm ci
+npm test
+npm run check
+
+STRUCT_API_KEY='<redacted>' \
+POLYNODE_API_KEY='<redacted>' \
+POLYGON_RPC_URL='<redacted>' \
+npm run bench -- \
+  --duration-sec 900 \
+  --warmup-sec 12 \
+  --tail-sec 30 \
+  --struct-status all \
+  --rtds-heartbeat polymarket-lowercase \
+  --rtds-silence-reconnect-sec 5 \
+  --out results/headline-15m-2026-08-01
+```
+
+Credentials are read only from environment variables. The artifacts contain redacted endpoints and short one-way fingerprints, never raw keys.
+
+## Control runs and prior windows
+
+We retained ten non-overlapping windows totaling 1,995 seconds, 39,992 confirmed transactions, and 107,210 chain fills. Struct emitted zero pending events in every retained window.
+
+| Phase | Windows | Core time | Transactions | Fills | Struct pending | Purpose |
+|---|---:|---:|---:|---:|---:|---|
+| Instrumentation smokes | 2 | 60 s | 871 | 2,433 | 0 | Validate subscriptions, normalization, and boundaries |
+| Exact Struct-methodology suite | 5 | 675 s | 13,595 | 36,466 | 0 | Preserve Struct's uppercase `PING` harness behavior |
+| Official-heartbeat control | 1 | 180 s | 3,673 | 9,832 | 0 | Replace uppercase `PING` with official lowercase `ping` |
+| Recovery shakedown | 1 | 180 s | 3,812 | 10,198 | 0 | Validate a 10-second silence watchdog |
+| Headline run | 1 | 900 s | 18,041 | 48,281 | 0 | Official heartbeat plus five-second recovery |
+
+The five-window exact-methodology suite produced these pooled results:
+
+- PolyNode and Struct each covered 100% of 13,595 confirmed transactions and 36,466 reconciled fills.
+- PolyNode `status_update` beat Struct confirmed by 4.017 seconds median and arrived first for every transaction.
+- PolyNode fills beat Struct records by 3.955 seconds median and arrived first for 95.55% of fills.
+- PolyNode pending beat every RTDS overlap by 1.995 seconds median.
+- RTDS transaction coverage was 83.96% because two later sockets stayed open but stopped delivering activity.
+
+One exact-methodology window contained a nine-block PolyNode fill-latency cluster: PolyNode won 80.87% of fills in that window while retaining 100% coverage. The other four exact windows had PolyNode first on 100% of fills.
+
+The official lowercase heartbeat did not by itself prevent RTDS silence. In its isolated 180-second control, RTDS covered 56.00% of eligible transactions and stopped for the final 52 blocks. Recovery improved coverage to 93.94% with a ten-second watchdog and 98.54% with the final five-second watchdog, but WebSocket resubscription cannot replay events lost during the gap.
+
+An earlier exploratory `status: "pending"`-only probe on the fresh credited Struct account also produced no pending events while RTDS remained active. Because that exploratory probe did not use the final artifact schema, it is recorded as diagnostic context and excluded from every scored table.
+
+## Artifacts and integrity
+
+The [compact result bundle](/assets/case-studies/2026-08-01-websocket-benchmark/headline-summary.json) contains the exact configuration, coverage, latency, lifecycle gaps, adverse blocks, run inventory, source hashes, block anchors, and SHA-256 checksums for the full local archive. The [credential-free source bundle](/assets/case-studies/2026-08-01-websocket-benchmark/harness-source.json) contains the complete harness, analyzer, tests, dependency lock, README, and license at the measured commit.
+
+The full headline archive is 481 MB and contains:
+
+- 220,584 normalized events;
+- 220,601 parsed raw frames;
+- 167,935 latency CSV lines, including the header;
+- every Polygon `OrderFilled` log, with receipt-local indexes derived from fetched receipts;
+- exact missing identifiers and connection lifecycle events;
+- readable and machine-readable summaries.
+
+Before publication, we ran the TypeScript compiler, three analysis regression tests, `git diff --check`, a credential-pattern scan, and a separate block-anchor recheck through Alchemy. No credentials, RPC errors, unmatched Struct records, or block-hash changes were found.
+
+## Limitations
+
+- This is one date and one network vantage point. It does not guarantee the same latency from every region or in future provider versions.
+- The traffic was live, not a controlled synthetic workload. Market activity and block density varied.
+- On-chain logs prove confirmed completeness. They cannot enumerate pending transactions that never confirm.
+- RTDS is a public activity baseline, not a semantic clone of either pending or confirmed streams.
+- A five-second watchdog trades faster recovery for more reconnects. Different thresholds change the size of unrecoverable gaps.
+- Provider-supplied timestamps were retained but never used for cross-provider latency because their clock origins are not comparable.
+
+## References
+
+- [Struct's published benchmark methodology](https://www.struct.to/blog/polymarket-rtds-vs-struct-trades-ws)
+- [Struct's published benchmark source](https://github.com/structbuild/polymarket-rtds-vs-struct-benchmark)
+- [Struct trade room documentation](https://docs.struct.to/websockets/rooms/trades)
+- [Struct pending and confirmed copy-trading guide](https://docs.struct.to/guides/copy-trading-pending-or-confirmed-trades)
+- [Polymarket official real-time data client](https://github.com/Polymarket/real-time-data-client)
+- [PolyNode WebSocket overview](/websocket/overview)
+
+Last evidence audit: **2026-08-01 12:57 UTC**.

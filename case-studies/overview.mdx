@@ -1,0 +1,32 @@
+---
+title: "Case studies"
+description: "Dated, reproducible studies of PolyNode performance, coverage, and production behavior."
+icon: "flask"
+---
+
+PolyNode case studies test a concrete product claim against a defined denominator. Each study records its date, endpoints, subscription semantics, source versions, measurement clock, eligibility window, adverse observations, and limitations.
+
+<CardGroup cols={2}>
+  <Card
+    title="PolyNode vs Struct and RTDS"
+    icon="stopwatch"
+    href="/case-studies/struct-rtds-websocket-benchmark-2026-08-01"
+  >
+    WebSocket latency and confirmed-fill completeness measured on August 1, 2026.
+  </Card>
+</CardGroup>
+
+## Evidence standard
+
+Every benchmark case study should:
+
+- define equivalent signals before measuring them;
+- timestamp all competitors from the same monotonic clock and process;
+- use an independent completeness denominator when one exists;
+- exclude partially observed boundary intervals;
+- preserve per-sample data, missing identifiers, source hashes, and connection lifecycle events;
+- report unfavorable windows and unavailable comparisons;
+- separate measured results from broader product claims;
+- publish code with credentials supplied only at runtime.
+
+These are point-in-time measurements, not guarantees about every network location or future provider version.

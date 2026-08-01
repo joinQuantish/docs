@@ -787,6 +787,23 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Case Studies",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "case-studies/overview"
+            ]
+          },
+          {
+            "group": "WebSocket Benchmarks",
+            "pages": [
+              "case-studies/struct-rtds-websocket-benchmark-2026-08-01"
+            ]
+          }
+        ]
       }
     ]
   },
