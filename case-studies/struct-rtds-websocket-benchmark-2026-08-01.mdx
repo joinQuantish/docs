@@ -5,10 +5,10 @@ description: "A reproducible August 1, 2026 benchmark of pending detection, conf
 icon: "stopwatch"
 ---
 
-On August 1, 2026, we raced PolyNode, Struct, and Polymarket RTDS from one Node.js process, then checked every eligible result against Polygon logs obtained through an external Alchemy RPC. The headline window covered **18,041 transactions and 48,281 fills over 598 fully observed Polygon blocks**.
+On August 1, 2026, we raced PolyNode, Struct, and Polymarket RTDS from one Node.js process, then checked every eligible result against Polygon logs obtained separately through a benchmark-only external Alchemy RPC. The headline window covered **18,041 transactions and 48,281 fills over 598 fully observed Polygon blocks**.
 
 <Info>
-This is a PolyNode-run, point-in-time smoke test. Alchemy supplied the independent confirmed-event denominator; it was not used as a live latency lane. All claims below are limited to the recorded configuration, window, and network vantage point.
+This is a PolyNode-run, point-in-time smoke test. The Alchemy endpoint was used only by the benchmark verifier to enumerate confirmed events and recheck boundary blocks. It is not part of PolyNode's production ingestion, `status_update` generation, or WebSocket delivery path, and it supplied no arrival timestamps used in the latency comparisons. All claims below are limited to the recorded configuration, window, and network vantage point.
 </Info>
 
 <Tip>
@@ -38,6 +38,10 @@ PolyNode pending also arrived before RTDS activity for every one of their **17,7
 
 We did **not** find evidence that Struct was missing confirmed transactions or fills. Struct's documented pending path, however, produced no events in the headline run or any retained test window. That result supports the narrow statement that we could not reproduce Struct pending delivery with the documented request on a fresh, credited account. It does not establish why the events were absent.
 
+<Note>
+**No higher-tier requirement found.** [Struct's own benchmark](https://www.struct.to/blog/polymarket-rtds-vs-struct-trades-ws) says that pending mode is included starting on the free plan, while its [trades-room reference](https://docs.struct.to/websockets/rooms/trades) presents `pending` and `all` as ordinary optional status filters. Our `status: "all"` subscription was acknowledged with `subscribe_all: true`, an empty `rejected` array, and continued confirmed delivery. We recorded no authentication, connection-limit, or out-of-credits close; [Struct documents](https://docs.struct.to/guides/errors) exhausted credits as close code `4004`. We therefore found no evidence that a paid plan or enhanced key was required. An undisclosed entitlement cannot be ruled out from outside Struct, but it would contradict the published access claim and was not surfaced to the client.
+</Note>
+
 ## Signal mapping
 
 The word "trade" does not identify the same lifecycle stage in every feed. We fixed the mapping before collecting data.
@@ -47,7 +51,7 @@ The word "trade" does not identify the same lifecycle stage in every feed. We fi
 | Pending detection | `settlement` with `status=pending` | `received_at` present and `block` absent | `activity/trades` or `activity/orders_matched` as a baseline only | Transaction hash |
 | Transaction confirmation | `status_update` | First confirmed record carrying `block` | Activity arrival as a baseline only | Transaction hash |
 | Confirmed fill | `trade` | Confirmed `OrderFilled`, plus the corresponding `OrdersMatched` representation | Not used for fill completeness | Transaction hash + canonical log index |
-| Completeness truth | Polygon `OrderFilled` logs through Alchemy | Same | Same | Transaction hash + block-global log index |
+| Completeness truth | Polygon `OrderFilled` logs through the benchmark-only Alchemy verifier | Same | Same | Transaction hash + block-global log index |
 
 PolyNode [`status_update`](/websocket/events/status-update) means that a previously pending transaction was confirmed in a Polygon block. It is therefore the transaction-level equivalent used against Struct confirmed. It does not identify every individual fill inside that transaction; PolyNode [`trade`](/websocket/events/trade) is the stricter fill-level comparison. PolyNode [`settlement`](/websocket/events/settlement) with `status=pending` is the pre-confirmation path.
 
@@ -69,7 +73,7 @@ RTDS activity is useful as a public timing baseline, but we do not label it as e
 | RTDS recovery | Reconnect and resubscribe after 5 seconds without global activity |
 | Struct request | `status: "all"`, `subscribe_all: true`, no trade-type filter |
 
-We re-read both boundary blocks from Alchemy after analysis. Their hashes still matched the recorded manifest.
+The benchmark verifier re-read both boundary blocks after analysis. Their hashes still matched the recorded manifest.
 
 ## Coverage results
 
@@ -350,7 +354,7 @@ The full headline archive is 481 MB and contains:
 - exact missing identifiers and connection lifecycle events;
 - readable and machine-readable summaries.
 
-Before publication, we ran the TypeScript compiler, three analysis regression tests, `git diff --check`, a credential-pattern scan, and a separate block-anchor recheck through Alchemy. No credentials, RPC errors, unmatched Struct records, or block-hash changes were found.
+Before publication, we ran the TypeScript compiler, three analysis regression tests, `git diff --check`, a credential-pattern scan, and a separate block-anchor recheck through the benchmark-only verifier. No credentials, RPC errors, unmatched Struct records, or block-hash changes were found.
 
 ## Limitations
 
