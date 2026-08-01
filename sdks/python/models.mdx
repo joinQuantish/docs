@@ -1,55 +1,31 @@
 ---
-title: "Python — Models"
+title: "Python Models"
 sidebarTitle: "Models"
+description: "Work with Python event models, unknown additive messages, Decimal V3 values, and exact orderbook strings."
+icon: "shapes"
 ---
 
-## Pydantic Models
-
-
-All event types are Pydantic v2 models with full IDE support:
+WebSocket events are Pydantic models selected by `event_type`:
 
 ```python
-from polynode.types.events import (
-    SettlementEvent,
-    TradeEvent,
-    StatusUpdateEvent,
-    BlockEvent,
-    PositionChangeEvent,
-    DepositEvent,
-    PositionSplitEvent,
-    PositionMergeEvent,
-    OracleEvent,
-    PriceFeedEvent,
-    PolyNodeEvent,          # discriminated union of all events
-)
-
-from polynode.types.orderbook import (
-    OrderbookLevel,
-    BookSnapshot,
-    BookUpdate,
-    PriceChange,
-)
-
-from polynode.types.rest import (
-    StatusResponse,
-    MarketsResponse,
-    MarketSummary,
-    CandlesResponse,
-    SettlementsResponse,
-    WalletResponse,
-    OrderbookResponse,
-    LeaderboardResponse,
-    TrendingResponse,
-    TraderProfile,
-)
+def handle_event(event) -> None:
+    match event.event_type:
+        case "settlement":
+            print(event.tx_hash, event.taker_size)
+        case "status_update":
+            print(event.tx_hash, event.block_number)
+        case "price_feed":
+            print(event.feed, event.price, event.twap_window_seconds)
+        case "unknown":
+            print(event.wire_event_type, event.raw)
+        case other:
+            print(other)
 ```
 
-The `PolyNodeEvent` union uses Pydantic's discriminated union on `event_type`:
+The model union covers fills, settlements, trades, confirmation updates, blocks, position changes, deposits, splits, merges, conversions, redemptions, combo execution/status/lifecycle/approval events, oracle events, Chainlink price feeds, and an `UnknownEvent` fallback.
 
-```python
-from pydantic import TypeAdapter
+Unknown additive messages preserve the raw payload. Observe them without treating every compatible server addition as fatal.
 
-adapter = TypeAdapter(PolyNodeEvent)
-event = adapter.validate_python({"event_type": "settlement", ...})
-# Returns a SettlementEvent instance
-```
+V3 decimal fractions decode as `Decimal`. Orderbook prices and sizes remain exact strings. Perps prices and quantities are also wire strings. Keep these exact representations for accounting and convert only for display.
+
+See the [event reference](/websocket/events/settlement), [orderbook protocol](/orderbook/overview), and [perps channels](/perps/websocket/channels).

@@ -12,6 +12,52 @@
     "light": "#60a5fa",
     "dark": "#2563eb"
   },
+  "redirects": [
+    {
+      "source": "/sdks/typescript",
+      "destination": "/sdks/ts/overview"
+    },
+    {
+      "source": "/sdks/python",
+      "destination": "/sdks/python/overview"
+    },
+    {
+      "source": "/sdks/rust",
+      "destination": "/sdks/rust/overview"
+    },
+    {
+      "source": "/sdks/ts/orderbook-engine",
+      "destination": "/sdks/ts/orderbook"
+    },
+    {
+      "source": "/sdks/python/orderbook-engine",
+      "destination": "/sdks/python/orderbook"
+    },
+    {
+      "source": "/sdks/rust/cache",
+      "destination": "/sdks/local-cache"
+    },
+    {
+      "source": "/sdks/rust/redemption",
+      "destination": "/sdks/redemption-watcher"
+    },
+    {
+      "source": "/sdks/rust/testing",
+      "destination": "/sdks/rust/overview"
+    },
+    {
+      "source": "/sdks/ts/source",
+      "destination": "/sdks/ts/overview"
+    },
+    {
+      "source": "/sdks/python/source",
+      "destination": "/sdks/python/overview"
+    },
+    {
+      "source": "/sdks/rust/source",
+      "destination": "/sdks/rust/overview"
+    }
+  ],
   "navigation": {
     "tabs": [
       {
@@ -596,67 +642,70 @@
             ]
           },
           {
-            "group": "Features",
+            "group": "Core Guides",
             "pages": [
-              "sdks/local-cache",
-              "sdks/short-form",
+              "sdks/v3-api",
               "sdks/websocket-streaming",
+              "sdks/short-form",
               "sdks/orderbook",
-              "sdks/rest-api",
-              "sdks/rpc"
+              "sdks/perps",
+              "sdks/trading"
             ]
           },
           {
-            "group": "Redemption Watcher",
+            "group": "Optional Helpers",
             "pages": [
-              "sdks/redemption-watcher"
+              "sdks/rest-api",
+              "sdks/local-cache",
+              "sdks/redemption-watcher",
+              "sdks/rpc"
             ]
           },
           {
             "group": "TypeScript",
             "pages": [
               "sdks/ts/overview",
-              "sdks/ts/rest-api",
               "sdks/ts/v3-data",
               "sdks/ts/websocket",
+              "sdks/ts/short-form",
               "sdks/ts/orderbook",
-              "sdks/ts/orderbook-engine",
+              "sdks/ts/perps",
               "sdks/ts/trading",
               "sdks/ts/config",
               "sdks/ts/errors",
               "sdks/ts/types",
-              "sdks/ts/source"
-            ]
-          },
-          {
-            "group": "Rust",
-            "pages": [
-              "sdks/rust/overview",
-              "sdks/rust/rest-api",
-              "sdks/rust/websocket",
-              "sdks/rust/orderbook",
-              "sdks/rust/short-form",
-              "sdks/rust/trading",
-              "sdks/rust/redemption",
-              "sdks/rust/cache",
-              "sdks/rust/testing",
-              "sdks/rust/errors",
-              "sdks/rust/source"
+              "sdks/ts/rest-api"
             ]
           },
           {
             "group": "Python",
             "pages": [
               "sdks/python/overview",
-              "sdks/python/rest-api",
+              "sdks/python/v3-api",
               "sdks/python/websocket",
+              "sdks/python/short-form",
               "sdks/python/orderbook",
-              "sdks/python/orderbook-engine",
+              "sdks/python/perps",
               "sdks/python/trading",
               "sdks/python/config",
               "sdks/python/errors",
               "sdks/python/models",
-              "sdks/python/source"
+              "sdks/python/rest-api"
+            ]
+          },
+          {
+            "group": "Rust",
+            "pages": [
+              "sdks/rust/overview",
+              "sdks/rust/v3-api",
+              "sdks/rust/websocket",
+              "sdks/rust/short-form",
+              "sdks/rust/orderbook",
+              "sdks/rust/perps",
+              "sdks/rust/trading",
+              "sdks/rust/config",
+              "sdks/rust/errors",
+              "sdks/rust/rest-api"
             ]
           },
           {
@@ -739,16 +788,7 @@
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "GitHub",
-          "href": "https://github.com/joinQuantish",
-          "icon": "github"
-        }
-      ]
-    }
+    ]
   },
   "navbar": {
     "links": [

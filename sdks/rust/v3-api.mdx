@@ -1,0 +1,67 @@
+---
+title: "Rust V3 API"
+sidebarTitle: "V3 API"
+description: "Execute all 120 registered V3 operations with precision-preserving serde_json values."
+icon: "database"
+---
+
+Rust 0.15.2 exposes the complete shared V3 registry through `client.v3()`. Generic responses use `serde_json::Value`, preserving decimal strings and large integer wire values.
+
+## Discover operations
+
+```rust
+use polynode::{V3_OPERATIONS, V3_OPERATION_COUNT};
+
+fn main() {
+    println!("{V3_OPERATION_COUNT}"); // 120 in 0.15.2
+    for operation in V3_OPERATIONS {
+        println!("{} {} {}", operation.method, operation.path, operation.domain);
+    }
+}
+```
+
+## Execute a registered route
+
+```rust
+use polynode::{PolyNodeClient, V3RequestOptions};
+
+#[tokio::main]
+async fn main() -> polynode::Result<()> {
+    let client = PolyNodeClient::new(
+        std::env::var("POLYNODE_API_KEY").expect("Set POLYNODE_API_KEY")
+    )?;
+
+    let address = "0xa9857c7bcb9bcfafd2c132ab053f34f678610058";
+    let summary = client.v3().execute_named(
+        "GET /v3/wallets/{address}/combos/summary",
+        V3RequestOptions::default().path_param("address", address),
+    ).await?;
+
+    let trades = client.v3().execute_named(
+        "GET /v3/trades",
+        V3RequestOptions::default()
+            .query_param("limit", 50_u64)
+            .query_param("sort_by", "order_hash")
+            .query_param("group_by", "order_hash"),
+    ).await?;
+
+    println!("{summary:#}\n{trades:#}");
+    Ok(())
+}
+```
+
+Use the exact `METHOD /v3/path` name from `V3_OPERATIONS`. Path and query values are encoded separately.
+
+## Perps REST data
+
+```rust
+let ticker = client.v3().execute_named(
+    "GET /v3/perps/tickers/{instrument}",
+    V3RequestOptions::default().path_param("instrument", "BTC-USD"),
+).await?;
+println!("{ticker:#}");
+```
+
+Safe reads retry transient failures and respect `Retry-After` within the configured ceiling. State-changing calls are never retried automatically. `Error::V3Api` exposes status, code, request ID, retry metadata, and a redacted safe URL.
+
+See the [complete V3 guide](/sdks/v3-api) and [V3 endpoint reference](/data/overview).

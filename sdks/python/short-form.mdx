@@ -1,0 +1,76 @@
+---
+title: "Python Short-Form and TWAP"
+sidebarTitle: "Short-Form & TWAP"
+description: "Rotate Python subscriptions across short-form crypto markets with the correct Chainlink TWAP window."
+icon: "clock"
+---
+
+<Warning>
+Starting **August 7, 2026 at 00:00 UTC**, use a 30-second TWAP for 5-minute markets and a 60-second TWAP for 15-minute and 4-hour markets. One-hour markets continue to use the default spot feed.
+</Warning>
+
+| Market interval | Chainlink selection |
+| --- | --- |
+| `5m` | `30` seconds |
+| `15m` | `60` seconds |
+| `1h` | default spot feed |
+| `4h` | `60` seconds |
+
+```python
+import asyncio
+import os
+from polynode import AsyncPolyNode
+
+async def main() -> None:
+    async with AsyncPolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
+        stream = pn.ws.short_form(
+            "5m",
+            coins=["btc", "eth", "sol"],
+        )
+
+        def on_rotation(rotation) -> None:
+            for market in rotation.markets:
+                print({
+                    "coin": market.coin,
+                    "slug": market.slug,
+                    "feed": market.chainlink_feed,
+                    "twap_window_seconds": market.twap_window_seconds,
+                    "price_to_beat": market.price_to_beat,
+                })
+
+        stream.on("rotation", on_rotation)
+        stream.on("settlement", print)
+        stream.on("error", print)
+
+        try:
+            await asyncio.Event().wait()
+        finally:
+            stream.stop()
+            pn.ws.disconnect()
+
+asyncio.run(main())
+```
+
+At every boundary the helper closes its dedicated socket, opens a new one, and subscribes to the new market identifiers and Chainlink selection. Consumers do not calculate the next slug manually, but should handle a normal connection transition around rotation.
+
+Supported assets are BTC, ETH, SOL, XRP, DOGE, HYPE, and BNB.
+
+## Explicit Chainlink selection
+
+```python
+prices = await (
+    pn.ws.subscribe("chainlink")
+    .feeds(["BTC/USD", "ETH/USD"])
+    .twap_windows([30, 60])
+    .send()
+)
+
+print(prices.price_source, prices.twap_windows)
+prices.on("price_feed", lambda event: print(
+    event.feed, event.price, event.is_twap, event.twap_window_seconds
+))
+```
+
+Use one Chainlink selection per event socket. Combine feeds and windows, or create a separate `PolyNodeWS` when selections must be isolated.
+
+Read the [shared short-form guide](/sdks/short-form) for market fields, manual mode, and orderbook integration.

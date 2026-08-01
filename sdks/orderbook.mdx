@@ -1,174 +1,273 @@
 ---
-title: "Orderbook Streaming"
-sidebarTitle: "Orderbook"
-description: "Real-time orderbook data with local state management and filtered views"
+title: "Orderbook Streaming and PN1"
+sidebarTitle: "Orderbook and PN1"
+description: "Stream prediction-market depth, maintain local books, and optionally fail closed on PN1 sequence or checksum errors."
 icon: "layer-group"
 ---
 
-The SDK includes a dedicated orderbook client for real-time book data from `ob.polynode.dev`. This is a separate WebSocket connection from the event stream, with its own protocol optimized for orderbook updates across 108k+ Polymarket markets.
+The orderbook WebSocket is separate from the settlement stream. It emits full snapshots, absolute depth updates, price changes, and last-trade metadata for selected outcome token IDs.
 
-<Note>
-  TypeScript SDK v0.10.17 hardens orderbook subscriptions: `subscribe()` resolves only after the server acknowledges the token set, reconnects replay the active subscription without replacing handlers, and protocol acknowledgments such as `unsubscribed`/`pong` are handled internally.
-</Note>
+Use one of three levels:
 
-## Subscribe
+| Level | Best for |
+| --- | --- |
+| Raw orderbook stream | applications that already manage book state |
+| `LocalOrderbook` | applying messages to an in-memory book yourself |
+| `OrderbookEngine` | managed connection, local state, filtered views, reconnect recovery, and optional PN1 integrity |
 
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    import { PolyNode, LocalOrderbook } from 'polynode-sdk';
+For most applications, start with `OrderbookEngine`.
 
-    const pn = new PolyNode({ apiKey: 'pn_live_...' });
-    await pn.orderbook.subscribe(['token_id_1', 'token_id_2']);
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    use polynode::{PolyNodeClient, ObStreamOptions};
+## Managed local book
 
-    let client = PolyNodeClient::new("pn_live_...")?;
-    let mut stream = client.orderbook_stream(ObStreamOptions::default()).await?;
-    stream.subscribe(vec!["token_id_1".into()]).await?;
-    ```
-  </Tab>
-</Tabs>
-
-## Events
+Set `TOKEN_ID` to a Polymarket outcome token ID. You can obtain token IDs from V3 market data or the `clobTokenIds` / `clob_token_ids` field on a [short-form rotation](/sdks/short-form).
 
 <Tabs>
   <Tab title="TypeScript">
     ```typescript
-    pn.orderbook.on('snapshot', (snap) => {
-      console.log(snap.asset_id, snap.bids.length, 'bids');
+    import {
+      OrderbookEngine,
+      type BookSnapshot,
+      type BookUpdate,
+    } from 'polynode-sdk';
+
+    const apiKey = process.env.POLYNODE_API_KEY;
+    const tokenId = process.env.TOKEN_ID;
+    if (!apiKey || !tokenId) throw new Error('Set POLYNODE_API_KEY and TOKEN_ID');
+
+    const engine = new OrderbookEngine({ apiKey });
+    engine.on('ready', () => {
+      console.log('best bid', engine.bestBid(tokenId));
+      console.log('best ask', engine.bestAsk(tokenId));
+      console.log('midpoint', engine.midpoint(tokenId));
+    });
+    engine.on('update', (update: BookSnapshot | BookUpdate) => {
+      console.log(update.type, update.asset_id);
     });
 
-    pn.orderbook.on('update', (delta) => {
-      // Incremental delta. size "0" = removal.
-      console.log(delta.asset_id, delta.bids.length, 'changes');
-    });
+    await engine.subscribe([tokenId]);
+    process.once('SIGINT', () => engine.close());
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import asyncio
+    import os
+    from polynode import OrderbookEngine
 
-    pn.orderbook.on('price', (change) => {
-      for (const asset of change.assets) {
-        console.log(asset.outcome, asset.price);
-      }
-    });
+    async def main() -> None:
+        token_id = os.environ["TOKEN_ID"]
+        engine = OrderbookEngine(api_key=os.environ["POLYNODE_API_KEY"])
+        engine.on(
+            "ready",
+            lambda: print(
+                "touch",
+                engine.best_bid(token_id),
+                engine.best_ask(token_id),
+                engine.midpoint(token_id),
+            ),
+        )
+        engine.on("update", lambda update: print(update.type, update.asset_id))
+        try:
+            await engine.subscribe([token_id])
+            await asyncio.Event().wait()
+        finally:
+            engine.close()
+
+    asyncio.run(main())
     ```
   </Tab>
   <Tab title="Rust">
     ```rust
-    while let Some(msg) = stream.next().await {
-        match msg? {
-            ObMessage::Update(OrderbookUpdate::Snapshot(snap)) => {
-                println!("{}: {} bids", snap.asset_id, snap.bids.len());
+    use polynode::{EngineOptions, OrderbookEngine};
+
+    #[tokio::main]
+    async fn main() -> polynode::Result<()> {
+        let api_key = std::env::var("POLYNODE_API_KEY")
+            .expect("Set POLYNODE_API_KEY");
+        let token_id = std::env::var("TOKEN_ID").expect("Set TOKEN_ID");
+        let engine = OrderbookEngine::connect(&api_key, EngineOptions::default()).await?;
+        engine.subscribe(vec![token_id.clone()]).await?;
+
+        loop {
+            if let Some(book) = engine.book(&token_id).await {
+                println!("{} bids, {} asks", book.0.len(), book.1.len());
+                println!("midpoint {:?}", engine.midpoint(&token_id).await);
+                break;
             }
-            ObMessage::Update(OrderbookUpdate::Update(delta)) => {
-                println!("{}: {} changes", delta.asset_id, delta.bids.len());
-            }
-            ObMessage::Update(OrderbookUpdate::PriceChange(change)) => {
-                for asset in &change.assets {
-                    println!("{}: {}", asset.outcome, asset.price);
-                }
-            }
-            _ => {}
+            tokio::task::yield_now().await;
         }
+
+        engine.close().await?;
+        Ok(())
     }
     ```
   </Tab>
 </Tabs>
 
-## Update a Subscription
+`subscribe()` resolves after the server acknowledges the requested identifiers. The local book becomes readable after its initial snapshot arrives. TypeScript and Python emit `ready` when every acknowledged token has a valid baseline.
 
-Calling `subscribe()` with a new token list replaces the active orderbook subscription for that connection. To remove only a subset of tokens, pass those token IDs to `unsubscribe()`. Calling `unsubscribe()` with no arguments still removes every token and keeps the previous behavior.
+## Book update rules
 
-```typescript
-await pn.orderbook.subscribe([tokenA, tokenB, tokenC]);
+Apply raw messages with these rules:
 
-pn.orderbook.unsubscribe([tokenB]); // remove one token
-pn.orderbook.unsubscribe();         // remove all tokens
-```
+| Message | Effect on depth |
+| --- | --- |
+| `book_snapshot` | replace the complete book for that token |
+| `book_update` | upsert each absolute price level; size `"0"` removes it |
+| `price_change` | upsert the absolute level on `BUY` bids or `SELL` asks; size `"0"` removes it |
+| `last_trade_price` | update trade metadata only; never mutate depth |
 
-For high-volume orderbook consumers, register `snapshot`, `update`, `price`, and `error` handlers before calling `subscribe()` so your process is ready as soon as the initial snapshot batches start flowing.
+Prices and sizes are decimal strings. Keep them as strings or use a decimal library for exact calculations. Converting them to binary floating point can change level identity and is incompatible with PN1 checksum verification.
 
-## LocalOrderbook
+## Enable PN1 integrity
 
-Maintain a sorted local copy of the book:
+PN1 lets the SDK detect a missing or out-of-order depth message instead of continuing with a book that merely looks plausible. It validates:
+
+- a trusted anchor snapshot for each token
+- sequence continuity across depth changes
+- the checksum after every verified mutation
 
 <Tabs>
   <Tab title="TypeScript">
     ```typescript
-    import { LocalOrderbook } from 'polynode-sdk';
+    const engine = new OrderbookEngine({
+      apiKey,
+      integrity: true,
+      allowStaleReads: false,
+    });
 
-    const book = new LocalOrderbook();
-
-    pn.orderbook.on('snapshot', (snap) => book.applySnapshot(snap));
-    pn.orderbook.on('update', (delta) => book.applyUpdate(delta));
-
-    const fullBook = book.getBook(tokenId);   // { bids, asks }
-    const bestBid = book.getBestBid(tokenId);  // { price, size }
-    const spread = book.getSpread(tokenId);    // number
+    engine.on('integrity_error', (error) => {
+      console.error(error.token, error.code, error.message);
+    });
+    await engine.subscribe([tokenId]);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    engine = OrderbookEngine(
+        api_key=os.environ["POLYNODE_API_KEY"],
+        integrity=True,
+        allow_stale_reads=False,
+    )
+    engine.on(
+        "integrity_error",
+        lambda error: print(error.token, error.code, error),
+    )
+    await engine.subscribe([token_id])
     ```
   </Tab>
   <Tab title="Rust">
     ```rust
-    use polynode::LocalOrderbook;
+    let engine = OrderbookEngine::connect(
+        &api_key,
+        EngineOptions {
+            integrity: true,
+            allow_stale_reads: false,
+            ..Default::default()
+        },
+    ).await?;
 
-    let mut book = LocalOrderbook::new();
-    book.apply_snapshot(&snap);
-    book.apply_update(&delta);
-
-    let best_bid = book.best_bid("token_id");
-    let spread = book.spread("token_id");
+    let mut errors = engine.integrity_errors();
+    tokio::spawn(async move {
+        while let Ok(error) = errors.recv().await {
+            eprintln!("{} {:?}: {}", error.token, error.code, error.message);
+        }
+    });
+    engine.subscribe(vec![token_id]).await?;
     ```
   </Tab>
 </Tabs>
 
-## OrderbookEngine
+PN1 mode requires explicit market identifiers. A wildcard/firehose orderbook subscription is not available with integrity enabled.
 
-Higher-level wrapper that manages one connection, maintains local state, and supports filtered views for different UI components.
+## Fail-closed lifecycle
+
+With `allowStaleReads` / `allow_stale_reads` left at its default `false`, the local book moves through these states:
+
+| State | Readable? | Meaning |
+| --- | --- | --- |
+| `initializing` | No | waiting for a valid anchor |
+| `ready` | Yes | current sequence and checksum are valid |
+| `stale` | No | connection was lost |
+| `resyncing` | No | a replacement anchor was requested |
+| `failed` | No | integrity could not be recovered on the current stream |
+
+On a sequence or checksum failure, the engine gates only the affected token and requests a fresh anchor. It does not serve the last book as verified state.
+
+Set stale reads to `true` only when your application deliberately prefers availability over verified depth. Surface that choice to downstream consumers; a stale book should not be mistaken for current market state.
+
+## Reconnects
+
+Orderbook reconnect is automatic by default. The SDK replays the active token set and waits for fresh snapshots. Sequence state from the old connection is never reused as if it belonged to the replacement connection.
+
+Application handlers remain attached across reconnects. You do not need to register them again.
+
+## Filtered views
+
+Views share the engine's connection and state but receive updates only for their token set.
 
 <Tabs>
   <Tab title="TypeScript">
     ```typescript
-    import { OrderbookEngine } from 'polynode-sdk';
+    const view = engine.view([tokenId]);
+    view.on('update', (update) => console.log(update.asset_id));
+    console.log(view.midpoint(tokenId));
 
-    const engine = new OrderbookEngine({ apiKey: 'pn_live_...', compress: true });
-    await engine.subscribe([tokenId1, tokenId2]);
-
-    engine.on('ready', () => {
-      console.log(`${engine.size} books loaded`);
-    });
-
-    // Query state
-    engine.midpoint(tokenId);  // (bestBid + bestAsk) / 2
-    engine.spread(tokenId);    // bestAsk - bestBid
-    engine.bestBid(tokenId);   // { price, size }
-
-    // Filtered views — no extra connections
-    const view = engine.view([tokenA, tokenB]);
-    view.on('update', (u) => console.log(u.asset_id));
-    view.midpoint(tokenA);
-
-    // Swap tokens or destroy
-    view.setTokens([newTokenX]);
+    view.setTokens([anotherTokenId]);
     view.destroy();
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    view = engine.view([token_id])
+    view.on("update", lambda update: print(update.asset_id))
+    print(view.midpoint(token_id))
 
-    engine.close();
+    view.set_tokens([another_token_id])
+    view.destroy()
     ```
   </Tab>
   <Tab title="Rust">
     ```rust
-    use polynode::orderbook::engine::{OrderbookEngine, EngineOptions};
+    let mut view = engine.view(vec![token_id.clone()]);
+    if let Some(update) = view.next().await {
+        println!("{update:?}");
+    }
+    view.set_tokens(vec![another_token_id]).await;
+    ```
+  </Tab>
+</Tabs>
 
-    let engine = OrderbookEngine::connect("pn_live_...", EngineOptions::default()).await?;
-    engine.subscribe(vec![token_id.into()]).await?;
+Use views when several application components need different slices of one shared book connection.
 
-    engine.midpoint(token_id).await;  // Option<f64>
-    engine.spread(token_id).await;    // Option<f64>
+## Raw stream
 
-    let mut view = engine.view(vec![token_a.into()]);
-    while let Some(update) = view.next().await { ... }
+Choose the raw client when you need protocol messages or maintain state elsewhere:
 
+- TypeScript: `pn.orderbook.subscribe(tokenIds)` and `pn.orderbook.on(...)`
+- Python: `await pn.orderbook.subscribe(token_ids)` and `pn.orderbook.on(...)`
+- Rust: `client.orderbook_stream(ObStreamOptions::default()).await?`
+
+In raw mode, your code is responsible for applying snapshots and deltas correctly. `LocalOrderbook` provides the same deterministic update logic without the higher-level engine.
+
+## Cleanup
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    engine.close();
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    engine.close()
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
     engine.close().await?;
     ```
   </Tab>
 </Tabs>
+
+See the [orderbook protocol](/orderbook/overview), [message reference](/orderbook/messages), and [PN1 integrity reference](/orderbook/integrity) for wire-level details.

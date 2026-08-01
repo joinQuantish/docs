@@ -1,167 +1,72 @@
 ---
-title: "REST API"
-sidebarTitle: "REST API"
-description: "Typed methods for all 25 REST endpoints"
+title: "REST Clients"
+sidebarTitle: "REST Clients"
+description: "Use the complete V3 API or the SDKs' compatibility methods for older V1 and V2 endpoints."
 icon: "globe"
 ---
 
-Every REST endpoint has a typed method with full request/response types.
+Use the V3 client for current PolyNode data. It contains a shared registry for every supported V3 route, including wallets, positions, trades, combos, fees, builders, webhooks, credits, identities, profiles, and perps.
 
-## Markets
+The main client also keeps top-level convenience methods for older V1 and V2 endpoints. Those methods are useful for existing integrations, but they are not the complete current product surface.
+
+<Card title="Complete V3 SDK guide" icon="database" href="/sdks/v3-api">
+  Learn how to discover and call all 120 registered V3 operations from TypeScript, Python, or Rust.
+</Card>
+
+## Compatibility methods
 
 <Tabs>
   <Tab title="TypeScript">
     ```typescript
+    import { PolyNode } from 'polynode-sdk';
+
+    const apiKey = process.env.POLYNODE_API_KEY;
+    if (!apiKey) throw new Error('Set POLYNODE_API_KEY');
+    const pn = new PolyNode({ apiKey });
+
     const markets = await pn.markets({ count: 10 });
-    const detail = await pn.market(tokenId);
-    const bySlug = await pn.marketBySlug('bitcoin-100k');
-    const byCondition = await pn.marketByCondition(conditionId);
-    const list = await pn.marketsList({ count: 20, sort: 'volume' });
-    const results = await pn.search('ethereum', { limit: 5 });
+    const results = await pn.search('bitcoin', { limit: 10 });
+    const recent = await pn.recentSettlements({ count: 25 });
+
+    console.log(markets.count, results.results.length, recent.count);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import os
+    from polynode import PolyNode
+
+    with PolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
+        markets = pn.markets(count=10)
+        results = pn.search("bitcoin", limit=10)
+        recent = pn.recent_settlements(count=25)
+        print(markets.count, len(results.results), recent.count)
     ```
   </Tab>
   <Tab title="Rust">
     ```rust
-    let markets = client.markets(Some(10)).await?;
-    let detail = client.market("token_id").await?;
-    let by_slug = client.market_by_slug("bitcoin-100k").await?;
-    let by_cond = client.market_by_condition("0xabc...").await?;
-    let list = client.list_markets(&ListMarketsParams {
-        count: Some(20), sort: Some("volume".into()), ..Default::default()
-    }).await?;
-    let results = client.search("ethereum", Some(5), None).await?;
-    ```
-  </Tab>
-</Tabs>
+    use polynode::PolyNodeClient;
 
-## Pricing
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    const candles = await pn.candles(tokenId, { resolution: '1h', limit: 100 });
-    const stats = await pn.stats(tokenId);
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    let candles = client.candles("token_id", Some(CandleResolution::OneHour), Some(100)).await?;
-    let stats = client.stats("token_id").await?;
-    ```
-  </Tab>
-</Tabs>
-
-## Settlements
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    const recent = await pn.recentSettlements({ count: 20 });
-    const token = await pn.tokenSettlements(tokenId, { count: 10 });
-    const wallet = await pn.walletSettlements(address, { count: 10 });
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    let recent = client.recent_settlements(Some(20)).await?;
-    let token = client.token_settlements("token_id", Some(10)).await?;
-    let wallet = client.wallet_settlements("0xabc...", Some(10)).await?;
-    ```
-  </Tab>
-</Tabs>
-
-## Wallets & System
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    const wallet = await pn.wallet(address);
-    const status = await pn.status();
-    const key = await pn.createKey('my-bot');
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    let wallet = client.wallet("0xabc...").await?;
-    let status = client.status().await?;
-    let key = client.create_key(Some("my-bot")).await?;
-    ```
-  </Tab>
-</Tabs>
-
-## Enriched Data
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    // Leaderboard — top 20 traders by profit or volume
-    const lb = await pn.leaderboard({ period: 'monthly', sort: 'profit' });
-
-    // Trending — carousel, breaking, hot topics, movers
-    const trending = await pn.trending();
-
-    // Activity feed — 50 most recent trades platform-wide
-    const feed = await pn.activity();
-
-    // Biggest movers — largest 24h price changes
-    const movers = await pn.movers();
-
-    // Trader profile — full stats for any wallet
-    const profile = await pn.traderProfile('0xc2e7...');
-
-    // Trader PnL series — cumulative PnL over time
-    const pnl = await pn.traderPnl('0xc2e7...', { period: '1W' });
-
-    // Event detail — all sub-markets for an event
-    const event = await pn.event('fed-decision-in-april');
-
-    // Markets by category
-    const crypto = await pn.marketsByCategory('crypto');
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    let lb = client.leaderboard(Some("monthly"), Some("profit")).await?;
-    let trending = client.trending().await?;
-    let feed = client.activity().await?;
-    let movers = client.movers().await?;
-    let profile = client.trader_profile("0xc2e7...").await?;
-    let pnl = client.trader_pnl("0xc2e7...", Some("1W")).await?;
-    let event = client.event("fed-decision-in-april").await?;
-    let crypto = client.markets_by_category("crypto").await?;
-    ```
-  </Tab>
-</Tabs>
-
-<Note>
-  Enriched endpoints are rate limited to 1 request per second per API key with 1-3 minute caching.
-</Note>
-
-## Error Handling
-
-<Tabs>
-  <Tab title="TypeScript">
-    ```typescript
-    import { ApiError } from 'polynode-sdk';
-
-    try {
-      await pn.market('invalid-id');
-    } catch (err) {
-      if (err instanceof ApiError) {
-        console.log(err.status, err.message);  // 404, "Market not found"
-      }
-    }
-    ```
-  </Tab>
-  <Tab title="Rust">
-    ```rust
-    match client.market("invalid-id").await {
-        Err(Error::NotFound(msg)) => println!("Not found: {}", msg),
-        Err(Error::Auth(msg)) => println!("Auth failed: {}", msg),
-        Err(Error::RateLimited(msg)) => println!("Rate limited: {}", msg),
-        Err(e) => println!("Other: {}", e),
-        Ok(detail) => println!("{:?}", detail),
+    #[tokio::main]
+    async fn main() -> polynode::Result<()> {
+        let client = PolyNodeClient::new(
+            std::env::var("POLYNODE_API_KEY").expect("Set POLYNODE_API_KEY")
+        )?;
+        let markets = client.markets(Some(10)).await?;
+        let recent = client.recent_settlements(Some(25)).await?;
+        println!("{} markets, {} settlements", markets.count, recent.count);
+        Ok(())
     }
     ```
   </Tab>
 </Tabs>
+
+## Which client should I use?
+
+| Need | Use |
+| --- | --- |
+| New wallet, trade, position, combo, fee, builder, webhook, credit, identity, profile, or perps integration | [V3 client](/sdks/v3-api) |
+| Existing code already using `market()`, `search()`, `recentSettlements()`, or the equivalent language method | Keep the top-level method |
+| Exact endpoint request and response fields | [V3 Data API reference](/data/overview) or [Perps reference](/perps/overview) |
+
+Top-level and V3 methods can be used from the same client. Migrating one request at a time does not change the behavior of the remaining compatibility calls.

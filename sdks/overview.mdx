@@ -1,165 +1,174 @@
 ---
-title: "SDKs"
+title: "PolyNode SDKs"
 sidebarTitle: "Overview"
-description: "Official client libraries for the PolyNode API"
+description: "Install an official PolyNode SDK and use V3 data, settlement streams, Chainlink TWAP markets, PN1 orderbooks, and perps."
 icon: "code"
 ---
 
-PolyNode provides official SDKs for TypeScript, Rust, and Python. All wrap the full REST API and WebSocket streaming interface with typed responses, auto-reconnection, and zlib compression support.
+PolyNode has official SDKs for TypeScript, Python, and Rust. Each SDK covers the same core product surfaces:
 
-<CardGroup cols={2}>
-  <Card title="TypeScript / Node.js" icon="js" href="/sdks/typescript">
-    `npm install polynode-sdk`
+- the complete V3 API, including combos and perps data
+- the real-time settlement stream
+- the managed orderbook stream, including optional PN1 integrity checks
+- the V3 perps WebSocket
+- short-form crypto markets with the correct Chainlink price window
 
-    Zero runtime dependencies. ESM + CJS. Node 18+.
-  </Card>
-  <Card title="Rust" icon="rust" href="/sdks/rust">
-    `polynode = "0.12"`
+The examples in this section are tested against these published versions:
 
-    Async with tokio. Typed events via serde.
-  </Card>
-  <Card title="Python" icon="python" href="/sdks/python">
-    `pip install polynode`
-
-    Sync + async. Pydantic v2 types. Python 3.10+.
-  </Card>
-  <Card title="Charts (Browser)" icon="chart-line" href="/charts/overview">
-    `npm install polynode-charts`
-
-    Zero-dependency Canvas 2D charting for prediction markets and live crypto prices. Browser only.
-  </Card>
-</CardGroup>
+| Language | Package | Current version | Runtime |
+| --- | --- | ---: | --- |
+| TypeScript / Node.js | [`polynode-sdk`](https://www.npmjs.com/package/polynode-sdk) | `0.12.2` | Node.js 18+ |
+| Python | [`polynode`](https://pypi.org/project/polynode/) | `0.12.2` | Python 3.10+ |
+| Rust | [`polynode`](https://crates.io/crates/polynode) | `0.15.2` | Tokio async runtime |
 
 <Note>
-  **`polynode-sdk`** is the data SDK (REST, WebSocket, trading, cache). It runs in Node.js.
-
-  **`polynode-charts`** is the visualization SDK (candlestick charts, orderbooks, live streaming UI). It runs in the browser.
-
-  Building a frontend? Install both: `npm install polynode-sdk polynode-charts`
+  Use these versions or newer. Older releases do not contain the complete V3 registry, the managed perps stream, reconnect-aware settlement delivery, and PN1 orderbook integrity described here.
 </Note>
 
-## Features
-
-<CardGroup cols={2}>
-  <Card title="Local Cache" icon="database" href="/sdks/local-cache">
-    SQLite-backed local storage. Backfill wallet history in seconds, query trades and positions instantly with zero API calls.
-  </Card>
-  <Card title="Short-Form Markets" icon="clock" href="/sdks/short-form">
-    Auto-rotating streams for 5m, 15m, and 1h crypto prediction markets. Includes price-to-beat, odds, and liquidity.
-  </Card>
-  <Card title="WebSocket Streaming" icon="bolt" href="/sdks/websocket-streaming">
-    Builder-pattern subscriptions with 10 presets, 11 filter dimensions, and transparent compression.
-  </Card>
-  <Card title="Orderbook" icon="layer-group" href="/sdks/orderbook">
-    Real-time orderbook data with local state management, filtered views, and 108k+ markets.
-  </Card>
-  <Card title="REST API" icon="globe" href="/sdks/rest-api">
-    Typed methods for all 25 REST endpoints. Markets, pricing, settlements, wallets, enriched data.
-  </Card>
-  <Card title="RPC Proxy" icon="plug" href="/sdks/rpc">
-    JSON-RPC through PolyNode's optimized Polygon endpoint with validator-targeted TX submission.
-  </Card>
-  <Card title="Redemption Watcher" icon="bell" href="/sdks/redemption-watcher">
-    Push alerts when tracked wallets' positions become redeemable. Combines REST positions with real-time oracle events.
-  </Card>
-  <Card title="Trading" icon="arrow-right-arrow-left" href="/sdks/trading">
-    Place orders on Polymarket with one-call gasless onboarding. Auto-detects wallet type, local credential custody, builder attribution.
-  </Card>
-</CardGroup>
-
-## What the SDKs Cover
-
-| Feature | TypeScript | Rust | Python |
-|---------|-----------|------|--------|
-| Local cache (SQLite) | Yes | Yes | Planned |
-| REST API (25 endpoints) | Yes | Yes | Yes |
-| WebSocket streaming | Yes | Yes | Yes (async) |
-| Short-form markets (auto-rotation) | Yes | Yes | Yes |
-| All 9 event types + price feeds | Typed interfaces | Typed structs + enum | Pydantic models |
-| Subscription filters | Builder pattern | Builder pattern | Builder pattern |
-| Orderbook streaming | Yes | Yes | Yes |
-| Local orderbook state | `LocalOrderbook` | `LocalOrderbook` | `LocalOrderbook` |
-| OrderbookEngine (views) | Yes | Yes | Yes |
-| Zlib compression | Transparent | Transparent | Transparent |
-| Auto-reconnect | Exponential backoff | Exponential backoff | Exponential backoff |
-| Enriched data (leaderboard, trending, profiles) | Yes | Yes | Yes |
-| RPC proxy | Yes | Yes | Yes |
-| Redemption watcher | Yes | Yes | Yes |
-| Trading (order placement) | Yes | Yes (feature: `trading`) | Yes |
-
-## Quick Comparison
+## Install
 
 <Tabs>
   <Tab title="TypeScript">
-    ```typescript
-    import { PolyNodeWS } from 'polynode-sdk';
+    ```bash
+    npm install polynode-sdk ws
+    ```
 
-    const ws = new PolyNodeWS('pn_live_...', 'wss://ws.polynode.dev/ws');
-
-    // Short-form: auto-rotating 15m crypto markets
-    const stream = ws.shortForm('15m', { coins: ['btc', 'eth'] });
-    stream.on('rotation', (r) => {
-      for (const m of r.markets) {
-        console.log(`${m.coin}: beat $${m.priceToBeat} | ${(m.upOdds * 100).toFixed(0)}% up`);
-      }
-    });
-    stream.on('settlement', (e) => console.log(e.outcome, e.taker_size));
-
-    // Manual subscription
-    const sub = await ws.subscribe('settlements')
-      .minSize(1000)
-      .send();
-    sub.on('settlement', (e) => console.log(e.taker_side, e.taker_size));
+    Both ESM `import` and CommonJS `require` are supported.
+  </Tab>
+  <Tab title="Python">
+    ```bash
+    python -m pip install --upgrade "polynode>=0.12.2"
     ```
   </Tab>
   <Tab title="Rust">
-    ```rust
-    use polynode::{PolyNodeClient, ShortFormInterval, ShortFormMessage, Coin};
-
-    let client = PolyNodeClient::new("pn_live_...")?;
-
-    // Short-form: auto-rotating 15m crypto markets
-    let mut stream = client
-        .short_form(ShortFormInterval::FifteenMin)
-        .coins(&[Coin::Btc, Coin::Eth])
-        .start().await?;
-
-    while let Some(msg) = stream.next().await {
-        match msg {
-            ShortFormMessage::Rotation(r) => {
-                for m in &r.markets {
-                    println!("{}: beat ${:?} | {:.0}% up",
-                        m.coin.id(), m.price_to_beat, m.up_odds * 100.0);
-                }
-            }
-            ShortFormMessage::Event(e) => println!("{:?}", e),
-            ShortFormMessage::Error(e) => eprintln!("{}", e),
-        }
-    }
-    ```
-  </Tab>
-  <Tab title="Python">
-    ```python
-    import asyncio
-    from polynode import AsyncPolyNode
-
-    async def main():
-        async with AsyncPolyNode(api_key="pn_live_...") as pn:
-            # Subscribe to settlements with filters
-            sub = await pn.ws.subscribe("settlements") \
-                .min_size(1000) \
-                .status("all") \
-                .send()
-
-            async for event in sub:
-                print(f"{event.taker_side} ${event.taker_size:.0f} on {event.market_title}")
-                print(f"  status: {event.status}, price: {event.taker_price}")
-
-    asyncio.run(main())
+    ```toml
+    [dependencies]
+    polynode = "0.15.2"
+    tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
     ```
   </Tab>
 </Tabs>
 
-## Don't Need an SDK?
+Create an API key at [polynode.dev](https://polynode.dev), then keep it in a server-side environment variable:
 
-The PolyNode API uses standard HTTP and WebSocket protocols. You can use any HTTP client or WebSocket library directly. See the [Quickstart](/quickstart) for raw examples in cURL, Python, and JavaScript.
+```bash
+export POLYNODE_API_KEY="pn_live_..."
+```
+
+<Warning>
+  Do not embed a PolyNode API key or wallet private key in browser code, mobile bundles, source control, screenshots, or logs.
+</Warning>
+
+## First request
+
+This reads V3 platform statistics and does not change any data.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { PolyNode } from 'polynode-sdk';
+
+    const apiKey = process.env.POLYNODE_API_KEY;
+    if (!apiKey) throw new Error('Set POLYNODE_API_KEY');
+
+    const pn = new PolyNode({ apiKey });
+    const stats = await pn.v3.stats();
+    console.log(stats);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import os
+    from polynode import PolyNode
+
+    with PolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
+        stats = pn.v3.execute("GET /v3/stats")
+        print(stats)
+    ```
+  </Tab>
+  <Tab title="Rust">
+    ```rust
+    use polynode::{PolyNodeClient, V3RequestOptions};
+
+    #[tokio::main]
+    async fn main() -> polynode::Result<()> {
+        let api_key = std::env::var("POLYNODE_API_KEY")
+            .expect("Set POLYNODE_API_KEY");
+        let client = PolyNodeClient::new(api_key)?;
+        let stats = client
+            .v3()
+            .execute_named("GET /v3/stats", V3RequestOptions::default())
+            .await?;
+        println!("{stats:#}");
+        Ok(())
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Choose a surface
+
+<CardGroup cols={2}>
+  <Card title="V3 API" icon="database" href="/sdks/v3-api">
+    Query wallets, trades, positions, combos, fees, builders, webhooks, and perps through the complete 120-operation registry.
+  </Card>
+  <Card title="Settlement stream" icon="bolt" href="/sdks/websocket-streaming">
+    Receive pending settlements and confirmation updates with typed events, filters, reconnect replay, and observable overflow.
+  </Card>
+  <Card title="Short-form and TWAP" icon="clock" href="/sdks/short-form">
+    Follow 5-minute, 15-minute, 1-hour, and 4-hour crypto markets as their slugs and Chainlink windows rotate.
+  </Card>
+  <Card title="Orderbook stream" icon="layer-group" href="/sdks/orderbook">
+    Consume raw books or maintain verified local state with PN1 sequence and checksum validation.
+  </Card>
+  <Card title="Perps stream" icon="chart-line" href="/sdks/perps">
+    Stream tickers, best bid/offer, complete books, trades, statistics, and 1-minute or 1-hour candles.
+  </Card>
+  <Card title="Trading and fees" icon="arrow-right-arrow-left" href="/sdks/trading">
+    Place current V2 orders, configure builder attribution, and understand which fee fields belong on the wire.
+  </Card>
+</CardGroup>
+
+## Core parity
+
+| Capability | TypeScript | Python | Rust |
+| --- | --- | --- | --- |
+| Complete V3 registry | `pn.v3.operations` | `pn.v3.operations` | `client.v3().operations()` |
+| Execute any registered V3 route | `pn.v3.execute()` | `pn.v3.execute()` | `execute_named()` |
+| Settlement reconnect cursor and overlap dedupe | Yes | Yes | Yes |
+| Unknown additive events remain available | Yes | Yes | Yes |
+| 5m / 15m / 1h / 4h managed market rotation | Yes | Yes | Yes |
+| Explicit Chainlink 30s / 60s TWAP filters | Yes | Yes | Yes |
+| PN1 orderbook integrity | Yes | Yes | Yes |
+| Managed V3 perps WebSocket | Yes | Yes | Yes |
+| Current V2 trading default | Yes | Yes | Yes, `trading` feature |
+
+Some optional helpers are intentionally language-specific. The SQLite local cache is currently available in TypeScript and Rust; trading dependencies are optional in Python and Rust. Those differences do not affect the core surfaces above.
+
+## Three different WebSockets
+
+The SDKs expose separate clients because the streams have different protocols and state:
+
+| Stream | Use it for | SDK entry point |
+| --- | --- | --- |
+| Events | settlements, confirmations, wallet activity, combos, Chainlink prices | `pn.ws` / `client.stream(...)` |
+| Orderbook | prediction-market depth and trades | `pn.orderbook`, `OrderbookEngine`, or `client.orderbook_stream(...)` |
+| Perps | perps tickers, BBO, books, trades, statistics, klines | `pn.perps` / `client.perps_stream()` |
+
+Do not send an event-stream subscription to the orderbook or perps socket. Each guide starts from the correct client and includes shutdown code.
+
+## Next steps
+
+<CardGroup cols={3}>
+  <Card title="TypeScript" icon="js" href="/sdks/ts/overview">
+    Node.js setup and complete examples.
+  </Card>
+  <Card title="Python" icon="python" href="/sdks/python/overview">
+    Synchronous REST and asynchronous streams.
+  </Card>
+  <Card title="Rust" icon="rust" href="/sdks/rust/overview">
+    Tokio clients, typed events, and feature flags.
+  </Card>
+</CardGroup>
+
+If you prefer HTTP or raw WebSockets, use the [API overview](/api-reference/overview), [event WebSocket guide](/websocket/overview), [orderbook protocol](/orderbook/overview), and [perps API](/perps/overview).

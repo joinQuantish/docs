@@ -1,0 +1,47 @@
+---
+title: "Python Perps Stream"
+sidebarTitle: "Perps Stream"
+description: "Subscribe to managed Python perps tickers, BBO, full books, trades, statistics, and klines."
+icon: "chart-line"
+---
+
+The V3 perps WebSocket is separate from the event and prediction-market orderbook sockets.
+
+```python
+import asyncio
+import os
+from polynode import AsyncPolyNode, perps_channels
+
+async def main() -> None:
+    async with AsyncPolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
+        perps = pn.perps
+        perps.on_reconnect(lambda notice: print("gap possible", notice))
+        perps.on_overflow(lambda notice: print("local overflow", notice))
+
+        ack = await perps.subscribe([
+            perps_channels.tickers,
+            perps_channels.bbo("BTC-USD"),
+            perps_channels.book("BTC-USD"),
+            perps_channels.trades("BTC-USD"),
+            perps_channels.klines("BTC-USD", "1m"),
+        ])
+        if ack.rejected:
+            print("rejected channels", ack.rejected)
+
+        try:
+            async for message in perps:
+                if message.type == "event":
+                    print(message.channel, message.data)
+        finally:
+            await perps.disconnect()
+
+asyncio.run(main())
+```
+
+One subscribe request can be partially accepted. Inspect `ack.channels` and `ack.rejected`.
+
+Each `perps_book` event is a complete replacement, not an incremental patch. `perps.book("BTC-USD")` returns the latest managed copy.
+
+The client reconnects and resubscribes after non-terminal disconnects, but replay is not guaranteed. Reconnect notices set `gap_possible=True`; use V3 REST to backfill when completeness matters. Authentication (`4401`) and connection-limit (`4429`) closes are terminal until the failing condition changes.
+
+See the [shared perps guide](/sdks/perps) for channel definitions, lag behavior, and lifecycle details.

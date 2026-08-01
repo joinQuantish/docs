@@ -1,108 +1,81 @@
 ---
-title: "TypeScript — Orderbook"
-sidebarTitle: "Orderbook"
+title: "TypeScript PN1 Orderbook"
+sidebarTitle: "Orderbook & PN1"
+description: "Maintain exact local orderbooks with optional PN1 sequence and checksum verification."
+icon: "book-open"
 ---
 
-## Orderbook Streaming
-
-
-The SDK includes a dedicated orderbook client for real-time book data from `ob.polynode.dev`. This is a separate WebSocket connection from the event stream, with its own URL, protocol, and message format.
-
-### Subscribe
+Use `OrderbookEngine` when your application needs a current local book. Enable PN1 integrity for price-sensitive decisions so gaps and checksum mismatches fail closed.
 
 ```typescript
-// Lazy-initialized, connects on first subscribe
-await pn.orderbook.subscribe(['token_id_1', 'token_id_2']);
+import { OrderbookEngine } from 'polynode-sdk';
+
+const apiKey = process.env.POLYNODE_API_KEY;
+const tokenId = process.env.POLYMARKET_TOKEN_ID;
+if (!apiKey || !tokenId) throw new Error('Set POLYNODE_API_KEY and POLYMARKET_TOKEN_ID');
+
+const engine = new OrderbookEngine({
+  apiKey,
+  integrity: true,
+  allowStaleReads: false,
+});
+
+engine.on('integrity_error', (error) => {
+  console.error(error.code, error.token, error.message);
+});
+
+engine.on('ready', () => {
+  console.log({
+    bestBid: engine.bestBid(tokenId),
+    bestAsk: engine.bestAsk(tokenId),
+    midpoint: engine.midpoint(tokenId),
+    spread: engine.spread(tokenId),
+  });
+});
+
+await engine.subscribe([tokenId]);
 ```
 
-### Event Handlers
+PN1 keeps orderbook prices and sizes as exact decimal strings. It validates the full-snapshot anchor, then validates sequence continuity and a deterministic checksum on each applicable update.
+
+The managed state moves through `initializing`, `ready`, `stale`, `resyncing`, and `failed`. With `allowStaleReads: false`, reads are unavailable until a verified anchor is ready and become unavailable again after a disconnect or integrity failure. The client requests a fresh anchor before returning to `ready`.
+
+<Warning>
+Wildcard `"*"` subscriptions are intentionally unavailable in integrity mode. Subscribe with explicit token IDs, slugs, or condition IDs so every verified book has a bounded identity and anchor.
+</Warning>
+
+## Filtered views
 
 ```typescript
-pn.orderbook.on('snapshot', (snap) => {
-  // Full book snapshot on subscribe
-  console.log(snap.asset_id, snap.bids.length, 'bids', snap.asks.length, 'asks');
-});
+const view = engine.view([tokenId]);
+view.on('update', (update) => console.log(update.asset_id));
+view.on('trade', (trade) => console.log(trade.price, trade.size));
 
-pn.orderbook.on('update', (delta) => {
-  // Incremental delta. A level with size "0" means removal.
-  console.log(delta.asset_id, delta.bids.length, 'bid changes');
-});
-
-pn.orderbook.on('price', (change) => {
-  // Summary price movement across assets in a market
-  for (const asset of change.assets) {
-    console.log(asset.outcome, asset.price);
-  }
-});
-
-pn.orderbook.on('snapshots_done', (msg) => {
-  console.log(`All ${msg.total} snapshots received`);
-});
-
-// Catch-all for snapshot, update, and price events
-pn.orderbook.on('*', (update) => {
-  console.log(update.type, update);
-});
+console.log(view.book(tokenId));
+view.destroy();
 ```
 
-### LocalOrderbook Helper
+## Raw messages
 
-Maintain a sorted local copy of the book:
+Use `pn.configureOrderbook({ integrity: true })` when you want protocol messages without managed local state:
 
 ```typescript
-import { LocalOrderbook } from 'polynode-sdk';
+import { PolyNode } from 'polynode-sdk';
 
-const book = new LocalOrderbook();
-
-pn.orderbook.on('snapshot', (snap) => book.applySnapshot(snap));
-pn.orderbook.on('update', (delta) => book.applyUpdate(delta));
-
-// Query state
-const fullBook = book.getBook(tokenId);   // { bids, asks }
-const bestBid = book.getBestBid(tokenId);  // { price, size }
-const bestAsk = book.getBestAsk(tokenId);  // { price, size }
-const spread = book.getSpread(tokenId);    // number
+const pn = new PolyNode({ apiKey });
+const ob = pn.configureOrderbook({ integrity: true });
+ob.on('snapshot', (snapshot) => console.log(snapshot.integrity));
+ob.on('resyncing', (message) => console.warn(message.markets));
+ob.on('unknown', (message) => console.log(message.raw));
+await ob.subscribe([tokenId]);
 ```
 
-### Compression
-
-Zlib compression is enabled by default (~50% bandwidth savings). No configuration needed.
+## Cleanup
 
 ```typescript
-// To disable (not recommended):
-const ob = pn.configureOrderbook({ compress: false });
+engine.close();
+// Or, for the raw client:
+ob.disconnect();
 ```
 
-### Configuration
-
-```typescript
-const pn = new PolyNode({
-  apiKey: 'pn_live_...',
-  obUrl: 'wss://ob.polynode.dev/ws',  // default
-});
-
-// Or configure options separately
-pn.configureOrderbook({
-  compress: true,
-  autoReconnect: true,
-  maxReconnectAttempts: Infinity,
-  reconnectBaseDelay: 1000,
-  reconnectMaxDelay: 30000,
-});
-```
-
-### System Events
-
-```typescript
-pn.orderbook.onConnect(() => console.log('connected'));
-pn.orderbook.onDisconnect((reason) => console.log('disconnected:', reason));
-pn.orderbook.onReconnect((attempt) => console.log('reconnected, attempt', attempt));
-pn.orderbook.onError((err) => console.error(err));
-```
-
-### Cleanup
-
-```typescript
-pn.orderbook.unsubscribe();   // unsubscribe from all markets
-pn.orderbook.disconnect();     // close connection
-```
+See the [shared orderbook guide](/sdks/orderbook) and [PN1 protocol reference](/orderbook/integrity).

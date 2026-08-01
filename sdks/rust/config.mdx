@@ -1,0 +1,51 @@
+---
+title: "Rust Configuration"
+sidebarTitle: "Configuration"
+description: "Configure Rust endpoints, timeouts, reconnects, bounded buffers, and PN1 integrity."
+icon: "sliders"
+---
+
+The public endpoints are defaults. Override them only when PolyNode gives you another endpoint.
+
+```rust
+use polynode::PolyNodeClient;
+use std::time::Duration;
+
+let client = PolyNodeClient::builder(std::env::var("POLYNODE_API_KEY")?)
+    .base_url("https://api.polynode.dev")
+    .ws_url("wss://ws.polynode.dev/ws")
+    .ob_url("wss://ob.polynode.dev/ws")
+    .rpc_url("https://rpc.polynode.dev")
+    .timeout(Duration::from_secs(10))
+    .build()?;
+```
+
+Configure each stream before connecting:
+
+```rust
+use polynode::{EngineOptions, PerpsStreamOptions, StreamOptions};
+
+let event_options = StreamOptions {
+    compress: true,
+    auto_reconnect: true,
+    max_reconnect_attempts: None,
+    message_buffer_capacity: 4096,
+    dedupe_capacity: 4096,
+    replay_overlap: Duration::from_millis(1),
+    ..Default::default()
+};
+
+let orderbook_options = EngineOptions {
+    integrity: true,
+    allow_stale_reads: false,
+    ..Default::default()
+};
+
+let perps_options = PerpsStreamOptions {
+    auto_reconnect: true,
+    message_buffer_capacity: 4096,
+    ..Default::default()
+};
+```
+
+Rust's bounded channels apply backpressure. Poll stream `next()` methods continuously and move expensive work to a bounded worker pipeline. API keys belong in environment variables or a secret manager, never source code, panic messages, or logs.

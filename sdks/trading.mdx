@@ -1,566 +1,298 @@
 ---
-title: "Trading"
-sidebarTitle: "Trading"
-description: "Place orders on Polymarket through the polynode SDK with local credential custody and gasless onboarding."
+title: "Trading and Fees"
+sidebarTitle: "Trading & Fees"
+description: "Set up a wallet, place and manage Polymarket V2 orders, and understand protocol fees, builder attribution, and optional application fees."
 icon: "arrow-right-arrow-left"
 ---
 
+The SDK trading modules provide a common workflow for wallet setup, CLOB credentials, approvals, order placement, cancellation, and position operations. Polymarket V2 is the default in every current PolyNode SDK.
+
 <Warning>
-**Polymarket V2 cutover: April 28, 2026 at ~11am UTC.** Set `exchangeVersion: "v2"` (TypeScript) / `ExchangeVersion::V2` (Rust) / `ExchangeVersion.V2` (Python) in your `TraderConfig` before cutover. V1 orders submitted after April 28 will be rejected with `order_version_mismatch`. Pass your V2 builder code (mint at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder)) via the `builder` field on each order. See the [V2 Migration Guide](/guides/v2-migration) for the full rundown.
+Trading methods sign messages and can place orders or submit on-chain transactions. Start with a dedicated test wallet, confirm the token ID, price, size, and funder address, and never commit private keys or CLOB credentials.
 </Warning>
 
-<Info>
-**Deposit wallets supported.** Polymarket is rolling out deposit wallets as a new account type for new users. The SDK handles both Safe and deposit wallet users automatically — no code changes needed. See the [Deposit Wallets guide](/guides/deposit-wallets) for details.
-</Info>
+## Install
 
-## Overview
+<CodeGroup>
+```bash TypeScript
+npm install polynode-sdk@^0.12.2 viem better-sqlite3 \
+  @polymarket/clob-client \
+  @polymarket/builder-relayer-client \
+  @polymarket/builder-signing-sdk
+```
 
-The trading module lets you place and manage orders on Polymarket. One function call handles wallet setup, credential creation, approvals, and order placement. You don't need to understand Polymarket's wallet types, contract addresses, or signing protocols. The SDK auto-detects whether a user has a Safe proxy, deposit wallet, or no wallet at all, and handles each case transparently.
+```bash Python
+python -m pip install "polynode[trading]>=0.12.2,<0.13"
+```
+
+```toml Rust
+[dependencies]
+polynode = { version = "0.15.2", features = ["trading"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+```
+</CodeGroup>
+
+Store credentials outside source control:
 
 ```bash
-npm install polynode-sdk viem better-sqlite3 @polymarket/clob-client @polymarket/builder-relayer-client @polymarket/builder-signing-sdk
+export POLYNODE_API_KEY="pn_live_..."
+export POLYGON_PRIVATE_KEY="0x..."
 ```
 
-V2 order placement requires `polynode-sdk >= 0.9.0`. Deposit wallet support (address derivation, wallet detection) requires `>= 0.10.0`. Deposit wallet order signing (POLY_1271) requires `>= 0.10.5`.
+## Current V2 behavior
+
+You do not need to opt into V2. These are the defaults:
+
+| SDK | Default |
+| --- | --- |
+| TypeScript | `exchangeVersion: 'v2'` |
+| Python | `ExchangeVersion.V2` |
+| Rust | `ExchangeVersion::V2` |
+
+V2 uses PolyUSD collateral and applies Polymarket protocol fees when an eligible taker order matches. V2 signed orders do **not** include the legacy `feeRateBps`, `nonce`, or `taker` fields. The SDK omits those fields from the V2 signature and wire payload.
+
+The explicit V1 compatibility mode is different: its signed order includes the market fee rate. When V1 is selected, the SDK fetches the current fee and refuses to sign if fee, tick-size, or negative-risk metadata cannot be resolved safely.
 
 <Note>
-Your project must use ESM imports (`import` syntax). Add `"type": "module"` to your `package.json`, or use `.mjs` file extensions.
+Do not copy V1 fields into a V2 order. If you do not have a deliberate legacy requirement, keep the V2 default.
 </Note>
 
-## Quick Start
+## Set up a wallet
 
-Pick the path that matches your situation.
-
-### I'm building a backend service (private keys on your server)
-
-Generate wallets, manage them yourself. This is the simplest path.
-
-```typescript
-import { PolyNodeTrader } from 'polynode-sdk';
-
-const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
-
-// 1. Generate a wallet (or use an existing private key)
-const { privateKey, address } = await PolyNodeTrader.generateWallet();
-// SAVE THIS KEY. It is not stored anywhere. If you lose it, you lose access.
-
-// 2. One call sets up everything: deploys a Safe, sets approvals, creates credentials.
-//    Completely gasless. No MATIC needed. Takes ~10 seconds for a new wallet.
-const status = await trader.ensureReady(privateKey);
-
-// 3. Send USDC.e (Polygon) to the funder address. This is your trading wallet.
-console.log('Send USDC.e here:', status.funderAddress);
-
-// 4. Place an order
-const result = await trader.order({
-  tokenId: '...',  // Get token IDs from /v1/events/search or /v1/crypto/active
-  side: 'BUY',
-  price: 0.55,
-  size: 100,
-});
-
-// 5. Cancel it
-if (result.orderId) {
-  await trader.cancelOrder(result.orderId);
-}
-```
-
-`ensureReady()` is idempotent. Call it every time your service starts. If the wallet is already set up, it returns instantly from the local database.
-
-### I'm building a platform with Privy (server wallets for each user)
-
-Use `createPrivySigner` to trade with Privy-managed wallets. Each user gets their own wallet without touching private keys.
-
-```typescript
-import { PolyNodeTrader, createPrivySigner, createPrivyClient } from 'polynode-sdk';
-
-// Set up Privy (one client for your whole app)
-// createPrivyClient handles the wallet API config for you.
-const privy = createPrivyClient({
-  appId: process.env.PRIVY_APP_ID!,
-  appSecret: process.env.PRIVY_APP_SECRET!,
-  authorizationKey: process.env.PRIVY_AUTHORIZATION_KEY!,
-});
-
-// Create a signer for a specific user's wallet
-const signer = createPrivySigner(privy, user.privyWalletId, user.walletAddress);
-
-const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
-
-// Set up the wallet — gasless, ~10 seconds for new users
-const status = await trader.ensureReady(signer);
-
-// Send USDC.e to status.funderAddress, then trade
-const result = await trader.order({ tokenId: '...', side: 'BUY', price: 0.55, size: 100 });
-```
-
-**Privy setup requirements:**
-1. Create a Privy app at [dashboard.privy.io](https://dashboard.privy.io)
-2. Enable **Server wallets** under Wallet infrastructure
-3. Generate an **Authorization keypair** (same section) — this is `PRIVY_AUTHORIZATION_KEY`
-4. Install: `npm install @privy-io/server-auth` (the SDK imports it automatically via `createPrivyClient`)
-
-If you enable Privy gas sponsorship in your dashboard, all on-chain operations (approvals, deploys) are free for your users.
-
-### I already have a Polymarket account (exported key or existing credentials)
-
-If you export your private key from Polymarket, the SDK auto-detects your wallet type.
-
-```typescript
-const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
-const status = await trader.ensureReady('0xYOUR_EXPORTED_KEY');
-
-// Your USDC.e is already in the right place. Start trading.
-const balance = await trader.checkBalance();
-console.log(`USDC.e: $${balance.usdc}`);
-```
-
-If you already have CLOB credentials (from Polymarket or Dome), import them directly:
-
-```typescript
-trader.linkCredentials({
-  wallet: '0xYOUR_EOA',
-  apiKey: 'your-clob-api-key',
-  apiSecret: 'your-clob-api-secret',
-  apiPassphrase: 'your-clob-passphrase',
-  signatureType: 2,
-  funderAddress: '0xYOUR_SAFE',
-});
-await trader.linkWallet('0xYOUR_PRIVATE_KEY');
-```
-
-## Where to Send USDC.e
-
-<Warning>
-Polymarket uses **USDC.e** (bridged USDC) on Polygon, NOT native USDC. These are different tokens.
-
-- **USDC.e (correct):** `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174`
-- **Native USDC (wrong):** `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359`
-
-If you accidentally send native USDC, the tokens are still in your wallet (recoverable), but they won't work as a trading balance on Polymarket.
-</Warning>
-
-After `ensureReady()`, send USDC.e to `status.funderAddress`. This is the address that holds your trading balance.
-
-| Wallet type | `funderAddress` is... |
-|-------------|----------------------|
-| Safe (default) | The Safe contract address (different from your private key's address) |
-| EOA | The wallet address itself |
-
-Do not send USDC.e to the EOA address if you're using a Safe wallet. It will sit there unused.
-
-## Finding Markets
-
-You need a `tokenId` to place orders. Here's how to find one:
-
-```typescript
-import { PolyNode } from 'polynode-sdk';
-const pn = new PolyNode({ apiKey: 'pn_live_...' });
-
-// Search for markets
-const results = await pn.searchEvents('Bitcoin', { limit: 5 });
-for (const event of results.events) {
-  for (const market of event.markets) {
-    console.log(market.question, '→', market.tokenId);
-  }
-}
-```
-
-Or use the REST API directly: `GET /v1/events/search?q=bitcoin&limit=5` or `GET /v1/crypto/active` for live crypto markets.
-
-## Configuration
-
-```typescript
-const trader = new PolyNodeTrader({
-  polynodeKey: 'pn_live_...',         // Your polynode API key
-  dbPath: './my-trading.db',          // Local SQLite path (default: ./polynode-trading.db)
-  cosignerUrl: 'https://trade.polynode.dev', // Relay URL (default)
-  fallbackDirect: true,               // Fall back to direct CLOB if relay is down (default: true)
-  rpcUrl: 'https://polygon-bor-rpc.publicnode.com', // RPC for on-chain reads (default)
-  builderCredentials: {               // Optional: your own Polymarket builder credentials
-    key: process.env.POLY_BUILDER_API_KEY!,
-    secret: process.env.POLY_BUILDER_SECRET!,
-    passphrase: process.env.POLY_BUILDER_PASSPHRASE!,
-  },
-  feeConfig: {                        // Optional: charge fees on orders
-    feeBps: 50,                       // 0.5% fee (0 = no fee, default)
-    affiliate: '0xPartner...',        // Partner wallet for revenue share
-    affiliateShareBps: 3000,          // 30% to partner, 70% to treasury
-  },
-});
-```
-
-### Builder Attribution (Your Own Credentials)
-
-By default, orders placed through polynode are attributed to polynode's builder profile on Polymarket. If you're running a platform and want volume credited to **your own** builder account, pass your credentials in `builderCredentials`.
-
-1. Go to [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder) and create a builder profile
-2. Generate API credentials (key, secret, passphrase)
-3. Pass them in `builderCredentials` when constructing the trader
-
-```typescript
-const trader = new PolyNodeTrader({
-  polynodeKey: 'pn_live_...',
-  builderCredentials: {
-    key: process.env.POLY_BUILDER_API_KEY!,
-    secret: process.env.POLY_BUILDER_SECRET!,
-    passphrase: process.env.POLY_BUILDER_PASSPHRASE!,
-  },
-});
-```
-
-When `builderCredentials` is set:
-- All orders are attributed to your builder profile on the [Builder Leaderboard](https://builders.polymarket.com)
-- Gasless Safe deployments and approvals use your builder account
-- polynode never stores your builder credentials. They're sent per-request and used only for HMAC signing.
-
-When `builderCredentials` is omitted, polynode's default builder credentials are used. Your orders still go through, you just don't get the builder attribution on your own profile.
-
-## Polymarket V2 Exchange
-
-The Polymarket V2 exchange uses PolyUSD as collateral instead of USDC.e directly. One config change enables V2 support. Always call `ensureReady` / `ensure_ready` before any V2 method — it deploys the Safe (if needed), sets V2 approvals, creates CLOB credentials, and refreshes the V2 CLOB's balance-allowance cache:
+`ensureReady` / `ensure_ready` is idempotent. It discovers the wallet type, creates or loads CLOB credentials, and completes required setup. For a new wallet it can deploy contracts or submit approvals, so treat it as a state-changing operation.
 
 <CodeGroup>
 ```typescript TypeScript
 import { PolyNodeTrader } from 'polynode-sdk';
 
 const trader = new PolyNodeTrader({
-  polynodeKey: 'pn_live_...',
-  exchangeVersion: 'v2',
+  polynodeKey: process.env.POLYNODE_API_KEY!,
+  exchangeVersion: 'v2', // Optional: V2 is already the default
 });
 
-// Required before any wrap/order/cancel call:
-await trader.ensureReady('0xYOUR_EOA_PRIVATE_KEY');
+const ready = await trader.ensureReady(process.env.POLYGON_PRIVATE_KEY!);
+console.log({
+  wallet: ready.wallet,
+  funderAddress: ready.funderAddress,
+  approvalsSet: ready.approvalsSet,
+});
 ```
 
 ```python Python
-import asyncio
-from polynode.trading import PolyNodeTrader, TraderConfig, ExchangeVersion
+import os
+from polynode.trading import ExchangeVersion, PolyNodeTrader, TraderConfig
 
 trader = PolyNodeTrader(TraderConfig(
-    polynode_key="pn_live_...",
-    exchange_version=ExchangeVersion.V2,
+    polynode_key=os.environ["POLYNODE_API_KEY"],
+    exchange_version=ExchangeVersion.V2,  # Optional: already the default
 ))
 
-# Required before any wrap/order/cancel call:
-await trader.ensure_ready("0xYOUR_EOA_PRIVATE_KEY")
+ready = await trader.ensure_ready(os.environ["POLYGON_PRIVATE_KEY"])
+print({
+    "wallet": ready.wallet,
+    "funder_address": ready.funder_address,
+    "approvals_set": ready.approvals_set,
+})
 ```
 
 ```rust Rust
-use polynode::trading::{PolyNodeTrader, TraderConfig, ExchangeVersion, PrivateKeySigner};
+use polynode::trading::{
+    ExchangeVersion, PolyNodeTrader, PrivateKeySigner, TraderConfig,
+};
 
 let mut trader = PolyNodeTrader::new(TraderConfig {
-    polynode_key: "pn_live_...".into(),
-    exchange_version: ExchangeVersion::V2,
+    polynode_key: std::env::var("POLYNODE_API_KEY")?,
+    exchange_version: ExchangeVersion::V2, // Optional: already the default
     ..Default::default()
 })?;
 
-// Required before any wrap/order/cancel call:
-let signer = PrivateKeySigner::from_hex("0xYOUR_EOA_PRIVATE_KEY")?;
-trader.ensure_ready(Box::new(signer), None).await?;
+let signer = PrivateKeySigner::from_hex(&std::env::var("POLYGON_PRIVATE_KEY")?)?;
+let ready = trader.ensure_ready(Box::new(signer), None).await?;
+println!("fund this address: {}", ready.funder_address);
 ```
 </CodeGroup>
 
-Before placing orders on V2 markets, wrap USDC.e into PolyUSD. Amounts are in raw 6-decimal integers (`1_000_000` = $1; TS uses `bigint`):
+Fund the returned `funderAddress` / `funder_address`, not an address guessed from the signing key. The correct funding flow depends on the wallet type. See [Deposit wallets](/guides/deposit-wallets), [V2 details](/guides/v2-details), and [PolyUSD](/guides/polyusd).
+
+## Place an order
+
+The following snippets place a real order when run. Replace every placeholder and validate the market first.
 
 <CodeGroup>
 ```typescript TypeScript
-// Wrap 100 USDC.e → PolyUSD
-await trader.wrapToPolyUsd(100_000_000n);
-
-const balanceRaw = await trader.getPolyUsdBalance();
-console.log(`PolyUSD: $${Number(balanceRaw) / 1e6}`);
-```
-
-```python Python
-# Wrap 100 USDC.e → PolyUSD
-tx_hash = await trader.wrap_to_polyusd(100_000_000)
-
-polyusd_raw = trader.get_polyusd_balance()  # sync, returns int
-print(f"PolyUSD: ${polyusd_raw / 1e6:.6f}")
-```
-
-```rust Rust
-// Wrap 100 USDC.e → PolyUSD
-let tx_hash = trader.wrap_to_polyusd(100_000_000).await?;
-
-let balance_raw = trader.get_polyusd_balance().await?;
-println!("PolyUSD: ${:.6}", balance_raw as f64 / 1e6);
-```
-</CodeGroup>
-
-Pass your builder code via the `builder` field on each V2 order. Mint one at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder):
-
-<CodeGroup>
-```typescript TypeScript
-await trader.order({
-  tokenId: "...",
-  side: "BUY",
-  price: 0.42,
-  size: 5,
-  type: "GTC",
-  builder: "0x5472fdd7...",  // bytes32 builder code
+const result = await trader.order({
+  tokenId: process.env.POLYMARKET_TOKEN_ID!,
+  side: 'BUY',
+  price: 0.55,
+  size: 10,
+  type: 'GTC',
+  postOnly: true,
 });
+
+if (!result.success) throw new Error(result.error ?? 'Order rejected');
+console.log(result.orderId);
 ```
 
 ```python Python
+import os
 from polynode.trading import OrderParams
 
-await trader.order(OrderParams(
-    token_id="...",
+result = await trader.order(OrderParams(
+    token_id=os.environ["POLYMARKET_TOKEN_ID"],
     side="BUY",
-    price=0.42,
-    size=5,
+    price=0.55,
+    size=10,
     type="GTC",
-    builder="0x5472fdd7...",  # bytes32 builder code
+    post_only=True,
 ))
+
+if not result.success:
+    raise RuntimeError(result.error or "Order rejected")
+print(result.order_id)
 ```
 
 ```rust Rust
 use polynode::trading::{OrderParams, OrderSide, OrderType};
 
-trader.order(OrderParams {
-    token_id: "...".into(),
+let result = trader.order(OrderParams {
+    token_id: std::env::var("POLYMARKET_TOKEN_ID")?,
     side: OrderSide::Buy,
-    price: 0.42,
-    size: 5.0,
+    price: 0.55,
+    size: 10.0,
     order_type: OrderType::GTC,
-    builder: Some("0x5472fdd7...".into()),
-    ..Default::default()
+    expiration: None,
+    post_only: true,
+    fee_config: None,
+    builder: None,
 }).await?;
+
+if !result.success {
+    return Err(polynode::Error::Trading(
+        result.error.unwrap_or_else(|| "order rejected".into()),
+    ));
+}
+println!("{:?}", result.order_id);
 ```
 </CodeGroup>
 
-On V2, `ensureReady()` / `ensure_ready()` also refreshes the CLOB's cached balance-allowance view after setting approvals. If you change approvals outside that flow, call `trader.refreshBalanceAllowance()` / `trader.refresh_balance_allowance()` before placing orders — otherwise the CLOB can reject with `"not enough balance / allowance"` until its cache catches up.
+Supported time-in-force values are `GTC`, `GTD`, `FOK`, and `FAK`. A V2 `GTD` expiration must include the required safety buffer; the SDK rejects an invalid value before submission.
 
-All other trading methods (`order()`, `cancelOrder()`, `split()`, `merge()`, etc.) work the same on V2 markets. The `order_type` accepts `"GTC"` (default — rest on book), `"GTD"` (with `expiration` unix seconds), `"FOK"` (fill-or-kill, fully match or cancel), or `"FAK"` (fill-and-kill, match what you can, cancel the rest). `size` is in shares of the outcome token, `price` is the per-share USD price between 0 and 1.
+## Cancel and inspect orders
 
-<Tip>
-See the [V2 Migration Guide](/guides/v2-migration) for full details on the Polymarket V2 exchange upgrade, and the [PolyUSD Guide](/guides/polyusd) for wrapping and unwrapping mechanics.
-</Tip>
+Each SDK supports:
 
-## Fee Escrow
+- canceling one order;
+- canceling all active orders;
+- canceling active orders for a market;
+- listing open orders;
+- checking balances and approvals;
+- reading the local order-attempt history.
 
-Charge your platform's per-order fee via on-chain escrow. Fees are pulled before the order, distributed on fill, and refunded on cancel. This is **your** fee — independent of Polymarket's protocol fee and V2 builder rev share (which are charged separately by the CLOB). See the [Fee Escrow Guide](/guides/fee-escrow) for the full architecture and the three-fee breakdown.
-
-```typescript
-const trader = new PolyNodeTrader({
-  polynodeKey: 'pn_live_...',
-  feeConfig: { feeBps: 50 },  // 0.5% platform fee on every order (yours; not Polymarket's)
-});
-
-const result = await trader.order({
-  tokenId: '...',
-  side: 'BUY',
-  price: 0.55,
-  size: 100,
-});
-
-console.log(result.feeEscrowTxHash); // on-chain pullFee TX
-console.log(result.feeAmount);       // "0.0275" USDC
-
-// Cancel → fee is automatically refunded
-await trader.cancelOrder(result.orderId);
+<CodeGroup>
+```typescript TypeScript
+const open = await trader.getOpenOrders();
+if (open[0]) await trader.cancelOrder(open[0].id);
 ```
 
-Set `feeBps: 0` or omit `feeConfig` to skip your platform fee entirely. Zero overhead, zero behavior change. Note: this only turns off **your** fee — Polymarket's protocol fee and V2 builder rev share are controlled independently by the CLOB.
-
-## API Reference
-
-### `PolyNodeTrader.generateWallet()`
-
-Static async method. Generates a fresh wallet. **You must `await` this call.**
-
-```typescript
-const { privateKey, address } = await PolyNodeTrader.generateWallet();
-// IMPORTANT: Save privateKey securely. It is not stored anywhere by the SDK.
+```python Python
+open_orders = await trader.get_open_orders()
+if open_orders:
+    await trader.cancel_order(open_orders[0].id)
 ```
 
-### `ensureReady(signer, opts?)`
-
-One-call onboarding. Detects wallet type (Safe, proxy, or deposit wallet), deploys contracts if needed, sets all approvals, creates CLOB credentials.
-
-**Signer types accepted:**
-- `string` — hex private key (most common)
-- `createPrivySigner(...)` — Privy server wallet
-- ethers v5/v6 Signer
-- viem WalletClient
-
-**Returns:** `ReadyStatus` with `funderAddress` (where to send collateral), `signatureType`, `approvalsSet`, `credentials`, and `actions` (what it did).
-
-**Wallet types detected automatically:**
-
-| `signatureType` | Value | Description |
-|---|---|---|
-| `POLY_GNOSIS_SAFE` | 2 | Gnosis Safe proxy (most existing Polymarket accounts) |
-| `POLY_PROXY` | 1 | Legacy proxy wallet |
-| `POLY_1271` | 3 | Deposit wallet (newer Polymarket accounts, V2 only) |
-| `EOA` | 0 | Direct EOA signing |
-
-Calling it again on a ready wallet is instant (loads from local DB).
-
-For deposit wallet users (`POLY_1271`), order signing uses the ERC-7739 TypedDataSign wrapper automatically. No code changes needed on your side — `order()` detects the wallet type from stored credentials and signs accordingly.
-
-### `order(params)`
-
-Place an order on Polymarket.
-
-```typescript
-const result = await trader.order({
-  tokenId: '...',  // Market token ID (from /v1/events/search)
-  side: 'BUY',     // 'BUY' or 'SELL'
-  price: 0.55,     // Limit price (0 to 1)
-  size: 100,       // Number of shares
-  type: 'GTC',     // 'GTC' | 'GTD' | 'FOK' | 'FAK' (default: GTC)
-});
-
-if (result.success) {
-  console.log('Order placed:', result.orderId);
-  // When feeConfig is set:
-  console.log('Fee TX:', result.feeEscrowTxHash);  // on-chain escrow TX
-  console.log('Fee:', result.feeAmount);            // USDC charged
-} else {
-  console.log('Failed:', result.error);
+```rust Rust
+let open_orders = trader.get_open_orders().await?;
+if let Some(order) = open_orders.first() {
+    trader.cancel_order(&order.id).await?;
 }
 ```
+</CodeGroup>
 
-### `cancelOrder(orderId)` / `cancelAll(market?)`
+## Three different fee concepts
 
-Cancel a specific order or all orders.
+Keep these separate in your product and accounting:
 
-### `split(params)`
+| Concept | What it means | How it is configured |
+| --- | --- | --- |
+| Polymarket protocol fee | A market fee applied by Polymarket when eligible V2 liquidity matches | Not a signed V2 order field; inspect market metadata for display and budgeting |
+| Builder attribution | Associates eligible volume with a public builder code | `builderCode` / `builder_code`, or the per-order `builder` override |
+| Optional application fee | A fee your application deliberately charges through the SDK fee configuration | `feeConfig` / `fee_config`; disabled unless configured |
 
-Split USDC into YES + NO outcome tokens. Gasless for Safe wallets. Auto-detects neg-risk vs standard markets.
+Builder attribution does not by itself charge the user an application fee. An application fee is enabled only when you explicitly configure it. See [Fee escrow](/guides/fee-escrow) before enabling application fees.
 
-```typescript
-const result = await trader.split({
-  conditionId: '0x895e01db...', // market condition ID
-  amount: 100,                   // $100 USDC
+## Builder attribution
+
+Current V2 orders use a public `bytes32` builder code. The SDK supplies PolyNode's public code by default. You can provide your own code at trader level, override it for one order, or disable the default attribution.
+
+<CodeGroup>
+```typescript TypeScript
+const trader = new PolyNodeTrader({
+  polynodeKey: process.env.POLYNODE_API_KEY!,
+  builderCode: process.env.POLYMARKET_BUILDER_CODE!,
 });
-// result: { success: true, txHash: '0x...' }
+
+// Per-order override:
+await trader.order({ ...order, builder: anotherBuilderCode });
 ```
 
-### `merge(params)`
+```python Python
+trader = PolyNodeTrader(TraderConfig(
+    polynode_key=os.environ["POLYNODE_API_KEY"],
+    builder_code=os.environ["POLYMARKET_BUILDER_CODE"],
+))
 
-Merge YES + NO outcome tokens back into USDC. Gasless for Safe wallets.
-
-```typescript
-const result = await trader.merge({
-  conditionId: '0x895e01db...',
-  amount: 50,
-});
+# Per-order override:
+await trader.order(OrderParams(**order_values, builder=another_builder_code))
 ```
 
-### `convert(params)`
+```rust Rust
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: std::env::var("POLYNODE_API_KEY")?,
+    builder_code: Some(std::env::var("POLYMARKET_BUILDER_CODE")?),
+    ..Default::default()
+})?;
 
-Convert NO positions on selected outcomes into USDC + YES on complementary outcomes. Only works on neg-risk multi-outcome markets. Gasless for Safe wallets.
+// `OrderParams.builder` overrides the config for one order.
+```
+</CodeGroup>
 
-```typescript
-const result = await trader.convert({
-  marketId: '0xc7d902c4...', // negRiskMarketID
-  outcomeIndices: [0, 1],     // which outcomes to convert
-  amount: 100,                // $100 per outcome
-});
+Generate and manage builder credentials in your Polymarket builder settings. Builder credentials are secrets; the public builder code is not.
+
+## Position operations
+
+The trading modules also expose split, merge, and negative-risk conversion builders or helpers. These are on-chain operations and are distinct from placing a CLOB order. Review [Position management](/guides/position-management) before signing or submitting one.
+
+## Cleanup
+
+Close the trader to flush and release its local storage:
+
+<CodeGroup>
+```typescript TypeScript
+trader.close();
 ```
 
-See the [Position Management guide](/guides/position-management) for a full explanation of how conversions work and when to use each operation.
+```python Python
+trader.close()
+```
 
-### `checkBalance(wallet?)`
+```rust Rust
+trader.close();
+```
+</CodeGroup>
 
-Returns USDC.e and MATIC balance for the funder address.
+## Next steps
 
-### `checkApprovals(wallet?)`
-
-Check if all required token approvals are set on-chain (6 Polymarket approvals + 1 fee escrow approval).
-
-### `getOpenOrders(params?)`
-
-Fetch open orders from the CLOB. Filters: `market`, `assetId`.
-
-### `getOrderHistory(params?)`
-
-Query local order history from SQLite. Filters: `limit`, `offset`, `tokenId`, `side`.
-
-### `linkCredentials(opts)` / `linkWallet(signer)`
-
-Import existing credentials or link a wallet manually.
-
-### `exportWallet(wallet?)` / `exportAll()` / `importWallet(exported)`
-
-Export and import wallet state for backup. Private keys are never included.
-
-### `unlinkWallet(address?)` / `getLinkedWallets()`
-
-Remove or list stored wallets.
-
-### `close()`
-
-Close the SQLite connection. Call this when shutting down.
-
-## How It Works
-
-1. SDK signs the order locally (EIP-712)
-2. SDK sends to polynode's relay at `trade.polynode.dev`
-3. Relay adds builder attribution and forwards to Polymarket's CLOB
-4. Response returned to SDK, logged in local SQLite
-
-If the relay is down and `fallbackDirect` is true, orders go directly to Polymarket. Your trading never stops.
-
-## Wallet Model & Signing
-
-Polymarket uses a **two-address model** for each trader:
-
-- **EOA (signer)** — a plain private key. Signs every order and every on-chain intent. Holds no trading funds.
-- **Safe (funder)** — a Gnosis Safe smart wallet whose address is deterministically derived from the EOA (CREATE2 via the Polymarket Safe Factory). This is where USDC.e / pUSD / CTF positions live, and it's the `maker` on every order.
-
-`ensureReady(privateKey)` on a fresh EOA does all four things for you, **gasless** via the Polymarket relayer:
-
-1. Derives the Safe address from the EOA via CREATE2
-2. Deploys the Safe if it doesn't exist yet on-chain
-3. Sets all required approvals (USDC.e/pUSD to exchanges + collateral adapters, CTF to exchanges)
-4. Creates CLOB API credentials (L2 HMAC) by signing an EIP-712 `ClobAuth` message from the EOA
-
-After this, the SDK stores the CLOB API key, secret, and passphrase in its local SQLite DB keyed by the EOA address. You never send them to polynode.
-
-### How orders are signed
-
-Every V2 order struct includes `maker` (the Safe address) and `signer` (the EOA address). The EOA signs the EIP-712 hash; the CLOB verifies the signature against `signer` and trusts that the `signer` is a 1-of-1 owner of the `maker` Safe (it is, because the Safe's sole owner is the EOA by construction). At settlement time, the V2 exchange calls the Safe's `execTransaction` with your signed payload as authorization.
-
-### How wrap/unwrap, approvals, and split/merge are signed
-
-For any on-chain action that needs to move funds out of the Safe (`wrapToPolyUsd`, `unwrapFromPolyUsd`, `setApprovals`, `split`, `merge`, `convert`), the SDK:
-
-1. Builds the raw calldata for the target contract call
-2. Wraps it in a Safe `execTransaction` EIP-712 payload with the current Safe nonce
-3. Has your EOA `personal_sign` that payload (via eth_account / alloy / ethers)
-4. POSTs the signed payload to `https://relayer-v2.polymarket.com/submit` with your **builder HMAC headers**
-5. Polls the relayer until the tx is mined on Polygon
-
-The relayer pays the gas. You never need MATIC. This is why `wrapToPolyUsd()` / `unwrapFromPolyUsd()` require `builderCredentials` in `TraderConfig` for Safe wallets — the HMAC authenticates your submit to the relayer.
-
-### Linking credentials vs ensureReady
-
-Three ways to get a wallet ready to trade, depending on what you already have:
-
-| Situation | Call | What it does |
-|---|---|---|
-| Fresh EOA (no Safe yet) | `trader.ensureReady(privateKey)` | Derives Safe, deploys, approves, creates CLOB creds, stores in local DB |
-| Existing EOA + Safe already set up (you re-start your service) | `trader.ensureReady(privateKey)` | No-op if the local DB already has creds; otherwise re-derives and re-fetches |
-| You already have CLOB creds from somewhere else (DB export, Polymarket account) | `trader.linkCredentials({ wallet, apiKey, apiSecret, apiPassphrase, signatureType, funderAddress })` then `trader.linkWallet(privateKey)` to attach the signer | Imports the creds into the local DB and attaches the signer for order signing. Skips approvals + deploys entirely. |
-| Multi-user platform (one SDK instance, many users) | `trader.linkCredentials(userA)` → `trader.linkWallet(userA.pk)` → trade; then switch with `trader.linkWallet(userB.pk)` | Each `linkWallet` call swaps the active signer. `linkCredentials` writes into the local DB so you can return to a user later by calling `linkWallet` again with their key. Consider using one `PolyNodeTrader` per user for concurrency. |
-
-### Multi-user / server wallet patterns
-
-For a backend that trades on behalf of many users:
-
-- **Privy / server-managed wallets:** use `createPrivySigner(privy, walletId, address)` instead of passing a raw private key to `ensureReady`. Same onboarding flow, but Privy holds the key and signs remotely.
-- **Your own KMS:** implement the `RouterSigner` interface (or `TradingSigner` in Rust / a signer callable in Python). The SDK only needs two operations from you: `getAddress()` and `signTypedData(payload)`. Everything else is local.
-- **Per-user DB file:** pass a different `dbPath` per user to keep their credentials isolated on disk. Or use a shared DB and call `linkWallet(userPk)` to swap active signers.
-
-## Credential Custody
-
-Credentials are stored in a local SQLite database. The SDK never sends your private key or CLOB credentials to polynode's servers. Back up with `exportWallet()`.
-
-## Migrating from Dome
-
-The polynode trading module is a drop-in replacement for Dome. See the [Dome Migration guide](/dome-migration#order-placement) for a line-by-line comparison.
+<CardGroup cols={2}>
+  <Card title="Find a token with V3" icon="magnifying-glass" href="/sdks/v3-api">
+    Discover markets and token IDs before constructing an order.
+  </Card>
+  <Card title="Stream a verified book" icon="book-open" href="/sdks/orderbook">
+    Use PN1 integrity before making price-sensitive decisions.
+  </Card>
+  <Card title="V2 migration details" icon="arrows-rotate" href="/guides/v2-migration">
+    Understand the current exchange and payload differences.
+  </Card>
+  <Card title="Trading errors" icon="triangle-exclamation" href="/sdks/ts/errors">
+    Handle rejected orders and transport failures explicitly.
+  </Card>
+</CardGroup>

@@ -1,19 +1,58 @@
 ---
-title: "TypeScript — Configuration"
+title: "TypeScript Configuration"
 sidebarTitle: "Configuration"
+description: "Configure PolyNode TypeScript endpoints, timeouts, reconnects, replay buffers, and integrity behavior."
+icon: "sliders"
 ---
 
-## Configuration
-
+The default public endpoints are already configured. Override them only when PolyNode gives you a different endpoint.
 
 ```typescript
+import { PolyNode } from 'polynode-sdk';
+
+const apiKey = process.env.POLYNODE_API_KEY;
+if (!apiKey) throw new Error('Set POLYNODE_API_KEY');
+
 const pn = new PolyNode({
-  apiKey: 'pn_live_...',                    // required
-  baseUrl: 'https://api.polynode.dev',      // default
-  v3BaseUrl: 'https://api.polynode.dev',    // optional override for pn.v3
-  wsUrl: 'wss://ws.polynode.dev/ws',        // default
-  obUrl: 'wss://ob.polynode.dev/ws',        // default
-  rpcUrl: 'https://rpc.polynode.dev',       // default
-  timeout: 10000,                            // ms, default 10s
+  apiKey,
+  baseUrl: 'https://api.polynode.dev',
+  v3BaseUrl: 'https://api.polynode.dev',
+  wsUrl: 'wss://ws.polynode.dev/ws',
+  obUrl: 'wss://ob.polynode.dev/ws',
+  rpcUrl: 'https://rpc.polynode.dev',
+  timeout: 10_000,
 });
 ```
+
+Configure a stream before its first connection:
+
+```typescript
+const events = pn.configureWs({
+  compress: true,
+  autoReconnect: true,
+  maxReconnectAttempts: Infinity,
+  reconnectBaseDelay: 1_000,
+  reconnectMaxDelay: 30_000,
+  subscribeTimeoutMs: 30_000,
+  subscriptionQueueCapacity: 4_096,
+  dedupeCapacity: 4_096,
+  replayOverlapMs: 1,
+});
+
+const orderbook = pn.configureOrderbook({
+  compress: true,
+  autoReconnect: true,
+  integrity: true,
+  allowStaleReads: false,
+});
+
+const perps = pn.configurePerps({
+  autoReconnect: true,
+  operationTimeoutMs: 30_000,
+  queueCapacity: 4_096,
+});
+```
+
+Event and perps queues are bounded. Choose capacities for your processing rate, observe overflow callbacks, and move slow work away from message handlers. A larger buffer delays loss but is not a substitute for sustained consumer throughput.
+
+API keys belong in server-side environment variables or a secret manager, never a browser bundle.

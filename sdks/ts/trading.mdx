@@ -1,14 +1,57 @@
 ---
-title: "TypeScript — Trading"
-sidebarTitle: "Trading"
+title: "TypeScript Trading and Fees"
+sidebarTitle: "Trading & Fees"
+description: "Use the TypeScript V2 trading defaults and keep protocol fees, builder attribution, and application fees distinct."
+icon: "arrow-right-arrow-left"
 ---
 
-## Trading
+Install the optional trading dependencies:
 
-<Warning>
-**Polymarket V2 cutover: April 28, 2026 at ~11am UTC.** Set `exchangeVersion: "v2"` in your `TraderConfig` before cutover. V1 orders submitted after April 28 will be rejected with `order_version_mismatch`. Pass your V2 builder code (mint at [polymarket.com/settings?tab=builder](https://polymarket.com/settings?tab=builder)) via the `builder` field on each order. See the [V2 Migration Guide](/guides/v2-migration).
-</Warning>
+```bash
+npm install polynode-sdk@^0.12.2 viem better-sqlite3 \
+  @polymarket/clob-client \
+  @polymarket/builder-relayer-client \
+  @polymarket/builder-signing-sdk
+```
 
-Order placement is available through the `PolyNodeTrader` class, which supports the Polymarket V2 exchange. See the [Trading reference](/sdks/trading) for full documentation, including wallet setup, order placement, and V2 PolyUSD wrapping.
+Polymarket V2 is the default. You do not need to set `exchangeVersion`, but setting it explicitly can make a migration easier to review:
 
-See the [V2 Migration Guide](/guides/v2-migration) for details on the Polymarket V2 exchange upgrade.
+```typescript
+import { PolyNodeTrader } from 'polynode-sdk';
+
+const apiKey = process.env.POLYNODE_API_KEY;
+const privateKey = process.env.POLYGON_PRIVATE_KEY;
+if (!apiKey || !privateKey) throw new Error('Set the required environment variables');
+
+const trader = new PolyNodeTrader({
+  polynodeKey: apiKey,
+  exchangeVersion: 'v2',
+  builderCode: process.env.POLYMARKET_BUILDER_CODE,
+});
+
+const ready = await trader.ensureReady(privateKey);
+console.log('funder address', ready.funderAddress);
+```
+
+`ensureReady()` can deploy or approve wallet contracts and is state-changing for a new wallet. After the returned funder address is funded, `trader.order(...)` places a real order.
+
+V2 fees are applied by Polymarket at match time. Do not add legacy `feeRateBps`, `nonce`, or `taker` fields to a V2 signed order. A builder code attributes eligible volume; it does not itself charge an application fee. `feeConfig` is a separate, optional application-fee feature and remains disabled unless you configure it.
+
+```typescript
+try {
+  const result = await trader.order({
+    tokenId: process.env.POLYMARKET_TOKEN_ID!,
+    side: 'BUY',
+    price: 0.55,
+    size: 10,
+    type: 'GTC',
+    postOnly: true,
+  });
+  if (!result.success) throw new Error(result.error ?? 'Order rejected');
+  console.log(result.orderId);
+} finally {
+  trader.close();
+}
+```
+
+Read [Trading and fees](/sdks/trading) before running state-changing examples. It covers funding, cancellations, builder overrides, current V2 fee behavior, position operations, and cleanup.

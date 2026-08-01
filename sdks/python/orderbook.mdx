@@ -1,53 +1,52 @@
 ---
-title: "Python — Orderbook"
-sidebarTitle: "Orderbook"
+title: "Python PN1 Orderbook"
+sidebarTitle: "Orderbook & PN1"
+description: "Maintain exact Python orderbooks with PN1 sequence and checksum verification."
+icon: "book-open"
 ---
 
-## Orderbook Streaming
-
-
-The SDK includes a dedicated orderbook client for real-time book data from `ob.polynode.dev`. This is a separate WebSocket connection from the event stream.
-
-### Subscribe
+Use `OrderbookEngine` for a managed local book. Enable PN1 integrity for price-sensitive decisions.
 
 ```python
-# Lazy-initialized, connects on first subscribe
-await pn.orderbook.subscribe(["token_id_1", "token_id_2"])
+import asyncio
+import os
+from polynode import OrderbookEngine
+
+async def main() -> None:
+    token_id = os.environ["POLYMARKET_TOKEN_ID"]
+    engine = OrderbookEngine(
+        os.environ["POLYNODE_API_KEY"],
+        integrity=True,
+        allow_stale_reads=False,
+    )
+
+    engine.on("integrity_error", lambda error: print(
+        error.code, error.token, error
+    ))
+    engine.on("ready", lambda: print({
+        "best_bid": engine.best_bid(token_id),
+        "best_ask": engine.best_ask(token_id),
+        "midpoint": engine.midpoint(token_id),
+        "spread": engine.spread(token_id),
+    }))
+
+    try:
+        await engine.subscribe([token_id])
+        await asyncio.Event().wait()
+    finally:
+        engine.close()
+
+asyncio.run(main())
 ```
 
-### Event Handlers
+PN1 keeps price and size values as exact decimal strings. It validates the full-snapshot anchor, then validates sequence continuity and a deterministic checksum on each applicable update.
 
-```python
-pn.orderbook.on("snapshot", lambda snap: print(f"{snap.asset_id}: {len(snap.bids)} bids"))
-pn.orderbook.on("update", lambda delta: print(f"{delta.asset_id} updated"))
-pn.orderbook.on("price", lambda c: print(f"price: {c.assets[0].price}"))
-pn.orderbook.on("snapshots_done", lambda msg: print(f"All {msg.total} snapshots received"))
-pn.orderbook.on("*", lambda u: print(u.type))  # catch-all
-```
+Managed state moves through `initializing`, `ready`, `stale`, `resyncing`, and `failed`. With stale reads disabled, queries are unavailable until a verified anchor is ready and become unavailable after a disconnect or integrity failure. The engine requests a fresh anchor before returning to `ready`.
 
-### LocalOrderbook
+<Warning>
+Wildcard `"*"` subscriptions are unavailable in integrity mode. Use explicit token IDs, slugs, or condition IDs.
+</Warning>
 
-Maintain a sorted local copy of the book:
+For raw messages, construct `OrderbookWS(..., integrity=True)`, register `snapshot`, `resyncing`, `error`, and `unknown` handlers, then `await subscribe(...)`. Close it with `disconnect()`.
 
-```python
-from polynode import LocalOrderbook
-
-book = LocalOrderbook()
-
-# Wire to orderbook WS events
-pn.orderbook.on("snapshot", lambda snap: book.apply_snapshot(snap))
-pn.orderbook.on("update", lambda delta: book.apply_update(delta))
-
-# Query state
-full_book = book.get_book(token_id)    # (bids, asks) or None
-best_bid = book.get_best_bid(token_id)  # OrderbookLevel or None
-best_ask = book.get_best_ask(token_id)  # OrderbookLevel or None
-spread = book.get_spread(token_id)      # float or None
-```
-
-### Cleanup
-
-```python
-pn.orderbook.unsubscribe()    # unsubscribe from all markets
-pn.orderbook.disconnect()     # close connection
-```
+See the [shared orderbook guide](/sdks/orderbook) and [PN1 protocol reference](/orderbook/integrity).

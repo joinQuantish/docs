@@ -1,18 +1,49 @@
 ---
-title: "Python — Configuration"
+title: "Python Configuration"
 sidebarTitle: "Configuration"
+description: "Configure Python endpoints, HTTP timeouts, reconnects, replay buffers, and orderbook integrity."
+icon: "sliders"
 ---
 
-## Configuration
-
+The public endpoints are defaults. Override them only when PolyNode gives you another endpoint.
 
 ```python
+import os
+from polynode import PolyNode
+
 pn = PolyNode(
-    api_key="pn_live_...",                       # required
-    base_url="https://api.polynode.dev",         # default
-    ws_url="wss://ws.polynode.dev/ws",           # default
-    ob_url="wss://ob.polynode.dev/ws",           # default
-    rpc_url="https://rpc.polynode.dev",          # default
-    timeout=10.0,                                 # seconds, default 10
+    api_key=os.environ["POLYNODE_API_KEY"],
+    base_url="https://api.polynode.dev",
+    ws_url="wss://ws.polynode.dev/ws",
+    ob_url="wss://ob.polynode.dev/ws",
+    rpc_url="https://rpc.polynode.dev",
+    timeout=10.0,
 )
 ```
+
+Use context managers to close HTTP clients. Streams have their own explicit lifecycle.
+
+```python
+from polynode import PolyNodeWS
+from polynode.types.ws import WsOptions
+
+events = PolyNodeWS(
+    os.environ["POLYNODE_API_KEY"],
+    "wss://ws.polynode.dev/ws",
+    WsOptions(
+        compress=True,
+        auto_reconnect=True,
+        max_reconnect_attempts=0,  # 0 means unlimited
+        reconnect_base_delay=1.0,
+        reconnect_max_delay=30.0,
+        subscribe_timeout=30.0,
+        subscription_queue_capacity=4096,
+        dedupe_capacity=4096,
+        replay_overlap_ms=1,
+    ),
+)
+```
+
+Configure PN1 through `OrderbookEngine(..., integrity=True, allow_stale_reads=False)`. Configure perps capacity and reconnect behavior through `PerpsWS(...)` constructor arguments.
+
+Event and perps queues are bounded. Observe overflow callbacks and keep slow work out of message handlers. API keys belong in environment variables or a secret manager, never source code or logs.

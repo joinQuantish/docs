@@ -1,62 +1,66 @@
 ---
-title: "Rust — Short-Form"
-sidebarTitle: "Short-Form"
+title: "Rust Short-Form and TWAP"
+sidebarTitle: "Short-Form & TWAP"
+description: "Rotate Rust subscriptions across short-form crypto markets with the correct Chainlink TWAP window."
+icon: "clock"
 ---
 
-## Short-Form Markets
+<Warning>
+Starting **August 7, 2026 at 00:00 UTC**, use a 30-second TWAP for 5-minute markets and a 60-second TWAP for 15-minute and 4-hour markets. One-hour markets continue to use the default spot feed.
+</Warning>
 
+| Market interval | Rust variant | Chainlink selection |
+| --- | --- | --- |
+| `5m` | `FiveMin` | `30` seconds |
+| `15m` | `FifteenMin` | `60` seconds |
+| `1h` | `Hourly` | default spot feed |
+| `4h` | `FourHour` | `60` seconds |
 
-Auto-rotating streams for Polymarket's short-form crypto markets (5m, 15m, 1h windows). The SDK discovers the current market window, subscribes to live events, and automatically rotates to the next window at expiry.
-
-```rust,no_run
-use polynode::{PolyNodeClient, ShortFormInterval, Coin, ShortFormMessage};
+```rust
+use polynode::{
+    Coin, PolyNodeClient, ShortFormInterval, ShortFormMessage,
+};
 
 #[tokio::main]
 async fn main() -> polynode::Result<()> {
-    let client = PolyNodeClient::new("pn_live_YOUR_KEY")?;
-
+    let client = PolyNodeClient::new(
+        std::env::var("POLYNODE_API_KEY").expect("Set POLYNODE_API_KEY")
+    )?;
     let mut stream = client
-        .short_form(ShortFormInterval::FifteenMin)
+        .short_form(ShortFormInterval::FiveMin)
         .coins(&[Coin::Btc, Coin::Eth, Coin::Sol])
-        .rotation_buffer(3)
         .start()
         .await?;
 
-    while let Some(msg) = stream.next().await {
-        match msg {
-            ShortFormMessage::Event(event) => {
-                println!("event: {:?}", event);
-            }
-            ShortFormMessage::Rotation(info) => {
-                println!("--- window rotated ({}) ---", info.interval);
-                for m in &info.markets {
-                    println!("  {}: beat ${:?} | {:.0}% up | {}s left",
-                        m.coin.id(), m.price_to_beat,
-                        m.up_odds * 100.0, info.time_remaining);
+    while let Some(message) = stream.next().await {
+        match message {
+            ShortFormMessage::Rotation(rotation) => {
+                println!("TWAP: {:?}", rotation.twap_window_seconds);
+                for market in rotation.markets {
+                    println!(
+                        "{} {} {:?} {:?}",
+                        market.coin.id(),
+                        market.slug,
+                        market.chainlink_feed,
+                        market.price_to_beat,
+                    );
                 }
             }
-            ShortFormMessage::Error(e) => {
-                eprintln!("non-fatal: {}", e);
-            }
+            ShortFormMessage::PriceFeed(price) => println!("{price:?}"),
+            ShortFormMessage::Event(event) => println!("{event:?}"),
+            ShortFormMessage::Error(error) => eprintln!("{error}"),
         }
     }
 
+    stream.stop().await;
     Ok(())
 }
 ```
 
-### Intervals and Coins
+At every boundary the helper closes its dedicated socket, opens a new one, and subscribes to the new identifiers and Chainlink selection. Consumers do not calculate the next slug manually, but should handle a normal connection transition around rotation.
 
-```rust,no_run
-use polynode::{ShortFormInterval, Coin};
+Supported assets are BTC, ETH, SOL, XRP, DOGE, HYPE, and BNB.
 
-# fn example() {
-// Intervals
-let _ = ShortFormInterval::FiveMin;     // 5-minute windows
-let _ = ShortFormInterval::FifteenMin;  // 15-minute windows
-let _ = ShortFormInterval::Hourly;      // 1-hour windows
+For a manual Chainlink stream, combine feeds and `twap_windows(vec![30, 60])` in one `SubscriptionType::Chainlink` subscription. One event socket can own one Chainlink selection; open another `WsStream` when selections must be isolated.
 
-// Supported coins
-let all = Coin::all(); // BTC, ETH, SOL, XRP, DOGE, HYPE, BNB
-# }
-```
+Read the [shared short-form guide](/sdks/short-form) for market fields, manual mode, and orderbook integration.
