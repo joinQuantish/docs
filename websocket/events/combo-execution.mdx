@@ -95,7 +95,7 @@ Emitted when PolyNode detects an ExchangeV3 combo execution before the transacti
       Constituent leg position IDs for the combo.
     </ResponseField>
     <ResponseField name="legs" type="object[]" required>
-      Enriched leg metadata. Customer-facing combo executions are emitted only when all legs are enriched.
+      Combo leg identifiers and attached market metadata, including title, slug, image, outcomes, and token IDs.
     </ResponseField>
     <ResponseField name="direction" type="string">
       `"BUY"` or `"SELL"`.

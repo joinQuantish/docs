@@ -5,7 +5,7 @@ description: "Split, merge, redeem, convert, wrap, unwrap, and related combo lif
 icon: "diagram-project"
 ---
 
-Emitted for combo lifecycle actions when the event can be represented with enriched legs. AutoRedeemer redemption confirmations can also be emitted without legs when the receipt itself provides the user wallet, condition ID, exact payout, normalized payout, module name, and log index.
+Emitted for combo-native lifecycle actions. Generic combo AutoRedeemer confirmations can also be emitted without legs when the receipt itself provides the user wallet, condition ID, exact payout, normalized payout, module name, and log index.
 
 ```json
 {
@@ -78,7 +78,7 @@ Filter by lifecycle action:
 }
 ```
 
-AutoRedeemer redemptions can be consumed through the combo lifecycle stream:
+Generic combo AutoRedeemer redemptions can be consumed through the combo lifecycle stream:
 
 ```json
 {
@@ -96,7 +96,7 @@ AutoRedeemer redemptions can be consumed through the combo lifecycle stream:
     "payout_e6": "4500000000",
     "payout_usdc": 4500,
     "diagnostics": {
-      "decoded_function": "AutoRedeemer.NegRiskRedemption"
+      "decoded_function": "AutoRedeemer.Redemption"
     }
   }
 }
@@ -157,7 +157,7 @@ AutoRedeemer redemptions can be consumed through the combo lifecycle stream:
 </ResponseField>
 
 <ResponseField name="data.legs" type="object[]">
-  Enriched legs when available. AutoRedeemer redemptions can be emitted without legs when the receipt includes the wallet, condition ID, and payout directly.
+  Enriched legs when available. Generic combo AutoRedeemer redemptions can be emitted without legs when the receipt includes the wallet, condition ID, and payout directly.
 </ResponseField>
 
 <ResponseField name="data.amount_e6" type="string">

@@ -11,7 +11,7 @@ Every resolved market generates redemption events as holders claim their payouts
 
 Recent redemption events also include the market's resolved payout vector when available. Use `winning_outcome`, `winning_token_id`, or the ordered `payouts` / `outcome_prices` arrays to identify which outcome won without making a second market lookup.
 
-PM2 AutoRedeemer payouts are bridged into this same event class. For those transactions, `redeemer` is the user wallet from the AutoRedeemer log, not the AutoRedeemer contract, and `source` identifies the AutoRedeemer redemption function.
+This is the comprehensive redemption event class. It includes direct Conditional Tokens redemptions and PM2 AutoRedeemer payouts for normal Binary/NegRisk positions and generic combo positions. For AutoRedeemer transactions, `redeemer` is the user wallet from the AutoRedeemer log, not the contract, and `source` identifies the route.
 
 ```json
 {
@@ -107,7 +107,7 @@ PM2 AutoRedeemer payouts are bridged into this same event class. For those trans
     </ResponseField>
 
     <ResponseField name="source" type="string">
-      Decoder path for bridged redemptions. PM2 AutoRedeemer events use values such as `AutoRedeemer.Redemption`, `AutoRedeemer.BinaryRedemption`, or `AutoRedeemer.NegRiskRedemption`.
+      Decoder path for bridged redemptions. `AutoRedeemer.BinaryRedemption` and `AutoRedeemer.NegRiskRedemption` identify normal Binary/NegRisk AutoRedeemer payouts; `AutoRedeemer.Redemption` identifies the generic combo AutoRedeemer route. Direct Conditional Tokens redemptions do not use an AutoRedeemer source.
     </ResponseField>
 
     <ResponseField name="market_title" type="string">
@@ -203,7 +203,7 @@ Or request redemptions from the settlement stream:
 }
 ```
 
-PM2 AutoRedeemer redemptions also appear here and can be matched to combo-native lifecycle data by `tx_hash`, `condition_id`, `payout_e6`, and `log_index`.
+To receive combo redemptions only, subscribe to `type: "combos"` with `event_types: ["combo_lifecycle"]` and `action: "Redeem"`. If you subscribe to both surfaces, a generic combo AutoRedeemer payout can appear in both shapes; correlate or deduplicate it with `tx_hash` and `log_index`.
 
 Filter to only winning redemptions using `min_size`:
 

@@ -27,7 +27,7 @@ The default `combos` preset emits:
 | `combo_execution` | Pending / mempool | Combo order execution decoded before confirmation. |
 | `combo_status_update` | Confirmed / receipt | Confirmation, exact receipt fills, fees, transfers, lifecycle details, and latency. |
 
-Every customer-facing combo event is enrichment-gated. If a combo leg cannot be resolved to market metadata, the event is held rather than emitted partially.
+Each combo leg includes its structural identifiers plus `market` metadata: title, slug, image, outcomes, and token IDs.
 
 ## Full combo surface
 
@@ -50,9 +50,16 @@ Advanced users can explicitly request lifecycle and approval events:
 
 Lifecycle events are emitted when their legs are present and enriched. AutoRedeemer redemption confirmations are also emitted when they are condition-only, because the receipt provides the user wallet, condition ID, exact payout, normalized payout, and log index without requiring a follow-up lookup.
 
-<Info>
-  PM2 AutoRedeemer redemptions are available two ways: as `combo_lifecycle` / `combo_status_update.lifecycle_events[]` for combo-native consumers, and as standard `redemption` events for existing redemption and wallet subscribers.
-</Info>
+## Redemption routing
+
+| What you need | Subscription | What it contains |
+| --- | --- | --- |
+| Every redemption | `{"action":"subscribe","type":"redemptions"}` | Direct Conditional Tokens redemptions plus Binary, NegRisk, and generic combo AutoRedeemer payouts, all normalized as `redemption`. |
+| Combo redemptions only | `{"action":"subscribe","type":"combos","filters":{"event_types":["combo_lifecycle"],"action":"Redeem"}}` | Combo-native redeem lifecycle events only. |
+
+The comprehensive `redemptions` stream identifies bridged AutoRedeemer events with `data.source`: `AutoRedeemer.BinaryRedemption`, `AutoRedeemer.NegRiskRedemption`, or `AutoRedeemer.Redemption`. A direct Conditional Tokens redemption has no AutoRedeemer source.
+
+If you subscribe to both surfaces, a generic combo AutoRedeemer payout can appear once as `combo_lifecycle` and once as normalized `redemption`. These are two representations of the same on-chain log; correlate or deduplicate them with `tx_hash` and `log_index`.
 
 ## Covered on-chain surface
 
@@ -85,18 +92,20 @@ ws.on("open", () => {
 ws.on("message", (raw) => {
   const msg = JSON.parse(raw);
 
-  if (msg.type === "combo_execution") {
-    pending.set(msg.data.tx_hash, msg.data);
-    console.log("pending combo", msg.data.tx_hash, msg.data.legs.length, "legs");
-  }
+  for (const event of msg.events ?? [msg]) {
+    if (event.type === "combo_execution") {
+      pending.set(event.data.tx_hash, event.data);
+      console.log("pending combo", event.data.tx_hash, event.data.legs.length, "legs");
+    }
 
-  if (msg.type === "combo_status_update") {
-    const original = pending.get(msg.data.tx_hash);
-    console.log("confirmed combo", msg.data.tx_hash, {
-      latency_ms: msg.data.latency_ms,
-      pending_seen: Boolean(original),
-      fills: msg.data.confirmed_fills?.length ?? 0
-    });
+    if (event.type === "combo_status_update") {
+      const original = pending.get(event.data.tx_hash);
+      console.log("confirmed combo", event.data.tx_hash, {
+        latency_ms: event.data.latency_ms,
+        pending_seen: Boolean(original),
+        fills: event.data.confirmed_fills?.length ?? 0
+      });
+    }
   }
 });
 ```

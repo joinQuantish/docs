@@ -56,6 +56,17 @@ Event messages use this envelope:
 }
 ```
 
+The initial snapshot wraps recent events in `events[]`; live messages use the single-event envelope above. Consumers should handle both:
+
+```javascript
+const message = JSON.parse(raw);
+for (const event of message.events ?? [message]) {
+  if (event.type === "combo_execution") {
+    console.log(event.data.tx_hash);
+  }
+}
+```
+
 ## Subscription types
 
 The `type` field selects a preset of event types. If you also set `filters.event_types`, it overrides the preset.
@@ -144,7 +155,7 @@ The `type` field selects a preset of event types. If you also set `filters.event
 
   Polymarket combo executions and confirmations. Pending `combo_execution` events are decoded before on-chain confirmation; confirmed `combo_status_update` events include receipt-derived fills, transfers, fees, gas fields, and confirmation latency when the pending event was seen first.
 
-  Combo events are enrichment-gated. Customer-facing combo executions and status updates include enriched `legs[]` metadata; events without enough leg metadata are held instead of emitted partially.
+  Each entry in `legs[]` includes structural combo identifiers and `market` metadata such as title, slug, image, outcomes, and token IDs.
 
   Lifecycle and approval events are available by explicit request:
 
@@ -246,7 +257,7 @@ The `type` field selects a preset of event types. If you also set `filters.event
 <ResponseField name="redemptions" type="string">
   Events: `redemption`
 
-  Direct feed for payout redemptions. Includes normal Conditional Tokens redemptions and PM2 AutoRedeemer redemptions bridged into the same `redemption` shape.
+  Comprehensive payout-redemption feed. It includes direct Conditional Tokens redemptions and Binary, NegRisk, and generic combo AutoRedeemer payouts normalized into the same `redemption` shape. AutoRedeemer variants are distinguished by `data.source`; use a `combos` subscription filtered to `combo_lifecycle` + `action: "Redeem"` when you need combo redemptions only.
 </ResponseField>
 
 <ResponseField name="markets" type="string">

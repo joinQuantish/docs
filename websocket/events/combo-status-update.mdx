@@ -7,7 +7,7 @@ icon: "circle-check"
 
 Emitted when a combo transaction confirms on-chain. This event links back to a pending `combo_execution` when one was observed, and includes exact receipt data when available.
 
-Receipt-only lifecycle activity, including PM2 AutoRedeemer redemptions, can appear in `lifecycle_events[]`. AutoRedeemer redemptions are included there even when the lifecycle event is condition-only, because the receipt contains the wallet, condition ID, exact payout, normalized payout, and log index.
+Receipt-only combo lifecycle activity, including generic combo AutoRedeemer redemptions, can appear in `lifecycle_events[]`. Binary and NegRisk AutoRedeemer payouts for normal positions are emitted on the comprehensive `redemptions` stream instead.
 
 ```json
 {
@@ -106,7 +106,7 @@ Receipt-only lifecycle activity, including PM2 AutoRedeemer redemptions, can app
 </ResponseField>
 
 <ResponseField name="data.legs" type="object[]" required>
-  Enriched combo legs. Customer-facing status updates are emitted only when all legs are enriched.
+  Combo legs with structural identifiers and attached market metadata, including title, slug, image, outcomes, and token IDs.
 </ResponseField>
 
 <ResponseField name="data.maker_address" type="string">
@@ -150,7 +150,7 @@ Receipt-only lifecycle activity, including PM2 AutoRedeemer redemptions, can app
 </ResponseField>
 
 <ResponseField name="data.lifecycle_events" type="object[]">
-  Receipt-derived combo lifecycle events associated with the same transaction. AutoRedeemer redemption entries use the same shape as `combo_lifecycle` and include `action: "Redeem"`, `module_name: "AutoRedeemer"`, `user`, `condition_ids`, `payout_e6`, `payout_usdc`, and `log_index`.
+  Receipt-derived combo lifecycle events associated with the same transaction. Generic combo AutoRedeemer entries use the same shape as `combo_lifecycle` and include `action: "Redeem"`, `module_name: "AutoRedeemer"`, `user`, `condition_ids`, `payout_e6`, `payout_usdc`, and `log_index`.
 </ResponseField>
 
 ## Subscribing
