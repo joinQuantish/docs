@@ -387,21 +387,30 @@ These filters apply to `type: "combos"` subscriptions.
 </ParamField>
 
 <Warning>
-**Tracking a specific wallet's trades?** Always match by `maker`, never by `taker`.
+**Tracking a specific wallet in ordinary `settlement` or `trade` events?** Match
+by `maker`, not by `taker`.
 
 For `settlement` events: iterate `data.trades[]` and find entries where `fill.maker === your_wallet`.
 
 For `trade` events: filter incoming events by `data.maker === your_wallet`.
 
 The `maker` field on each fill is the wallet that placed the order. The `taker` field is the counterparty — matching against it returns the wrong wallet's perspective with the **opposite token** and the **complement price** (e.g. shows `BUY Down 0.20` when the wallet actually bought `Up at 0.80`). This is how on-chain `OrderFilled` events are structured. See the [Settlement Event](/websocket/events/settlement#tracking-a-specific-wallets-trades) or [Trade Event](/websocket/events/trade#tracking-a-specific-wallets-trades) reference for full code examples.
+
+For `type: "combos"`, the `wallets` subscription filter deliberately matches
+any involved maker **or** taker. Inside `combo_execution.trades[]`, each row is
+still expressed from that signed order maker's perspective.
 </Warning>
 
 ### Trade filtering
 
 <ParamField body="side" type="string">
-  Filter by trade side. Case-insensitive.
+  Filter by side. Case-insensitive.
 
-  Values: `"BUY"` or `"SELL"`
+  - Ordinary `settlement` and `trade` events: `"BUY"` or `"SELL"`
+  - Combo execution and lifecycle events: `"YES"` or `"NO"`
+
+  For a combo requester's `BUY` or `SELL` direction, use the combo-specific
+  `direction` filter instead.
 </ParamField>
 
 <ParamField body="min_size" type="number">
@@ -416,13 +425,17 @@ The `maker` field on each fill is the wallet that placed the order. The `taker` 
 </ParamField>
 
 <ParamField body="status" type="string" default="all">
-  Filter by settlement status.
+  Filter by chain stage across event families.
 
   | Value | Description |
   |-------|-------------|
   | `"pending"` | Only pre-chain detections |
   | `"confirmed"` | Only confirmed in a block |
   | `"all"` | Both pending and confirmed (default) |
+
+  For combos, `"confirmed"` means a receipt-backed `combo_status_update`. It
+  includes both successful and reverted receipts; inspect that event's
+  `execution_status` for `CONFIRMED` versus `FAILED`.
 </ParamField>
 
 ### Event control

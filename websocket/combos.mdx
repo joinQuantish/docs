@@ -100,11 +100,27 @@ PositionManager approvals for ExchangeV3 and AutoRedeemer are available through 
 
 ## Example
 
+Install `ws`, save the example as `combos.mjs`, and run it with Node.js:
+
+```bash
+npm install ws
+node combos.mjs
+```
+
 ```javascript
 import WebSocket from "ws";
 
 const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 const pending = new Map();
+const PENDING_TTL_MS = 15 * 60 * 1000;
+
+const cleanup = setInterval(() => {
+  const cutoff = Date.now() - PENDING_TTL_MS;
+  for (const [txHash, item] of pending) {
+    if (item.seenAt < cutoff) pending.delete(txHash);
+  }
+}, 60_000);
+cleanup.unref();
 
 ws.on("open", () => {
   ws.send(JSON.stringify({ action: "subscribe", type: "combos" }));
@@ -115,7 +131,7 @@ ws.on("message", (raw) => {
 
   for (const event of msg.events ?? [msg]) {
     if (event.type === "combo_execution") {
-      pending.set(event.data.tx_hash, event.data);
+      pending.set(event.data.tx_hash, { data: event.data, seenAt: Date.now() });
       console.log("pending combo", {
         tx_hash: event.data.tx_hash,
         taker: event.data.taker_wallet,
@@ -141,8 +157,12 @@ ws.on("message", (raw) => {
     }
 
     if (event.type === "combo_status_update") {
-      const original = pending.get(event.data.tx_hash);
-      console.log("confirmed combo", event.data.tx_hash, {
+      const original = pending.get(event.data.tx_hash)?.data;
+      if (["CONFIRMED", "FAILED"].includes(event.data.execution_status)) {
+        pending.delete(event.data.tx_hash);
+      }
+      console.log("combo status", event.data.tx_hash, {
+        execution_status: event.data.execution_status,
         latency_ms: event.data.latency_ms,
         pending_seen: Boolean(original),
         fills: event.data.confirmed_fills?.length ?? 0
@@ -177,6 +197,12 @@ Combo subscriptions support the standard WebSocket filters plus combo-specific i
 ```
 
 `tokens` and `leg_position_ids` both match combo position IDs and leg position IDs. Use `leg_position_ids` when you want the filter to be self-documenting.
+
+For combo subscriptions, `side` means the combo outcome (`YES` or `NO`), while
+`direction` means the requester's order direction (`BUY` or `SELL`). `status:
+"confirmed"` selects receipt-backed `combo_status_update` events, including
+both successful and reverted receipts; use `execution_status` to distinguish
+`CONFIRMED` from `FAILED`. `min_size` is a minimum USDC value.
 
 To receive only combo lifecycle redemptions:
 

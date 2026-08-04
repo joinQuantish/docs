@@ -90,6 +90,22 @@ corresponding stable `redemption` event where applicable.
 The example omits empty optional arrays and cached market metadata for
 readability.
 
+`combo_status_update` is receipt-backed. Its current terminal statuses are:
+
+| `execution_status` | Meaning |
+| --- | --- |
+| `CONFIRMED` | The transaction receipt succeeded. Fill arrays are included when the receipt emitted those logs. |
+| `FAILED` | The transaction was mined with a reverted receipt. Fill arrays are normally omitted. |
+
+Both values match a subscription filter of `status: "confirmed"` because both
+are on-chain receipt results. Do not label every status update successful;
+always inspect `execution_status`.
+
+If PolyNode did not observe the transaction in the mempool, the receipt event
+can arrive without pending-only context. In that case `pending_detected_at`,
+`latency_ms`, combo identifiers, decoded legs, and pending-derived wallet/value
+fields are omitted.
+
 ## Fields
 
 ### Confirmation
@@ -99,21 +115,21 @@ readability.
 | `tx_hash` | string | Polygon transaction hash; joins to the pending execution |
 | `block_number` | number | Block containing the transaction |
 | `confirmed_at` | number | Confirmation time in Unix milliseconds |
-| `execution_status` | string | `CONFIRMED`, `FAILED`, `MATCHED`, `MINED`, or `RETRYING` |
-| `pending_detected_at` | number | Pending detection time when the transaction was observed in the mempool |
-| `latency_ms` | number | Pending-to-confirmed latency |
-| `combo_condition_id` | string | Derived combo condition ID |
-| `yes_position_id` / `no_position_id` | string | Combo outcome position IDs when available |
-| `leg_position_ids` | string[] | Constituent leg position IDs when available |
-| `legs` | object[] | Decoded combo legs; cached `market` metadata is optional |
-| `order_hashes` | string[] | Exchange order hashes associated with the receipt |
-| `confirmed_fills` | object[] | Receipt-backed maker-perspective fills |
-| `execution_summaries` | object[] | OrdersMatched-style execution summaries |
-| `fees` | object[] | FeeCharged logs normalized to USDC where possible |
-| `confirmed_transfers` | object[] | PositionManager transfer logs |
-| `lifecycle_events` | object[] | Combo lifecycle events found in the same receipt |
-| `gas_used` | string | Receipt gas used when available |
-| `effective_gas_price` | string | Receipt effective gas price when available |
+| `execution_status` | string | `CONFIRMED` for a successful receipt or `FAILED` for a reverted receipt |
+| `pending_detected_at` | number or omitted | Pending detection time when the transaction was observed in the mempool |
+| `latency_ms` | number or omitted | Pending-to-receipt latency; omitted without a pending observation |
+| `combo_condition_id` | string or omitted | Derived combo condition ID when recoverable |
+| `yes_position_id` / `no_position_id` | string or omitted | Combo outcome position IDs when available |
+| `leg_position_ids` | string[] or omitted | Constituent leg position IDs when available |
+| `legs` | object[] or omitted | Decoded combo legs; cached `market` metadata is optional |
+| `order_hashes` | string[] or omitted | Exchange order hashes recovered from receipt fills |
+| `confirmed_fills` | object[] or omitted | Receipt-backed maker-perspective fills |
+| `execution_summaries` | object[] or omitted | OrdersMatched-style execution summaries |
+| `fees` | object[] or omitted | FeeCharged logs normalized to USDC where possible |
+| `confirmed_transfers` | object[] or omitted | PositionManager transfer logs |
+| `lifecycle_events` | object[] or omitted | Combo lifecycle events found in the same receipt |
+| `gas_used` | string or omitted | Receipt gas used when available |
+| `effective_gas_price` | string or omitted | Receipt effective gas price when available |
 
 Top-level `maker_address`, `signer_address`, `taker_address`, `amount_usdc`, and
 `notional_usdc` can also be present when they are recoverable from the pending
