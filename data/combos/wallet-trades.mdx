@@ -30,7 +30,8 @@ GET /v3/wallets/{address}/combos/trades
 ## Example
 
 ```bash
-curl "https://api.polynode.dev/v3/wallets/0x0d8b4fb38999aaf7658df758f3587d25fe7fd417/combos/trades?limit=2"
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/wallets/0x0d8b4fb38999aaf7658df758f3587d25fe7fd417/combos/trades?limit=2"
 ```
 
 ```json
