@@ -1,139 +1,218 @@
 ---
 title: "Combo Execution Event"
 sidebarTitle: "combo_execution"
-description: "Pending Polymarket combo execution decoded from ExchangeV3 calldata."
+description: "Pending Polymarket combo trades decoded from ExchangeV3 calldata."
 icon: "bolt"
 ---
 
-Emitted when PolyNode detects an ExchangeV3 combo execution before the transaction confirms on-chain.
+`combo_execution` streams a Polymarket combo trade from the mempool, before it
+appears in the confirmed combo-trades API. It uses the same maker/taker trade
+model as the standard settlement stream and includes every signed order in the
+transaction.
+
+<Warning>
+  This is a pending event. Use `combo_status_update` with the same `tx_hash` for
+  confirmation. A dropped or replaced Polygon transaction may never confirm.
+</Warning>
+
+## Example
 
 ```json
 {
   "type": "combo_execution",
-  "timestamp": 1781054110000,
+  "timestamp": 1785812120366,
   "data": {
     "event_type": "combo_execution",
-    "tx_hash": "0xb0411705aaefc17991e4121acecd8aad03901ddc359cfdb7cf8773f46942927a",
+    "tx_hash": "0xf4f973bcca17c05081574c36183a5f61fae8eb5895a2d46d71aaadb3cf11e556",
     "status": "pending",
-    "detected_at": 1781054110000,
+    "detected_at": 1785812120366,
     "block_number": null,
-    "combo_condition_id": "0xcombo...",
-    "yes_position_id": "123...",
-    "no_position_id": "456...",
-    "leg_position_ids": ["111...", "222..."],
-    "legs_total": 2,
+    "combo_condition_id": "0x03af499212591cdbfd21ab04df07b8fb720000000000000000000000000000",
     "legs": [
       {
-        "position_id": "111...",
-        "module_id": 3,
-        "module_name": "CombinatorialModule",
-        "condition_id": "0xleg...",
+        "position_id": "759456036058902166074175781780133450895503656129754990757956704995918217217",
+        "module_id": 1,
+        "module_name": "BinaryModule",
+        "condition_id": "0x01add63e0052d10828c47551c3e231dedd0000000000000000000000000000",
+        "event_id": "0x01add63e0052d10828c47551c3e231dedd000000000000000000000000",
+        "arity": 0,
+        "condition_index": 0,
+        "outcome_index": 1,
+        "leg_outcome_label": "No",
+        "market": {
+          "title": "Phoenix Mercury vs. Chicago Sky",
+          "slug": "wnba-phx-chi-2026-08-03",
+          "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/wnba-logo-PAR4befDAubM.png",
+          "outcomes": ["Phoenix Mercury", "Chicago Sky"],
+          "token_ids": [
+            "759456036058902166074175781780133450895503656129754990757956704995918217216",
+            "759456036058902166074175781780133450895503656129754990757956704995918217217"
+          ]
+        }
+      },
+      {
+        "position_id": "888399010527256025342625662713948815643754849506664777044908366823210090496",
+        "module_id": 1,
+        "module_name": "BinaryModule",
+        "condition_id": "0x01f6d0e6bdba3f8d15dc0928842624b9f10000000000000000000000000000",
+        "event_id": "0x01f6d0e6bdba3f8d15dc0928842624b9f1000000000000000000000000",
+        "arity": 0,
+        "condition_index": 0,
         "outcome_index": 0,
         "leg_outcome_label": "Yes",
         "market": {
-          "title": "Will Team A win?",
-          "slug": "will-team-a-win",
-          "image": "https://...",
-          "event_title": "Match Winner",
-          "event_slug": "match-winner",
-          "outcomes": ["Yes", "No"],
-          "token_ids": ["111...", "333..."]
+          "title": "National Bank Open: Tatjana Maria vs Caty McNally",
+          "slug": "wta-maria-mcnally-2026-08-03",
+          "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/wta-logo-41f331bdf1.png",
+          "outcomes": ["Tatjana Maria", "Caty McNally"],
+          "token_ids": [
+            "888399010527256025342625662713948815643754849506664777044908366823210090496",
+            "888399010527256025342625662713948815643754849506664777044908366823210090497"
+          ]
         }
       }
     ],
-    "direction": "BUY",
-    "side": "YES",
-    "price_e6": "450000",
-    "size_e6": "1000000",
-    "amount_usdc": 1,
-    "notional_usdc": 1,
-    "maker_address": "0xMaker...",
-    "signer_address": "0xSigner...",
-    "taker_address": "0xTaker...",
-    "order_hashes": ["0xorder..."]
+    "taker_wallet": "0x0d8b4fb38999aaf7658df758f3587d25fe7fd417",
+    "taker_token": "1666644547653825639538654505467109608411697937035881104213580452779446501376",
+    "taker_side": "BUY",
+    "outcome": "YES",
+    "taker_price": 0.57,
+    "taker_size": 40.350877,
+    "amount_usdc": 22.999999,
+    "order_hashes": [
+      "0x9fd9da991a3d8f82bfb13e2901422a1621d87db1e27ce4da33fd5a61dec4f4b7",
+      "0x1eb1c486ccad5622329d3e88147c6e98698521ebff86fcbd27ab7efa7fd458d5"
+    ],
+    "trades": [
+      {
+        "position_id": "1666644547653825639538654505467109608411697937035881104213580452779446501377",
+        "order_hash": "0x9fd9da991a3d8f82bfb13e2901422a1621d87db1e27ce4da33fd5a61dec4f4b7",
+        "maker": "0xe2315b15280fc49bc6e60eaaeea30c0df64493a5",
+        "signer": "0x1d0a670f95751708ad3f61aced73ca55822bb145",
+        "taker": "0x0d8b4fb38999aaf7658df758f3587d25fe7fd417",
+        "side": "BUY",
+        "outcome": "NO",
+        "price": 0.43,
+        "size": 40.350877,
+        "amount_usdc": 17.350878,
+        "fee": 0
+      },
+      {
+        "position_id": "1666644547653825639538654505467109608411697937035881104213580452779446501376",
+        "order_hash": "0x1eb1c486ccad5622329d3e88147c6e98698521ebff86fcbd27ab7efa7fd458d5",
+        "maker": "0x0d8b4fb38999aaf7658df758f3587d25fe7fd417",
+        "signer": "0x0d8b4fb38999aaf7658df758f3587d25fe7fd417",
+        "taker": "0xe3333700ca9d93003f00f0f71f8515005f6c00aa",
+        "side": "BUY",
+        "outcome": "YES",
+        "price": 0.57,
+        "size": 40.350877,
+        "amount_usdc": 22.999999,
+        "fee": 0.4945
+      }
+    ]
   }
 }
 ```
 
+## How to read it
+
+The top-level trade fields describe the taker order. In the example, the taker
+wallet bought `40.350877` YES combo shares at `0.57` for `22.999999` USDC.
+
+Each `trades[]` row describes one signed order from that order maker's
+perspective. The complementary maker bought the NO position at `0.43` for the
+same `40.350877` shares. This is the same convention used by the settlement
+stream and by Exchange `OrderFilled` events.
+
+`size` always means shares. `amount_usdc` always means dollars. For BUY orders,
+the calldata's maker amount is USDC, so PolyNode converts it to shares before
+emitting `size`. For SELL orders, the maker amount is already shares. The
+conversion is performed in both directions so clients do not need to interpret
+raw fixed-point amounts.
+
+`price` is the actual fill price, not merely the signed order's limit price.
+This matters when one taker order receives price improvement across multiple
+maker orders.
+
+## Mapping to the static combo-trades API
+
+After confirmation, the same fill appears in
+[`GET /v3/wallets/{address}/combos/trades`](/data/combos/wallet-trades).
+
+| WebSocket field | Static combo-trades field | Notes |
+| --- | --- | --- |
+| `tx_hash` | `tx_hash` | Stable correlation key |
+| `trades[].position_id` | `position_id` | Combo YES or NO position |
+| `trades[].side` | `side` | Maker-perspective `BUY` or `SELL` |
+| `trades[].price` | `price` | Actual fill price |
+| `trades[].size` | `size` | Shares traded |
+| `trades[].fee` | `fee` | Fee charged for that fill |
+| `trades[].maker` / `taker` | `wallet_address`, `wallet_role`, `counterparty_address` | Querying either participant projects the same fill for that wallet |
+| `trades[].order_hash` | — | Available immediately from calldata on the WebSocket |
+| `trades[].amount_usdc` | — | Explicit dollar value of the fill |
+
+The static endpoint additionally has confirmed-only fields such as
+`block_number`, `log_index`, and the on-chain timestamp.
+
 ## Fields
 
-<ResponseField name="type" type="string" required>
-  Always `"combo_execution"`.
-</ResponseField>
+### Execution
 
-<ResponseField name="timestamp" type="number" required>
-  Unix milliseconds when PolyNode emitted the pending event.
-</ResponseField>
+| Field | Type | Description |
+| --- | --- | --- |
+| `tx_hash` | string | Polygon transaction hash |
+| `status` | string | Always `pending` for a mempool execution |
+| `detected_at` | number | Unix milliseconds when PolyNode first saw the transaction |
+| `block_number` | number or null | `null` before confirmation |
+| `combo_condition_id` | string | Derived combo condition ID |
+| `legs` | object[] | Every decoded constituent leg |
+| `taker_wallet` | string | Wallet that made the taker order |
+| `taker_token` | string | Combo position ID bought or sold by the taker order |
+| `taker_side` | string | Taker order direction: `BUY` or `SELL` |
+| `outcome` | string | Taker combo position side: `YES` or `NO` |
+| `taker_price` | number | Actual taker fill price |
+| `taker_size` | number | Taker fill size in shares |
+| `amount_usdc` | number | Taker fill value in USDC |
+| `order_hashes` | string[] | ExchangeV3 EIP-712 hashes computed from calldata |
+| `trades` | object[] | Every signed order involved in the execution |
 
-<ResponseField name="data" type="object" required>
-  <Expandable title="data fields">
-    <ResponseField name="tx_hash" type="string" required>
-      Polygon transaction hash.
-    </ResponseField>
-    <ResponseField name="status" type="string" required>
-      `"pending"` for mempool-detected combo executions.
-    </ResponseField>
-    <ResponseField name="detected_at" type="number" required>
-      Unix milliseconds when PolyNode first saw the transaction.
-    </ResponseField>
-    <ResponseField name="combo_condition_id" type="string">
-      Derived combinatorial condition ID.
-    </ResponseField>
-    <ResponseField name="rfq_id" type="string">
-      Polymarket RFQ ID when it can be linked to the on-chain execution.
-    </ResponseField>
-    <ResponseField name="quote_id" type="string">
-      Polymarket quote ID when it can be linked to the on-chain execution.
-    </ResponseField>
-    <ResponseField name="yes_position_id" type="string">
-      YES combo position ID.
-    </ResponseField>
-    <ResponseField name="no_position_id" type="string">
-      NO combo position ID.
-    </ResponseField>
-    <ResponseField name="leg_position_ids" type="string[]">
-      Constituent leg position IDs for the combo.
-    </ResponseField>
-    <ResponseField name="legs" type="object[]" required>
-      Combo leg identifiers and attached market metadata, including title, slug, image, outcomes, and token IDs.
-    </ResponseField>
-    <ResponseField name="direction" type="string">
-      `"BUY"` or `"SELL"`.
-    </ResponseField>
-    <ResponseField name="side" type="string">
-      `"YES"` or `"NO"`.
-    </ResponseField>
-    <ResponseField name="price_e6" type="string">
-      Six-decimal fixed-point quote price.
-    </ResponseField>
-    <ResponseField name="size_e6" type="string">
-      Six-decimal fixed-point share size.
-    </ResponseField>
-    <ResponseField name="amount_usdc" type="number">
-      USDC-normalized amount when derivable from calldata.
-    </ResponseField>
-    <ResponseField name="maker_address" type="string">
-      Maker wallet.
-    </ResponseField>
-    <ResponseField name="signer_address" type="string">
-      Address that signed the ExchangeV3 order.
-    </ResponseField>
-    <ResponseField name="taker_address" type="string">
-      Taker / transaction participant.
-    </ResponseField>
-    <ResponseField name="signature_type" type="number">
-      Exchange signature type when present in the decoded order.
-    </ResponseField>
-    <ResponseField name="order_hashes" type="string[]">
-      ExchangeV3 order hashes decoded from the call.
-    </ResponseField>
-    <ResponseField name="trades" type="object[]">
-      Per-position fill details when available before confirmation.
-    </ResponseField>
-  </Expandable>
-</ResponseField>
+### Trade row
 
-## Subscribing
+| Field | Type | Description |
+| --- | --- | --- |
+| `position_id` | string | Combo position filled by this order |
+| `order_hash` | string | ExchangeV3 EIP-712 order hash |
+| `maker` | string | Wallet that made this signed order |
+| `signer` | string | Address that signed this order |
+| `taker` | string | OrderFilled taker/counterparty; this can be the ExchangeV3 contract for the taker order |
+| `side` | string | This order maker's `BUY` or `SELL` direction |
+| `outcome` | string | `YES` or `NO` combo position side |
+| `price` | number | Actual fill price |
+| `size` | number | Shares filled |
+| `amount_usdc` | number | Dollar value filled |
+| `fee` | number | Fee in USDC |
+
+### Leg row
+
+`position_id` and the decoded structural fields are available directly from
+calldata. The nested `market` object is included when the market metadata is in
+PolyNode's in-memory cache; it is omitted rather than fetched synchronously on
+the latency-sensitive WebSocket path.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `position_id` | string | Leg position ID |
+| `module_id` / `module_name` | number / string | Combo module identity |
+| `condition_id` | string | Leg condition ID |
+| `event_id` | string | Leg event ID when encoded by the module |
+| `arity` | number | Encoded condition arity |
+| `condition_index` | number | Condition index within the event |
+| `outcome_index` | number | Selected outcome index |
+| `leg_outcome_label` | string | Selected outcome label when known |
+| `market` | object | Optional cached title, slug, image, event metadata, outcomes, and token IDs |
+
+## Subscribe
 
 ```json
 {

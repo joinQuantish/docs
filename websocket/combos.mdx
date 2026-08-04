@@ -1,7 +1,7 @@
 ---
 title: "Combo Stream"
 sidebarTitle: "Combos"
-description: "Real-time Polymarket combo executions and enriched confirmation events."
+description: "Real-time Polymarket combo trades from pending calldata through receipt confirmation."
 icon: "layer-group"
 ---
 
@@ -27,7 +27,24 @@ The default `combos` preset emits:
 | `combo_execution` | Pending / mempool | Combo order execution decoded before confirmation. |
 | `combo_status_update` | Confirmed / receipt | Confirmation, exact receipt fills, fees, transfers, lifecycle details, and latency. |
 
-Each combo leg includes its structural identifiers plus `market` metadata: title, slug, image, outcomes, and token IDs.
+Every emitted combo includes its decoded structural legs. Cached market titles,
+slugs, images, outcomes, and token IDs are added when available, but a cache
+miss never makes a valid pending trade wait on Redis or an external API.
+
+## Trade model
+
+`combo_execution` is intentionally shaped like the ordinary settlement stream:
+
+- Top-level `taker_*` fields describe the taker order.
+- `trades[]` contains every signed order from that order maker's perspective.
+- `size` is always shares; `amount_usdc` is always dollars.
+- `price` is the actual fill price, including multi-maker price improvement.
+- `order_hash` is the ExchangeV3 EIP-712 hash computed directly from calldata.
+
+After confirmation, the same fills are queryable through
+[`GET /v3/wallets/{address}/combos/trades`](/data/combos/wallet-trades).
+The static API adds block and log coordinates; the WebSocket adds
+pre-confirmation delivery, order hashes, and explicit dollar amounts.
 
 ## Full combo surface
 
@@ -48,7 +65,11 @@ Advanced users can explicitly request lifecycle and approval events:
 }
 ```
 
-Lifecycle events are emitted when their legs are present and enriched. AutoRedeemer redemption confirmations are also emitted when they are condition-only, because the receipt provides the user wallet, condition ID, exact payout, normalized payout, and log index without requiring a follow-up lookup.
+Lifecycle events are emitted when their on-chain structure is complete.
+AutoRedeemer redemption confirmations can also be emitted when they are
+condition-only, because the receipt provides the user wallet, condition ID,
+exact payout, normalized payout, and log index without requiring a follow-up
+lookup.
 
 ## Redemption routing
 
@@ -95,7 +116,28 @@ ws.on("message", (raw) => {
   for (const event of msg.events ?? [msg]) {
     if (event.type === "combo_execution") {
       pending.set(event.data.tx_hash, event.data);
-      console.log("pending combo", event.data.tx_hash, event.data.legs.length, "legs");
+      console.log("pending combo", {
+        tx_hash: event.data.tx_hash,
+        taker: event.data.taker_wallet,
+        side: event.data.taker_side,
+        outcome: event.data.outcome,
+        price: event.data.taker_price,
+        shares: event.data.taker_size,
+        amount_usdc: event.data.amount_usdc,
+        legs: event.data.legs.map((leg) => ({
+          outcome: leg.leg_outcome_label,
+          market: leg.market?.title ?? leg.condition_id
+        })),
+        trades: event.data.trades.map((trade) => ({
+          order_hash: trade.order_hash,
+          maker: trade.maker,
+          side: trade.side,
+          outcome: trade.outcome,
+          price: trade.price,
+          shares: trade.size,
+          amount_usdc: trade.amount_usdc
+        }))
+      });
     }
 
     if (event.type === "combo_status_update") {

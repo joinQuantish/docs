@@ -1,159 +1,141 @@
 ---
 title: "Combo Status Update Event"
 sidebarTitle: "combo_status_update"
-description: "Confirmation event for a combo execution or lifecycle transaction."
+description: "Receipt-backed confirmation for a pending combo execution or combo lifecycle transaction."
 icon: "circle-check"
 ---
 
-Emitted when a combo transaction confirms on-chain. This event links back to a pending `combo_execution` when one was observed, and includes exact receipt data when available.
+`combo_status_update` is emitted after a combo transaction is mined. Match its
+`tx_hash` to a pending `combo_execution`; then use `confirmed_fills[]` as the
+on-chain result.
 
-Receipt-only combo lifecycle activity, including generic combo AutoRedeemer redemptions, can appear in `lifecycle_events[]`. Binary and NegRisk AutoRedeemer payouts for normal positions are emitted on the comprehensive `redemptions` stream instead.
+The fill rows use the same maker-perspective schema as
+`combo_execution.data.trades[]`: `size` is shares, `amount_usdc` is dollars,
+and `price` is the actual execution price.
+
+Receipt-only lifecycle activity can appear in `lifecycle_events[]` even when
+PolyNode did not observe a pending transaction. This includes combo-native
+AutoRedeemer activity. Standard redemption subscribers continue to receive the
+corresponding stable `redemption` event where applicable.
+
+## Example
 
 ```json
 {
   "type": "combo_status_update",
-  "timestamp": 1781054112400,
+  "timestamp": 1785812123000,
   "data": {
     "event_type": "combo_status_update",
-    "tx_hash": "0xb0411705aaefc17991e4121acecd8aad03901ddc359cfdb7cf8773f46942927a",
-    "block_number": 88232739,
-    "confirmed_at": 1781054112400,
+    "tx_hash": "0xf4f973bcca17c05081574c36183a5f61fae8eb5895a2d46d71aaadb3cf11e556",
+    "block_number": 91404731,
+    "confirmed_at": 1785812123000,
     "execution_status": "CONFIRMED",
-    "pending_detected_at": 1781054110000,
-    "latency_ms": 2400,
-    "combo_condition_id": "0xcombo...",
-    "yes_position_id": "123...",
-    "no_position_id": "456...",
-    "leg_position_ids": ["111...", "222..."],
+    "pending_detected_at": 1785812120366,
+    "latency_ms": 2634,
+    "combo_condition_id": "0x03af499212591cdbfd21ab04df07b8fb720000000000000000000000000000",
+    "yes_position_id": "1666644547653825639538654505467109608411697937035881104213580452779446501376",
+    "no_position_id": "1666644547653825639538654505467109608411697937035881104213580452779446501377",
+    "order_hashes": [
+      "0x9fd9da991a3d8f82bfb13e2901422a1621d87db1e27ce4da33fd5a61dec4f4b7",
+      "0x1eb1c486ccad5622329d3e88147c6e98698521ebff86fcbd27ab7efa7fd458d5"
+    ],
     "legs": [
       {
-        "position_id": "111...",
-        "leg_outcome_label": "Yes",
-        "market": {
-          "title": "Will Team A win?",
-          "slug": "will-team-a-win",
-          "outcomes": ["Yes", "No"],
-          "token_ids": ["111...", "333..."]
-        }
+        "position_id": "759456036058902166074175781780133450895503656129754990757956704995918217217",
+        "condition_id": "0x01add63e0052d10828c47551c3e231dedd0000000000000000000000000000",
+        "module_id": 1,
+        "module_name": "BinaryModule",
+        "outcome_index": 1,
+        "leg_outcome_label": "No"
+      },
+      {
+        "position_id": "888399010527256025342625662713948815643754849506664777044908366823210090496",
+        "condition_id": "0x01f6d0e6bdba3f8d15dc0928842624b9f10000000000000000000000000000000",
+        "module_id": 1,
+        "module_name": "BinaryModule",
+        "outcome_index": 0,
+        "leg_outcome_label": "Yes"
       }
     ],
-    "maker_address": "0xMaker...",
-    "signer_address": "0xSigner...",
-    "taker_address": "0xTaker...",
     "confirmed_fills": [
       {
-        "position_id": "123...",
-        "order_hash": "0xorder...",
-        "maker_address": "0xMaker...",
-        "taker_address": "0xTaker...",
+        "position_id": "1666644547653825639538654505467109608411697937035881104213580452779446501377",
+        "order_hash": "0x9fd9da991a3d8f82bfb13e2901422a1621d87db1e27ce4da33fd5a61dec4f4b7",
+        "maker": "0xe2315b15280fc49bc6e60eaaeea30c0df64493a5",
+        "taker": "0x0d8b4fb38999aaf7658df758f3587d25fe7fd417",
         "side": "BUY",
-        "outcome_side": "YES",
-        "price": 0.45,
-        "size": 1,
-        "maker_amount_e6": "450000",
-        "taker_amount_e6": "1000000"
+        "outcome": "NO",
+        "price": 0.43,
+        "size": 40.350877,
+        "amount_usdc": 17.350878,
+        "fee": 0
+      },
+      {
+        "position_id": "1666644547653825639538654505467109608411697937035881104213580452779446501376",
+        "order_hash": "0x1eb1c486ccad5622329d3e88147c6e98698521ebff86fcbd27ab7efa7fd458d5",
+        "maker": "0x0d8b4fb38999aaf7658df758f3587d25fe7fd417",
+        "taker": "0xe3333700ca9d93003f00f0f71f8515005f6c00aa",
+        "side": "BUY",
+        "outcome": "YES",
+        "price": 0.57,
+        "size": 40.350877,
+        "amount_usdc": 22.999999,
+        "fee": 0.4945
       }
-    ],
-    "fees": [],
-    "confirmed_transfers": [],
-    "lifecycle_events": [],
-    "gas_used": "450000",
-    "effective_gas_price": "30000000000"
+    ]
   }
 }
 ```
 
+The example omits empty optional arrays and cached market metadata for
+readability.
+
 ## Fields
 
-<ResponseField name="type" type="string" required>
-  Always `"combo_status_update"`.
-</ResponseField>
+### Confirmation
 
-<ResponseField name="data.tx_hash" type="string" required>
-  Transaction hash. Match this to `combo_execution.data.tx_hash` when a pending event was observed.
-</ResponseField>
+| Field | Type | Description |
+| --- | --- | --- |
+| `tx_hash` | string | Polygon transaction hash; joins to the pending execution |
+| `block_number` | number | Block containing the transaction |
+| `confirmed_at` | number | Confirmation time in Unix milliseconds |
+| `execution_status` | string | `CONFIRMED`, `FAILED`, `MATCHED`, `MINED`, or `RETRYING` |
+| `pending_detected_at` | number | Pending detection time when the transaction was observed in the mempool |
+| `latency_ms` | number | Pending-to-confirmed latency |
+| `combo_condition_id` | string | Derived combo condition ID |
+| `yes_position_id` / `no_position_id` | string | Combo outcome position IDs when available |
+| `leg_position_ids` | string[] | Constituent leg position IDs when available |
+| `legs` | object[] | Decoded combo legs; cached `market` metadata is optional |
+| `order_hashes` | string[] | Exchange order hashes associated with the receipt |
+| `confirmed_fills` | object[] | Receipt-backed maker-perspective fills |
+| `execution_summaries` | object[] | OrdersMatched-style execution summaries |
+| `fees` | object[] | FeeCharged logs normalized to USDC where possible |
+| `confirmed_transfers` | object[] | PositionManager transfer logs |
+| `lifecycle_events` | object[] | Combo lifecycle events found in the same receipt |
+| `gas_used` | string | Receipt gas used when available |
+| `effective_gas_price` | string | Receipt effective gas price when available |
 
-<ResponseField name="data.block_number" type="number" required>
-  Polygon block number where the transaction confirmed.
-</ResponseField>
+Top-level `maker_address`, `signer_address`, `taker_address`, `amount_usdc`, and
+`notional_usdc` can also be present when they are recoverable from the pending
+execution or receipt. For individual fills, use `confirmed_fills[]`.
 
-<ResponseField name="data.execution_status" type="string">
-  `CONFIRMED`, `FAILED`, `MATCHED`, `MINED`, or `RETRYING`.
-</ResponseField>
+### Confirmed fill
 
-<ResponseField name="data.pending_detected_at" type="number">
-  Unix milliseconds from the pending event. Present when PolyNode saw the transaction before confirmation.
-</ResponseField>
+| Field | Type | Description |
+| --- | --- | --- |
+| `position_id` | string | Combo position filled |
+| `order_hash` | string | ExchangeV3 order hash |
+| `maker` | string | Wallet that made the signed order |
+| `signer` | string | Order signer when available |
+| `taker` | string | Receipt's OrderFilled taker/counterparty |
+| `side` | string | Order maker's `BUY` or `SELL` direction |
+| `outcome` | string | `YES` or `NO` combo position side |
+| `price` | number | Actual fill price |
+| `size` | number | Shares filled |
+| `amount_usdc` | number | Dollar value filled |
+| `fee` | number | Fee in USDC |
 
-<ResponseField name="data.latency_ms" type="number">
-  Time between pending detection and confirmation.
-</ResponseField>
-
-<ResponseField name="data.combo_condition_id" type="string">
-  Derived combo condition ID.
-</ResponseField>
-
-<ResponseField name="data.yes_position_id" type="string">
-  YES combo position ID.
-</ResponseField>
-
-<ResponseField name="data.no_position_id" type="string">
-  NO combo position ID.
-</ResponseField>
-
-<ResponseField name="data.leg_position_ids" type="string[]">
-  Constituent leg position IDs for the combo.
-</ResponseField>
-
-<ResponseField name="data.legs" type="object[]" required>
-  Combo legs with structural identifiers and attached market metadata, including title, slug, image, outcomes, and token IDs.
-</ResponseField>
-
-<ResponseField name="data.maker_address" type="string">
-  Maker wallet when available from the pending order or receipt.
-</ResponseField>
-
-<ResponseField name="data.signer_address" type="string">
-  Address that signed the order when available.
-</ResponseField>
-
-<ResponseField name="data.taker_address" type="string">
-  Taker / transaction participant when available.
-</ResponseField>
-
-<ResponseField name="data.amount_usdc" type="number">
-  USDC-normalized amount when derivable.
-</ResponseField>
-
-<ResponseField name="data.notional_usdc" type="number">
-  USDC-normalized notional when derivable.
-</ResponseField>
-
-<ResponseField name="data.order_hashes" type="string[]">
-  Exchange order hashes associated with the transaction.
-</ResponseField>
-
-<ResponseField name="data.confirmed_fills" type="object[]">
-  Exact ExchangeV3 fill logs decoded from the receipt.
-</ResponseField>
-
-<ResponseField name="data.execution_summaries" type="object[]">
-  OrdersMatched-style execution summaries decoded from the receipt.
-</ResponseField>
-
-<ResponseField name="data.fees" type="object[]">
-  FeeCharged logs, normalized to USDC where possible.
-</ResponseField>
-
-<ResponseField name="data.confirmed_transfers" type="object[]">
-  PositionManager transfer logs for combo positions.
-</ResponseField>
-
-<ResponseField name="data.lifecycle_events" type="object[]">
-  Receipt-derived combo lifecycle events associated with the same transaction. Generic combo AutoRedeemer entries use the same shape as `combo_lifecycle` and include `action: "Redeem"`, `module_name: "AutoRedeemer"`, `user`, `condition_ids`, `payout_e6`, `payout_usdc`, and `log_index`.
-</ResponseField>
-
-## Subscribing
+## Subscribe
 
 `combo_status_update` is included in the default combo stream:
 
