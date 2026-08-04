@@ -3,7 +3,7 @@
   "case_study": "polygon-block-time-polymarket-preconfirmation",
   "audit_date": "2026-08-04",
   "status": "published",
-  "audited_at": "2026-08-04T05:04:21Z",
+  "audited_at": "2026-08-04T05:20:53Z",
   "headline_claim": {
     "polygon_average_block_interval_before_sec": 2.0,
     "polygon_average_block_interval_after_sec": 1.5,
@@ -130,14 +130,7 @@
   },
   "public_prior_work_audit": {
     "searched_on": "2026-08-04",
-    "result": "One directly relevant prior post was located. No full two-stage, block-normalized before-and-after study was located; public search is not a complete denominator.",
-    "closest_prior_post": {
-      "author": "Ryan Chern",
-      "date": "2026-05-14",
-      "url": "https://x.com/ryanchern/status/2055006540101546020",
-      "reported_median_gap_sec": 2.4,
-      "scope": "First 2.0-to-1.75-second cadence cut only"
-    }
+    "result": "No full two-stage, block-normalized before-and-after study was located; public search is not a complete denominator."
   },
   "official_sources": [
     "https://forum.polygon.technology/t/pip-75-change-consensus-time-to-1-second/21376",
