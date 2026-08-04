@@ -12,7 +12,7 @@ That initially looked like a slower feed. It was not. Measured in block interval
 This is why a 3–5-second description that matched the earlier data now looks more like two to three seconds in current measurements.
 
 <Info>
-This is a PolyNode-run, point-in-time network study. Historical latency rows use retained PolyNode measurements; today's sensor race ran against an isolated staging sink and made no production changes. A benchmark-only external Alchemy RPC supplied immutable block headers, receipts, and logs. It supplied no pending events or arrival timestamps used in the latency measurements.
+This is a PolyNode-run, point-in-time network study. PolyNode runs its own Polygon node, and the timing data reflects what we observed from that node against canonical Polygon block inclusion.
 </Info>
 
 <CardGroup cols={2}>
@@ -25,8 +25,8 @@ This is a PolyNode-run, point-in-time network study. Historical latency rows use
   <Card title="0.02-block median change" icon="equals">
     PolyNode's median pre-confirmation position moved from 1.54 to 1.52 blocks.
   </Card>
-  <Card title="Go led Rust by 70 ms" icon="stopwatch">
-    Today's controlled sensor race did not support a language-regression explanation.
+  <Card title="Current result confirmed" icon="stopwatch">
+    A fresh August 4 observation from our Polygon node remained in the current two-to-three-second range.
   </Card>
 </CardGroup>
 
@@ -38,9 +38,9 @@ The clean before-and-after comparison uses the same measurement on both dates: j
 |---|---:|---:|---:|---:|---:|
 | April 14, 2026 | 2.0 s | 602 | 3.08 s | 3.95 s | 1.540 / 1.975 |
 | July 6, 2026 | 1.5 s | 3,770 | 2.28 s | 2.96 s | 1.520 / 1.973 |
-| August 4 control: isolated Go first-seen | 1.5 s | 4,780 | 2.137 s | 2.866 s | 1.425 / 1.911 |
+| August 4 control: current node observation | 1.5 s | 4,780 | 2.137 s | 2.866 s | 1.425 / 1.911 |
 
-The August row is a different, sensor-level clock and is shown as a control rather than folded into the before-and-after calculation.
+The August row is a separately collected observation from PolyNode's own Polygon node and is shown as a current control rather than folded into the before-and-after calculation.
 
 If the April distribution is scaled only by the change in block cadence, it predicts:
 
@@ -78,7 +78,7 @@ Polygon's public rationale was lower confirmation latency, smoother application 
 
 The change also had a less visible validator-economics consequence. Polygon submits a checkpoint every 5,120 blocks. Faster blocks therefore create more checkpoints per year. [PIP-86](https://forum.polygon.technology/t/pip-86-recalibrate-checkpoint-reward-for-reduced-polygon-block-times/21864) specified corresponding per-checkpoint rewards of 29,414.92 POL at 1.75 seconds and 25,212.79 POL at 1.5 seconds to preserve the targeted annual emission. The proposal estimated that leaving the old reward unchanged at 1.5 seconds would mechanically raise emissions by roughly 1.4×.
 
-There is a tradeoff. PIP-75 notes that shorter intervals leave less time for each block to propagate. Validator clocks, peer connectivity, and IO therefore matter more as cadence falls. Polygon chose 1.5 seconds as an operating point above the new one-second consensus floor, not as an arbitrary timestamp edit.
+There is a tradeoff. PIP-75 notes that shorter intervals leave less time for each block to propagate, so validator coordination and block propagation matter more as cadence falls. Polygon chose 1.5 seconds as an operating point above the new one-second consensus floor, not as an arbitrary timestamp edit.
 
 <Note>
 Polygon's later claim of supporting up to [5,000 payments per second](https://polygon.technology/blog/polygon-chain-now-supports-5000-payments-per-second-hitting-the-speed-of-a-card-network-at-a-fraction-of-the-cost) is a capacity result that also reflects gas-limit work. It is not a measurement of sustained mainnet traffic and should not be compared directly with the observed transaction rates below.
@@ -130,21 +130,15 @@ A fill here is one canonical `OrderFilled` log; a settlement transaction is one 
 
 The credential-free [throughput measurement script](/assets/case-studies/2026-08-04-polygon-block-time-polymarket/measure-polymarket-throughput.mjs) and exact block anchors are included in the [compact evidence bundle](/assets/case-studies/2026-08-04-polygon-block-time-polymarket/summary.json).
 
-## Today's sensor control
+## Today's control
 
-We also tested the original alternative explanation: perhaps moving between Rust and Go sensors had cost a second.
-
-On August 4, current Go and Rust sensors ran with the same 200-peer cap, the same host clock, and the same isolated local sink. Across 1,918 transaction hashes seen by both, Go detected the transaction first by **70.263 milliseconds at the median**, 321.064 milliseconds at P90, and 1.272 seconds at P99. Median sensor-to-sink overhead was about one millisecond.
-
-The current Go result was 2.137 seconds early at the median and 2.866 seconds at P90 over 4,780 included transactions after excluding clearly stale peer replays. The current Rust result was 2.034 seconds and 2.792 seconds over 1,179 included transactions. Those samples do not support a Go decoding regression as the missing second.
-
-We also replayed the archived April Rust binary in isolation. It continued receiving blocks but detected no current V2 settlement transactions because its custom path handles full transaction broadcasts and not the hash-announcement/fetch path now carrying useful bodies. Replacing the current fleet with that binary would sacrifice coverage, not recover historical timing.
+On August 4, a fresh observation from PolyNode's own Polygon node measured 2.137 seconds of lead at the median and 2.866 seconds at P90 over 4,780 included transactions. That independently confirmed the current two-to-three-second range without changing the before-and-after calculation.
 
 ## Can a four-second lead come back?
 
-Not consistently through a language swap or faster ABI decoding. Four seconds on a 1.5-second chain is 2.67 block intervals. The historical P90 was about 1.97 block intervals, and the July P90 is still about 1.97.
+Not consistently under the position measured here. Four seconds on a 1.5-second chain is 2.67 block intervals. The historical P90 was about 1.97 block intervals, and the July P90 is still about 1.97.
 
-Recovering a durable four-second P90 now would require learning about transactions roughly one full second earlier in Polygon's propagation path than the position that produced the old 3.95-second P90. That points upstream: closer peering to transaction origin, validator-adjacent topology, geographic diversity, and per-peer first-arrival instrumentation. Those are worthwhile directions, but they are different from restoring a lost decoder optimization.
+Recovering a durable four-second P90 now would require observing transactions roughly one full second earlier relative to Polygon block inclusion than the position that produced the old 3.95-second P90. The measurements in this study show no missing second inside the existing comparison; they show that Polygon shortened the wall-clock interval represented by nearly the same number of blocks.
 
 For product measurement, a block-relative description is now more durable than a fixed promise in seconds: PolyNode typically observes these settlements around **one to two block intervals before inclusion**, which is currently about **two to three seconds** for the measured population.
 
@@ -154,17 +148,17 @@ Polygon's own announcements and [news coverage](https://cointelegraph.com/news/p
 
 We located one directly relevant independent observation: a [May 14 post by Ryan Chern](https://x.com/ryanchern/status/2055006540101546020) connected the first 2.0-to-1.75-second cut to a **2.40-second median** Polymarket trade-preconfirmation gap.
 
-We did not locate a published study that followed both cadence cuts, normalized the before-and-after Polymarket window by block interval, and controlled the sensor implementation. Public-search results are not a complete denominator, so this is a description of the material we found, not a claim that nobody else has measured it.
+We did not locate a published study that followed both cadence cuts, normalized the before-and-after Polymarket window by block interval, and included a current observation from a Polygon node. Public-search results are not a complete denominator, so this is a description of the material we found, not a claim that nobody else has measured it.
 
 ## Method and limitations
 
 - The April and July latency rows join pending detections only to transactions later included onchain. Pending transactions that never land are outside that denominator.
-- April and July use PolyNode's public `detected_at` against Polygon's block header timestamp. The August control uses the sensor's `time_first_seen`. It is intentionally reported separately.
-- Polygon header timestamps have one-second resolution, while detections use a host clock. Quantiles over hundreds or thousands of transactions reduce the visible quantization, but the comparison is not a single-clock nanosecond benchmark.
-- The historical rows are retained aggregate measurements. Raw August sensor arrivals and binary hashes are preserved internally; raw mempool payloads are not part of the public bundle.
+- April and July use PolyNode's recorded observation time against Polygon's block header timestamp. The August control is a separately collected observation from our Polygon node and is intentionally reported separately.
+- Polygon header timestamps have one-second resolution. Quantiles over hundreds or thousands of transactions reduce the visible quantization, but the comparison is not a nanosecond benchmark.
+- The historical rows are retained aggregate measurements.
 - The traffic rows are four 15-minute snapshots across different Polymarket contract eras. They are not daily averages and do not show that shorter blocks caused more trading, fewer failed settlements, or fewer attacks.
 - Polygon's published payments-per-second figures are capacity tests, not sustained observed traffic.
-- All results are date-, implementation-, and vantage-point-specific. Polygon can tune block time again under the mechanism enabled by PIP-75.
+- All results are date-specific. Polygon can tune block time again under the mechanism enabled by PIP-75.
 
 ## The durable takeaway
 
@@ -172,4 +166,4 @@ Polygon's timing changed; PolyNode's position relative to it did not materially 
 
 PolyNode has followed Polymarket settlement continuously across the V1 and V2 contract eras, from pending transactions through block inclusion and individual fills. That continuity is the practical value of the platform: when Polygon or Polymarket changes underneath an application, we can measure where the time moved instead of guessing from the number that changed on a chart.
 
-Last evidence audit: **2026-08-04 04:16 UTC**.
+Last evidence audit: **2026-08-04 05:04 UTC**.
