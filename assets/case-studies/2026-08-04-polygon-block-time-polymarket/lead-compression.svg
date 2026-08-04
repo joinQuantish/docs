@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Polygon cadence change predicts PolyNode pre-confirmation lead compression</title>
+  <desc id="desc">Horizontal bars compare April observed lead, the April result scaled from two-second to one-and-a-half-second blocks, and the July observed lead at the median and ninetieth percentile.</desc>
+  <rect width="960" height="540" rx="24" fill="#0b1120"/>
+  <text x="48" y="54" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="25" font-weight="700">Pre-confirmation lead in seconds</text>
+  <text x="48" y="84" fill="#94a3b8" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15">April observed · cadence-scaled prediction · July observed</text>
+
+  <g stroke="#243047" stroke-width="1">
+    <line x1="250" y1="108" x2="250" y2="470"/>
+    <line x1="410" y1="108" x2="410" y2="470"/>
+    <line x1="570" y1="108" x2="570" y2="470"/>
+    <line x1="730" y1="108" x2="730" y2="470"/>
+    <line x1="890" y1="108" x2="890" y2="470"/>
+  </g>
+  <g fill="#64748b" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="13" text-anchor="middle">
+    <text x="250" y="495">0</text>
+    <text x="410" y="495">1</text>
+    <text x="570" y="495">2</text>
+    <text x="730" y="495">3</text>
+    <text x="890" y="495">4 seconds</text>
+  </g>
+
+  <text x="48" y="130" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="700">Median</text>
+  <g font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="14">
+    <text x="232" y="163" fill="#cbd5e1" text-anchor="end">April observed</text>
+    <rect x="250" y="146" width="492.8" height="24" rx="6" fill="#64748b"/>
+    <text x="754" y="163" fill="#e2e8f0">3.08</text>
+
+    <text x="232" y="205" fill="#cbd5e1" text-anchor="end">Scaled prediction</text>
+    <rect x="250" y="188" width="369.6" height="24" rx="6" fill="#8b5cf6"/>
+    <text x="631" y="205" fill="#ddd6fe">2.31</text>
+
+    <text x="232" y="247" fill="#cbd5e1" text-anchor="end">July observed</text>
+    <rect x="250" y="230" width="364.8" height="24" rx="6" fill="#22c55e"/>
+    <text x="626" y="247" fill="#bbf7d0">2.28</text>
+  </g>
+
+  <line x1="48" y1="282" x2="912" y2="282" stroke="#243047"/>
+  <text x="48" y="318" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="700">P90</text>
+  <g font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="14">
+    <text x="232" y="351" fill="#cbd5e1" text-anchor="end">April observed</text>
+    <rect x="250" y="334" width="632" height="24" rx="6" fill="#64748b"/>
+    <text x="894" y="351" fill="#e2e8f0">3.95</text>
+
+    <text x="232" y="393" fill="#cbd5e1" text-anchor="end">Scaled prediction</text>
+    <rect x="250" y="376" width="474" height="24" rx="6" fill="#8b5cf6"/>
+    <text x="736" y="393" fill="#ddd6fe">2.963</text>
+
+    <text x="232" y="435" fill="#cbd5e1" text-anchor="end">July observed</text>
+    <rect x="250" y="418" width="473.6" height="24" rx="6" fill="#22c55e"/>
+    <text x="736" y="435" fill="#bbf7d0">2.96</text>
+  </g>
+
+  <text x="48" y="522" fill="#64748b" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="12">Prediction = April lead × 1.5 / 2.0</text>
+</svg>

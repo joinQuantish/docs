@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "case_study": "polygon-block-time-polymarket-preconfirmation",
+  "audit_date": "2026-08-04",
+  "status": "published",
+  "audited_at": "2026-08-04T04:16:51Z",
+  "headline_claim": {
+    "polygon_average_block_interval_before_sec": 2.0,
+    "polygon_average_block_interval_after_sec": 1.5,
+    "interval_reduction_pct": 25.0,
+    "block_opportunity_increase_pct": 33.3333333333,
+    "polynode_median_lead_before_sec": 3.08,
+    "polynode_median_lead_after_sec": 2.28,
+    "polynode_median_lead_before_blocks": 1.54,
+    "polynode_median_lead_after_blocks": 1.52,
+    "interpretation": "Wall-clock lead compressed with Polygon block cadence while block-relative position remained essentially unchanged."
+  },
+  "latency_measurements": [
+    {
+      "date": "2026-04-14",
+      "method": "public detected_at minus canonical block header timestamp",
+      "samples": 602,
+      "polygon_cadence_sec": 2.0,
+      "p50_lead_sec": 3.08,
+      "p90_lead_sec": 3.95,
+      "p50_lead_blocks": 1.54,
+      "p90_lead_blocks": 1.975
+    },
+    {
+      "date": "2026-07-06",
+      "method": "public detected_at minus canonical block header timestamp",
+      "samples": 3770,
+      "polygon_cadence_sec": 1.5,
+      "p50_lead_sec": 2.28,
+      "p90_lead_sec": 2.96,
+      "p50_lead_blocks": 1.52,
+      "p90_lead_blocks": 1.9733333333
+    },
+    {
+      "date": "2026-08-04",
+      "method": "isolated Go sensor time_first_seen minus canonical block header timestamp",
+      "samples": 4780,
+      "polygon_cadence_sec": 1.5,
+      "p50_lead_sec": 2.136956,
+      "p90_lead_sec": 2.86621,
+      "p99_lead_sec": 3.369717,
+      "p50_lead_blocks": 1.4246373333,
+      "p90_lead_blocks": 1.9108066667,
+      "stale_peer_replays_excluded": 217,
+      "control_only": true
+    }
+  ],
+  "cadence_scaled_prediction": {
+    "scale_factor": 0.75,
+    "predicted_p50_sec": 2.31,
+    "observed_p50_sec": 2.28,
+    "absolute_p50_error_sec": 0.03,
+    "predicted_p90_sec": 2.9625,
+    "observed_p90_sec": 2.96,
+    "absolute_p90_error_sec": 0.0025
+  },
+  "current_websocket_corroboration": [
+    {
+      "date": "2026-08-01",
+      "measurement": "PolyNode pending callback to PolyNode status_update callback",
+      "samples": 18041,
+      "median_sec": 2.148,
+      "p95_sec": 3.189
+    },
+    {
+      "date": "2026-08-04",
+      "measurement": "PolyNode pending callback to PolyNode status_update callback",
+      "samples": 18122,
+      "median_sec": 2.215,
+      "p95_sec": 3.332
+    }
+  ],
+  "block_header_samples": [
+    {
+      "dates": ["2026-03-26", "2026-04-14", "2026-04-24"],
+      "consecutive_headers_per_date": "500-1000",
+      "mean_interval_sec": 2.0,
+      "integer_gap_distribution": {"1_sec_pct": 0, "2_sec_pct": 100}
+    },
+    {
+      "dates": ["2026-05-15", "2026-06-01"],
+      "consecutive_headers_per_date": "500-1000",
+      "mean_interval_sec": 1.75,
+      "integer_gap_distribution": {"1_sec_pct": 25, "2_sec_pct": 75}
+    },
+    {
+      "dates": ["2026-06-18", "2026-07-06"],
+      "consecutive_headers_per_date": "500-1000",
+      "mean_interval_sec": 1.5,
+      "integer_gap_distribution": {"1_sec_pct": 50, "2_sec_pct": 50}
+    }
+  ],
+  "sensor_language_control": {
+    "date": "2026-08-04",
+    "isolation": "same staging host clock, same isolated sink, 200-peer cap per sensor, no production output",
+    "shared_transaction_hashes": 1918,
+    "rust_minus_go_first_seen_ms": {
+      "p50": 70.263,
+      "p90": 321.064,
+      "p99": 1272.345,
+      "positive_means_go_was_earlier": true
+    },
+    "median_sensor_to_sink_ms": {
+      "go": 1.17,
+      "rust": 0.989
+    },
+    "archived_rust_result": "Five isolated instances received blocks but detected zero current V2 settlements because the archived handler ignored NewPooledTransactionHashes."
+  },
+  "throughput_snapshots": [
+    {
+      "requested_window_utc": {"start": "2026-04-14T01:10:04.000Z", "end": "2026-04-14T01:25:04.000Z", "duration_sec": 900},
+      "contract_era": "polymarket_v1",
+      "block_window": {"from": 85504484, "to": 85504933, "count": 450, "from_hash": "0x9bd87773f7f3695f7ba3e560c361c1b87aaf7c61b940f84a824fb4d1e36caae0", "to_hash": "0x12bb5594d3ecd8bb65aa04032dc7afa7aea6ff2cb067eb00f19f7e4b58728b6a", "mean_header_gap_sec": 2.0},
+      "polygon": {"transactions": 109573, "transactions_per_sec": 121.7477777778},
+      "polymarket": {"settlement_transactions": 34927, "order_filled_logs": 100144, "settlement_transactions_per_sec": 38.8077777778, "fills_per_sec": 111.2711111111}
+    },
+    {
+      "requested_window_utc": {"start": "2026-04-14T12:30:08.000Z", "end": "2026-04-14T12:45:08.000Z", "duration_sec": 900},
+      "contract_era": "polymarket_v1",
+      "block_window": {"from": 85524886, "to": 85525335, "count": 450, "from_hash": "0x5b968633f519104c46fe0458f15d84538fe6da33b0aa756ec59e6c2e6b7328eb", "to_hash": "0x7d3d70574255f915e2dfed15244ca4fbd98a695a7d329cbad0549221277a1fd9", "mean_header_gap_sec": 2.0},
+      "polygon": {"transactions": 129603, "transactions_per_sec": 144.0033333333},
+      "polymarket": {"settlement_transactions": 39119, "order_filled_logs": 107060, "settlement_transactions_per_sec": 43.4655555556, "fills_per_sec": 118.9555555556}
+    },
+    {
+      "requested_window_utc": {"start": "2026-08-01T12:30:08.000Z", "end": "2026-08-01T12:45:08.000Z", "duration_sec": 900},
+      "contract_era": "polymarket_v2",
+      "block_window": {"from": 91254925, "to": 91255524, "count": 600, "from_hash": "0x8247bc226897b906c70cc763447ffa57cedb19494918c9f3198c9585fe658993", "to_hash": "0x6c6430ba8787382151e0d16c8ace6268f204d70d98e94a3ad719c713dfe09a67", "mean_header_gap_sec": 1.4991652755},
+      "polygon": {"transactions": 58214, "transactions_per_sec": 64.6822222222},
+      "polymarket": {"settlement_transactions": 18127, "order_filled_logs": 48503, "settlement_transactions_per_sec": 20.1411111111, "fills_per_sec": 53.8922222222}
+    },
+    {
+      "requested_window_utc": {"start": "2026-08-04T01:10:04.000Z", "end": "2026-08-04T01:25:04.000Z", "duration_sec": 900},
+      "contract_era": "polymarket_v2",
+      "block_window": {"from": 91400519, "to": 91401118, "count": 600, "from_hash": "0x0e385e2e4f24e29e1422a370d3d81208a1f7bc0fe068f1675008a53a5b379948", "to_hash": "0x72b742a4d9c50a92dc63277ff4dd9c116bcc262b5d40599922605c8d2dbe0d82", "mean_header_gap_sec": 1.4991652755},
+      "polygon": {"transactions": 64087, "transactions_per_sec": 71.2077777778},
+      "polymarket": {"settlement_transactions": 18276, "order_filled_logs": 51345, "settlement_transactions_per_sec": 20.3066666667, "fills_per_sec": 57.05}
+    }
+  ],
+  "two_window_snapshot_averages": {
+    "april_v1": {"polygon_transactions_per_sec": 132.8755555556, "polymarket_settlement_transactions_per_sec": 41.1366666667, "polymarket_fills_per_sec": 115.1133333333},
+    "august_v2": {"polygon_transactions_per_sec": 67.945, "polymarket_settlement_transactions_per_sec": 20.2238888889, "polymarket_fills_per_sec": 55.4711111111}
+  },
+  "public_prior_work_audit": {
+    "searched_on": "2026-08-04",
+    "result": "One directly relevant prior post was located. No full two-stage, block-normalized before-and-after study was located; public search is not a complete denominator.",
+    "closest_prior_post": {
+      "author": "Ryan Chern",
+      "date": "2026-05-14",
+      "url": "https://x.com/ryanchern/status/2055006540101546020",
+      "reported_median_gap_sec": 2.4,
+      "scope": "First 2.0-to-1.75-second cadence cut only"
+    }
+  },
+  "official_sources": [
+    "https://forum.polygon.technology/t/pip-75-change-consensus-time-to-1-second/21376",
+    "https://forum.polygon.technology/t/pip-86-recalibrate-checkpoint-reward-for-reduced-polygon-block-times/21864",
+    "https://polygon.technology/blog/polygon-speeds-up-by-33-with-madhugiri-hardfork",
+    "https://x.com/0xPolygon/status/2052120167736389721",
+    "https://x.com/0xPolygon/status/2062240408030310525",
+    "https://polygon.technology/blog/polygon-chain-now-supports-5000-payments-per-second-hitting-the-speed-of-a-card-network-at-a-fraction-of-the-cost",
+    "https://polygon.technology/blog/a-billion-fans-five-weeks-one-network-we-spent-six-months-preparing-polygon-chain-for-the-summers-biggest-sporting-event",
+    "https://docs.polymarket.com/concepts/order-lifecycle",
+    "https://help.polymarket.com/en/articles/14762452-polymarket-exchange-upgrade-april-28-2026"
+  ],
+  "limitations": [
+    "Pending-to-inclusion latency excludes pending transactions that never land onchain.",
+    "Polygon block headers have integer-second timestamps and detections use a separate host clock.",
+    "The April and July rows are retained aggregate measurements; raw August arrivals are retained internally.",
+    "The traffic comparison contains four 15-minute snapshots across different Polymarket contract eras, not daily averages.",
+    "The evidence does not show that shorter blocks caused volume changes, fewer failed settlements, or fewer attacks.",
+    "Polygon's published payments-per-second figure is capacity, not sustained observed traffic."
+  ],
+  "source_sha256": {
+    "internal_investigation_report": "e305f33b8805f71b24da68ab64f7bd2271ecd7c70c335d0c019cbe9c1a56d002",
+    "claim_evidence_matrix": "9e5046bf788ff140f5d2a2c5b4f2aa51624b98880558f444f09ee7c0786e75ec",
+    "throughput_measurement_script": "3b3bd9e53d423a7b565577655388c441d19bb537abaded4226c60658b87a6cb7",
+    "august_sensor_manifest": "f49a755188b058b29875d9ad7f3cdce6bc52c73d5d64abf173c63ae6b703f971",
+    "august_sensor_analysis": "0adf1d2e9b49a07e017cb42a641afc1c3d616d7bf3f55a026cd34e34568e9b3c"
+  },
+  "historical_provenance": [
+    {
+      "recorded_at": "2026-04-14T05:51:58Z",
+      "record_type": "retained benchmark session summary",
+      "reported_result": "n=602, median 3.08 seconds, p90 3.95 seconds versus canonical Polygon block timestamp",
+      "original_temporary_collection_script_retained": false
+    },
+    {
+      "recorded_at": "2026-07-06T11:46:26Z",
+      "record_type": "retained three-minute public WebSocket capture result",
+      "pending_events": 3873,
+      "status_update_events": 3820,
+      "matched_pairs": 3770,
+      "status_without_prior_pending": 50,
+      "embedded_lead_ms": {"p10": 1575, "p50": 2283, "p90": 2958, "p99": 3378, "min": 823, "max": 3649, "negative_count": 0},
+      "original_temporary_collection_script_retained": false
+    }
+  ]
+}
