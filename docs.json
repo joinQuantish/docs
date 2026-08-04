@@ -802,6 +802,12 @@
             "pages": [
               "case-studies/struct-rtds-websocket-benchmark-2026-08-01"
             ]
+          },
+          {
+            "group": "Network Studies",
+            "pages": [
+              "case-studies/polygon-block-time-polymarket-2026-08-04"
+            ]
           }
         ]
       }
