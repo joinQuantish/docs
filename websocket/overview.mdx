@@ -29,7 +29,7 @@ polynode's WebSocket is the fastest way to get Polymarket trade data. Every fill
     Subscribe by wallet, token, market slug, side, size, or event type. Only receive what you need.
   </Card>
   <Card title="Enriched events" icon="layer-group">
-    Every event includes market title, outcome name, slug, and image. No secondary lookups needed.
+    Standard market events include title, outcome, slug, and image. Combo legs always include structural IDs; their cached `market` details are optional.
   </Card>
   <Card title="Crypto price feeds" icon="chart-line" href="/crypto/overview">
     Real-time prices for BTC, ETH, SOL, BNB, XRP, DOGE, and HYPE (~1/second each). Subscribe with `"type": "chainlink"` on the same connection.
@@ -168,7 +168,7 @@ If you need the full transaction format with nested fills and status lifecycle, 
 const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_YOUR_KEY");
 
 ws.onopen = () => {
-  ws.send(JSON.stringify({ action: "subscribe", type: "fills" }));
+  ws.send(JSON.stringify({ action: "subscribe", type: "settlements" }));
 };
 
 ws.onmessage = (event) => {

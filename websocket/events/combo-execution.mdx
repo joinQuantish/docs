@@ -135,6 +135,22 @@ raw fixed-point amounts.
 This matters when one taker order receives price improvement across multiple
 maker orders.
 
+`amount_usdc` is the gross fill value. `fee` is reported separately and is not
+subtracted from it.
+
+### Multiple maker orders
+
+A transaction with three maker orders and one taker order contains four
+`trades[]` rows and four `order_hashes`. These arrays are one-to-one and use the
+same order: maker orders in calldata order, followed by the taker order. Use
+`trades[i].order_hash` when working with an individual row.
+
+Top-level `taker_size` and `amount_usdc` are the taker order's total filled
+shares and gross USDC value across all makers. `taker_price` is the effective
+fill price (`amount_usdc / taker_size`), rounded to four decimal places. This
+is why a live multi-maker payload can be longer than the two-order example
+above without introducing any additional field types.
+
 ## Mapping to the static combo-trades API
 
 After confirmation, the same fill appears in
@@ -209,7 +225,7 @@ the latency-sensitive WebSocket path.
 | `arity` | number | Encoded condition arity |
 | `condition_index` | number | Condition index within the event |
 | `outcome_index` | number | Selected outcome index |
-| `leg_outcome_label` | string | Selected outcome label when known |
+| `leg_outcome_label` | string | Encoded combo-leg selection (`Yes` or `No` for `BinaryModule`); this is distinct from a human label in `market.outcomes` |
 | `market` | object | Optional cached title, slug, image, event metadata, outcomes, and token IDs |
 
 ## Subscribe
