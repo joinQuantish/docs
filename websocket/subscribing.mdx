@@ -59,10 +59,12 @@ Event messages use this envelope:
 The initial snapshot wraps recent events in `events[]`; live messages use the single-event envelope above. Consumers should handle both:
 
 ```javascript
-const message = JSON.parse(raw);
-for (const event of message.events ?? [message]) {
-  if (event.type === "combo_execution") {
-    console.log(event.data.tx_hash);
+function handleMessage(raw) {
+  const message = JSON.parse(raw);
+  for (const event of message.events ?? [message]) {
+    if (event.type === "combo_execution") {
+      console.log(event.data.tx_hash);
+    }
   }
 }
 ```
@@ -153,9 +155,16 @@ The `type` field selects a preset of event types. If you also set `filters.event
 <ResponseField name="combos" type="string">
   Events: `combo_execution`, `combo_status_update`
 
-  Polymarket combo executions and confirmations. Pending `combo_execution` events are decoded before on-chain confirmation; confirmed `combo_status_update` events include receipt-derived fills, transfers, fees, gas fields, and confirmation latency when the pending event was seen first.
+  Polymarket combo executions and confirmations. Pending `combo_execution`
+  events expose taker-level execution fields plus one maker-perspective row per
+  signed order in `trades[]`. Confirmed `combo_status_update` events include
+  receipt-derived fills, transfers, fees, gas fields, and confirmation latency
+  when the pending event was seen first.
 
-  Each entry in `legs[]` includes structural combo identifiers and `market` metadata such as title, slug, image, outcomes, and token IDs.
+  Each `legs[]` entry includes its decoded structural identifiers. Its nested
+  `market` title, slug, image, outcomes, and token IDs are added from the
+  in-memory metadata cache when available; the hot path never waits on an
+  external lookup.
 
   Lifecycle and approval events are available by explicit request:
 

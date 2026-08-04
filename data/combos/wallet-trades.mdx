@@ -1,10 +1,14 @@
 ---
 title: "Wallet Combo Trades"
 openapi: "GET /v3/wallets/{address}/combos/trades"
-description: "List combo trades for one wallet with side, size, price, role, counterparty, and transaction data."
+description: "List confirmed combo fills for one wallet with side, size, price, role, counterparty, and transaction data."
 ---
 
-Returns combo trades where the wallet participated as maker or taker. Use this endpoint for combo-only trade history.
+Returns confirmed combo fills where the requested wallet participated as maker
+or taker. Use this endpoint for combo-only trade history.
+
+For the same fills before confirmation, subscribe to the
+[`combo_execution` WebSocket event](/websocket/events/combo-execution).
 
 ## Request
 
@@ -26,34 +30,52 @@ GET /v3/wallets/{address}/combos/trades
 ## Example
 
 ```bash
-curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/trades?limit=2"
+curl "https://api.polynode.dev/v3/wallets/0x0d8b4fb38999aaf7658df758f3587d25fe7fd417/combos/trades?limit=2"
 ```
 
 ```json
 {
-  "address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+  "address": "0x0d8b4fb38999aaf7658df758f3587d25fe7fd417",
   "trades": [
     {
       "position_type": "combo",
       "wallet_role": "maker",
-      "wallet_address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+      "wallet_address": "0x0d8b4fb38999aaf7658df758f3587d25fe7fd417",
       "counterparty_address": "0xe3333700ca9d93003f00f0f71f8515005f6c00aa",
-      "position_id": "1741334187009265192213210063949860811096650382021683265628751751539647840256",
+      "combo_condition_id": "0x03af499212591cdbfd21ab04df07b8fb720000000000000000000000000000",
+      "condition_id": "0x03af499212591cdbfd21ab04df07b8fb720000000000000000000000000000",
+      "position_id": "1666644547653825639538654505467109608411697937035881104213580452779446501376",
       "side": "BUY",
-      "price": "0.0197",
-      "size": "0.050750",
-      "fee": "0.000020",
-      "tx_hash": "0xf3a8985f04bf869483ef4163a185f296c834eb827b5e5ae3db5bd44558121d51",
-      "log_index": 896,
-      "block_number": 88276713,
-      "timestamp": 1781120055
+      "price": "0.5700",
+      "size": "40.350877",
+      "fee": "0.494500",
+      "tx_hash": "0xf4f973bcca17c05081574c36183a5f61fae8eb5895a2d46d71aaadb3cf11e556",
+      "log_index": 549,
+      "block_number": 91404731,
+      "timestamp": 1785812123
+    },
+    {
+      "position_type": "combo",
+      "wallet_role": "taker",
+      "wallet_address": "0x0d8b4fb38999aaf7658df758f3587d25fe7fd417",
+      "counterparty_address": "0xe2315b15280fc49bc6e60eaaeea30c0df64493a5",
+      "combo_condition_id": "0x03af499212591cdbfd21ab04df07b8fb720000000000000000000000000000",
+      "condition_id": "0x03af499212591cdbfd21ab04df07b8fb720000000000000000000000000000",
+      "position_id": "1666644547653825639538654505467109608411697937035881104213580452779446501377",
+      "side": "BUY",
+      "price": "0.4300",
+      "size": "40.350877",
+      "fee": "0.000000",
+      "tx_hash": "0xf4f973bcca17c05081574c36183a5f61fae8eb5895a2d46d71aaadb3cf11e556",
+      "log_index": 539,
+      "block_number": 91404731,
+      "timestamp": 1785812123
     }
   ],
   "rows_returned": 2,
   "has_more": true,
   "position_type": "combo",
-  "source": "v3.wallet_combos.trades",
-  "elapsed_ms": 23
+  "source": "v3.wallet_combos.trades"
 }
 ```
 
@@ -61,14 +83,34 @@ curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d1
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `wallet_role` | string | `maker` or `taker` |
-| `counterparty_address` | string | Counterparty address |
-| `position_id` | string | Combo position ID |
-| `side` | string | `BUY` or `SELL` |
-| `price` | string | Fill price |
-| `size` | string | Combo shares traded |
-| `fee` | string | Fee amount |
+| `position_type` | string | Always `combo` |
+| `wallet_role` | string | Requested wallet's role for this fill: `maker` or `taker` |
+| `wallet_address` | string | Requested wallet |
+| `counterparty_address` | string | Counterparty for this fill; this can be ExchangeV3 for the taker order |
+| `combo_condition_id` | string | Combo condition ID |
+| `condition_id` | string | Alias of `combo_condition_id` |
+| `position_id` | string | YES or NO combo position filled |
+| `side` | string | Signed order maker's `BUY` or `SELL` direction |
+| `price` | string | Actual fill price |
+| `size` | string | Combo shares filled |
+| `fee` | string | Fee in USDC |
 | `tx_hash` | string | Polygon transaction hash |
 | `log_index` | integer | Log index within the transaction |
 | `block_number` | integer | Polygon block number |
 | `timestamp` | integer | Unix timestamp in seconds |
+
+## Maker and taker roles
+
+One combo match contains multiple signed orders, so the requested wallet can
+appear in more than one row for the same transaction. In the example, the
+wallet is the maker of the YES taker order and the taker/counterparty of the
+complementary NO maker order.
+
+The static API projects each receipt fill from the requested wallet's point of
+view. The WebSocket preserves the underlying signed-order view directly:
+`trades[].maker`, `trades[].taker`, and `trades[].side` describe that order,
+while top-level `taker_*` fields identify the transaction's taker order.
+
+The static endpoint does not currently return `order_hash` or
+`amount_usdc`. Both are present on pending WebSocket trade rows; correlate the
+two surfaces with `tx_hash`, `position_id`, `side`, `price`, and `size`.
