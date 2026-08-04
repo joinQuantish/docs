@@ -1,36 +1,143 @@
 ---
 title: "WebSocket latency and completeness: PolyNode, Struct, and RTDS"
 sidebarTitle: "PolyNode vs Struct and RTDS"
-description: "A reproducible August 1, 2026 benchmark of pending detection, confirmed fills, and on-chain completeness."
+description: "Reproducible August 1 and August 4, 2026 benchmarks of pending detection, confirmed fills, and on-chain completeness."
 icon: "stopwatch"
 ---
 
-On August 1, 2026, we raced PolyNode, Struct, and Polymarket RTDS from one Node.js process, then checked every eligible result against Polygon logs obtained separately through a benchmark-only external Alchemy RPC. The headline window covered **18,041 transactions and 48,281 fills over 598 fully observed Polygon blocks**.
+On August 1, 2026, we raced PolyNode, Struct, and Polymarket RTDS from one Node.js process, then checked every eligible result against Polygon logs obtained separately through a benchmark-only external Alchemy RPC. On August 4, we repeated the same 15-minute headline configuration with unchanged collector and analysis source, then ran exact-key and explicit pending-only controls. The two headline windows covered **36,163 transactions and 99,237 fills** across 1,195 fully observed Polygon blocks.
 
 <Info>
-This is a PolyNode-run, point-in-time smoke test. The Alchemy endpoint was used only by the benchmark verifier to enumerate confirmed events and recheck boundary blocks. It is not part of PolyNode's production ingestion, `status_update` generation, or WebSocket delivery path, and it supplied no arrival timestamps used in the latency comparisons. All claims below are limited to the recorded configuration, window, and network vantage point.
+These are PolyNode-run, point-in-time smoke tests. The Alchemy endpoint was used only by the benchmark verifier to enumerate confirmed events and recheck boundary blocks. It is not part of PolyNode's production ingestion, `status_update` generation, or WebSocket delivery path, and it supplied no arrival timestamps used in the latency comparisons. All claims below are limited to the recorded configurations, windows, and network vantage point.
 </Info>
 
 <Tip>
-**Key takeaways.** PolyNode pending beat RTDS activity on all 17,777 shared transactions by 1.984 seconds median, showing an earlier actionable stream than RTDS in this window. PolyNode `status_update`—emitted when a pending transaction was confirmed in a Polygon block—beat Struct confirmed on all 18,041 matched transactions by 3.963 seconds median. PolyNode and Struct each covered 100% of confirmed fills, while RTDS covered 98.537% of eligible transactions and Struct's documented pending path was not observed.
+**August 4 retest.** Struct's documented pending path was again not observed: zero pending events in the 15-minute headline run, zero with the exact August 1 credential, and zero under an explicit `status: "pending"` control. PolyNode `status_update` beat Struct confirmed on all 18,122 matched transactions by **9.265 seconds median**, versus 3.963 seconds on August 1—**2.34× the measured August 1 lead**. PolyNode's confirmation timing relative to RTDS moved only 38.5 ms between the two headline windows while Struct's lag behind RTDS grew by 5.370 seconds, evidence of substantial between-window variability in Struct's confirmed-delivery lane.
 </Tip>
 
 <CardGroup cols={2}>
+  <Card title="No Struct pending—again" icon="ban">
+    Four August 4 windows, including exact-key and pending-only controls, produced zero Struct pending events.
+  </Card>
+  <Card title="9.27-second confirmation lead" icon="bolt">
+    PolyNode `status_update` beat Struct confirmed on all 18,122 August 4 transactions.
+  </Card>
+  <Card title="2.34× the August 1 lead" icon="chart-line">
+    The measured confirmation lead grew from 3.963 seconds to 9.265 seconds.
+  </Card>
   <Card title="100% confirmed coverage" icon="circle-check">
-    PolyNode and Struct each represented all 48,281 confirmed fills after exact record reconciliation.
-  </Card>
-  <Card title="3.96-second confirmation lead" icon="bolt">
-    PolyNode `status_update` beat Struct confirmed for every matched transaction.
-  </Card>
-  <Card title="1.98 seconds before RTDS" icon="gauge-high">
-    PolyNode pending arrived first for every RTDS overlap in the headline window.
-  </Card>
-  <Card title="No Struct pending events" icon="ban">
-    Struct returned confirmed data but no pending events under its documented `status: "all"` request.
+    PolyNode and Struct each represented all 50,956 August 4 fills after reconciliation.
   </Card>
 </CardGroup>
 
-## What the test establishes
+## August 4 retest: pending still not observed
+
+Struct's current [trades-room reference](https://docs.struct.to/websockets/rooms/trades) still defines `status: "all"` as both pending and confirmed, and its [mempool guide](https://docs.struct.to/guides/copy-trading-pending-or-confirmed-trades) says pending events arrive before block confirmation. We reran the published request without a trade-type filter:
+
+```json
+{
+  "room": "polymarket_trades",
+  "filters": {
+    "status": "all",
+    "subscribe_all": true
+  }
+}
+```
+
+The August 4 headline subscription was accepted with `subscribe_all: true`, an empty `rejected` array, and continuous confirmed delivery. It emitted no pending events. The acknowledgment, as on August 1, did not echo the requested `status` field.
+
+### What changed since August 1
+
+Both headline windows used the same host, one-process monotonic clock, source hashes, 12-second warm-up, two-block boundary guard, 30-second confirmation tail, official lowercase RTDS heartbeat, and five-second RTDS silence recovery.
+
+| Metric | August 1 | August 4 | Measured change |
+|---|---:|---:|---:|
+| Eligible transactions | 18,041 | 18,122 | +81 |
+| Struct pending events | 0 | 0 | Still not observed |
+| PolyNode `status_update` vs Struct confirmed, median lead | +3.963 s | **+9.265 s** | **+5.302 s / 2.34×** |
+| PolyNode `status_update` first | 100.00% | 100.00% | Unchanged |
+| PolyNode fill vs Struct confirmed record, median lead | +3.862 s | **+8.888 s** | **+5.026 s / 2.30×** |
+| PolyNode fill first | 99.00% | 98.17% | -0.83 percentage points |
+| PolyNode `status_update` vs RTDS activity, median lead | -0.171 s | -0.209 s | -0.039 s |
+| Struct confirmed vs RTDS activity, median lead | -4.118 s | **-9.488 s** | 5.370 s additional Struct lag |
+| RTDS transaction coverage | 98.537% | 99.559% | +1.022 percentage points |
+
+A positive lead means the named left-hand path arrived first. The confirmation lead over Struct increased by **133.8%** between the two measured dates. The RTDS control lane helps locate that shift: PolyNode `status_update` versus RTDS moved only 38.5 ms, while Struct confirmed fell another 5.370 seconds behind RTDS. That triangulation supports **substantial between-window variability in Struct confirmed delivery**, not a claim that every future Struct event or region will behave the same way.
+
+### Access and filter controls
+
+The post-run credential audit found that the August 4 headline used a second accepted Struct key rather than the August 1 key. We therefore recovered the exact August 1 credential by its one-way fingerprint and reran the `status: "all"` control. We also ran an explicit `status: "pending"` control. Neither changed the result.
+
+| August 4 window | Struct credential | Request | Core | Eligible transactions / fills | Struct pending | Struct confirmed coverage |
+|---|---|---|---:|---:|---:|---:|
+| Initial connection probe | Second accepted key | `status: "all"` | 60 s | 1,385 / 3,652 | 0 | 100% |
+| Explicit pending control | Second accepted key | `status: "pending"` | 45 s | 706 / 1,826 | 0 | Not applicable; no Struct events |
+| Headline | Second accepted key | `status: "all"` | 900 s | 18,122 / 50,956 | 0 | 100% |
+| Exact August 1 key control | August 1 key | `status: "all"` | 60 s | 1,673 / 4,482 | 0 | 100% |
+
+Across the four non-overlapping August 4 windows, the independent denominator contained 21,886 transactions and 60,916 fills, while Struct emitted zero pending events. We retain these windows separately and do not pool their latency samples because their credentials, status semantics, and durations differ.
+
+The exact-key control also reproduced the confirmation result: PolyNode `status_update` arrived first for all 1,673 matched transactions by 9.887 seconds median, and PolyNode fills arrived first for all 4,482 reconciled fills by 9.336 seconds median. Both accepted keys returned an empty `rejected` array; the all-status runs continued delivering confirmed data, and no auth, connection-limit, or out-of-credits close was recorded.
+
+<Note>
+The defensible result is that Struct's documented pending path was **not observed again**, across two accepted credentials and an explicit pending-only request. The benchmark cannot identify why the path was absent, and confirmed logs cannot enumerate pending transactions that never reach the chain.
+</Note>
+
+### August 4 headline window
+
+| Property | Recorded value |
+|---|---|
+| Core interval | 2026-08-04 01:10:04.218–01:25:04.324 UTC |
+| Host clock zone | Europe/Berlin, UTC+02:00 |
+| Runtime | Node.js v24.14.0 on Linux x64 |
+| Struct SDK | 0.6.7 |
+| Eligible blocks | 91,400,521–91,401,117 inclusive |
+| Boundary hashes | `0xc53dbe…c288` through `0x2da733…6192` |
+| Core / warm-up / confirmation tail | 900 / 12 / 30 seconds |
+| Chain truth | 18,122 transactions / 50,956 `OrderFilled` logs |
+| Struct request | `status: "all"`, `subscribe_all: true`, no trade-type filter |
+| RTDS heartbeat / recovery | Official lowercase `ping`; reconnect after 5 seconds without global activity |
+
+The benchmark verifier re-read both boundary blocks after analysis. Their hashes still matched the recorded manifest.
+
+#### Coverage
+
+| Path | Unit | Seen | Coverage | Missing |
+|---|---:|---:|---:|---:|
+| PolyNode pending settlement | Transaction | 18,122 / 18,122 | 100.000% | 0 |
+| PolyNode `status_update` | Transaction | 18,122 / 18,122 | 100.000% | 0 |
+| PolyNode confirmed `trade` | Fill | 50,956 / 50,956 | 100.000% | 0 |
+| Struct pending | Transaction | 0 / 18,122 | 0.000% | 18,122 |
+| Struct confirmed | Transaction | 18,122 / 18,122 | 100.000% | 0 |
+| Struct combined confirmed record | Fill | 50,956 / 50,956 | 100.000% | 0 |
+| RTDS activity | Transaction | 18,042 / 18,122 | 99.559% | 80 |
+
+Struct emitted 32,834 direct `OrderFilled` records and 18,122 `OrdersMatched` records. All 50,956 records mapped to the chain denominator with zero unmatched records and zero index/order-hash mismatches, so Struct retained 100% confirmed-fill coverage after reconciliation.
+
+#### Latency
+
+Every callback was stamped immediately with `process.hrtime.bigint()` in the same process. A positive lead means the left-hand path arrived first.
+
+| Comparison: left vs right | Samples | Median left lead | P95 left lead | Left first |
+|---|---:|---:|---:|---:|
+| PolyNode pending vs PolyNode `status_update` | 18,122 | +2.215 s | +3.332 s | 100.00% |
+| ★ **PolyNode `status_update` vs Struct confirmed** | 18,122 | **+9.265 s** | +10.845 s | 100.00% |
+| PolyNode confirmed fill vs Struct confirmed record | 50,956 | **+8.888 s** | +10.698 s | 98.17% |
+| ★ **PolyNode pending vs RTDS activity** | 18,042 | +2.005 s | +2.901 s | 100.00% |
+| PolyNode `status_update` vs RTDS activity | 18,042 | -0.209 s | +0.415 s | 30.09% |
+| Struct confirmed vs RTDS activity | 18,042 | **-9.488 s** | -8.191 s | 0.00% |
+
+The RTDS row again prevents an incorrect claim: RTDS activity led PolyNode `status_update` by 209 ms median. PolyNode's several-second advantage against RTDS belongs to the pending stream; its 9.265-second confirmed advantage is specifically against Struct confirmed.
+
+#### Adverse observations
+
+Struct arrived first for 934 of 50,956 exact fill pairs across 324 transactions. Every loss was concentrated in the final three eligible blocks, 91,401,115–91,401,117, and the worst PolyNode fill loss was 3.018 seconds. PolyNode `status_update` still beat Struct confirmed for every transaction, including that cluster.
+
+RTDS silently stopped delivering global activity for 5.788 seconds. Its 80 misses occupied exactly four blocks, 91,400,687–91,400,690; activity resumed at block 91,400,691 after the watchdog reconnected and resubscribed. The [80 missing transaction hashes](/assets/case-studies/2026-08-04-websocket-retest/rtds-missing-transactions.json) are published for audit.
+
+The [August 4 compact evidence bundle](/assets/case-studies/2026-08-04-websocket-retest/headline-summary.json) contains the claim/evidence matrix, exact configuration, cross-date metrics, controls, source hashes, block anchors, adverse clusters, integrity results, and SHA-256 inventory for the full retained archives.
+
+## What the August 1 test established
 
 In this window, PolyNode's confirmation signal beat Struct's confirmed signal for all **18,041** matched transactions by **3.963 seconds median**. At exact fill granularity, PolyNode beat Struct on **47,796 of 48,281 fills**, or **98.995%**, by **3.862 seconds median**.
 
@@ -39,7 +146,7 @@ PolyNode pending also arrived before RTDS activity for every one of their **17,7
 We did **not** find evidence that Struct was missing confirmed transactions or fills. Struct's documented pending path, however, produced no events in the headline run or any retained test window. That result supports the narrow statement that we could not reproduce Struct pending delivery with the documented request on a fresh, credited account. It does not establish why the events were absent.
 
 <Note>
-**No higher-tier requirement found.** [Struct's own benchmark](https://www.struct.to/blog/polymarket-rtds-vs-struct-trades-ws) says that pending mode is included starting on the free plan, while its [trades-room reference](https://docs.struct.to/websockets/rooms/trades) presents `pending` and `all` as ordinary optional status filters. Our `status: "all"` subscription was acknowledged with `subscribe_all: true`, an empty `rejected` array, and continued confirmed delivery. We recorded no authentication, connection-limit, or out-of-credits close; [Struct documents](https://docs.struct.to/guides/errors) exhausted credits as close code `4004`. We therefore found no evidence that a paid plan or enhanced key was required. An undisclosed entitlement cannot be ruled out from outside Struct, but it would contradict the published access claim and was not surfaced to the client.
+**No higher-tier requirement found.** [Struct's own benchmark](https://www.struct.to/blog/polymarket-rtds-vs-struct-trades-ws) says that pending mode is included starting on the free plan, while its [trades-room reference](https://docs.struct.to/websockets/rooms/trades) presents `pending` and `all` as ordinary optional status filters. The August 1 subscription, the August 4 headline with a second accepted key, and the August 4 exact-key control were acknowledged with `subscribe_all: true`, an empty `rejected` array, and continued confirmed delivery. We recorded no authentication, connection-limit, or out-of-credits close; [Struct documents](https://docs.struct.to/guides/errors) exhausted credits as close code `4004`. We therefore found no evidence that a paid plan or enhanced key was required. An undisclosed entitlement cannot be ruled out from outside Struct, but it would contradict the published access claim and was not surfaced to the client.
 </Note>
 
 ## Signal mapping
@@ -57,7 +164,7 @@ PolyNode [`status_update`](/websocket/events/status-update) means that a previou
 
 RTDS activity is useful as a public timing baseline, but we do not label it as either pending or confirmed. Its official schema is not an exact semantic equivalent of both stages.
 
-## Headline run
+## August 1 headline run
 
 | Property | Recorded value |
 |---|---|
@@ -75,7 +182,7 @@ RTDS activity is useful as a public timing baseline, but we do not label it as e
 
 The benchmark verifier re-read both boundary blocks after analysis. Their hashes still matched the recorded manifest.
 
-## Coverage results
+## August 1 coverage results
 
 Coverage is measured only inside the fully observed block window. Transaction coverage asks whether a feed surfaced a transaction at least once. Fill coverage requires every individual on-chain execution.
 
@@ -104,7 +211,7 @@ For each transaction, Struct's `OrdersMatched` record carried the taker order ha
 
 The defensible conclusion is therefore **100% Struct confirmed-fill coverage**, not 62.63%.
 
-## Latency results
+## August 1 latency results
 
 Every callback was stamped immediately with `process.hrtime.bigint()` in the same process. A positive lead means the left-hand path arrived first. Missing events never become artificial zero-latency samples.
 
@@ -127,7 +234,7 @@ Struct arrived first for 485 fills across 203 transactions. Those losses were co
 
 Outside those blocks, PolyNode won every exact fill pair. We include the clusters because a median alone would hide them.
 
-## RTDS continuity
+## August 1 RTDS continuity
 
 The RTDS socket silently stopped delivering global activity three times without first producing an error or close event. The watchdog terminated the open socket and resubscribed each time.
 
@@ -315,7 +422,7 @@ npm run bench -- \
 
 Credentials are read only from environment variables. The artifacts contain redacted endpoints and short one-way fingerprints, never raw keys.
 
-## Control runs and prior windows
+## August 1 control runs and prior windows
 
 We retained ten non-overlapping windows totaling 1,995 seconds, 39,992 confirmed transactions, and 107,210 chain fills. Struct emitted zero pending events in every retained window.
 
@@ -343,22 +450,26 @@ An earlier exploratory `status: "pending"`-only probe on the fresh credited Stru
 
 ## Artifacts and integrity
 
-The [compact result bundle](/assets/case-studies/2026-08-01-websocket-benchmark/headline-summary.json) contains the exact configuration, coverage, latency, lifecycle gaps, adverse blocks, run inventory, source hashes, block anchors, and SHA-256 checksums for the full local archive. The [credential-free source bundle](/assets/case-studies/2026-08-01-websocket-benchmark/harness-source.json) contains the complete harness, analyzer, tests, dependency lock, README, and license at the measured commit.
+The [August 4 compact retest bundle](/assets/case-studies/2026-08-04-websocket-retest/headline-summary.json) contains the claim/evidence matrix, headline and control metrics, exact configurations, credential fingerprints, cross-date comparison, lifecycle gap, adverse blocks, source hashes, block anchors, and SHA-256 inventory. The separate [RTDS missing-transaction file](/assets/case-studies/2026-08-04-websocket-retest/rtds-missing-transactions.json) contains all 80 identifiers from the retest gap.
 
-The full headline archive is 481 MB and contains:
+The full August 4 headline archive is 493 MB and contains:
 
-- 220,584 normalized events;
-- 220,601 parsed raw frames;
-- 167,935 latency CSV lines, including the header;
-- every Polygon `OrderFilled` log, with receipt-local indexes derived from fetched receipts;
+- 226,513 normalized events;
+- 226,528 parsed raw frames;
+- 174,161 latency CSV lines, including the header;
+- every Polygon `OrderFilled` log and receipt needed for reconciliation;
 - exact missing identifiers and connection lifecycle events;
-- readable and machine-readable summaries.
+- readable and machine-readable summaries plus verified SHA-256 checksums.
 
-Before publication, we ran the TypeScript compiler, three analysis regression tests, `git diff --check`, a credential-pattern scan, and a separate block-anchor recheck through the benchmark-only verifier. No credentials, RPC errors, unmatched Struct records, or block-hash changes were found.
+The [August 1 compact result bundle](/assets/case-studies/2026-08-01-websocket-benchmark/headline-summary.json) preserves the original configuration, results, and archive checksums. The [credential-free source bundle](/assets/case-studies/2026-08-01-websocket-benchmark/harness-source.json) contains the complete harness, analyzer, tests, dependency lock, README, and license. Its source hashes match the August 4 collector exactly.
+
+For the August 4 retest, the TypeScript compiler and all three analysis regression tests passed. All JSON and NDJSON artifacts parsed, all checksums verified, all 188 RPC audit calls succeeded, both boundary hashes rechecked, and all 50,956 Struct records reconciled with zero unmatched records or identity mismatches. An exact-value scan found none of the tested credentials in source or publishable artifacts.
 
 ## Limitations
 
-- This is one date and one network vantage point. It does not guarantee the same latency from every region or in future provider versions.
+- These are two dates from one network vantage point. They do not guarantee the same latency from every region or in future provider versions.
+- Two headline windows establish a large measured shift but do not estimate Struct's universal latency variance or justify saying every future Struct window will be inconsistent.
+- The August 4 headline used a second accepted Struct credential. The exact August 1 credential was retested separately and reproduced zero pending delivery and similar confirmed latency; the separate samples are not pooled.
 - The traffic was live, not a controlled synthetic workload. Market activity and block density varied.
 - On-chain logs prove confirmed completeness. They cannot enumerate pending transactions that never confirm.
 - RTDS is a public activity baseline, not a semantic clone of either pending or confirmed streams.
@@ -374,4 +485,4 @@ Before publication, we ran the TypeScript compiler, three analysis regression te
 - [Polymarket official real-time data client](https://github.com/Polymarket/real-time-data-client)
 - [PolyNode WebSocket overview](/websocket/overview)
 
-Last evidence audit: **2026-08-01 12:57 UTC**.
+Last evidence audit: **2026-08-04 01:49 UTC**.
