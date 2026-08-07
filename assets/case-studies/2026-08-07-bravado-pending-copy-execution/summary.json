@@ -1,0 +1,342 @@
+{
+  "schema_version": 1,
+  "prepared_for_review_at": "2026-08-07T04:52:10.886Z",
+  "classification": "public compact evidence; endpoint addresses, credentials, and private wallet addresses omitted",
+  "claim_scope": {
+    "provider_run": true,
+    "point_in_time": true,
+    "measures_bravado_public_stream": true,
+    "measures_bravado_private_engine": false,
+    "bravado_api_key_used": false
+  },
+  "headline_run": {
+    "runtime": {
+      "node": "v24.14.0",
+      "platform": "linux",
+      "arch": "x64",
+      "timezone": "Europe/Berlin"
+    },
+    "configuration": {
+      "duration_sec": 900,
+      "warmup_sec": 12,
+      "confirmation_tail_sec": 20,
+      "boundary_guard_blocks": 2
+    },
+    "collector_source_sha256": {
+      "index.ts": "caea7bd7420ad7f415df0447a560a1de5a2c9787da2c901bd38a8e70c77e3d3b",
+      "analysis.ts": "3e3486d94a1740dbcd8490715de39bec9f6f69ecd775bc23566fa90afe688f14"
+    },
+    "core_interval_utc": {
+      "start": "2026-08-07T04:07:32.654Z",
+      "end": "2026-08-07T04:22:32.752Z",
+      "duration_sec": 900
+    },
+    "block_window": {
+      "from_block": 91580419,
+      "to_block": 91581015,
+      "from_block_hash": "0x42d83e6a5a03c7c3ba5146991ab5df5a37bf97a51a5832d5475ff6dfdcad1419",
+      "to_block_hash": "0x73fc4327939d9fa25f11dfa6fcda3da13e2f18d30d4ba73fb1a38496cfa9b345",
+      "boundary_hashes_rechecked": true
+    },
+    "chain_ground_truth": {
+      "transactions": 12705,
+      "order_filled_logs": 35218
+    },
+    "coverage": {
+      "polynode_pending_transactions": {
+        "seen": 12705,
+        "eligible": 12705,
+        "coverage_pct": 100,
+        "missing": 0
+      },
+      "polynode_status_update_transactions": {
+        "seen": 12705,
+        "eligible": 12705,
+        "coverage_pct": 100,
+        "missing": 0
+      },
+      "polynode_confirmed_trade_transactions": {
+        "seen": 12705,
+        "eligible": 12705,
+        "coverage_pct": 100,
+        "missing": 0
+      },
+      "polynode_exact_order_filled_logs": {
+        "seen": 35218,
+        "eligible": 35218,
+        "coverage_pct": 100,
+        "missing": 0
+      },
+      "bravado_public_trade_transactions": {
+        "seen": 12665,
+        "eligible": 12705,
+        "coverage_pct": 99.68516332152696,
+        "missing": 40,
+        "exact_fill_coverage_available": false,
+        "exact_fill_limitation": "The public payload did not expose a block-global log index."
+      }
+    },
+    "latency_ms": {
+      "sign": "Positive values mean the named Polynode path arrived first.",
+      "polynode_pending_vs_bravado_public_sighting": {
+        "samples": 12665,
+        "polynode_first": 12665,
+        "polynode_first_pct": 100,
+        "median_lead": 2104.212984,
+        "p95_lead": 3076.912379
+      },
+      "polynode_status_update_vs_bravado_public_sighting": {
+        "samples": 12665,
+        "polynode_first": 7330,
+        "polynode_first_pct": 57.87603632056849,
+        "median_lead": 96.699978,
+        "p95_lead": 803.634745
+      },
+      "polynode_confirmed_trade_tx_vs_bravado_public_sighting": {
+        "samples": 12665,
+        "polynode_first": 6059,
+        "polynode_first_pct": 47.840505329648636,
+        "median_lead": -28.220233,
+        "p95_lead": 707.1737416
+      }
+    },
+    "bravado_public_payload": {
+      "live_trade_messages": 26667,
+      "fields": [
+        "amount",
+        "assetId",
+        "conditionId",
+        "eventImage",
+        "eventSlug",
+        "eventTitle",
+        "id",
+        "marketQuestion",
+        "outcome",
+        "price",
+        "priceCents",
+        "side",
+        "size",
+        "timestamp",
+        "trader",
+        "traderImage",
+        "traderName",
+        "transactionHash"
+      ],
+      "not_observed_as_fields": [
+        "pending marker",
+        "lifecycle status",
+        "block number",
+        "block-global log index",
+        "combo market type",
+        "perps market type"
+      ]
+    },
+    "stream_gap": {
+      "bravado_full_silence_sec": 17.649,
+      "scored_overlap_sec": 5.524,
+      "polynode_callbacks_during_scored_overlap": 287,
+      "rtds_callbacks_during_scored_overlap": 223,
+      "confirmed_bravado_misses": 40,
+      "cause_determined": false
+    },
+    "rtds_consistency_check": {
+      "rtds_seen_transactions": 11092,
+      "bravado_rtds_overlap": 11052,
+      "share_of_rtds_seen_also_on_bravado_pct": 99.639379733141,
+      "bravado_minus_rtds_median_arrival_ms": 231.9610895,
+      "rtds_reconnected_during_run": true,
+      "rtds_missing_eligible_transactions": 1613,
+      "inference": "The overlap, arrival order, and payload shape are consistent with a republished post-trade Polymarket feed.",
+      "not_established": "The test does not establish RTDS as Bravado's upstream source."
+    },
+    "edge_delivery_check": {
+      "checked_at": "2026-08-07T04:42:53.654Z",
+      "observed_provider": "Cloudflare",
+      "evidence": [
+        "resolved edge addresses were registered to CLOUDFLARENET",
+        "the endpoint returned a Cloudflare server header and CF-Ray header"
+      ],
+      "limitation": "Edge attribution does not identify the origin provider, server, or physical origin location."
+    }
+  },
+  "receipt_at_public_message_controls": {
+    "control_count": 2,
+    "samples": 200,
+    "receipts_present_at_first_query": 200,
+    "receipt_null": 0,
+    "rpc_errors": 0,
+    "polynode_pending_first": 200,
+    "classification": "The sampled Bravado public messages were post-mining trade sightings.",
+    "limitation": "This does not classify Bravado's private detection or order-submission path."
+  },
+  "copy_like_relationship": {
+    "attribution": {
+      "public_builder_name": "Bravado",
+      "public_builder_verified": true,
+      "bravado_attributed_records": 67206,
+      "distinct_attributed_transactions": 63861,
+      "distinct_maker_wallets": 91,
+      "distinct_markets": 11846,
+      "history_start": "2026-01-04T05:58:11.138048Z",
+      "history_end": "2026-08-07T03:52:14.844092Z",
+      "public_leader_username": "ferrariChampions2026"
+    },
+    "primary_rule": {
+      "eligible_follower_transactions": 17916,
+      "description": "Latest same-asset, same-side leader trade zero through ten seconds before the follower, using the Polymarket Data API timestamp for both sides.",
+      "matches": 1637,
+      "match_pct": 9.13708417057379,
+      "distinct_leader_transactions": 1531,
+      "assets": 999,
+      "markets": 813,
+      "timestamp_lag_median_sec": 3,
+      "timestamp_lag_p90_sec": 7,
+      "absolute_price_delta_median_usd": 0.01,
+      "absolute_price_delta_p90_usd": 0.02,
+      "follower_to_leader_notional_ratio_median_pct": 0.13014971922182743,
+      "ratio_between_0_10_and_0_17_pct_count": 1255
+    },
+    "negative_controls": {
+      "time_reversed_same_side": {
+        "matches": 201,
+        "match_pct": 1.1219022103148024,
+        "joint_close_price_and_ratio_matches": 32
+      },
+      "opposite_side_leader_before": {
+        "matches": 0,
+        "match_pct": 0
+      },
+      "shifted_time": {
+        "controls": 120,
+        "range_sec": [-1800, 1800],
+        "increment_sec": 30,
+        "strongest_shift_sec": 30,
+        "strongest_matches": 127,
+        "strongest_match_pct": 0.7088635856217906,
+        "primary_match_lift": 12.88976377952756,
+        "strongest_joint_close_price_and_ratio_matches": 22
+      },
+      "joint_signature": {
+        "definition": "Absolute price difference no larger than $0.03 and follower-to-leader notional ratio between 0.10% and 0.17%.",
+        "primary_matches": 1212,
+        "strongest_negative_control_matches": 32,
+        "primary_lift_over_strongest_negative_control": 37.875
+      },
+      "selection_note": "The relationship was discovered exploratorily; controls were applied to the frozen full-history pair after discovery."
+    },
+    "chain_execution": {
+      "candidate_pairs": 1637,
+      "receipts_resolved": 1637,
+      "raw_same_block": 78,
+      "raw_later_block": 1559,
+      "same_block_rejected_follower_before_leader": 37,
+      "causally_ordered_pairs": 1600,
+      "same_block_leader_first": 41,
+      "same_block_leader_first_pct": 2.5625,
+      "later_block": 1559,
+      "later_block_pct": 97.4375,
+      "block_delta_median": 2,
+      "block_delta_p90": 5
+    },
+    "interpretation": {
+      "supports": "A strong copy-like relationship and measured confirmed block placement for this pair set.",
+      "does_not_prove": [
+        "a private Bravado copy subscription or configuration",
+        "Bravado's private detection or submission time",
+        "the number of rejected, canceled, missed, or never-submitted attempts",
+        "that Bravado never achieves same-block execution elsewhere"
+      ]
+    },
+    "frozen_input_sha256": {
+      "builder-trades.ndjson": "5123e202731b8fe383cdb77638ca70d4956cb6fe6d42fb432ab39724b9aba14c",
+      "follower-trades.ndjson": "d9b6c2c0508563cf9539518c7efb59e0b21d6df6d4f6a62cb91e9a18a72ffe40",
+      "leader-trades.ndjson": "5e41b2f08560ddf94e6c89112b9cfc531b39dcfebb6a0568a5b007e35a150897",
+      "source-summary.json": "80a66398c4e05a1ba0f7dff424eaad05737e803f0aed6508d450ea958b26ac8e"
+    }
+  },
+  "product_surface_audit": {
+    "reviewed_at": "2026-08-07T04:24:16.533Z",
+    "findings": {
+      "pending": {
+        "polynode": "documented and observed",
+        "bravado": "not documented or observed on the reviewed public surfaces"
+      },
+      "combo_markets": {
+        "polynode": "dedicated REST and WebSocket surfaces documented",
+        "bravado": "no dedicated API or stream documented or observed"
+      },
+      "perps": {
+        "polynode": "market, wallet, analytics, on-chain, and streaming surfaces documented",
+        "bravado": "no API or stream documented or observed"
+      },
+      "historical_prediction_market_data": {
+        "polynode": "documented V3 API",
+        "bravado": "filterable REST and WebSocket Data API advertised"
+      },
+      "managed_execution": {
+        "polynode": "outside the current product boundary",
+        "bravado": "copy engine and advanced order execution advertised"
+      },
+      "backtesting": {
+        "bravado": "labeled in development"
+      }
+    },
+    "sources": [
+      {
+        "provider": "Bravado",
+        "label": "homepage",
+        "url": "https://www.bravadotrade.com/",
+        "sha256": "3902c165dc060b91aa7382b8919d4501f05686fb83694941018d7dbff207780c"
+      },
+      {
+        "provider": "Bravado",
+        "label": "Trade API",
+        "url": "https://www.bravadotrade.com/products/trade-api",
+        "sha256": "c0a1190f6c9aff4a7f2715fa31620433165ddabfabaf15a9371cf9054999ce9e"
+      },
+      {
+        "provider": "Bravado",
+        "label": "Data API",
+        "url": "https://www.bravadotrade.com/products/data-api",
+        "sha256": "40571a464644da43010f58716618fac81c28c3b7cc50279840bcb6f9b4c74973"
+      },
+      {
+        "provider": "Bravado",
+        "label": "Copytrading API",
+        "url": "https://www.bravadotrade.com/products/copytrade-api",
+        "sha256": "916bc1f18bf1cf3379ac5e9cfef2a0870e5b4dd77960ea2b1dc671a7934b198e"
+      },
+      {
+        "provider": "Bravado",
+        "label": "Backtesting",
+        "url": "https://www.bravadotrade.com/products/backtesting",
+        "sha256": "269f609ae74a95ad1bb61ffda05fef77aa8073d4bf64af774c4494ef9cb1d76b"
+      },
+      {
+        "provider": "Polynode",
+        "label": "V3 Data API",
+        "url": "https://docs.polynode.dev/data/overview",
+        "sha256": "45c6310b3f30afcd65973c30d29fca064dcb7738beceb9ba218deeddee7e5690"
+      },
+      {
+        "provider": "Polynode",
+        "label": "Combos",
+        "url": "https://docs.polynode.dev/data/combos/overview",
+        "sha256": "d61a1a6eee54c8300e7265ee95fd8cc094935732c4ee583f608da83115536a49"
+      },
+      {
+        "provider": "Polynode",
+        "label": "Perps",
+        "url": "https://docs.polynode.dev/perps/overview",
+        "sha256": "0fe68294a425fb3f65b3608975dae5fbc2ecdfa6d9dd5d9aba821be825025571"
+      },
+      {
+        "provider": "Polynode",
+        "label": "WebSocket",
+        "url": "https://docs.polynode.dev/websocket/overview",
+        "sha256": "0fd5f5c2739d9b2e15a380cd2bf4a4a2efde4ee20c3f24100891f2e4c8e67c74"
+      }
+    ],
+    "absence_language": "Not documented or observed means no surface was found in the bounded first-party materials and capture; it does not prove that a private or unreleased implementation does not exist."
+  }
+}
