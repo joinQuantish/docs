@@ -796,6 +796,7 @@
           {
             "group": "WebSocket Benchmarks",
             "pages": [
+              "case-studies/bravado-pending-copy-execution-2026-08-07",
               "case-studies/struct-rtds-websocket-benchmark-2026-08-01"
             ]
           },

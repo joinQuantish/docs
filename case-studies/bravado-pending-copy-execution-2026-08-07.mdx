@@ -1,0 +1,148 @@
+---
+title: "Pending signal and observed copy execution: Polynode vs Bravado"
+sidebarTitle: "Polynode vs Bravado"
+description: "An August 7, 2026 study of pending latency, public-stream coverage, observed same-block copy execution, and product breadth."
+icon: "bolt"
+---
+
+On August 7, 2026, we compared Polynode's pending and confirmed WebSocket paths with Bravado's public trade WebSocket, then checked the observed transactions and fills against Polygon. In a separate on-chain audit, we examined a strongly supported copy-like relationship between a public Polymarket trader and a Bravado-attributed wallet.
+
+<Info>
+This is a Polynode-run, point-in-time study. It measures Bravado's public customer-visible stream and confirmed Bravado-attributed outcomes—not Bravado's private detector or order-submission system. Claims are limited to the recorded date, network vantage point, and identified relationship.
+</Info>
+
+<CardGroup cols={2}>
+  <Card title="Pending first on 12,665 of 12,665" icon="circle-check">
+    Polynode pending arrived before every overlapping Bravado public trade sighting in the 15-minute headline run.
+  </Card>
+  <Card title="2.104-second median lead" icon="stopwatch">
+    Polynode pending led the Bravado sighting by 2.104 seconds at median and 3.077 seconds at P95.
+  </Card>
+  <Card title="97.44% landed in a later block" icon="chart-line">
+    Of 1,600 chain-ordered copy-like pairs, 1,559 follower transactions landed after the leader's block.
+  </Card>
+  <Card title="Combos and perps covered" icon="layer-group">
+    Polynode documents dedicated REST and streaming surfaces for combo markets and perps; no equivalent Bravado public surface was found.
+  </Card>
+</CardGroup>
+
+## Bottom line
+
+Bravado advertises copy fills in the same block as the leader. That was not the typical result in the Bravado-attributed relationship we could verify: **41 of 1,600** causally ordered pairs landed in the leader's block, while **1,559 of 1,600** landed later. Same-block execution occurred, but it was the exception rather than the norm in this sample.
+
+The public-stream result explains why the signal boundary matters. We observed no pending lifecycle message on Bravado's public WebSocket. Polynode pending arrived first on every shared confirmed transaction, more than two seconds before the Bravado public sighting at the measured median. A customer reacting only to the observed Bravado stream would already be reacting after mining; Polynode exposes a pre-confirmation window in which customer-owned execution can act.
+
+## The public stream arrived after the pending window
+
+The headline run covered **12,705 transactions and 35,218 `OrderFilled` logs** across Polygon blocks 91,580,419–91,581,015. The core interval was 2026-08-07 04:07:32.654–04:22:32.752 UTC. The collector ran on Node.js v24.14.0, Linux x64, from the Europe/Berlin vantage, with a 12-second warm-up, two-block boundary guard, and 20-second confirmation tail.
+
+| Path | Unit | Seen | Coverage | Missing |
+|---|---:|---:|---:|---:|
+| Polynode pending settlement | Transaction | 12,705 / 12,705 | 100.000% | 0 |
+| Polynode `status_update` | Transaction | 12,705 / 12,705 | 100.000% | 0 |
+| Polynode confirmed `trade` | Exact fill | 35,218 / 35,218 | 100.000% | 0 |
+| Bravado public trade sighting | Transaction | 12,665 / 12,705 | 99.685% | 40 |
+
+Bravado's 26,667 live trade messages carried a transaction hash, but no pending marker, lifecycle status, block number, or block-global log index. The missing log index means the public stream can be scored for transaction coverage, but not for exact-fill completeness. The 40 misses were concentrated in one silent-open interval; Polynode and RTDS continued delivering during the scored overlap, but the audit cannot identify the cause. The missing transaction hashes are included in the evidence bundle.
+
+| Comparison: Polynode vs Bravado public sighting | Samples | Polynode first | Median lead | P95 lead |
+|---|---:|---:|---:|---:|
+| Pending settlement | 12,665 | **100.00%** | **+2.104 s** | **+3.077 s** |
+| `status_update` | 12,665 | 57.88% | +96.7 ms | +803.6 ms |
+| Confirmed `trade`, transaction level | 12,665 | 47.84% | -28.2 ms | +707.2 ms |
+
+A positive lead means Polynode arrived first. The confirmed paths were close: Bravado led Polynode's confirmed `trade` transaction sighting by 28.2 ms at the median. The measured advantage is specifically Polynode's **pending signal**, not a claim that every Polynode post-mining message beats every Bravado message.
+
+Two receipt controls reinforce the lifecycle classification. All **200 of 200** sampled Bravado transaction hashes already had a Polygon receipt when queried immediately after the public message arrived, while Polynode pending had arrived first for all 200. We therefore classify the observed Bravado message as a post-mining trade sighting.
+
+<Note>
+The Bravado and Polymarket RTDS observations were highly correlated: 11,052 of the 11,092 RTDS-seen transaction hashes in the headline window also appeared on Bravado, and RTDS arrived 232 ms earlier at the median. Together with the payload shape, this is consistent with a republished post-trade Polymarket feed. It does **not** establish that RTDS is Bravado's upstream source. RTDS disconnected and reconnected once during the run, so it is used only as an auxiliary overlap comparison, never as ground truth. During the audit, the public endpoint was delivered through Cloudflare's edge; that reveals neither the origin provider nor the origin location.
+</Note>
+
+## Same-block copy execution was uncommon in the attributed sample
+
+Polymarket's public builder data identified Bravado as a verified builder and returned **67,206 Bravado-attributed records** spanning January 4 through August 7, 2026. Within that history, one wallet showed a broad, repeatable relationship with the public trader `ferrariChampions2026`.
+
+We call the relationship **copy-like**, not proven copy trading. The evidence is unusually strong for public data:
+
+| Relationship check | Result |
+|---|---:|
+| Eligible follower transactions | 17,916 |
+| Same-asset, same-side matches 0–10 seconds after the leader | 1,637 (9.137%) |
+| Markets / assets represented | 813 / 999 |
+| Median timestamp lag | 3 seconds |
+| Median absolute price difference | $0.01 |
+| Strongest shifted-time control | 127 matches (0.7089%) |
+| Unshifted lift over strongest control | **12.89×** |
+
+### Why the correlation is not a generic coincidence
+
+We reran the same frozen denominator with the relationship deliberately broken in three ways. The strongest negative result is reported in each family.
+
+| Rule on the same 17,916 eligible transactions | Matches | Rate |
+|---|---:|---:|
+| Observed order: same asset and side, leader 0–10 seconds before | **1,637** | **9.137%** |
+| Time reversed: same asset and side, leader 0–10 seconds after | 201 | 1.122% |
+| Strongest of 120 nonzero time shifts from -30 to +30 minutes | 127 | 0.709% |
+| Opposite side, leader before | 0 | 0.000% |
+
+Timing is only part of the signature. The sizing was highly repetitive: the median follower-to-leader notional ratio was 0.13015%, and 1,255 of 1,637 pairs fell between 0.10% and 0.17%. Requiring both that sizing band and a price difference no larger than $0.03 left **1,212 observed-sequence matches**, versus **32** in the time-reversed control and at most **22** in any shifted-time control. The observed sequence is therefore **37.9×** larger than the strongest joint negative control.
+
+The relationship was found exploratorily rather than preregistered, so we do not turn that separation into a formal probability claim. Tight timing alone could reflect two bots reacting to the same live sports signal; the directionality, repeated sizing, close prices, broad market coverage, leader-first ordering, and negative controls make direct copying the stronger explanation.
+
+Polygon receipts resolved every pair. Seventy-eight pairs were nominally in the same block, but 37 placed the proposed follower transaction before the leader transaction and therefore could not be causal copies of that leader fill. We excluded those reversals.
+
+| Chain-ordered outcome | Pairs | Share |
+|---|---:|---:|
+| Same block, leader transaction first | 41 | **2.5625%** |
+| Follower in a later block | 1,559 | **97.4375%** |
+| Total | 1,600 | 100% |
+
+The follower landed a median of **2 blocks** later and a P90 of **5 blocks** later. This directly tests the observed outcome behind a same-block claim; it does not expose Bravado's private detection time, submission time, rejected orders, missed opportunities, or the wallet's private configuration.
+
+## Product breadth as of August 7, 2026
+
+Bravado's public materials describe a filterable historical Data API and a substantial managed execution layer. Polynode's advantage is earlier, more structured, and broader data coverage.
+
+| Capability | Polynode | Bravado public surface reviewed |
+|---|---|---|
+| Pending transaction signal | Documented and observed `settlement` lifecycle | No public pending surface documented or observed |
+| Lifecycle and exact-fill identity | Pending, confirmation updates, and block-global fill identity | Public message lacked status, block number, and log index |
+| Combo markets | Dedicated REST data and WebSocket events | No dedicated combo API or stream documented or observed |
+| Perps | Market, wallet, analytics, on-chain, and streaming surfaces | No perps API or stream documented or observed |
+| Historical and filterable prediction-market data | V3 query catalog, filters, sorting, pagination, and aggregation | REST + WebSocket, filtering, and cursor pagination advertised |
+| Managed order and copy execution | Data and timing primitives for customer-owned execution | Copy engine and advanced order execution advertised |
+
+Bravado's documented split and merge operations are standard conditional-token primitives; they are not evidence of dedicated combo-market coverage. Its backtesting product was labeled **in development** on the audit date. Absence here means that no public surface was found in the reviewed first-party pages and captured stream—not that a private or unreleased implementation cannot exist.
+
+## What this means for latency-sensitive trading
+
+For a team building its own copy-trading, rebalancing, alerting, or protective execution system, a post-mining trade stream and a pending stream are not substitutes. The first reports what made it on-chain. The second creates an opportunity to react before confirmation.
+
+Polynode's pending feed does not guarantee that a customer's transaction will be included in the same block; gas policy, signing, routing, order construction, and block conditions still matter. It does provide the missing prerequisite: an early signal. In this test, that signal arrived before every overlapping Bravado public sighting and did so **2.104 seconds earlier at the median**.
+
+Teams considering a managed copy engine should validate the result they care about directly from receipts. In the attributable relationship studied here, a same-block outcome occurred in 2.56% of causally ordered pairs, not most of them.
+
+## Evidence and claim boundaries
+
+All competing callbacks in the timing run were stamped from one process and one monotonic clock. Fully observed block boundaries, independent Polygon logs, receipts, and rechecked block hashes defined the denominator. The exact public endpoint address and connection details are intentionally omitted because they are unnecessary to reproduce the numerical claims from the published evidence.
+
+- [Compact evidence summary](/assets/case-studies/2026-08-07-bravado-pending-copy-execution/summary.json)
+- [Full aggregate negative controls](/assets/case-studies/2026-08-07-bravado-pending-copy-execution/correlation-negative-controls.json)
+- [Bravado public-stream missing transactions](/assets/case-studies/2026-08-07-bravado-pending-copy-execution/bravado-missing-transactions.json)
+- [Published artifact checksums](/assets/case-studies/2026-08-07-bravado-pending-copy-execution/SHA256SUMS)
+
+The full raw capture, normalized events, receipts, attribution rows, latency samples, source snapshots, and SHA-256 inventories are retained internally. No Bravado API credential was used.
+
+## References
+
+- [Bravado homepage and same-block claim](https://www.bravadotrade.com/)
+- [Bravado Copytrading API](https://www.bravadotrade.com/products/copytrade-api)
+- [Bravado Data API](https://www.bravadotrade.com/products/data-api)
+- [Bravado Trade API](https://www.bravadotrade.com/products/trade-api)
+- [Polynode WebSocket](/websocket/overview)
+- [Polynode combo markets](/data/combos/overview)
+- [Polynode perps](/perps/overview)
+- [Polynode V3 Data API](/data/overview)
+
+Last evidence audit: **2026-08-07 04:52 UTC**.
