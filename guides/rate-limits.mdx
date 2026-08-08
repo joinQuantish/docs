@@ -68,9 +68,13 @@ The [usage dashboard](https://polynode.dev/dashboard/usage) shows three meters:
 | Free | 100,000 | 5 GB | 5 GB |
 | Starter | 10 million | 250 GB | 250 GB |
 | Growth | 50 million | 1 TB | 1 TB |
-| Enterprise | 250 million | 5 TB | 5 TB |
+| Enterprise / Institutional | Unlimited | Unlimited | Unlimited |
 
 Plan allowances reset at the beginning of the account's next service period. The dashboard shows the exact start and end dates. Transfer uses decimal units: `1 GB = 1,000,000,000 bytes` and `1 TB = 1,000 GB`.
+
+Enterprise/Institutional usage is still measured and visible in the dashboard,
+but it has no monthly API-request or WebSocket-transfer ceiling. The
+instantaneous request and connection limits in the tier table remain separate.
 
 <Info>
   Monthly usage enforcement is not active yet. The dashboard and package purchases are live so you can observe real usage and prepare before monthly limits are enabled. Existing per-minute, per-second, connection, and Free-session limits still apply.
@@ -90,7 +94,8 @@ For each meter, Polynode consumes the allowance included with your plan first, t
 
 ### Usage packages
 
-Usage packages add capacity to one meter without changing your subscription plan:
+Signed-in Free and paid accounts can use a package to add capacity to one meter
+without changing the subscription plan:
 
 | Package | Added capacity | One-time price |
 | --- | ---: | ---: |
@@ -207,7 +212,7 @@ When the heavy bucket is exceeded, you'll receive a `429` response with:
 
 ## Pagination limits
 
-Most V3 list endpoints default to `limit=100` and clamp `limit` to a maximum of `300` rows per page. If you request more than the page cap, PolyNode normalizes `limit` to the maximum allowed value. Responses include the actual `limit`, `offset`, `rows_returned`, and `has_more` values.
+Most V3 list endpoints default to `limit=100` and clamp `limit` to a maximum of `300` rows per page. If you request more than the page cap, Polynode normalizes `limit` to the maximum allowed value. Responses include the actual `limit`, `offset`, `rows_returned`, and `has_more` values.
 
 No V3 endpoint returns more than `1000` rows or buckets in one page. Cursors and offsets select where the next page starts; they do not increase its size.
 
