@@ -763,13 +763,6 @@
             ]
           },
           {
-            "group": "Usage & Billing",
-            "pages": [
-              "usage/overview",
-              "usage/packages"
-            ]
-          },
-          {
             "group": "Guides",
             "pages": [
               "guides/polymarket-profile-setup",

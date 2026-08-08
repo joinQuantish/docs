@@ -6,7 +6,7 @@ description: Rate limiting details and best practices.
 V3 REST limits are shared across all API keys owned by the same account. Limits scale with your plan and with the endpoint class.
 
 <Info>
-  **Two independent controls:** the per-minute, per-second, connection, and Free-session limits on this page remain in force. Polynode now also shows monthly API-request and WebSocket-transfer usage in the [usage dashboard](/usage/overview), but monthly usage enforcement is not active yet.
+  **Two independent controls:** the per-minute, per-second, connection, and Free-session limits on this page remain in force. Polynode now also shows monthly API-request and WebSocket-transfer usage in the [usage dashboard](https://polynode.dev/dashboard/usage), but monthly usage enforcement is not active yet.
 </Info>
 
 ## Tier limits
@@ -53,7 +53,15 @@ V3 REST limits are shared across all API keys owned by the same account. Limits 
 
 ## Monthly usage allowances
 
-Monthly usage is account-level and separate from the instantaneous limits above.
+Monthly usage is account-level and separate from the instantaneous limits above. Every active API key owned by the same account contributes to the same totals. Creating another key, reconnecting a WebSocket, or rotating a key does not create another allowance or reset usage.
+
+The [usage dashboard](https://polynode.dev/dashboard/usage) shows three meters:
+
+| Meter | What it counts |
+| --- | --- |
+| **API requests** | Completed authenticated requests on metered API routes. Requests rejected by authentication, existing rate limits, or a Polynode 5xx are not billable usage. |
+| **Order Book + Chainlink** | Successfully delivered Order Book and Chainlink WebSocket payload bytes. |
+| **On-chain events** | Successfully delivered settlements, status updates, trades, redemptions, oracle events, and other classified on-chain WebSocket payload bytes. |
 
 | Plan | API requests | Order Book + Chainlink | On-chain events |
 | --- | ---: | ---: | ---: |
@@ -62,7 +70,41 @@ Monthly usage is account-level and separate from the instantaneous limits above.
 | Growth | 50 million | 1 TB | 1 TB |
 | Enterprise | 250 million | 5 TB | 5 TB |
 
-One-time [usage packages](/usage/packages) can add 10 million requests or 100 GB to a specific stream meter. They add capacity only; they do not raise the request-per-minute or connection limits in the tier table.
+Plan allowances reset at the beginning of the account's next service period. The dashboard shows the exact start and end dates. Transfer uses decimal units: `1 GB = 1,000,000,000 bytes` and `1 TB = 1,000 GB`.
+
+<Info>
+  Monthly usage enforcement is not active yet. The dashboard and package purchases are live so you can observe real usage and prepare before monthly limits are enabled. Existing per-minute, per-second, connection, and Free-session limits still apply.
+</Info>
+
+### What transferred means
+
+WebSocket transfer is the encoded application payload successfully submitted to your connection. Text messages count their UTF-8 payload length, while compressed binary messages count the smaller compressed payload length. The same payload delivered to two connections counts twice.
+
+Failed sends, acknowledgements, heartbeats, ping/pong frames, warnings, quota notices, close frames, WebSocket framing, TLS, TCP, IP, and retransmission overhead do not count. This is data transfer, not storage or a bandwidth-speed measurement.
+
+The dashboard may show API response transfer for transparency. It is informational and does not consume a version-one package or allowance.
+
+### How capacity is consumed
+
+For each meter, Polynode consumes the allowance included with your plan first, then active purchased packages, then active courtesy capacity. Packages and courtesy grants with the earliest expiration are used first. Included capacity and added packages remain visually separate in the dashboard.
+
+### Usage packages
+
+Usage packages add capacity to one meter without changing your subscription plan:
+
+| Package | Added capacity | One-time price |
+| --- | ---: | ---: |
+| **API requests** | 10 million requests | $20 |
+| **Order Book + Chainlink** | 100 GB | $20 |
+| **On-chain events** | 100 GB | $20 |
+
+Select from 1 to 100 of one package in a Checkout. For example, 10 API-request packages add 100 million requests for a one-time $200 payment. Packages are resource-specific and do not raise the request-per-minute or connection limits in the tier table.
+
+Capacity is added only after Stripe confirms a successful payment. Reopening, refreshing, or replaying the same Checkout cannot add a package twice. Each package remains active for 90 days, does not reset with the monthly service period, and expires after 90 days if unused. The dashboard shows remaining capacity and expiration.
+
+A refund or payment dispute removes the unused portion of its package. Usage already delivered is not erased. If more capacity has been consumed than can be reversed safely, Polynode preserves the usage history for review instead of abruptly disconnecting a customer.
+
+The usage calculator assumes connections remain open 24 hours per day and can recommend package quantities. Its estimate is directional because activity, filters, reconnects, message shape, and compression affect actual transfer. It never purchases automatically; the dashboard remains the source of truth.
 
 ## Best practices
 
