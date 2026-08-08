@@ -5,6 +5,23 @@ description: "Recent PolyNode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-08-08 - Account usage dashboard and one-time capacity packages
+
+The signed-in Polynode dashboard now shows account-level API requests, Order Book + Chainlink transfer, and On-chain event transfer for the current service period.
+
+What's new:
+
+* Included plan capacity and added packages are displayed separately with exact remaining amounts and dates.
+* Every active API key owned by an account contributes to the same account totals.
+* The monthly calculator estimates 24/7 WebSocket transfer and API-request needs, then suggests matching packages.
+* One-time Stripe Checkout supports 10-million-request, 100-GB Order Book + Chainlink, and 100-GB On-chain event packages. Each package costs $20 and remains active for 90 days.
+* Existing per-minute, per-second, connection, and Free-session limits are unchanged.
+* Monthly usage enforcement is not active yet; this release adds visibility and prepaid capacity first.
+
+Docs: [Usage and Allowances](/usage/overview) and [Usage Packages](/usage/packages)
+
+***
+
 ## 2026-07-31 - Chainlink TWAP streams and August 7 cutover
 
 Affected Polymarket crypto up-or-down markets are changing from a single

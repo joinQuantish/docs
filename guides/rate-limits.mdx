@@ -5,6 +5,10 @@ description: Rate limiting details and best practices.
 
 V3 REST limits are shared across all API keys owned by the same account. Limits scale with your plan and with the endpoint class.
 
+<Info>
+  **Two independent controls:** the per-minute, per-second, connection, and Free-session limits on this page remain in force. Polynode now also shows monthly API-request and WebSocket-transfer usage in the [usage dashboard](/usage/overview), but monthly usage enforcement is not active yet.
+</Info>
+
 ## Tier limits
 
 <Info>
@@ -46,6 +50,19 @@ V3 REST limits are shared across all API keys owned by the same account. Limits 
 - When you exceed the limit, you'll receive a `429 Too Many Requests` response.
 - The error message includes a Unix timestamp for when you can retry.
 - Successful REST responses include `x-ratelimit-limit`, `x-ratelimit-remaining`, and `x-ratelimit-reset` headers.
+
+## Monthly usage allowances
+
+Monthly usage is account-level and separate from the instantaneous limits above.
+
+| Plan | API requests | Order Book + Chainlink | On-chain events |
+| --- | ---: | ---: | ---: |
+| Free | 100,000 | 5 GB | 5 GB |
+| Starter | 10 million | 250 GB | 250 GB |
+| Growth | 50 million | 1 TB | 1 TB |
+| Enterprise | 250 million | 5 TB | 5 TB |
+
+One-time [usage packages](/usage/packages) can add 10 million requests or 100 GB to a specific stream meter. They add capacity only; they do not raise the request-per-minute or connection limits in the tier table.
 
 ## Best practices
 
