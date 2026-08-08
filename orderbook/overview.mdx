@@ -28,6 +28,10 @@ PolyNode's Orderbook Stream delivers live orderbook snapshots, depth updates, an
   Maintaining a local book? Enable [`integrity=1`](/orderbook/integrity) to detect a missing frame or incorrect local application immediately, then request a fresh ordered anchor on the same connection.
 </Tip>
 
+<Info>
+  Successfully delivered Order Book payloads and Chainlink price payloads share the **Order Book + Chainlink** transfer meter in your [usage dashboard](/usage/overview). Compression reduces counted transfer because the meter uses the encoded payload delivered to the connection. Heartbeats, acknowledgements, control frames, and failed sends do not count.
+</Info>
+
 ## Quick start
 
 <Steps>

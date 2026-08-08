@@ -214,6 +214,10 @@ Most apps only need one Event WebSocket connection. A single connection can carr
   Event WebSocket limits apply to `ws.polynode.dev`. Orderbook WebSocket limits for `ob.polynode.dev` are listed separately in the [Orderbook Stream](/orderbook/overview) docs.
 </Note>
 
+<Info>
+  Successfully delivered settlements, status updates, trades, redemptions, oracle events, and related event payloads appear under **On-chain events** in your [usage dashboard](/usage/overview). Compression reduces counted transfer because the meter uses the encoded payload delivered to the connection. Heartbeats, acknowledgements, control frames, and failed sends do not count.
+</Info>
+
 ## Multiple streams, one connection
 
 PolyNode supports multiple subscription types on the same WebSocket:

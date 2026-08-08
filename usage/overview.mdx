@@ -1,0 +1,67 @@
+---
+title: "Usage and Allowances"
+sidebarTitle: "Usage and allowances"
+description: "How Polynode measures monthly API requests and WebSocket transfer, and how to read the usage dashboard."
+icon: "gauge-high"
+---
+
+Your [usage dashboard](https://polynode.dev/dashboard/usage) shows three account-level meters:
+
+| Meter | What it counts |
+| --- | --- |
+| **API requests** | Completed authenticated requests on metered API routes. Requests rejected by authentication, existing rate limits, or a Polynode 5xx are not billable usage. |
+| **Order Book + Chainlink** | Successfully delivered Order Book and Chainlink WebSocket payload bytes. |
+| **On-chain events** | Successfully delivered settlements, status updates, trades, redemptions, oracle events, and other classified on-chain WebSocket payload bytes. |
+
+All active API keys owned by the same account share these totals and allowances. Creating another key, reconnecting a WebSocket, or rotating a key does not create a new meter or reset usage.
+
+<Info>
+  Monthly usage enforcement is not active yet. The dashboard and package purchases are live so you can observe real usage and prepare before monthly limits are enabled. Existing per-minute, per-second, connection, and Free-session limits still apply.
+</Info>
+
+## Included with each plan
+
+| Plan | API requests | Order Book + Chainlink | On-chain events |
+| --- | ---: | ---: | ---: |
+| **Free** | 100,000 | 5 GB | 5 GB |
+| **Starter** ($50/month) | 10 million | 250 GB | 250 GB |
+| **Growth** ($200/month) | 50 million | 1 TB | 1 TB |
+| **Enterprise** ($750/month) | 250 million | 5 TB | 5 TB |
+
+Plan allowances reset at the beginning of the account's next service period. The dashboard shows the exact start and end dates for the current period.
+
+Transfer uses decimal units: `1 GB = 1,000,000,000 bytes` and `1 TB = 1,000 GB`.
+
+## What “transferred” means
+
+WebSocket transfer is the encoded application payload successfully submitted to your connection:
+
+- Text messages count their UTF-8 payload length.
+- Compressed binary messages count the smaller compressed payload length.
+- The same payload sent to two connections counts twice because it was delivered twice.
+- Failed sends, acknowledgements, heartbeats, ping/pong frames, warnings, quota notices, and close frames do not count.
+- WebSocket framing, TLS, TCP, IP, and retransmission overhead do not count.
+
+This is data transfer, not storage and not a bandwidth-speed measurement.
+
+The dashboard may also show API response transfer for transparency. It is informational and does not consume a version-one package or allowance.
+
+## How capacity is consumed
+
+For each meter, Polynode uses capacity in this order:
+
+1. The allowance included with your plan.
+2. Active purchased packages, starting with the package that expires first.
+3. Active courtesy capacity, starting with the grant that expires first.
+
+The dashboard keeps the included plan amount and added packages visually separate. It shows exact usage, remaining capacity, the current service-period dates, and the next package expiration.
+
+## Monthly estimate
+
+The calculator on the usage page assumes connections remain open 24 hours per day for the month. Choose the number of Order Book + Chainlink and On-chain event connections, then add expected API requests.
+
+The result is directional, not a transfer guarantee. Polymarket activity, subscription filters, reconnects, message shape, and compression all change actual transfer. Your dashboard remains the source of truth.
+
+<Card title="Open the usage dashboard" icon="arrow-up-right-from-square" href="https://polynode.dev/dashboard/usage">
+  View current usage, estimate a month, and add capacity.
+</Card>
