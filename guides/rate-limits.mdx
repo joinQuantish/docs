@@ -103,6 +103,10 @@ without changing the subscription plan:
 | **Order Book + Chainlink** | 100 GB | $20 |
 | **On-chain events** | 100 GB | $20 |
 
+<Note>
+  A package adds only monthly capacity for its selected meter. It does not unlock paid-only endpoints or change per-minute, connection, or Free-session limits.
+</Note>
+
 Select from 1 to 100 of one package in a Checkout. For example, 10 API-request packages add 100 million requests for a one-time $200 payment. Packages are resource-specific and do not raise the request-per-minute or connection limits in the tier table.
 
 Capacity is added only after Stripe confirms a successful payment. Reopening, refreshing, or replaying the same Checkout cannot add a package twice. Each package remains active for 90 days, does not reset with the monthly service period, and expires after 90 days if unused. The dashboard shows remaining capacity and expiration.
