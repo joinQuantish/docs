@@ -7,6 +7,11 @@ icon: "code"
 
 ## Event payload
 
+This example is an explicitly selected spot event. Default followers now
+receive 30-second and 60-second TWAP events with the same shape and different
+identity fields. See [Chainlink Spot and TWAP Prices](/crypto/twap) for the
+subscription filters.
+
 ```json
 {
   "type": "price_feed",
@@ -84,5 +89,5 @@ icon: "code"
 
 - **Update rate**: approximately 1 update per second per feed.
 - **No snapshot**: unlike settlement subscriptions, price feed subscriptions do not include an initial snapshot. The first event arrives with the next price observation (~1 second after subscribing).
-- **TWAP windows**: when you subscribe to both windows, key state by `feed` and `twap_window_seconds`. See [Chainlink TWAP Prices](/crypto/twap).
+- **TWAP windows**: when you subscribe to both windows, key state by `feed` and `twap_window_seconds`. See [Chainlink Spot and TWAP Prices](/crypto/twap).
 - **Deduplication**: include `feed`, `twap_window_seconds`, and `timestamp` in a TWAP deduplication key.
