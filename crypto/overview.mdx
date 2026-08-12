@@ -1,19 +1,19 @@
 ---
 title: "Crypto Prices"
 sidebarTitle: "Overview"
-description: "Real-time crypto price streaming over WebSocket. 7 assets, ~1 update per second per feed."
+description: "Stream Chainlink spot prices and 30-second or 60-second TWAP prices over WebSocket."
 icon: "chart-line"
 ---
 
-Stream real-time crypto prices over WebSocket. 7 feeds, ~1 update per second each.
+Stream real-time Chainlink prices over WebSocket. Seven feeds update at
+approximately one event per second each.
 
-<Warning>
-  **Chainlink TWAP transition:** production 30-second and 60-second TWAP testing
-  begins August 4, 2026. Affected crypto up-or-down markets and polynode's
-  default Chainlink price stream switch to TWAP on August 7, 2026 at 00:00 UTC.
-  See [Chainlink TWAP Prices](/crypto/twap) for the exact schedule, subscription
-  filters, and additive event fields.
-</Warning>
+<Note>
+  The default `chainlink` subscription now delivers both the 30-second and
+  60-second TWAP streams. Add `price_source: "spot"` to select spot prices
+  explicitly. See [Chainlink Spot and TWAP Prices](/crypto/twap) for every
+  selection and its acknowledgement.
+</Note>
 
 ## Connection
 
@@ -37,7 +37,7 @@ This is the same WebSocket endpoint used for settlements and orderbook. If you a
 
 ## Quick start
 
-Connect and subscribe to all 7 feeds:
+Connect and follow the default stream for all seven feeds:
 
 <CodeGroup>
 ```javascript JavaScript
@@ -121,6 +121,25 @@ Only receive the feeds you care about:
 
 Omit `feeds` to get all 7.
 
+### Select spot explicitly
+
+Add `price_source: "spot"` to receive spot prices instead of following the
+default TWAP stream:
+
+```json
+{
+  "action": "subscribe",
+  "type": "chainlink",
+  "filters": {
+    "feeds": ["BTC/USD", "ETH/USD"],
+    "price_source": "spot"
+  }
+}
+```
+
+Omit `feeds` to receive every available spot pair. Do not combine
+`price_source: "spot"` with `twap_windows`.
+
 ## Event format
 
 Every price update arrives as a `price_feed` event:
@@ -130,16 +149,16 @@ Every price update arrives as a `price_feed` event:
   "type": "price_feed",
   "feed": "BTC/USD",
   "timestamp": 1774672588,
-  "is_twap": false,
-  "twap_window_seconds": null,
+  "is_twap": true,
+  "twap_window_seconds": 30,
   "data": {
     "feed": "BTC/USD",
     "price": 66225.49,
-    "bid": 66221.69,
-    "ask": 66229.46,
+    "bid": 66225.49,
+    "ask": 66225.49,
     "timestamp": 1774672588,
-    "is_twap": false,
-    "twap_window_seconds": null
+    "is_twap": true,
+    "twap_window_seconds": 30
   }
 }
 ```
@@ -164,7 +183,7 @@ ws.on("message", (data) => {
     // crypto price tick
     console.log(`${msg.data.feed}: $${msg.data.price}`);
   } else if (msg.type === "settlement") {
-    // polymarket settlement
+    // settlement event
     console.log(`${msg.data.market_title}: ${msg.data.outcome}`);
   }
 });
@@ -202,76 +221,9 @@ In addition to the WebSocket stream, crypto data is available via REST. See the 
 
 All endpoints require an API key via `?key=` or `x-api-key` header.
 
-## Short-Form Crypto Markets
+## Related guides
 
-<Info>
-  **These prices power prediction markets.** All 7 coins have active 5-minute, 15-minute, and 1-hour "Up or Down" prediction markets on Polymarket. The Chainlink price feed determines the opening price (price-to-beat), and the closing price at window end decides the outcome. Hundreds of trades happen every minute on these markets.
-</Info>
-
-Here's how it works: a BTC 5-minute market opens at 10:00 with BTC at $66,800. If BTC is above $66,800 at 10:05, "Up" wins. If it's below, "Down" wins. A new market opens at 10:05 with the new price as the target. This repeats every 5 minutes, 15 minutes, and every hour, across all 7 coins.
-
-### What you can do with this
-
-| Stream | What it gives you | How to get it |
-|--------|-------------------|---------------|
-| **Chainlink prices** | Underlying asset price at ~1/sec | `subscribe('chainlink')` on the main WS |
-| **Historical price ticks** | 1-second chart backfill for an already-open window | `GET /v1/crypto/ticks` |
-| **Short-form settlements** | Every trade on 5m/15m/1h markets | SDK `shortForm('15m')` auto-rotates between windows |
-| **Short-form orderbook** | Bid/ask depth on crypto markets | `OrderbookEngine` with `clobTokenIds` from rotation |
-| **Price-to-beat** | Chainlink opening price per window | Included in SDK rotation events |
-| **Odds & liquidity** | Market-implied probabilities | Included in SDK rotation events |
-
-### Quick example
-
-Track BTC price alongside 15-minute market odds:
-
-```javascript
-import { PolyNodeWS } from 'polynode-sdk';
-
-const ws = new PolyNodeWS('pn_live_...', 'wss://ws.polynode.dev/ws');
-
-// Live BTC price from Chainlink
-const prices = await ws.subscribe('chainlink')
-  .feeds(['BTC/USD'])
-  .send();
-
-prices.on('price_feed', (msg) => {
-  console.log(`BTC: $${msg.price}`);
-});
-
-// 15-minute market rotation + settlements
-const stream = ws.shortForm('15m', { coins: ['btc'] });
-
-stream.on('rotation', (r) => {
-  const m = r.markets[0];
-  console.log(`Window: beat $${m.priceToBeat} | ${(m.upOdds * 100).toFixed(0)}% up | ${r.timeRemaining}s left`);
-});
-
-stream.on('settlement', (e) => {
-  console.log(`Trade: ${e.outcome} $${e.taker_size}`);
-});
-```
-
-<Tip>
-  The SDK handles market discovery, slug computation, token resolution, and automatic rotation between windows. See [Short-Form Markets](/sdks/short-form) for the full reference including the interactive slug calculator, all 14 market fields, and how to connect the orderbook.
-</Tip>
-
-### Market slug patterns
-
-Slugs are deterministic, based on the window's Unix epoch timestamp:
-
-| Interval | Pattern | Example |
-|----------|---------|---------|
-| 5 min | `{coin}-updown-5m-{epoch}` | `btc-updown-5m-1775399100` |
-| 15 min | `{coin}-updown-15m-{epoch}` | `eth-updown-15m-1775397600` |
-| 1 hour | Human-readable | `bitcoin-up-or-down-april-5-2026-10am-et` |
-
-The epoch timestamp is always aligned to the interval boundary: `Math.floor(now / intervalSeconds) * intervalSeconds`.
-
-## Use cases
-
-- **Short-form market trading** -- track the underlying asset price alongside 5m/15m/1h crypto markets
-- **Portfolio valuation** -- combine real-time crypto prices with Polymarket positions for live PnL
-- **Hedging signals** -- correlate crypto price moves with prediction market settlements
-- **Dashboards** -- display live crypto prices alongside prediction market data
-- **Trading bots** -- trigger Polymarket trades based on crypto price thresholds
+- [Chainlink Spot and TWAP Prices](/crypto/twap)
+- [Available Feeds](/crypto/feeds)
+- [Event Format](/crypto/event-format)
+- [Crypto REST API](/crypto/rest-api)
