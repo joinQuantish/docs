@@ -796,7 +796,6 @@
           {
             "group": "WebSocket Benchmarks",
             "pages": [
-              "case-studies/pending-websocket-latency-2026-08-13",
               "case-studies/bravado-pending-copy-execution-2026-08-07",
               "case-studies/struct-rtds-websocket-benchmark-2026-08-01"
             ]
