@@ -1,0 +1,317 @@
+{
+  "rtds_missing_clusters": [
+    {
+      "from_block": 91971841,
+      "to_block": 91971841,
+      "blocks": 1,
+      "missing_transactions": 55
+    },
+    {
+      "from_block": 91972084,
+      "to_block": 91972084,
+      "blocks": 1,
+      "missing_transactions": 6
+    },
+    {
+      "from_block": 91972297,
+      "to_block": 91972303,
+      "blocks": 7,
+      "missing_transactions": 176
+    },
+    {
+      "from_block": 91972373,
+      "to_block": 91972380,
+      "blocks": 8,
+      "missing_transactions": 174
+    },
+    {
+      "from_block": 91972469,
+      "to_block": 91972475,
+      "blocks": 7,
+      "missing_transactions": 291
+    }
+  ],
+  "rtds_stall_audit": [
+    {
+      "reconnect_wall_utc": "2026-08-13T23:24:42.402Z",
+      "watchdog_quiet_ms": 10707,
+      "last_activity": {
+        "wall_ms": 1786663471695,
+        "tx_hash": "0x39a2b7843c7905dfb623e2c06083b1a14c355e74b00f52f395d498669d9bba8f",
+        "block_number": 91972296
+      },
+      "first_activity_after_reconnect": {
+        "wall_ms": 1786663483472,
+        "tx_hash": "0xe71cf0c5f641f2070371b50d512f5a7db4d5e918a4895266e8e4a9137bbf7562",
+        "block_number": 91972304
+      },
+      "callback_gap_ms": 11777
+    },
+    {
+      "reconnect_wall_utc": "2026-08-13T23:26:36.840Z",
+      "watchdog_quiet_ms": 10828,
+      "last_activity": {
+        "wall_ms": 1786663586012,
+        "tx_hash": "0x56c9721609a0fec3452e221007f9c252cb9d70f582118ed14468d6d1d24a63ce",
+        "block_number": 91972372
+      },
+      "first_activity_after_reconnect": {
+        "wall_ms": 1786663599231,
+        "tx_hash": "0x71888b452ec682c7f20803c57e8e6f05d67f328659c0e0e13e1fa7abca25e3e6",
+        "block_number": 91972381
+      },
+      "callback_gap_ms": 13219
+    },
+    {
+      "reconnect_wall_utc": "2026-08-13T23:29:00.268Z",
+      "watchdog_quiet_ms": 10825,
+      "last_activity": {
+        "wall_ms": 1786663729443,
+        "tx_hash": "0x25c7f361d5a2cc26334933833693b993ee187aec503534ac04efe1c705debe74",
+        "block_number": 91972468
+      },
+      "first_activity_after_reconnect": {
+        "wall_ms": 1786663741362,
+        "tx_hash": "0x2c8e2fa9ab424f724297d8b9f683f80a6f661f81c96975b00f2061cc91308fbb",
+        "block_number": 91972476
+      },
+      "callback_gap_ms": 11919
+    },
+    {
+      "reconnect_wall_utc": "2026-08-13T23:36:59.772Z",
+      "watchdog_quiet_ms": 10821,
+      "last_activity": {
+        "wall_ms": 1786664208951,
+        "tx_hash": "0x26e39b99784201575271738499aa0379f54f3c2491cfacef1661e58dd7e4bb44",
+        "block_number": null
+      },
+      "first_activity_after_reconnect": {
+        "wall_ms": 1786664220929,
+        "tx_hash": "0xfabbbd97e8ad104a5a903439908a925536254bef432115ba5c33b9d6065c3efb",
+        "block_number": null
+      },
+      "callback_gap_ms": 11978
+    }
+  ],
+  "competitor_first": {
+    "polynode_status_update_vs_rtds": {
+      "total": 12,
+      "blocks": [
+        {
+          "block_number": 91971808,
+          "losses": 3,
+          "worst_lead_ms": -18.32784
+        },
+        {
+          "block_number": 91971858,
+          "losses": 9,
+          "worst_lead_ms": -98.039497
+        }
+      ],
+      "worst": [
+        {
+          "tx_hash": "0x1a9dbf2dda85c5ed001dc265350e9abbe773e542c6da46d5b4b1868f56bb0848",
+          "block_number": 91971858,
+          "lead_ms": -98.039497
+        },
+        {
+          "tx_hash": "0x6c59d85da571755ad7f3e21705ad8bf5276f9ffcb80b458f8a4136a3b11d52b5",
+          "block_number": 91971858,
+          "lead_ms": -85.170216
+        },
+        {
+          "tx_hash": "0x74fc62eac9e02e8e50d8b706563e0437e7c146835ece60821117f77ac8b9bdaf",
+          "block_number": 91971858,
+          "lead_ms": -81.936362
+        },
+        {
+          "tx_hash": "0x620154d65207267b3c51fde2418d11e584c5c954e9a262cfb67cdb9a7ca3ebec",
+          "block_number": 91971858,
+          "lead_ms": -56.979418
+        },
+        {
+          "tx_hash": "0x9af53b81f36df407dbf65dd9a793fefd19e4a86ccdda95526522aa8ac10986db",
+          "block_number": 91971858,
+          "lead_ms": -39.399966
+        },
+        {
+          "tx_hash": "0x60a4a456eae5a39e18b3d4e2bfe61a2adbbe12fbb276b7851f6dfc75bf883673",
+          "block_number": 91971858,
+          "lead_ms": -30.164373
+        },
+        {
+          "tx_hash": "0x7d1b7e27306da33b1b40195065dcb3ef8a9515b2b116a06d471bf8c3aa669c6a",
+          "block_number": 91971808,
+          "lead_ms": -18.32784
+        },
+        {
+          "tx_hash": "0x8d0ed705153c464626b10f15916472e95b19dfecfd90ef9b51d6f904b4d4c7bb",
+          "block_number": 91971808,
+          "lead_ms": -16.882182
+        },
+        {
+          "tx_hash": "0xd1fb273d94f940627193fe522c474e33d737bd720794c700d03d5ec4a5a32d36",
+          "block_number": 91971858,
+          "lead_ms": -13.503877
+        },
+        {
+          "tx_hash": "0x7ba53ba39e84d880dc1935f2424707c956a4c2b6419c73fb8e487c672ec8f951",
+          "block_number": 91971858,
+          "lead_ms": -13.121312
+        }
+      ]
+    },
+    "polynode_trade_tx_vs_rtds": {
+      "total": 285,
+      "blocks": [
+        {
+          "block_number": 91971609,
+          "losses": 22,
+          "worst_lead_ms": -218.432626
+        },
+        {
+          "block_number": 91971720,
+          "losses": 1,
+          "worst_lead_ms": -8.869211
+        },
+        {
+          "block_number": 91971754,
+          "losses": 10,
+          "worst_lead_ms": -163.859618
+        },
+        {
+          "block_number": 91971808,
+          "losses": 6,
+          "worst_lead_ms": -32.479945
+        },
+        {
+          "block_number": 91971813,
+          "losses": 28,
+          "worst_lead_ms": -2188.411684
+        },
+        {
+          "block_number": 91971814,
+          "losses": 18,
+          "worst_lead_ms": -379.372948
+        },
+        {
+          "block_number": 91971817,
+          "losses": 11,
+          "worst_lead_ms": -123.188502
+        },
+        {
+          "block_number": 91971858,
+          "losses": 14,
+          "worst_lead_ms": -127.424716
+        },
+        {
+          "block_number": 91971900,
+          "losses": 1,
+          "worst_lead_ms": -30.247076
+        },
+        {
+          "block_number": 91972053,
+          "losses": 1,
+          "worst_lead_ms": -266.25227
+        },
+        {
+          "block_number": 91972054,
+          "losses": 1,
+          "worst_lead_ms": -238.725615
+        },
+        {
+          "block_number": 91972090,
+          "losses": 61,
+          "worst_lead_ms": -2267.507018
+        },
+        {
+          "block_number": 91972091,
+          "losses": 49,
+          "worst_lead_ms": -569.94515
+        },
+        {
+          "block_number": 91972151,
+          "losses": 7,
+          "worst_lead_ms": -73.351638
+        },
+        {
+          "block_number": 91972168,
+          "losses": 4,
+          "worst_lead_ms": -51.877358
+        },
+        {
+          "block_number": 91972215,
+          "losses": 41,
+          "worst_lead_ms": -291.753524
+        },
+        {
+          "block_number": 91972441,
+          "losses": 1,
+          "worst_lead_ms": -24.892151
+        },
+        {
+          "block_number": 91972555,
+          "losses": 6,
+          "worst_lead_ms": -73.311663
+        },
+        {
+          "block_number": 91972748,
+          "losses": 3,
+          "worst_lead_ms": -26.962447
+        }
+      ],
+      "worst": [
+        {
+          "tx_hash": "0x9457c8a4fddcc3fadcf639b0502c13b143c0e241aafadcb19609ac78d6f6e9d7",
+          "block_number": 91972090,
+          "lead_ms": -2267.507018
+        },
+        {
+          "tx_hash": "0x761a76121a043ae6a1e6f2d16c640d5c903cb17c3bda301feb4cdbdf18eac798",
+          "block_number": 91972090,
+          "lead_ms": -2229.857284
+        },
+        {
+          "tx_hash": "0xc21d529aa0555c4579f7eb93c2844f73106849ebf499c44b06652cd337145b22",
+          "block_number": 91972090,
+          "lead_ms": -2220.977048
+        },
+        {
+          "tx_hash": "0x3bb459bafa951b7ca7a62d19429cb2e2d39d57dc8615317d3989d85b895fc7b9",
+          "block_number": 91972090,
+          "lead_ms": -2215.827364
+        },
+        {
+          "tx_hash": "0x226d7c02f0c0f38c2ad2fc62e61077a1ed4f2388397bdbec382fb5fae951e883",
+          "block_number": 91972090,
+          "lead_ms": -2210.675579
+        },
+        {
+          "tx_hash": "0x8f9051b7c676d0f25123664284404eb1ea0e51ef7c53c16a16ea9fe916e4513f",
+          "block_number": 91972090,
+          "lead_ms": -2205.961654
+        },
+        {
+          "tx_hash": "0x3c30ae26ca1b1a20b65b241c86f0e07ebc60cb99024eb3b58f9b9198a46cae23",
+          "block_number": 91972090,
+          "lead_ms": -2200.732001
+        },
+        {
+          "tx_hash": "0x03e0efc317aa8c505f9b1981fde5abb4137d72d3512e01d96db5e54785a368e5",
+          "block_number": 91971813,
+          "lead_ms": -2188.411684
+        },
+        {
+          "tx_hash": "0x26d24f15c02d996f0d60bd417858d21e296a06b164928ad8fc8e9d33e5bda469",
+          "block_number": 91971813,
+          "lead_ms": -2177.401996
+        },
+        {
+          "tx_hash": "0x5e2eab1bda6d645fa490422415ab25cbdb6d159fa7a2092502bbfb916518d167",
+          "block_number": 91972090,
+          "lead_ms": -2168.365131
+        }
+      ]
+    }
+  }
+}

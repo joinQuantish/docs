@@ -1,0 +1,183 @@
+---
+title: "Pending and confirmed WebSocket delivery: Polynode vs RTDS and Struct"
+sidebarTitle: "Polynode vs RTDS and Struct"
+description: "An August 14, 2026 production benchmark of Polynode pending detection, confirmation delivery, confirmed fills, and exact on-chain completeness."
+icon: "stopwatch"
+---
+
+During an August 14, 2026 Berlin-local measurement window, we raced Polynode's production WebSocket against Polymarket RTDS from an independent Server Two vantage point. A separate three-minute control raced Polynode against Struct's explicit pending subscription. Every callback in each window was timestamped in one Node.js process with one monotonic clock, then checked against Polygon logs from a benchmark-only external RPC.
+
+The 30-minute headline window contained **31,030 independently confirmed transactions and 82,092 exact fills**. Polynode represented every transaction and every fill across its pending, confirmation, and confirmed-fill paths.
+
+<Info>
+This is a Polynode-run, point-in-time benchmark. It measures customer-visible WebSocket delivery from one network location and does not guarantee future performance from every region or provider version. The external RPC supplied only post-window chain truth and contributed no competitive arrival timestamps.
+</Info>
+
+<CardGroup cols={2}>
+  <Card title="857 ms confirmation lead" icon="bolt">
+    Polynode `status_update` arrived first on 30,316 of 30,328 matched RTDS transactions.
+  </Card>
+  <Card title="823 ms confirmed-fill lead" icon="stopwatch">
+    Polynode's first confirmed `trade` callback arrived first on 30,043 of 30,328 matched transactions.
+  </Card>
+  <Card title="2.285-second pending lead" icon="chart-line">
+    Polynode pending arrived first on every transaction shared with RTDS.
+  </Card>
+  <Card title="100% exact-fill coverage" icon="circle-check">
+    Polynode delivered all 82,092 canonical on-chain fills with zero unresolved misses.
+  </Card>
+</CardGroup>
+
+## Bottom line
+
+The confirmed-path improvement was visible at both lifecycle layers:
+
+- Polynode `status_update` led RTDS activity by **856.6 ms at P50**, **1.129 seconds at P75**, and **1.657 seconds at P99**. Polynode arrived first on **99.960%** of matched transactions.
+- Polynode's first confirmed `trade` callback led RTDS activity by **822.9 ms at P50**, **1.095 seconds at P75**, and **1.609 seconds at P99**. Polynode arrived first on **99.060%** of matched transactions.
+- Polynode pending led RTDS activity by **2.285 seconds at P50**, **2.724 seconds at P75**, and **3.800 seconds at P99**, arriving first on **100%** of matched transactions.
+
+Those latency results are calculated only over shared transaction hashes. RTDS represented 30,328 of 31,030 eligible transactions; its 702 missing transactions are reported as missing and never converted into artificial Polynode wins.
+
+Completeness is a separate and stricter audit. Against the full on-chain denominator, Polynode delivered **31,030 of 31,030** pending settlements, **31,030 of 31,030** confirmation updates, **31,030 of 31,030** confirmed-fill transactions, and **82,092 of 82,092** canonical fills.
+
+## Thirty-minute headline: Polynode vs RTDS
+
+| Property | Recorded value |
+|---|---|
+| Core interval | 2026-08-13 23:06:48.288–23:36:48.381 UTC |
+| Measurement host | Server Two, independent from the production WebSocket host |
+| Runtime | Node.js v20.20.0 on Linux x64 |
+| Eligible blocks | 91,971,589–91,972,785 inclusive |
+| Core / warm-up / confirmation tail | 1,800 / 15 / 60 seconds |
+| Chain truth | 31,030 transactions / 82,092 `OrderFilled` logs |
+| RTDS heartbeat / recovery | Uppercase `PING` every five seconds; resubscribe after ten seconds without global activity |
+| Boundary guard | Two blocks at each edge |
+
+The verifier re-read both boundary blocks after analysis. Their hashes still matched the recorded manifest.
+
+### Coverage
+
+| Path | Unit | Seen | Coverage | Missing |
+|---|---:|---:|---:|---:|
+| Polynode pending settlement | Transaction | 31,030 / 31,030 | **100.000%** | 0 |
+| Polynode `status_update` | Transaction | 31,030 / 31,030 | **100.000%** | 0 |
+| Polynode confirmed `trade` | Transaction | 31,030 / 31,030 | **100.000%** | 0 |
+| Polynode confirmed `trade` | Exact fill | 82,092 / 82,092 | **100.000%** | 0 |
+| Polymarket RTDS activity | Transaction | 30,328 / 31,030 | 97.738% | 702 |
+
+### Latency
+
+A positive lead means the named Polynode path arrived first. Every percentile uses only matched transaction hashes.
+
+| Polynode path vs RTDS activity | Samples | P50 lead | P75 lead | P90 lead | P95 lead | P99 lead | Polynode first |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| **Pending settlement** | 30,328 | **+2.285 s** | +2.724 s | +3.109 s | +3.355 s | +3.800 s | **100.000%** |
+| **Confirmation `status_update`** | 30,328 | **+856.6 ms** | +1.129 s | +1.318 s | +1.440 s | +1.657 s | **99.960%** |
+| **First confirmed `trade` callback** | 30,328 | **+822.9 ms** | +1.095 s | +1.284 s | +1.407 s | +1.609 s | **99.060%** |
+
+RTDS activity is a public timing baseline, not an exact pending or confirmed lifecycle label. The table keeps Polynode's pending, transaction-confirmation, and first confirmed-fill callbacks separate.
+
+### Adverse observations
+
+RTDS arrived before Polynode `status_update` for 12 of 30,328 matched transactions. Those 12 transactions occupied two blocks, and the worst observed Polynode loss was **98.0 ms**.
+
+RTDS arrived before Polynode's first confirmed `trade` callback for 285 matched transactions across 19 blocks. The worst observed loss was **2.268 seconds**. This first-callback timing result does not affect the exact-fill audit: Polynode still delivered all 82,092 canonical fills.
+
+RTDS missed 702 eligible transactions across 24 blocks:
+
+| Missing block range | Missing transactions | Recorded behavior |
+|---|---:|---|
+| 91,971,841 | 55 | Isolated missing block while activity otherwise continued |
+| 91,972,084 | 6 | Isolated missing block while activity otherwise continued |
+| 91,972,297–91,972,303 | 176 | Activity stopped; watchdog reconnected and resubscribed |
+| 91,972,373–91,972,380 | 174 | Activity stopped; watchdog reconnected and resubscribed |
+| 91,972,469–91,972,475 | 291 | Activity stopped; watchdog reconnected and resubscribed |
+
+The three scored silent intervals were detected only after 10.7–10.8 seconds without global activity. In each case, the missing block run preceded the reconnect and activity resumed immediately after resubscription. A fourth audited reconnect occurred during the post-window confirmation tail and did not change the eligible denominator.
+
+## Explicit Struct-pending control
+
+The non-overlapping control requested Struct's documented pending mode directly:
+
+```json
+{
+  "room": "polymarket_trades",
+  "filters": {
+    "status": "pending",
+    "subscribe_all": true
+  }
+}
+```
+
+Struct accepted the subscription with `subscribe_all: true` and an empty `rejected` array. The collector used a raw WebSocket and stamped each callback before JSON parsing.
+
+The three-minute scored interval covered **2,863 transactions and 7,590 fills** across blocks 91,971,403–91,971,519. Polynode pending arrived first on all 2,784 matched transactions by **30.023 seconds at P50**. Polynode had also delivered `status_update` before every matched Struct pending callback, by **28.424 seconds at P50**.
+
+| Path | Unit | Seen | Coverage | Missing |
+|---|---:|---:|---:|---:|
+| Polynode pending settlement | Transaction | 2,863 / 2,863 | **100.000%** | 0 |
+| Polynode `status_update` | Transaction | 2,863 / 2,863 | **100.000%** | 0 |
+| Polynode confirmed `trade` | Exact fill | 7,590 / 7,590 | **100.000%** | 0 |
+| Struct pending | Transaction | 2,784 / 2,863 | 97.241% | 79 |
+| Polymarket RTDS activity | Transaction | 2,863 / 2,863 | **100.000%** | 0 |
+
+| Comparison | Samples | P50 lead | P75 lead | P90 lead | P95 lead | P99 lead | Polynode first |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| **Polynode pending vs Struct pending** | 2,784 | **+30.023 s** | +31.993 s | +33.547 s | +34.264 s | +35.565 s | **100.000%** |
+| **Polynode `status_update` vs Struct pending** | 2,784 | **+28.424 s** | +30.639 s | +32.084 s | +32.960 s | +34.486 s | **100.000%** |
+
+The 79 unmatched Struct transactions receive no synthetic latency penalty. They remain missing in the coverage result.
+
+## Signal mapping
+
+The feeds do not use identical lifecycle names, so the mapping was fixed before collection.
+
+| Question | Polynode | Struct | RTDS | Join key |
+|---|---|---|---|---|
+| Pending transaction | `settlement` with `status=pending` | Explicit `status: "pending"` subscription | Public activity baseline only | Transaction hash |
+| Transaction confirmation | `status_update` | Not requested in the pending-only control | Public activity baseline only | Transaction hash |
+| Confirmed fill timing | First `trade` callback for the transaction | Not requested in the pending-only control | Public activity baseline only | Transaction hash |
+| Exact confirmed-fill completeness | Every `trade` fill | Not requested in the pending-only control | Not used as a fill denominator | Transaction hash + block-global log index |
+| Independent denominator | Polygon `OrderFilled` logs and receipts | Same | Same | Transaction hash + block-global log index |
+
+## Methodology and integrity
+
+Server Two connected every compared WebSocket from the same process in each window. `process.hrtime.bigint()` stamped callbacks before parsing or normalization. After warm-up, the harness armed the first eligible block at `tip + 2`; at core completion it closed the denominator at `tip - 2`. The 60-second tail allowed late confirmation callbacks to arrive before analysis.
+
+An external Polygon RPC then enumerated every current Polymarket CLOB `OrderFilled` log and receipt in the eligible range. It was a post-window verifier only: it supplied no competitive arrival timestamp and is not part of Polynode's production ingestion or delivery path.
+
+The harness extends [Struct's published RTDS benchmark](https://github.com/structbuild/polymarket-rtds-vs-struct-benchmark) with Polynode lifecycle capture and independent exact-fill truth. Both windows used the same immutable source hashes. The TypeScript compiler and all five regression tests passed, both boundary hashes rechecked, the RPC audit recorded zero failures, no raw-frame write backpressure occurred, and every retained artifact passed its SHA-256 inventory.
+
+## Claim boundaries
+
+- These are point-in-time measurements from one independent network vantage.
+- RTDS activity is retained as a public baseline and is not relabeled pending or confirmed.
+- Confirmed Polygon logs cannot enumerate pending transactions that never confirm.
+- Missing competitor callbacks are coverage misses, not automatic latency wins.
+- First confirmed-fill timing is transaction-granular; exact fill completeness is audited separately.
+- The Struct control and RTDS headline are non-overlapping and are never pooled into one distribution.
+- The benchmark records observable callbacks and makes no claim about any provider's private implementation.
+
+## Evidence
+
+- [Compact result and claim-evidence bundle](/assets/case-studies/2026-08-14-websocket-latency/summary.json)
+- [Credential-free benchmark source](/assets/case-studies/2026-08-14-websocket-latency/harness-source.json)
+- [RTDS missing transactions](/assets/case-studies/2026-08-14-websocket-latency/rtds-missing-transactions.json)
+- [RTDS stalls and competitor-first samples](/assets/case-studies/2026-08-14-websocket-latency/headline-adverse-audit.json)
+- [Struct missing pending transactions](/assets/case-studies/2026-08-14-websocket-latency/struct-missing-transactions.json)
+- [Polynode confirmed-fill missing set](/assets/case-studies/2026-08-14-websocket-latency/polynode-confirmed-fill-missing.json)
+- [Published-artifact checksums](/assets/case-studies/2026-08-14-websocket-latency/checksums.json)
+
+The full raw frames, normalized events, Polygon logs and receipts, per-transaction latency samples, lifecycle records, resource audit, missing identifiers, and complete SHA-256 inventories are retained internally.
+
+## References
+
+- [Polymarket real-time data reference](https://docs.polymarket.com/market-data/realtime-data)
+- [Polymarket contract registry](https://docs.polymarket.com/resources/contracts)
+- [Struct trades-room reference](https://docs.struct.to/websockets/rooms/trades)
+- [Polynode WebSocket overview](/websocket/overview)
+- [Polynode settlement event](/websocket/events/settlement)
+- [Polynode status update event](/websocket/events/status-update)
+- [Polynode trade event](/websocket/events/trade)
+
+Last evidence audit: **2026-08-14 01:48 CEST**.
