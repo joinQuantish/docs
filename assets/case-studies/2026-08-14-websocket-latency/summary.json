@@ -1,0 +1,1026 @@
+{
+  "schema_version": 1,
+  "case_study": "Pending and confirmed WebSocket latency: Polynode vs RTDS and Struct",
+  "measured_date_local": "2026-08-14",
+  "measurement_vantage": {
+    "host": "Server Two",
+    "region_description": "independent Server Two network vantage",
+    "clock": {
+      "arrival_clock": "process.hrtime.bigint()",
+      "resolution": "nanoseconds represented as decimal strings",
+      "wall_clock": "Date.now() retained only for audit; latency uses monotonic clock",
+      "single_process": true
+    },
+    "same_process_per_window": true,
+    "non_overlapping_windows": true
+  },
+  "headline": {
+    "name": "rtds-headline-30m",
+    "artifact_directory": "rtds-headline-30m-20260814",
+    "core_interval_utc": {
+      "start": "2026-08-13T23:06:48.288Z",
+      "end": "2026-08-13T23:36:48.381Z"
+    },
+    "configuration": {
+      "duration_sec": 1800,
+      "warmup_sec": 15,
+      "confirmation_tail_sec": 60,
+      "boundary_guard_blocks": 2,
+      "struct_status": "all",
+      "struct_trade_types": "unfiltered",
+      "rtds_heartbeat": "struct-uppercase",
+      "rtds_silence_reconnect_sec": 10,
+      "include_struct": false
+    },
+    "chain_ground_truth": {
+      "from_block": 91971589,
+      "to_block": 91972785,
+      "blocks": 1197,
+      "from_block_hash": "0x59bf371b38df3c586f5142d708d4c89513088162f6a6c4d9dc992e34733cc970",
+      "to_block_hash": "0xcd92f5f33696f2a6cab63f335dc4803c9edbf1d9ebb782a19d93399610f72b73",
+      "transactions": 31030,
+      "fills": 82092,
+      "fills_by_version": {
+        "v2": 82092
+      },
+      "fills_by_contract": {
+        "0xe2222d279d744050d28e00520010520000310f59": 18774,
+        "0xe111180000d2663c0091e4f400237545b87b996b": 63318
+      }
+    },
+    "boundary_hash_recheck": {
+      "from_block_hash": "0x59bf371b38df3c586f5142d708d4c89513088162f6a6c4d9dc992e34733cc970",
+      "to_block_hash": "0xcd92f5f33696f2a6cab63f335dc4803c9edbf1d9ebb782a19d93399610f72b73",
+      "matched": true
+    },
+    "runtime": {
+      "node": "v20.20.0",
+      "struct_sdk": "0.6.7",
+      "platform": "linux",
+      "arch": "x64",
+      "timezone": "UTC",
+      "host_label": "Server Two"
+    },
+    "collection_storage": {
+      "normalized_events_buffered_for_analysis": 262819,
+      "raw_frames_streamed_to_disk": 262868,
+      "raw_frame_backpressure_writes": 0
+    },
+    "lifecycle": [
+      {
+        "source": "benchmark",
+        "event": "started",
+        "wall_ms": 1786662392971
+      },
+      {
+        "source": "polynode",
+        "event": "connected",
+        "wall_ms": 1786662393048
+      },
+      {
+        "source": "polynode",
+        "event": "subscription_sent",
+        "wall_ms": 1786662393049,
+        "detail": {
+          "action": "subscribe",
+          "type": "trades"
+        }
+      },
+      {
+        "source": "polynode",
+        "event": "subscribed",
+        "wall_ms": 1786662393053,
+        "detail": {
+          "subscriber_id": "aea90660-0212-4c51-9fa2-3ea8bc55b9b5",
+          "subscription_id": "aea90660-0212-4c51-9fa2-3ea8bc55b9b5:0",
+          "subscription_type": "trades",
+          "type": "subscribed"
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "connected",
+        "wall_ms": 1786662393143,
+        "detail": {
+          "attempt": 1
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "subscription_sent",
+        "wall_ms": 1786662393144,
+        "detail": {
+          "attempt": 1,
+          "action": "subscribe",
+          "subscriptions": [
+            {
+              "topic": "activity",
+              "type": "trades"
+            },
+            {
+              "topic": "activity",
+              "type": "orders_matched"
+            }
+          ]
+        }
+      },
+      {
+        "source": "benchmark",
+        "event": "all_subscribed",
+        "wall_ms": 1786662393144
+      },
+      {
+        "source": "benchmark",
+        "event": "ground_truth_window_armed",
+        "wall_ms": 1786662408288,
+        "detail": {
+          "start_tip": 91971587,
+          "from_block": 91971589
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "silence_reconnect",
+        "wall_ms": 1786663482402,
+        "detail": {
+          "attempt": 1,
+          "quiet_ms": 10707,
+          "connected_ms": 1089259
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "disconnected",
+        "wall_ms": 1786663482404,
+        "detail": {
+          "attempt": 1,
+          "code": 1006,
+          "reason": "",
+          "stopped": false
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "reconnected",
+        "wall_ms": 1786663482798,
+        "detail": {
+          "attempt": 2
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "subscription_sent",
+        "wall_ms": 1786663482799,
+        "detail": {
+          "attempt": 2,
+          "action": "subscribe",
+          "subscriptions": [
+            {
+              "topic": "activity",
+              "type": "trades"
+            },
+            {
+              "topic": "activity",
+              "type": "orders_matched"
+            }
+          ]
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "silence_reconnect",
+        "wall_ms": 1786663596840,
+        "detail": {
+          "attempt": 2,
+          "quiet_ms": 10828,
+          "connected_ms": 114042
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "disconnected",
+        "wall_ms": 1786663596841,
+        "detail": {
+          "attempt": 2,
+          "code": 1006,
+          "reason": "",
+          "stopped": false
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "reconnected",
+        "wall_ms": 1786663597242,
+        "detail": {
+          "attempt": 3
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "subscription_sent",
+        "wall_ms": 1786663597242,
+        "detail": {
+          "attempt": 3,
+          "action": "subscribe",
+          "subscriptions": [
+            {
+              "topic": "activity",
+              "type": "trades"
+            },
+            {
+              "topic": "activity",
+              "type": "orders_matched"
+            }
+          ]
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "silence_reconnect",
+        "wall_ms": 1786663740268,
+        "detail": {
+          "attempt": 3,
+          "quiet_ms": 10825,
+          "connected_ms": 143026
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "disconnected",
+        "wall_ms": 1786663740269,
+        "detail": {
+          "attempt": 3,
+          "code": 1006,
+          "reason": "",
+          "stopped": false
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "reconnected",
+        "wall_ms": 1786663740685,
+        "detail": {
+          "attempt": 4
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "subscription_sent",
+        "wall_ms": 1786663740685,
+        "detail": {
+          "attempt": 4,
+          "action": "subscribe",
+          "subscriptions": [
+            {
+              "topic": "activity",
+              "type": "trades"
+            },
+            {
+              "topic": "activity",
+              "type": "orders_matched"
+            }
+          ]
+        }
+      },
+      {
+        "source": "benchmark",
+        "event": "ground_truth_window_closed",
+        "wall_ms": 1786664208381,
+        "detail": {
+          "end_tip": 91972787,
+          "to_block": 91972785
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "silence_reconnect",
+        "wall_ms": 1786664219772,
+        "detail": {
+          "attempt": 4,
+          "quiet_ms": 10821,
+          "connected_ms": 479087
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "disconnected",
+        "wall_ms": 1786664219773,
+        "detail": {
+          "attempt": 4,
+          "code": 1006,
+          "reason": "",
+          "stopped": false
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "reconnected",
+        "wall_ms": 1786664220188,
+        "detail": {
+          "attempt": 5
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "subscription_sent",
+        "wall_ms": 1786664220188,
+        "detail": {
+          "attempt": 5,
+          "action": "subscribe",
+          "subscriptions": [
+            {
+              "topic": "activity",
+              "type": "trades"
+            },
+            {
+              "topic": "activity",
+              "type": "orders_matched"
+            }
+          ]
+        }
+      },
+      {
+        "source": "benchmark",
+        "event": "sockets_closed",
+        "wall_ms": 1786664268389
+      },
+      {
+        "source": "polynode",
+        "event": "disconnected",
+        "wall_ms": 1786664268405,
+        "detail": {
+          "code": 1006,
+          "reason": ""
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "disconnected",
+        "wall_ms": 1786664268427,
+        "detail": {
+          "attempt": 5,
+          "code": 1005,
+          "reason": "",
+          "stopped": true
+        }
+      }
+    ],
+    "rpc_errors": [],
+    "retained_archive_sha256sums": [
+      "0bfeb7ddf4f0b59b445dbdcd72d2dff63e364a2e853cab8c97ec6e459c886f92  REPORT.md",
+      "cdad7d6da15d1f0f7070c91ff77b46888a23cef6ef0c4397d9aa9f4b377e558d  events.ndjson",
+      "a2fead1e618500f59dd18ec4e2f66eafdc4e4601d34cda53574f290c2a4a51d6  latency_samples.csv",
+      "213e8995991ef0caa74e8b7990ce44913efb620bda7d79ce3c968e3e5eaa92bf  manifest.json",
+      "df50002185c97daf5d2f5c89c423ca7f06fb3a76ac6e1b02ff9dedf2b487bc52  missing.json",
+      "68cf3053763aa7c48f5e25afdf7579ab5b0d9e02fbc0607200c3b34cb8116b0c  raw_frames.ndjson",
+      "ff0988e0bcf8964e343ebbe4c48925d6322d9cc4cc3a953e1af427444bd88022  rpc_logs.json",
+      "bfbcc5d0e158686cfa182ec1f58c61f60c15b5b0e895dc42db6fe476e8f8092d  summary.json"
+    ],
+    "coverage": {
+      "polynode_pending": {
+        "unit": "transaction",
+        "seen": 31030,
+        "ground_truth": 31030,
+        "missing": 0,
+        "coverage_pct": 100
+      },
+      "polynode_status_update": {
+        "unit": "transaction",
+        "seen": 31030,
+        "ground_truth": 31030,
+        "missing": 0,
+        "coverage_pct": 100
+      },
+      "polynode_confirmed_trade_tx": {
+        "unit": "transaction",
+        "seen": 31030,
+        "ground_truth": 31030,
+        "missing": 0,
+        "coverage_pct": 100
+      },
+      "polynode_confirmed_trade_fill": {
+        "unit": "fill",
+        "seen": 82092,
+        "ground_truth": 82092,
+        "missing": 0,
+        "coverage_pct": 100
+      },
+      "rtds_activity": {
+        "unit": "transaction",
+        "seen": 30328,
+        "ground_truth": 31030,
+        "missing": 702,
+        "coverage_pct": 97.73767321946504
+      }
+    },
+    "latency": {
+      "polynode_pending_vs_status_update": {
+        "samples": 31030,
+        "polynode_first": 31030,
+        "competitor_first": 0,
+        "ties": 0,
+        "polynode_first_pct": 100,
+        "min_lead_ms": 172.334655,
+        "p25_lead_ms": 1038.8876112500002,
+        "p50_lead_ms": 1434.2536645,
+        "mean_lead_ms": 1438.328332876144,
+        "p75_lead_ms": 1808.76059525,
+        "p90_lead_ms": 2145.040899,
+        "p95_lead_ms": 2322.3036061499997,
+        "p99_lead_ms": 2678.6992039699976,
+        "max_lead_ms": 5068.817386
+      },
+      "polynode_pending_vs_rtds": {
+        "samples": 30328,
+        "polynode_first": 30328,
+        "competitor_first": 0,
+        "ties": 0,
+        "polynode_first_pct": 100,
+        "min_lead_ms": 565.861992,
+        "p25_lead_ms": 1848.962456,
+        "p50_lead_ms": 2285.3707995000004,
+        "mean_lead_ms": 2298.3862787375783,
+        "p75_lead_ms": 2723.763916,
+        "p90_lead_ms": 3108.5317437999997,
+        "p95_lead_ms": 3354.863247149999,
+        "p99_lead_ms": 3800.04427224,
+        "max_lead_ms": 4900.826215
+      },
+      "polynode_status_update_vs_rtds": {
+        "samples": 30328,
+        "polynode_first": 30316,
+        "competitor_first": 12,
+        "ties": 0,
+        "polynode_first_pct": 99.96043260353468,
+        "min_lead_ms": -98.039497,
+        "p25_lead_ms": 590.4749955,
+        "p50_lead_ms": 856.55125,
+        "mean_lead_ms": 864.0963209980154,
+        "p75_lead_ms": 1128.83090025,
+        "p90_lead_ms": 1317.6283288999998,
+        "p95_lead_ms": 1440.3099379,
+        "p99_lead_ms": 1657.4149642,
+        "max_lead_ms": 2199.208239
+      },
+      "polynode_first_confirmed_trade_vs_rtds": {
+        "samples": 30328,
+        "polynode_first": 30043,
+        "competitor_first": 285,
+        "ties": 0,
+        "polynode_first_pct": 99.06027433394883,
+        "min_lead_ms": -2267.507018,
+        "p25_lead_ms": 554.24174625,
+        "p50_lead_ms": 822.9376745,
+        "mean_lead_ms": 818.3495075859308,
+        "p75_lead_ms": 1094.62616975,
+        "p90_lead_ms": 1283.699494,
+        "p95_lead_ms": 1406.86199155,
+        "p99_lead_ms": 1608.7825794999999,
+        "max_lead_ms": 2072.35498
+      }
+    }
+  },
+  "struct_pending_control": {
+    "name": "struct-pending-control-3m",
+    "artifact_directory": "struct-pending-3m-20260814",
+    "core_interval_utc": {
+      "start": "2026-08-13T23:02:09.395Z",
+      "end": "2026-08-13T23:05:09.474Z"
+    },
+    "configuration": {
+      "duration_sec": 180,
+      "warmup_sec": 12,
+      "confirmation_tail_sec": 45,
+      "boundary_guard_blocks": 2,
+      "struct_status": "pending",
+      "struct_trade_types": "unfiltered",
+      "rtds_heartbeat": "struct-uppercase",
+      "rtds_silence_reconnect_sec": 10,
+      "include_struct": true
+    },
+    "chain_ground_truth": {
+      "from_block": 91971403,
+      "to_block": 91971519,
+      "blocks": 117,
+      "from_block_hash": "0x1d31fe17f99a49955c1760186f96d47a668ac1630d735c56728649993ec09641",
+      "to_block_hash": "0x11c8662c8cd5d212dcedc69f14822227c2a9821bdda64f6e542e2f67e4a7b151",
+      "transactions": 2863,
+      "fills": 7590,
+      "fills_by_version": {
+        "v2": 7590
+      },
+      "fills_by_contract": {
+        "0xe111180000d2663c0091e4f400237545b87b996b": 5338,
+        "0xe2222d279d744050d28e00520010520000310f59": 2252
+      }
+    },
+    "boundary_hash_recheck": {
+      "from_block_hash": "0x1d31fe17f99a49955c1760186f96d47a668ac1630d735c56728649993ec09641",
+      "to_block_hash": "0x11c8662c8cd5d212dcedc69f14822227c2a9821bdda64f6e542e2f67e4a7b151",
+      "matched": true
+    },
+    "runtime": {
+      "node": "v20.20.0",
+      "struct_sdk": "0.6.7",
+      "platform": "linux",
+      "arch": "x64",
+      "timezone": "UTC",
+      "host_label": "Server Two"
+    },
+    "collection_storage": {
+      "normalized_events_buffered_for_analysis": 42976,
+      "raw_frames_streamed_to_disk": 42968,
+      "raw_frame_backpressure_writes": 0
+    },
+    "lifecycle": [
+      {
+        "source": "benchmark",
+        "event": "started",
+        "wall_ms": 1786662117108
+      },
+      {
+        "source": "polynode",
+        "event": "connected",
+        "wall_ms": 1786662117206
+      },
+      {
+        "source": "polynode",
+        "event": "subscription_sent",
+        "wall_ms": 1786662117207,
+        "detail": {
+          "action": "subscribe",
+          "type": "trades"
+        }
+      },
+      {
+        "source": "polynode",
+        "event": "subscribed",
+        "wall_ms": 1786662117209,
+        "detail": {
+          "subscriber_id": "c572808e-ff79-4fe0-bca3-8cf74b36e861",
+          "subscription_id": "c572808e-ff79-4fe0-bca3-8cf74b36e861:0",
+          "subscription_type": "trades",
+          "type": "subscribed"
+        }
+      },
+      {
+        "source": "struct",
+        "event": "connected",
+        "wall_ms": 1786662117227,
+        "detail": {
+          "transport": "raw_websocket"
+        }
+      },
+      {
+        "source": "struct",
+        "event": "subscription_sent",
+        "wall_ms": 1786662117227,
+        "detail": {
+          "room": "polymarket_trades",
+          "requested": {
+            "status": "pending",
+            "subscribe_all": true
+          }
+        }
+      },
+      {
+        "source": "struct",
+        "event": "subscribed",
+        "wall_ms": 1786662117253,
+        "detail": {
+          "requested": {
+            "status": "pending",
+            "subscribe_all": true
+          },
+          "acknowledged": {
+            "condition_ids": [],
+            "market_slugs": [],
+            "event_slugs": [],
+            "position_ids": [],
+            "traders": [],
+            "builder_codes": [],
+            "trade_types": [],
+            "rejected": [],
+            "subscribe_all": true,
+            "compression": false
+          }
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "connected",
+        "wall_ms": 1786662117291,
+        "detail": {
+          "attempt": 1
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "subscription_sent",
+        "wall_ms": 1786662117291,
+        "detail": {
+          "attempt": 1,
+          "action": "subscribe",
+          "subscriptions": [
+            {
+              "topic": "activity",
+              "type": "trades"
+            },
+            {
+              "topic": "activity",
+              "type": "orders_matched"
+            }
+          ]
+        }
+      },
+      {
+        "source": "benchmark",
+        "event": "all_subscribed",
+        "wall_ms": 1786662117292
+      },
+      {
+        "source": "benchmark",
+        "event": "ground_truth_window_armed",
+        "wall_ms": 1786662129395,
+        "detail": {
+          "start_tip": 91971401,
+          "from_block": 91971403
+        }
+      },
+      {
+        "source": "benchmark",
+        "event": "ground_truth_window_closed",
+        "wall_ms": 1786662309474,
+        "detail": {
+          "end_tip": 91971521,
+          "to_block": 91971519
+        }
+      },
+      {
+        "source": "benchmark",
+        "event": "sockets_closed",
+        "wall_ms": 1786662354474
+      },
+      {
+        "source": "polynode",
+        "event": "disconnected",
+        "wall_ms": 1786662354492,
+        "detail": {
+          "code": 1006,
+          "reason": ""
+        }
+      },
+      {
+        "source": "struct",
+        "event": "disconnected",
+        "wall_ms": 1786662354500,
+        "detail": {
+          "code": 1000,
+          "reason": "client disconnect",
+          "stopped": true
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "disconnected",
+        "wall_ms": 1786662354512,
+        "detail": {
+          "attempt": 1,
+          "code": 1005,
+          "reason": "",
+          "stopped": true
+        }
+      }
+    ],
+    "rpc_errors": [],
+    "retained_archive_sha256sums": [
+      "03b83befaa602496a449c83b3cc69315ff0ab3084b101d4b310e7e62284f0609  REPORT.md",
+      "6a9a07b31c06022ecb9b147cb8364bc2f7e5155bb65edb054853eab97c870adc  events.ndjson",
+      "5c5ce34395ee108f181c46daace91448e01648212227bc209f8b4d2446770736  latency_samples.csv",
+      "bb85dd01c44dc061bf9c403aaaf09d9e49a08ae8a90cbe6bdf36f471b4098b10  manifest.json",
+      "ce591352b7b591bf7bcd8be33aead22eb3f28e058c55dac85211449f599db67a  missing.json",
+      "f25d3558c965a08ffc3983bad6211e5c1614e690c36c013d0f29691a11a9db92  raw_frames.ndjson",
+      "c2dd47d852094537c793f0a02ab7eb94a349998ba1b2d6153d953ddea21ce309  rpc_logs.json",
+      "ff1190dafc74b0ca6e7622666ead16803db384746cc02b61ebdffca7c33eed18  summary.json"
+    ],
+    "subscription": {
+      "room": "polymarket_trades",
+      "requested": {
+        "status": "pending",
+        "subscribe_all": true
+      },
+      "acknowledged": {
+        "condition_ids": [],
+        "market_slugs": [],
+        "event_slugs": [],
+        "position_ids": [],
+        "traders": [],
+        "builder_codes": [],
+        "trade_types": [],
+        "rejected": [],
+        "subscribe_all": true,
+        "compression": false
+      },
+      "transport": "raw_websocket_callback_stamped_before_json_parse"
+    },
+    "coverage": {
+      "polynode_pending": {
+        "unit": "transaction",
+        "seen": 2863,
+        "ground_truth": 2863,
+        "missing": 0,
+        "coverage_pct": 100
+      },
+      "polynode_status_update": {
+        "unit": "transaction",
+        "seen": 2863,
+        "ground_truth": 2863,
+        "missing": 0,
+        "coverage_pct": 100
+      },
+      "polynode_confirmed_trade_tx": {
+        "unit": "transaction",
+        "seen": 2863,
+        "ground_truth": 2863,
+        "missing": 0,
+        "coverage_pct": 100
+      },
+      "polynode_confirmed_trade_fill": {
+        "unit": "fill",
+        "seen": 7590,
+        "ground_truth": 7590,
+        "missing": 0,
+        "coverage_pct": 100
+      },
+      "struct_pending": {
+        "unit": "transaction",
+        "seen": 2784,
+        "ground_truth": 2863,
+        "missing": 79,
+        "coverage_pct": 97.24065665385959
+      },
+      "rtds_activity": {
+        "unit": "transaction",
+        "seen": 2863,
+        "ground_truth": 2863,
+        "missing": 0,
+        "coverage_pct": 100
+      }
+    },
+    "latency": {
+      "polynode_pending_vs_struct_pending": {
+        "samples": 2784,
+        "polynode_first": 2784,
+        "competitor_first": 0,
+        "ties": 0,
+        "polynode_first_pct": 100,
+        "min_lead_ms": 22290.567062,
+        "p25_lead_ms": 27990.389552,
+        "p50_lead_ms": 30022.874674,
+        "mean_lead_ms": 29980.65593054627,
+        "p75_lead_ms": 31993.0694555,
+        "p90_lead_ms": 33547.2086087,
+        "p95_lead_ms": 34264.319966949995,
+        "p99_lead_ms": 35564.68423019,
+        "max_lead_ms": 37060.975439
+      },
+      "polynode_status_update_vs_struct_pending": {
+        "samples": 2784,
+        "polynode_first": 2784,
+        "competitor_first": 0,
+        "ties": 0,
+        "polynode_first_pct": 100,
+        "min_lead_ms": 20295.196731,
+        "p25_lead_ms": 26668.16538725,
+        "p50_lead_ms": 28423.507767000003,
+        "mean_lead_ms": 28562.13297617786,
+        "p75_lead_ms": 30638.95979925,
+        "p90_lead_ms": 32084.182182700002,
+        "p95_lead_ms": 32960.31202485,
+        "p99_lead_ms": 34485.57500791,
+        "max_lead_ms": 35904.961725
+      },
+      "polynode_pending_vs_rtds": {
+        "samples": 2863,
+        "polynode_first": 2863,
+        "competitor_first": 0,
+        "ties": 0,
+        "polynode_first_pct": 100,
+        "min_lead_ms": 708.691623,
+        "p25_lead_ms": 1828.3514745,
+        "p50_lead_ms": 2267.907541,
+        "mean_lead_ms": 2261.9100652874617,
+        "p75_lead_ms": 2690.2702424999998,
+        "p90_lead_ms": 3013.4735996000004,
+        "p95_lead_ms": 3213.5257523000005,
+        "p99_lead_ms": 3640.3799162600008,
+        "max_lead_ms": 4431.861006
+      },
+      "polynode_status_update_vs_rtds": {
+        "samples": 2863,
+        "polynode_first": 2863,
+        "competitor_first": 0,
+        "ties": 0,
+        "polynode_first_pct": 100,
+        "min_lead_ms": 60.312292,
+        "p25_lead_ms": 601.4884305,
+        "p50_lead_ms": 841.347582,
+        "mean_lead_ms": 862.4715947474679,
+        "p75_lead_ms": 1115.8757420000002,
+        "p90_lead_ms": 1332.1305204,
+        "p95_lead_ms": 1393.8456945,
+        "p99_lead_ms": 1539.6232414400001,
+        "max_lead_ms": 1689.21656
+      },
+      "polynode_first_confirmed_trade_vs_rtds": {
+        "samples": 2863,
+        "polynode_first": 2838,
+        "competitor_first": 25,
+        "ties": 0,
+        "polynode_first_pct": 99.12679008033531,
+        "min_lead_ms": -376.926006,
+        "p25_lead_ms": 564.979252,
+        "p50_lead_ms": 802.650088,
+        "mean_lead_ms": 822.290741754106,
+        "p75_lead_ms": 1080.8062184999999,
+        "p90_lead_ms": 1302.4555990000001,
+        "p95_lead_ms": 1367.9949632,
+        "p99_lead_ms": 1507.145153100001,
+        "max_lead_ms": 1654.102327
+      },
+      "struct_pending_vs_rtds": {
+        "samples": 2784,
+        "polynode_first": 0,
+        "competitor_first": 2784,
+        "ties": 0,
+        "polynode_first_pct": 0,
+        "min_lead_ms": -35075.685176,
+        "p25_lead_ms": -29864.2527025,
+        "p50_lead_ms": -27702.6569545,
+        "mean_lead_ms": -27699.26413864799,
+        "p75_lead_ms": -25770.11500675,
+        "p90_lead_ms": -24176.610895399997,
+        "p95_lead_ms": -23240.615659950003,
+        "p99_lead_ms": -21802.005150420002,
+        "max_lead_ms": -19534.901673
+      }
+    }
+  },
+  "claim_evidence_matrix": [
+    {
+      "claim": "Polynode pending delivery versus RTDS activity",
+      "evidence": "headline.latency.polynode_pending_vs_rtds",
+      "denominator": "independently enumerated confirmed CLOB transactions",
+      "boundary": "RTDS activity is a public timing baseline and is not relabeled pending or confirmed"
+    },
+    {
+      "claim": "Polynode transaction confirmation versus RTDS activity",
+      "evidence": "headline.latency.polynode_status_update_vs_rtds",
+      "denominator": "independently enumerated confirmed CLOB transactions",
+      "boundary": "transaction-level comparison keyed by transaction hash"
+    },
+    {
+      "claim": "First Polynode confirmed-fill callback versus RTDS activity",
+      "evidence": "headline.latency.polynode_first_confirmed_trade_vs_rtds",
+      "denominator": "independently enumerated confirmed CLOB transactions",
+      "boundary": "first-fill transaction timing only; exact fill completeness is audited separately"
+    },
+    {
+      "claim": "Polynode exact confirmed-fill completeness",
+      "evidence": "headline.coverage.polynode_confirmed_trade_fill",
+      "denominator": "transaction hash plus canonical block-global log index from CLOB OrderFilled logs",
+      "boundary": "requires zero unresolved misses and zero RPC audit errors"
+    },
+    {
+      "claim": "Polynode pending versus explicit Struct pending",
+      "evidence": "struct_pending_control.latency.polynode_pending_vs_struct_pending",
+      "denominator": "matched later-confirmed transaction hashes",
+      "boundary": "separate three-minute control; unmatched Struct events remain missing rather than synthetic latency losses"
+    }
+  ],
+  "adverse_observations": {
+    "headline_integrity_issues": [],
+    "struct_control_integrity_issues": [],
+    "headline_rtds_missing_transactions": 702,
+    "headline_rtds_missing_clusters": [
+      {
+        "from_block": 91971841,
+        "to_block": 91971841,
+        "blocks": 1,
+        "missing_transactions": 55
+      },
+      {
+        "from_block": 91972084,
+        "to_block": 91972084,
+        "blocks": 1,
+        "missing_transactions": 6
+      },
+      {
+        "from_block": 91972297,
+        "to_block": 91972303,
+        "blocks": 7,
+        "missing_transactions": 176
+      },
+      {
+        "from_block": 91972373,
+        "to_block": 91972380,
+        "blocks": 8,
+        "missing_transactions": 174
+      },
+      {
+        "from_block": 91972469,
+        "to_block": 91972475,
+        "blocks": 7,
+        "missing_transactions": 291
+      }
+    ],
+    "headline_rtds_silence_reconnects": [
+      {
+        "source": "rtds",
+        "event": "silence_reconnect",
+        "wall_ms": 1786663482402,
+        "detail": {
+          "attempt": 1,
+          "quiet_ms": 10707,
+          "connected_ms": 1089259
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "silence_reconnect",
+        "wall_ms": 1786663596840,
+        "detail": {
+          "attempt": 2,
+          "quiet_ms": 10828,
+          "connected_ms": 114042
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "silence_reconnect",
+        "wall_ms": 1786663740268,
+        "detail": {
+          "attempt": 3,
+          "quiet_ms": 10825,
+          "connected_ms": 143026
+        }
+      },
+      {
+        "source": "rtds",
+        "event": "silence_reconnect",
+        "wall_ms": 1786664219772,
+        "detail": {
+          "attempt": 4,
+          "quiet_ms": 10821,
+          "connected_ms": 479087
+        }
+      }
+    ],
+    "struct_pending_missing_transactions": 79,
+    "headline_competitor_wins": {
+      "rtds_vs_polynode_status_update": 12,
+      "rtds_vs_polynode_first_confirmed_trade": 285
+    }
+  },
+  "limitations": [
+    "Point-in-time results from one Server Two vantage, not a guarantee for every region or future provider version.",
+    "RTDS activity is a public timing baseline; the benchmark does not relabel it as pending or confirmed.",
+    "Confirmed Polygon logs cannot enumerate pending transactions that never confirm.",
+    "Transaction-hash timing against RTDS is separate from exact fill completeness.",
+    "The Struct control and RTDS headline use non-overlapping windows and are not pooled.",
+    "The external Polygon RPC supplies only post-window chain truth and no competitive arrival timestamp."
+  ],
+  "provenance": {
+    "harness": {
+      "upstream_repository": "https://github.com/structbuild/polymarket-rtds-vs-struct-benchmark",
+      "upstream_commit": "4df16e1c2c6a8b51728842b8031d027382910dd0",
+      "harness_source_commit": "82c10d52f748c8e932aa64421e96cdbb75c292b7",
+      "source_tree_state": "unknown",
+      "harness_note": "Extended from Struct's published harness with Polynode and independent Polygon log truth.",
+      "index_ts_sha256": "1baa8358be486abf5927e167f3ad8d0b1daab8f39fa995e7a04232091d78c67e",
+      "analysis_ts_sha256": "ca88111e2be7d796940a7e3b0d1ebd481729b2fc06b096618ccd0275da74f76d"
+    },
+    "polygon_contract_registry": "https://docs.polymarket.com/resources/contracts",
+    "endpoints": {
+      "struct": "https://api.struct.to/",
+      "polynode": "wss://ws.polynode.dev/ws",
+      "rtds": "wss://ws-live-data.polymarket.com/",
+      "polygon_rpc": "https://polygon-mainnet.g.alchemy.com/v2/%3Credacted%3E"
+    }
+  },
+  "integrity": {
+    "publishable": true,
+    "typescript_check": "passed",
+    "regression_tests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "boundary_hash_rechecks": {
+      "headline": true,
+      "struct_pending_control": true
+    },
+    "rpc_audit_failures": 0,
+    "credential_exact_values_in_publishable_evidence": false
+  },
+  "generated_at": "2026-08-13T23:47:46.906Z"
+}
