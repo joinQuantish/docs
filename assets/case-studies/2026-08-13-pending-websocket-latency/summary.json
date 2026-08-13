@@ -1,0 +1,370 @@
+{
+  "schema_version": 1,
+  "case_study": "Pending WebSocket latency: Polynode vs RTDS and Struct",
+  "measured_date": "2026-08-13",
+  "audit_completed_at": "2026-08-13T09:29:00Z",
+  "measurement_vantage": {
+    "host": "polynode-2",
+    "role": "independent benchmark host",
+    "timezone": "UTC",
+    "runtime": "Node.js v20.20.0 on Linux x64",
+    "arrival_clock": "process.hrtime.bigint()",
+    "single_process_per_control": true,
+    "callback_timestamp_position": "before JSON parsing and normalization"
+  },
+  "claim_evidence_matrix": [
+    {
+      "claim": "Polynode pending beat Polymarket RTDS activity on every shared transaction in the 15-minute headline window.",
+      "evidence": {
+        "samples": 17330,
+        "polynode_first": 17330,
+        "polynode_first_pct": 100.0,
+        "median_lead_ms": 1895.8555245,
+        "p75_lead_ms": 2302.4574935,
+        "p95_lead_ms": 2865.2187128
+      },
+      "boundary": "Matched independently confirmed transaction hashes only; missing RTDS events received no synthetic latency value."
+    },
+    {
+      "claim": "Polynode pending represented every independently confirmed transaction in the headline window.",
+      "evidence": {
+        "ground_truth_transactions": 17850,
+        "polynode_pending_seen": 17850,
+        "polynode_pending_coverage_pct": 100.0,
+        "rtds_seen": 17330,
+        "rtds_coverage_pct": 97.08683473389355
+      },
+      "boundary": "Completeness denominator contains only transactions with at least one Polygon OrderFilled log in the fully observed block interval."
+    },
+    {
+      "claim": "Polynode pending beat Struct pending on every matched transaction in the explicit pending control.",
+      "evidence": {
+        "samples": 2486,
+        "polynode_first": 2486,
+        "polynode_first_pct": 100.0,
+        "median_lead_ms": 22920.600916,
+        "p75_lead_ms": 24573.7830185,
+        "p95_lead_ms": 26938.98194125
+      },
+      "boundary": "Matched independently confirmed transaction hashes only; 106 Struct misses were reported as missing and did not become latency wins."
+    },
+    {
+      "claim": "Polynode confirmation arrived before Struct pending on every matched transaction.",
+      "evidence": {
+        "samples": 2486,
+        "polynode_status_update_first": 2486,
+        "polynode_status_update_first_pct": 100.0,
+        "median_lead_ms": 20306.647061,
+        "p75_lead_ms": 21757.16062875,
+        "p95_lead_ms": 25025.2802625
+      },
+      "boundary": "Polynode status_update is transaction confirmation; Struct was explicitly subscribed with status=pending."
+    },
+    {
+      "claim": "Struct raw frames carried received_at values substantially earlier than subscriber arrival.",
+      "evidence": {
+        "raw_events": 9886,
+        "median_reported_to_raw_callback_ms": 23675,
+        "p75_reported_to_raw_callback_ms": 25856,
+        "p95_reported_to_raw_callback_ms": 28613
+      },
+      "boundary": "Separate payload audit only. Competitive latency claims use local monotonic arrival timestamps and do not use provider timestamps."
+    }
+  ],
+  "headline": {
+    "name": "rtds-headline-15m",
+    "artifact_directory": "20260813T091207255Z-rtds-headline-15m",
+    "core_interval_utc": {
+      "start": "2026-08-13T09:12:23.184Z",
+      "end": "2026-08-13T09:27:23.276Z"
+    },
+    "configuration": {
+      "duration_sec": 900,
+      "warmup_sec": 15,
+      "confirmation_tail_sec": 60,
+      "boundary_guard_blocks": 2,
+      "struct_enabled": false,
+      "rtds_heartbeat": "lowercase ping every 5 seconds",
+      "rtds_silence_reconnect_sec": 0
+    },
+    "chain_ground_truth": {
+      "from_block": 91938213,
+      "to_block": 91938809,
+      "blocks": 597,
+      "from_block_hash": "0x2cdc30e9b61c2536cdade8e81ba7b4067ed0bdc87633a5988e50453a5a7e1513",
+      "to_block_hash": "0x31d253f5ab3bf033cab5214acd6b104df8e5b0762c5db867d1f93e84c1c65e59",
+      "transactions": 17850,
+      "fills": 47694,
+      "fills_by_contract": {
+        "0xe111180000d2663c0091e4f400237545b87b996b": 40867,
+        "0xe2222d279d744050d28e00520010520000310f59": 6827
+      }
+    },
+    "coverage": {
+      "polynode_pending": {
+        "unit": "transaction",
+        "seen": 17850,
+        "ground_truth": 17850,
+        "missing": 0,
+        "coverage_pct": 100.0
+      },
+      "polynode_status_update": {
+        "unit": "transaction",
+        "seen": 17850,
+        "ground_truth": 17850,
+        "missing": 0,
+        "coverage_pct": 100.0
+      },
+      "polynode_confirmed_trade": {
+        "unit": "fill",
+        "seen": 46677,
+        "ground_truth": 47694,
+        "missing": 1017,
+        "coverage_pct": 97.86765630896969
+      },
+      "rtds_activity": {
+        "unit": "transaction",
+        "seen": 17330,
+        "ground_truth": 17850,
+        "missing": 520,
+        "coverage_pct": 97.08683473389355
+      }
+    },
+    "latency": {
+      "polynode_pending_vs_rtds": {
+        "samples": 17330,
+        "polynode_first": 17330,
+        "polynode_first_pct": 100.0,
+        "min_lead_ms": 377.421092,
+        "p25_lead_ms": 1494.04568875,
+        "p50_lead_ms": 1895.8555245,
+        "p75_lead_ms": 2302.4574935,
+        "p90_lead_ms": 2649.9509619,
+        "p95_lead_ms": 2865.2187128,
+        "p99_lead_ms": 3930.19027135,
+        "max_lead_ms": 13282.397808
+      },
+      "polynode_status_update_vs_rtds": {
+        "samples": 17330,
+        "polynode_first": 2534,
+        "polynode_first_pct": 14.62204270051933,
+        "p50_lead_ms": -1073.9011525,
+        "p75_lead_ms": -199.942685,
+        "p90_lead_ms": 98.2336929,
+        "p95_lead_ms": 236.58221785,
+        "p99_lead_ms": 425.93254811
+      },
+      "polynode_first_confirmed_trade_vs_rtds": {
+        "samples": 16956,
+        "polynode_first": 1964,
+        "polynode_first_pct": 11.582920500117952,
+        "p50_lead_ms": -1176.756897,
+        "p75_lead_ms": -281.6166285,
+        "p90_lead_ms": 35.9173,
+        "p95_lead_ms": 173.27369725,
+        "p99_lead_ms": 377.7128541
+      }
+    },
+    "rtds_terminal_silence": {
+      "last_activity_arrival_wall_ms": 1786613207842,
+      "core_end_wall_ms": 1786613243276,
+      "socket_close_wall_ms": 1786613303276,
+      "silence_before_core_end_ms": 35434,
+      "silence_through_tail_ms": 95434,
+      "missing_blocks": {
+        "from": 91938787,
+        "to": 91938809,
+        "count": 23
+      },
+      "missing_transactions": 520,
+      "socket_close_or_reconnect_during_core": false
+    }
+  },
+  "struct_pending_control": {
+    "name": "struct-pending-scored",
+    "artifact_directory": "20260813T085008097Z-struct-pending-scored",
+    "core_interval_utc": {
+      "start": "2026-08-13T08:50:21.068Z",
+      "end": "2026-08-13T08:53:21.144Z"
+    },
+    "configuration": {
+      "duration_sec": 180,
+      "warmup_sec": 12,
+      "confirmation_tail_sec": 60,
+      "boundary_guard_blocks": 2,
+      "struct_request": {
+        "room": "polymarket_trades",
+        "filters": {
+          "status": "pending",
+          "subscribe_all": true
+        }
+      },
+      "struct_acknowledged": {
+        "subscribe_all": true,
+        "rejected": []
+      },
+      "struct_transport": "raw WebSocket; callback stamped before JSON parse"
+    },
+    "chain_ground_truth": {
+      "from_block": 91937331,
+      "to_block": 91937447,
+      "blocks": 117,
+      "from_block_hash": "0x3473f94cde81616291d0d57b2f6ba799da0a0be0b702a8eb1a8b3e8a1f8fa6ff",
+      "to_block_hash": "0x58210d9907794de198969d4b87a724f3cf07edc88dd125c944e2b75c80c7ce23",
+      "transactions": 2592,
+      "fills": 6794
+    },
+    "coverage": {
+      "polynode_pending": {
+        "seen": 2592,
+        "ground_truth": 2592,
+        "missing": 0,
+        "coverage_pct": 100.0
+      },
+      "polynode_status_update": {
+        "seen": 2592,
+        "ground_truth": 2592,
+        "missing": 0,
+        "coverage_pct": 100.0
+      },
+      "polynode_confirmed_trade": {
+        "unit": "fill",
+        "seen": 6794,
+        "ground_truth": 6794,
+        "missing": 0,
+        "coverage_pct": 100.0
+      },
+      "struct_pending": {
+        "seen": 2486,
+        "ground_truth": 2592,
+        "missing": 106,
+        "coverage_pct": 95.9104938271605
+      },
+      "rtds_activity": {
+        "seen": 2592,
+        "ground_truth": 2592,
+        "missing": 0,
+        "coverage_pct": 100.0
+      }
+    },
+    "latency": {
+      "polynode_pending_vs_struct_pending": {
+        "samples": 2486,
+        "polynode_first": 2486,
+        "polynode_first_pct": 100.0,
+        "p50_lead_ms": 22920.600916,
+        "p75_lead_ms": 24573.7830185,
+        "p90_lead_ms": 26200.5563225,
+        "p95_lead_ms": 26938.98194125,
+        "p99_lead_ms": 28118.76371485
+      },
+      "polynode_status_update_vs_struct_pending": {
+        "samples": 2486,
+        "polynode_first": 2486,
+        "polynode_first_pct": 100.0,
+        "p50_lead_ms": 20306.647061,
+        "p75_lead_ms": 21757.16062875,
+        "p90_lead_ms": 23294.669277,
+        "p95_lead_ms": 25025.2802625,
+        "p99_lead_ms": 26287.4271798
+      },
+      "rtds_vs_struct_pending": {
+        "samples": 2486,
+        "rtds_first": 2486,
+        "rtds_first_pct": 100.0,
+        "p50_lead_ms": 21131.6930795,
+        "p75_lead_ms": 22641.46127175,
+        "p90_lead_ms": 24421.279341,
+        "p95_lead_ms": 25284.35247225,
+        "p99_lead_ms": 26349.85929565
+      }
+    },
+    "struct_reported_timestamp_audit": {
+      "events": 9886,
+      "unit": "raw Struct event",
+      "metric": "raw_callback_wall_ms - source_reported_received_at_ms",
+      "min_ms": 15836,
+      "p25_ms": 21685,
+      "p50_ms": 23675,
+      "p75_ms": 25856,
+      "p90_ms": 27360,
+      "p95_ms": 28613,
+      "p99_ms": 30705.3,
+      "max_ms": 33038,
+      "mean_ms": 23686.69957515679,
+      "competitive_claim_dependency": false
+    }
+  },
+  "adverse_observations": [
+    {
+      "path": "polynode_confirmed_trade",
+      "window": "headline",
+      "result": "The exact-fill reconstruction missed 1017 of 47694 fills across 14 complete blocks. Polynode pending and status_update transaction coverage remained 100%. The fill path is excluded from every headline claim.",
+      "missing_blocks": [
+        91938253,
+        91938373,
+        91938375,
+        91938377,
+        91938378,
+        91938413,
+        91938453,
+        91938494,
+        91938495,
+        91938512,
+        91938533,
+        91938583,
+        91938613,
+        91938623
+      ]
+    },
+    {
+      "path": "rtds_activity",
+      "window": "headline",
+      "result": "RTDS missed 520 transactions across the final 23 eligible blocks during a silent-open interval. No socket close or reconnect was recorded before the tail ended."
+    },
+    {
+      "path": "confirmed timing control",
+      "window": "headline",
+      "result": "RTDS activity led Polynode status_update by 1073.901 ms at median and first confirmed trade by 1176.757 ms at median. No confirmed-path speed claim is made against RTDS."
+    }
+  ],
+  "limitations": [
+    "Point-in-time measurements from one Server Two network vantage are not universal provider guarantees.",
+    "RTDS activity does not declare a pending or confirmed lifecycle stage and is used only as a public arrival baseline.",
+    "The Struct and RTDS scored windows are non-overlapping and their latency samples are never pooled.",
+    "Confirmed chain logs cannot enumerate pending transactions that never reach the chain.",
+    "The benchmark measures subscriber-visible delivery and does not identify any provider's private implementation."
+  ],
+  "provenance": {
+    "upstream_repository": "https://github.com/structbuild/polymarket-rtds-vs-struct-benchmark",
+    "upstream_commit": "4df16e1c2c6a8b51728842b8031d027382910dd0",
+    "struct_control_source_commit": "56937649b9b5a05bffd52eb6a1a32e9f7b95e443",
+    "headline_source_commit": "82c10d52f748c8e932aa64421e96cdbb75c292b7",
+    "source_difference": "README text and RTDS lowercase heartbeat scheduling only; collector callbacks and analyzer unchanged",
+    "headline_source_hashes": {
+      "index.ts": "1baa8358be486abf5927e167f3ad8d0b1daab8f39fa995e7a04232091d78c67e",
+      "analysis.ts": "ca88111e2be7d796940a7e3b0d1ebd481729b2fc06b096618ccd0275da74f76d"
+    },
+    "struct_control_source_hashes": {
+      "index.ts": "89f662edd375fdda41650aade03eed6bb883967f245cc58f6a22a67e0510a448",
+      "analysis.ts": "ca88111e2be7d796940a7e3b0d1ebd481729b2fc06b096618ccd0275da74f76d"
+    }
+  },
+  "integrity": {
+    "typescript_check": "passed",
+    "regression_tests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "boundary_hash_rechecks": {
+      "headline": true,
+      "struct_pending_control": true
+    },
+    "rpc_audit_failures": 0,
+    "retained_archive_sha256_inventories": {
+      "headline": "passed",
+      "struct_pending_control": "passed"
+    },
+    "credential_exact_value_scan": "No runtime credential is included in source or publishable evidence."
+  }
+}
