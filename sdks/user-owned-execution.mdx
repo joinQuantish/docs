@@ -63,6 +63,30 @@ The SDK keeps the credential in memory unless your application explicitly saves
 it. Store it only in your own backend secret manager. Do not put it in browser
 storage, logs, analytics, source control, or client-visible configuration.
 
+## Platform integration
+
+Treat one signing wallet as the unit of isolation. A platform serving many
+users should keep a separate wallet-owned relayer credential for each wallet
+address and create a separate trader context for the active wallet. Never share
+one trader instance or relayer credential across two users.
+
+For each wallet:
+
+1. Load that wallet's credential from your encrypted backend secret store.
+2. If it does not exist, run the two-step browser authorization below and save
+   the returned credential under the same expected wallet address.
+3. Pass the credential to that wallet's trader configuration and complete
+   onboarding or trading.
+4. Clear the trader context when the request, worker job, or user session ends.
+
+The browser receives only the short-lived message and returns its signature;
+your Polynode API key and wallet-owned relayer credential remain on the
+backend. An individual browser-only application may keep the credential in
+memory for the current page session, but should let it disappear when the page
+closes rather than writing it to browser storage. Reauthorization reuses the
+wallet's existing authorization when available; it does not create builder
+attribution.
+
 ## Supported wallets
 
 The first release supports normal EOA signers and EOA-controlled Safe or deposit
