@@ -5,14 +5,14 @@ description: "Use synchronous or asynchronous Python clients for all 120 registe
 icon: "database"
 ---
 
-Python 0.12.2 exposes the complete shared V3 operation registry through both `PolyNode` and `AsyncPolyNode`. V3 JSON decimal fractions are decoded as `Decimal` so money and prices are not silently rounded through binary floating point.
+Python 0.13.0 exposes the complete shared V3 operation registry through both `PolyNode` and `AsyncPolyNode`. V3 JSON decimal fractions are decoded as `Decimal` so money and prices are not silently rounded through binary floating point.
 
 ## Discover operations
 
 ```python
 from polynode import V3_OPERATION_COUNT, V3_OPERATIONS
 
-print(V3_OPERATION_COUNT)  # 120 in 0.12.2
+print(V3_OPERATION_COUNT)  # 120 in 0.13.0
 for operation in V3_OPERATIONS:
     print(operation.method, operation.path, operation.domain)
 ```

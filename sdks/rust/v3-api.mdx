@@ -5,7 +5,7 @@ description: "Execute all 120 registered V3 operations with precision-preserving
 icon: "database"
 ---
 
-Rust 0.15.2 exposes the complete shared V3 registry through `client.v3()`. Generic responses use `serde_json::Value`, preserving decimal strings and large integer wire values.
+Rust 0.16.0 exposes the complete shared V3 registry through `client.v3()`. Generic responses use `serde_json::Value`, preserving decimal strings and large integer wire values.
 
 ## Discover operations
 
@@ -13,7 +13,7 @@ Rust 0.15.2 exposes the complete shared V3 registry through `client.v3()`. Gener
 use polynode::{V3_OPERATIONS, V3_OPERATION_COUNT};
 
 fn main() {
-    println!("{V3_OPERATION_COUNT}"); // 120 in 0.15.2
+    println!("{V3_OPERATION_COUNT}"); // 120 in 0.16.0
     for operation in V3_OPERATIONS {
         println!("{} {} {}", operation.method, operation.path, operation.domain);
     }

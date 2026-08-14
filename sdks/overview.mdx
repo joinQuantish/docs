@@ -1,11 +1,11 @@
 ---
-title: "PolyNode SDKs"
+title: "Polynode SDKs"
 sidebarTitle: "Overview"
-description: "Install an official PolyNode SDK and use V3 data, settlement streams, Chainlink TWAP markets, PN1 orderbooks, and perps."
+description: "Install an official Polynode SDK and use V3 data, settlement streams, Chainlink TWAP markets, PN1 orderbooks, and perps."
 icon: "code"
 ---
 
-PolyNode has official SDKs for TypeScript, Python, and Rust. Each SDK covers the same core product surfaces:
+Polynode has official SDKs for TypeScript, Python, and Rust. Each SDK covers the same core product surfaces:
 
 - the complete V3 API, including combos and perps data
 - the real-time settlement stream
@@ -17,9 +17,9 @@ The examples in this section are tested against these published versions:
 
 | Language | Package | Current version | Runtime |
 | --- | --- | ---: | --- |
-| TypeScript / Node.js | [`polynode-sdk`](https://www.npmjs.com/package/polynode-sdk) | `0.12.2` | Node.js 18+ |
-| Python | [`polynode`](https://pypi.org/project/polynode/) | `0.12.2` | Python 3.10+ |
-| Rust | [`polynode`](https://crates.io/crates/polynode) | `0.15.2` | Tokio async runtime |
+| TypeScript / Node.js | [`polynode-sdk`](https://www.npmjs.com/package/polynode-sdk) | `0.13.0` | Node.js 18+ |
+| Python | [`polynode`](https://pypi.org/project/polynode/) | `0.13.0` | Python 3.10+ |
+| Rust | [`polynode`](https://crates.io/crates/polynode) | `0.16.0` | Tokio async runtime |
 
 <Note>
   Use these versions or newer. Older releases do not contain the complete V3 registry, the managed perps stream, reconnect-aware settlement delivery, and PN1 orderbook integrity described here.
@@ -37,13 +37,13 @@ The examples in this section are tested against these published versions:
   </Tab>
   <Tab title="Python">
     ```bash
-    python -m pip install --upgrade "polynode>=0.12.2"
+    python -m pip install --upgrade "polynode>=0.13.0"
     ```
   </Tab>
   <Tab title="Rust">
     ```toml
     [dependencies]
-    polynode = "0.15.2"
+    polynode = "0.16.0"
     tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
     ```
   </Tab>
@@ -56,7 +56,7 @@ export POLYNODE_API_KEY="pn_live_..."
 ```
 
 <Warning>
-  Do not embed a PolyNode API key or wallet private key in browser code, mobile bundles, source control, screenshots, or logs.
+  Do not embed a Polynode API key or wallet private key in browser code, mobile bundles, source control, screenshots, or logs.
 </Warning>
 
 ## First request
