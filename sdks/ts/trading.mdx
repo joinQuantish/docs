@@ -10,11 +10,19 @@ Install the optional trading dependencies:
 For optional zero-builder attribution backed by the signing wallet, see [User-owned execution](/sdks/user-owned-execution).
 
 ```bash
-npm install polynode-sdk@^0.13.0 viem better-sqlite3 \
+npm install polynode-sdk@^0.13.6 viem better-sqlite3 \
   @polymarket/clob-client \
   @polymarket/builder-relayer-client \
   @polymarket/builder-signing-sdk
 ```
+
+<Warning>
+The optional official Polymarket relayer client currently brings legacy
+Axios/ethers audit advisories into a full trading install. Polynode SDK 0.13.6
+does not bundle that dependency tree: its only direct runtime dependency is
+`viem`. Pin the relayer client to the SDK's declared peer version, keep relayer
+destinations fixed, and review upstream updates before changing that pin.
+</Warning>
 
 Polymarket V2 is the default. You do not need to set `exchangeVersion`, but setting it explicitly can make a migration easier to review:
 

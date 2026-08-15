@@ -109,6 +109,7 @@ message to the user's wallet.
 import {
   beginUserRelayerAuthorization,
   completeUserRelayerAuthorization,
+  PolyNodeTrader,
 } from 'polynode-sdk';
 
 const address = '0x...';
@@ -130,22 +131,122 @@ const credential = await completeUserRelayerAuthorization(
 );
 
 // Save `credential` in your backend secret manager for this address.
+const trader = new PolyNodeTrader({
+  polynodeKey: process.env.POLYNODE_API_KEY!,
+  executionMode: 'user_owned',
+  userRelayerCredentials: credential,
+});
 ```
 
 ```typescript Browser
-const signature = await walletClient.signMessage({
-  account: address,
-  message,
-});
+import { createWalletClient, custom } from 'viem';
+import { polygon } from 'viem/chains';
 
-// Return only the signature to your backend.
+export async function signAuthorizationMessage(
+  message: string,
+  browserProvider: Parameters<typeof custom>[0],
+) {
+  const walletClient = createWalletClient({
+    chain: polygon,
+    transport: custom(browserProvider),
+  });
+  const [address] = await walletClient.requestAddresses();
+  const signature = await walletClient.signMessage({ account: address, message });
+
+  // Return only the address and signature to your backend.
+  return { address, signature };
+}
 ```
 
-The equivalent backend primitives are
-`begin_user_relayer_authorization()` and
-`complete_user_relayer_authorization()` in Python, and
-`PolyNodeTrader::begin_user_relayer_authorization()` and
-`PolyNodeTrader::complete_user_relayer_authorization()` in Rust.
+### Python browser backend
+
+```python
+import os
+from polynode.trading import (
+    ExecutionMode,
+    PolyNodeTrader,
+    TraderConfig,
+    UserRelayerAuthorizationChallenge,
+    begin_user_relayer_authorization,
+    complete_user_relayer_authorization,
+)
+
+async def begin_for_browser(address: str) -> UserRelayerAuthorizationChallenge:
+    challenge = await begin_user_relayer_authorization(
+        "https://trade.polynode.dev",
+        os.environ["POLYNODE_API_KEY"],
+        address,
+    )
+    # Keep the complete challenge in short-lived backend storage.
+    # Return only challenge.message to the browser.
+    return challenge
+
+async def finish_from_browser(
+    address: str,
+    challenge: UserRelayerAuthorizationChallenge,
+    signature_returned_by_browser: str,
+) -> PolyNodeTrader:
+    credential = await complete_user_relayer_authorization(
+        "https://trade.polynode.dev",
+        os.environ["POLYNODE_API_KEY"],
+        challenge,
+        signature_returned_by_browser,
+        address,
+    )
+    # Save `credential` in your backend secret manager for this address.
+    return PolyNodeTrader(TraderConfig(
+        polynode_key=os.environ["POLYNODE_API_KEY"],
+        execution_mode=ExecutionMode.USER_OWNED,
+        user_relayer_credentials=credential,
+    ))
+```
+
+### Rust browser backend
+
+```rust,no_run
+use polynode::trading::{
+    Address, ExecutionMode, PolyNodeTrader, TraderConfig,
+    UserRelayerAuthorizationChallenge, UserRelayerCredentials,
+};
+
+async fn begin_for_browser(
+    trader: &PolyNodeTrader,
+    address: Address,
+) -> polynode::Result<UserRelayerAuthorizationChallenge> {
+    // Keep the complete challenge in short-lived backend storage and return
+    // only challenge.message to the browser.
+    trader.begin_user_relayer_authorization(address).await
+}
+
+async fn finish_from_browser(
+    trader: &mut PolyNodeTrader,
+    address: Address,
+    challenge: &UserRelayerAuthorizationChallenge,
+    signature_returned_by_browser: &str,
+) -> polynode::Result<UserRelayerCredentials> {
+    let credential = trader
+        .complete_user_relayer_authorization(
+            challenge,
+            signature_returned_by_browser,
+            address,
+        )
+        .await?;
+    // Save `credential` in your backend secret manager for this address.
+    Ok(credential)
+}
+
+fn restore_trader(
+    polynode_key: String,
+    credential: UserRelayerCredentials,
+) -> polynode::Result<PolyNodeTrader> {
+    PolyNodeTrader::new(TraderConfig {
+        polynode_key,
+        execution_mode: ExecutionMode::UserOwned,
+        user_relayer_credentials: Some(credential),
+        ..Default::default()
+    })
+}
+```
 
 ## TypeScript
 
@@ -155,12 +256,15 @@ one call:
 ```typescript
 import { PolyNodeTrader } from 'polynode-sdk';
 
+const serviceWalletPrivateKey = process.env.POLYGON_PRIVATE_KEY;
+if (!serviceWalletPrivateKey) throw new Error('Set POLYGON_PRIVATE_KEY');
+
 const trader = new PolyNodeTrader({
   polynodeKey: process.env.POLYNODE_API_KEY!,
   executionMode: 'user_owned',
 });
 
-const status = await trader.ensureReady(userControlledSigner);
+const status = await trader.ensureReady(serviceWalletPrivateKey);
 console.log(status.executionMode);          // "user_owned"
 console.log(status.userRelayerAuthorized); // true
 
@@ -187,7 +291,7 @@ await trader.merge({
 trader.close();
 ```
 
-Use `await trader.authorizeUserOwnedExecution(userControlledSigner)` when you
+Use `await trader.authorizeUserOwnedExecution(serviceWalletPrivateKey)` when you
 want the combined authorization result without running the rest of onboarding.
 
 ## Python
@@ -208,7 +312,8 @@ trader = PolyNodeTrader(TraderConfig(
     execution_mode=ExecutionMode.USER_OWNED,
 ))
 
-status = await trader.ensure_ready(user_controlled_signer)
+service_wallet_private_key = os.environ["POLYGON_PRIVATE_KEY"]
+status = await trader.ensure_ready(service_wallet_private_key)
 print(status.execution_mode)           # ExecutionMode.USER_OWNED
 print(status.user_relayer_authorized)  # True
 
@@ -235,11 +340,16 @@ await trader.execute_merge(MergeParams(
 trader.close()
 ```
 
-Use `await trader.authorize_user_owned_execution(user_controlled_signer)` when
+Use `await trader.authorize_user_owned_execution(service_wallet_private_key)` when
 you want the combined authorization result without running full onboarding.
 The existing synchronous `trader.split()` and `trader.merge()` methods remain
 build-only helpers; use the explicit `execute_*` methods above for gasless
 submission.
+
+For an HSM, Privy wallet, or another caller-controlled signer, provide async
+`get_address()`, `sign_typed_data(payload)`, and `sign_message(message)`
+methods. `sign_message()` is required for user-owned authorization and gasless
+smart-wallet actions.
 
 ## Rust
 
@@ -251,7 +361,7 @@ use polynode::trading::{
 
 # async fn example() -> polynode::Result<()> {
 let signer = PrivateKeySigner::from_hex(
-    &std::env::var("POLYMARKET_PRIVATE_KEY").unwrap(),
+    &std::env::var("POLYGON_PRIVATE_KEY").unwrap(),
 )?;
 let mut trader = PolyNodeTrader::new(TraderConfig {
     polynode_key: std::env::var("POLYNODE_API_KEY").unwrap(),

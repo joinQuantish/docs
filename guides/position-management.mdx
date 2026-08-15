@@ -1,7 +1,7 @@
 ---
 title: "Position Management"
 sidebarTitle: "Position Management"
-description: "Split, merge, and convert positions on Polymarket. Gasless via the TypeScript SDK."
+description: "Split, merge, and convert positions on Polymarket, with gasless Safe and deposit-wallet execution."
 icon: "rotate"
 ---
 
@@ -9,18 +9,24 @@ icon: "rotate"
 
 Polymarket positions are ERC-1155 tokens representing outcomes. Three on-chain operations let you manage them directly:
 
-**Split** — Turn USDC into YES + NO tokens for a market. You put in $100 and get 100 YES shares + 100 NO shares. One side will be worth $1 at resolution, the other $0.
+**Split** — Turn collateral into YES + NO tokens for a market. Current V2
+trading uses pUSD; explicit legacy V1 uses USDC.e. You put in $100 and get 100
+YES shares + 100 NO shares. One side will be worth $1 at resolution, the other
+$0.
 
-**Merge** — The reverse. Put YES + NO tokens back together and get USDC. 100 YES + 100 NO = $100 USDC returned.
+**Merge** — The reverse. Put YES + NO tokens back together and receive the
+matching collateral. In current V2, 100 YES + 100 NO returns 100 pUSD.
 
-**Convert** — Rebalance positions across outcomes in a multi-outcome market (neg-risk only). If you hold NO tokens on certain outcomes, convert them into USDC plus YES tokens on the remaining outcomes.
+**Convert** — Rebalance positions across outcomes in a multi-outcome market
+(neg-risk only). The legacy neg-risk adapter converts selected NO tokens into
+USDC.e plus YES tokens on the remaining outcomes.
 
 ## When to use each
 
 | Operation | Use case |
 |-----------|----------|
 | **Split** | Mint new outcome tokens without going through the orderbook. Useful for market making or taking positions on illiquid markets. |
-| **Merge** | Exit positions without selling on the orderbook. Redeem paired YES+NO tokens for USDC at any time. |
+| **Merge** | Exit positions without selling on the orderbook. Merge paired YES+NO tokens back into the active collateral. |
 | **Convert** | Rebalance across outcomes in multi-outcome markets (e.g. "Who will win the World Cup?"). Swap your NO exposure on some outcomes into YES exposure on others. |
 
 ## TypeScript (gasless)
@@ -39,10 +45,10 @@ import { PolyNodeTrader } from 'polynode-sdk';
 const trader = new PolyNodeTrader({ polynodeKey: 'pn_live_...' });
 await trader.ensureReady('0xYOUR_PRIVATE_KEY');
 
-// Split $100 into YES + NO tokens
+// Split 100 pUSD into YES + NO tokens on current V2
 const result = await trader.split({
   conditionId: '0x895e01db...', // from market data
-  amount: 100,                   // $100 USDC
+  amount: 100,
 });
 
 console.log(result.txHash); // on-chain transaction hash
@@ -51,7 +57,7 @@ console.log(result.txHash); // on-chain transaction hash
 ### Merge
 
 ```typescript
-// Merge YES + NO tokens back into $50 USDC
+// Merge YES + NO tokens back into 50 pUSD on current V2
 const result = await trader.merge({
   conditionId: '0x895e01db...',
   amount: 50,
@@ -73,14 +79,15 @@ const result = await trader.convert({
 
 **What happens:**
 - Your NO tokens on outcomes 0 and 1 are burned
-- You receive **(number of outcomes - 1) x amount** in USDC (here: $100)
+- You receive **(number of outcomes - 1) x amount** in USDC.e (here: $100)
 - You receive YES tokens on all other outcomes (here: outcomes 2 through 35)
 
 The `outcomeIndices` correspond to the position of each outcome in the market. Index 0 is the first outcome, index 1 is the second, etc. You can find these by looking at the `questionID` field in market data — the last byte of each questionID is the outcome index.
 
-## Rust (transaction builder)
+## Rust
 
-The Rust SDK builds transactions that you submit via your own provider or the Polymarket relayer.
+The existing Rust helpers remain build-only for integrations that submit their
+own transactions:
 
 ```rust
 use polynode::trading::position_management::*;
@@ -106,7 +113,44 @@ let tx = build_convert_txn(
 );
 ```
 
-## Python (transaction builder)
+For an EOA-controlled Safe or deposit wallet in
+[`user_owned` mode](/sdks/user-owned-execution), `execute_split()` and
+`execute_merge()` submit gaslessly with wallet-owned authorization:
+
+```rust,no_run
+use polynode::trading::{
+    ExecutionMode, MergeParams, PolyNodeTrader, PrivateKeySigner,
+    SignatureType, SplitParams, TraderConfig,
+};
+
+let signer = PrivateKeySigner::from_hex(
+    &std::env::var("POLYGON_PRIVATE_KEY")?,
+)?;
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: std::env::var("POLYNODE_API_KEY")?,
+    execution_mode: ExecutionMode::UserOwned,
+    ..Default::default()
+})?;
+
+let ready = trader.ensure_ready(Box::new(signer), None).await?;
+assert!(matches!(
+    ready.signature_type,
+    SignatureType::PolyGnosisSafe | SignatureType::Poly1271
+));
+
+trader.execute_split(SplitParams {
+    condition_id: "0x895e01db...".into(),
+    amount: 1.0,
+}, false).await?;
+trader.execute_merge(MergeParams {
+    condition_id: "0x895e01db...".into(),
+    amount: 1.0,
+}, false).await?;
+```
+
+## Python
+
+The synchronous Python helpers also remain build-only:
 
 ```python
 from polynode.trading.position_management import build_split_txn, build_convert_txn
@@ -117,6 +161,43 @@ tx = build_split_txn("0x895e01db...", 100.0, neg_risk=True)
 
 # Build a convert transaction
 tx = build_convert_txn("0xc7d902c4...", [0, 1], 100.0)
+```
+
+For an EOA-controlled Safe or deposit wallet in
+[`user_owned` mode](/sdks/user-owned-execution), use the explicit async
+execution methods:
+
+```python
+import os
+from polynode.trading import (
+    ExecutionMode,
+    MergeParams,
+    PolyNodeTrader,
+    SignatureType,
+    SplitParams,
+    TraderConfig,
+)
+
+trader = PolyNodeTrader(TraderConfig(
+    polynode_key=os.environ["POLYNODE_API_KEY"],
+    execution_mode=ExecutionMode.USER_OWNED,
+))
+ready = await trader.ensure_ready(os.environ["POLYGON_PRIVATE_KEY"])
+assert ready.signature_type in (
+    SignatureType.POLY_GNOSIS_SAFE,
+    SignatureType.POLY_1271,
+)
+
+await trader.execute_split(SplitParams(
+    condition_id="0x895e01db...",
+    amount=1,
+    neg_risk=False,
+))
+await trader.execute_merge(MergeParams(
+    condition_id="0x895e01db...",
+    amount=1,
+    neg_risk=False,
+))
 ```
 
 ## Finding market IDs
@@ -152,5 +233,8 @@ console.log(market.negRiskMarketID);   // for convert
 The TypeScript SDK auto-detects the market type and routes to the correct contract. Rust and Python default to neg-risk (most multi-outcome markets). Pass `neg_risk=False` for standard binary markets.
 
 <Note>
-Convert operations are gasless in the TypeScript SDK. Rust and Python SDKs return pre-built transactions — submit them via the Polymarket relayer or your own provider.
+Rust and Python keep their synchronous build-only helpers for compatibility and
+also provide gasless user-owned `execute_split` / `execute_merge` methods.
+Convert remains gasless through TypeScript; Rust and Python expose a build-only
+convert transaction.
 </Note>
