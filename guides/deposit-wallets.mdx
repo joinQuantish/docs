@@ -30,10 +30,10 @@ From your perspective as a builder, the key differences are:
 **If you use the polynode SDK for trading:** update to the latest version. Everything else is automatic.
 
 ```bash
-# Minimum versions for deposit wallet support
-cargo add polynode@0.13.3        # Rust
-npm install polynode-sdk@0.10.6  # TypeScript
-pip install polynode==0.10.3     # Python
+# Current beacon-aware wallet resolution and onboarding
+cargo add polynode@0.16.0 --features trading
+npm install polynode-sdk@^0.13.0
+python -m pip install "polynode[trading]>=0.13.0,<0.14"
 ```
 
 **If you only read data (positions, trades, /resolve):** existing fields are unchanged. `/resolve` still returns `safe`, `eoa`, `username`, and `type` exactly as before. It also returns the deployed-only `wallets` object and a `wallet_details` list with plain `wallet_type`, `deployed`, and `current` status for each relevant address.
@@ -84,37 +84,56 @@ await trader.order({ tokenId: '...', side: 'BUY', price: 0.5, size: 50 });
 // Same API, different signing under the hood
 ```
 
-## Wallet address derivation
+## Wallet address resolution
 
-You can derive any user's deposit wallet address from their EOA without any network calls:
+Current deposit wallets can use either the earlier standalone UUPS deployment
+or the active factory beacon. Resolve the current address against Polygon before
+funding it. The older synchronous `deriveDepositWalletAddress()` /
+`derive_deposit_wallet_address()` helpers derive only the legacy UUPS address
+and are deprecated for live wallet selection.
 
 <CodeGroup>
 ```typescript TypeScript
-const { deriveDepositWalletAddress, deriveSafeAddress } = require('polynode-sdk');
+import { deriveSafeAddress, resolveDepositWalletAddress } from 'polynode-sdk';
+import { createPublicClient, http } from 'viem';
+import { polygon } from 'viem/chains';
 
 const eoa = '0xA60601A4d903af91855C52BFB3814f6bA342f201';
-const depositWallet = await deriveDepositWalletAddress(eoa);
+const provider = createPublicClient({
+  chain: polygon,
+  transport: http(process.env.POLYGON_RPC_URL),
+});
+const depositWallet = await resolveDepositWalletAddress(provider, eoa);
 const safe = await deriveSafeAddress(eoa);
-
-// Both are deterministic — same EOA always produces the same addresses
 ```
 
 ```python Python
-from polynode.trading import derive_deposit_wallet_address, derive_safe_address
+import os
+from polynode.trading import resolve_deposit_wallet_address, derive_safe_address
 
 eoa = "0xA60601A4d903af91855C52BFB3814f6bA342f201"
-deposit_wallet = derive_deposit_wallet_address(eoa)
+deposit_wallet = await resolve_deposit_wallet_address(
+    eoa,
+    rpc_url=os.environ["POLYGON_RPC_URL"],
+)
 safe = derive_safe_address(eoa)
 ```
 
 ```rust Rust
-use polynode::trading::onboarding::{derive_deposit_wallet_address, derive_safe_address};
+use polynode::trading::{
+    derive_safe_address, resolve_deposit_wallet_address, Address,
+};
 
-let eoa = "0xA60601A4d903af91855C52BFB3814f6bA342f201".parse().unwrap();
-let deposit_wallet = derive_deposit_wallet_address(eoa);
+let eoa: Address = "0xA60601A4d903af91855C52BFB3814f6bA342f201".parse()?;
+let rpc_url = std::env::var("POLYGON_RPC_URL")?;
+let deposit_wallet = resolve_deposit_wallet_address(eoa, &rpc_url).await?;
 let safe = derive_safe_address(eoa);
 ```
 </CodeGroup>
+
+Both possible deposit addresses are deterministic for an EOA, but the factory's
+current beacon state determines which address is active. A deployed legacy UUPS
+wallet remains authoritative.
 
 ## The /resolve endpoint
 
@@ -194,7 +213,11 @@ Yes. The SDK defaults to creating Safe wallets for new users when no wallet is d
 </Accordion>
 
 <Accordion title="What SDK version do I need?">
-Deposit wallet address derivation and detection: `>= 0.10.0`. POLY_1271 order signing: `>= 0.10.5`. Full onboarding flow (deploy + approve): `>= 0.10.6`. Latest recommended: Rust `0.13.3`, TypeScript `0.10.6`, Python `0.10.3`.
+For current beacon-aware resolution, wallet-owned authorization, and full
+onboarding, use TypeScript `polynode-sdk >= 0.13.0`, Python
+`polynode >= 0.13.0,<0.14`, or Rust `polynode >= 0.16.0` with the `trading`
+feature. Current registry releases are TypeScript `0.13.6`, Python `0.13.0`,
+and Rust `0.16.0`.
 </Accordion>
 
 <Accordion title="What if a user has both a Safe and a deposit wallet?">
