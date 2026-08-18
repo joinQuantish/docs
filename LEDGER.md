@@ -3,7 +3,8 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
-- 2026-08-18 [codex] — Prepared sports game identifier documentation for the
+- 2026-08-18 [codex] — Prepared sports game identifier documentation and a
+  public changelog entry for the
   additive event-ID and market-ID lookup routes. Game detail, the sports route
   index, and league game discovery now show the explicit `by-event` and
   `by-market` paths, explain why the independent numeric namespaces must not be
