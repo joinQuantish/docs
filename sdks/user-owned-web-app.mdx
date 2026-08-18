@@ -35,8 +35,16 @@ limits still apply.
     receives a private key or seed phrase.
   </Step>
   <Step title="Finish wallet readiness">
-    On first use, the wallet may show additional prompts to create order API
-    credentials and establish the selected trading account's permissions.
+    For a fresh default deposit wallet, deployment itself requires no user
+    signature. The wallet then signs one EIP-712 approval batch containing all
+    four base-order permission calls and one EIP-712 `ClobAuth` request that
+    creates or derives its order API credentials.
+  </Step>
+  <Step title="Fund the selected trading account">
+    Readiness creates no collateral. If USDC.e must be converted to pUSD, the
+    default deposit-wallet flow asks for one additional EIP-712 batch
+    signature. A separate onramp or transfer can have its own prompts outside
+    the SDK.
   </Step>
   <Step title="Confirm the order">
     Your UI displays the SDK's exact order preview. The wallet signs the exact
@@ -48,9 +56,50 @@ limits still apply.
   </Step>
 </Steps>
 
-The two signatures have different purposes. The first authorizes wallet-owned
-execution. The second authorizes one exact order. Neither gives your platform
-the wallet's private key.
+### Wallet prompt count
+
+For the default `POLY_1271` deposit-wallet path, a genuinely fresh wallet sees
+three setup signatures. Its first order adds one more signature when pUSD is
+already funded. A returning wallet whose credentials were retained in the
+recommended encrypted vault has no setup signatures and signs only each exact
+order.
+
+| Action | Fresh default wallet | Returning wallet with vaulted credentials | What it authorizes |
+| --- | ---: | ---: | --- |
+| Connect wallet | No cryptographic signature | No cryptographic signature | Lets the application read the selected account; the wallet may still show a connection confirmation |
+| Enable user-owned execution | 1 `personal_sign` | 0 | One short-lived ownership challenge used to issue the wallet-bound relayer credential |
+| Deploy the deposit wallet | 0 | 0 | A relayed `WALLET-CREATE` transaction; its payload has no user signature |
+| Establish base order permissions | 1 EIP-712 `Batch` | 0 when the four permissions remain set | One gasless wallet transaction containing pUSD and CTF permission calls for the standard and neg-risk exchanges |
+| Create or derive order API credentials | 1 EIP-712 `ClobAuth` | 0 | Off-chain creation or derivation of the wallet's CLOB API key, secret, and passphrase |
+| Convert funded USDC.e to pUSD | 1 EIP-712 `Batch` only when needed | 1 only when needed | A wallet-confirmed approval-and-wrap batch; it never acquires or moves assets silently |
+| Place an order | 1 EIP-712 order signature per order | 1 per order | One exact, visible order and no other order |
+
+That makes the normal totals explicit:
+
+- **Fresh readiness:** 3 signatures.
+- **First order with pUSD already funded:** 4 signatures from Connect Wallet
+  through submission.
+- **First order that also needs an SDK USDC.e → pUSD conversion:** 5
+  signatures, excluding prompts from a separate onramp or transfer.
+- **Each later order with the encrypted vault restored:** 1 signature.
+
+The approval signature is one prompt, not four. The batch contains exactly the
+current base-order calls: pUSD allowance and CTF operator permission for each
+of the standard and neg-risk exchanges. User-owned onboarding does not approve
+fee escrow. Split and merge permissions are added only when that separate
+operation needs them.
+
+These counts assume the default deposit-wallet account. Explicit
+`SignatureType.EOA` onboarding sends the four approval calls as individual
+on-chain transactions paid by the EOA, so the wallet can show four transaction
+confirmations instead of one gasless approval-batch signature.
+
+If a platform discards both wallet-scoped credentials when the tab closes, the
+ownership and `ClobAuth` prompts return in the next session even though the
+on-chain deployment and permissions remain. Retaining the versioned bundle in
+the encrypted backend vault is what reduces returning users to one signature
+per order. None of these signatures gives your platform the wallet's private
+key.
 
 ## Choose a custody model
 
