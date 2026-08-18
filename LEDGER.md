@@ -3,6 +3,23 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-18 [codex] — Completed deployment of the explicit first-use and
+  returning-user wallet signature counts. Source
+  `f9dd2c0dcf552203a500eda159b5df447630fae2` merged through PR #52 as
+  `a7df50c5479140b0689575e459d0b4631e0c7837`; the reviewed and merged tree is
+  `e921634aa002ef72a10f1d66d9fe4b5219806fe3`. Local Mintlify strict
+  validation, changed-page structure/count assertions, JSON, diff, secret,
+  private-path, and brand checks passed. Mintlify deployment check
+  `95688906333` succeeded. Uncached public Markdown and HTML both returned 200,
+  contained the fresh-readiness, one-prompt-not-four, and returning-order
+  guidance, and omitted the former two-signature sentence; their verification
+  SHA-256 values were
+  `2984466cb1696497e2ac3bdbfd677947086263c6cce8c90195bb4ab3fb29f004` and
+  `a7d2c80fa75bc264def9f1e3a1bd17f805beb2893df67fc078eb3f82f646e62a`.
+  The full-repository link check continues to report eight pre-existing links
+  in five unchanged pages; this change added no links. No SDK, credential,
+  wallet, funding, or order mutation was made during documentation rollout.
+
 - 2026-08-18 [codex] — Prepared an explicit wallet-prompt contract for the
   Connect Wallet → user-owned V2 guide after a fresh public
   `polynode-sdk` 0.14.2 run showed that the former “two signatures” summary
