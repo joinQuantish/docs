@@ -151,6 +151,30 @@ builder-signing, SQLite, or server-wallet packages for this user-owned flow.
 They belong to separate server-side integrations and are not imported by
 `polynode-sdk/trading/browser`.
 
+The browser entry point is ESM-only. Import it from an ESM browser build such
+as Vite or Next.js; do not load it with `require()`.
+
+On a bundled Node backend, leave `polynode-sdk` as a runtime dependency instead
+of asking the bundler to crawl integrations your application did not install.
+For esbuild, either externalize all packages or just the SDK:
+
+```typescript Backend build
+await esbuild.build({
+  entryPoints: ['src/backend.ts'],
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  target: 'node18',
+  external: ['polynode-sdk'],
+  outfile: 'dist/backend.js',
+});
+```
+
+The deployment must retain its production `node_modules`. The equivalent
+Next.js setting is `serverExternalPackages: ['polynode-sdk']`; with esbuild,
+`packages: 'external'` is also valid. This does not add optional builder or
+server-wallet packages to the user-owned installation.
+
 Install the backend SDK for the language that owns your routes:
 
 <Tabs>
@@ -210,7 +234,8 @@ Pass `signatureType: SignatureType.EOA` to choose an explicit EOA; its initial
 approvals are on-chain transactions paid by that EOA. Existing Safe users can
 keep their already-bound Safe identity in the backend-vault flow. The browser
 session does not silently replace that Safe. Legacy proxy/Magic accounts are
-not supported in user-owned mode.
+not supported in user-owned mode. Import the explicit account-type enum with
+`import { SignatureType } from 'polynode-sdk'`.
 
 ## 1. Connect and bind the wallet
 
@@ -219,18 +244,19 @@ state. You may offer a deliberate chain-switch button; do not sign while the
 provider reports another chain.
 
 ```typescript Frontend
-import { createWalletClient, custom } from 'viem';
+import { createWalletClient, custom, type EIP1193Provider } from 'viem';
 import { polygon } from 'viem/chains';
 
-if (!window.ethereum) throw new Error('Install or open an EIP-1193 wallet');
+const provider = (window as Window & { ethereum?: EIP1193Provider }).ethereum;
+if (!provider) throw new Error('Install or open an EIP-1193 wallet');
 
 const walletClient = createWalletClient({
   chain: polygon,
-  transport: custom(window.ethereum),
+  transport: custom(provider),
 });
 
 const [address] = await walletClient.requestAddresses();
-const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+const chainId = await provider.request({ method: 'eth_chainId' });
 
 if (chainId !== '0x89') {
   throw new Error('Switch the connected wallet to Polygon');
@@ -552,7 +578,7 @@ const finish = await fetch('/api/user-owned/authorization/finish', {
 }).then(assertJsonResponse);
 
 const session = await BrowserUserOwnedSession.open({
-  wallet: { provider: window.ethereum, address },
+  wallet: { provider, address },
   userRelayerCredentials: finish.userRelayerCredentials,
 });
 
@@ -995,10 +1021,10 @@ const signingRequest = await fetch('/api/user-owned/orders/prepare', {
   body: JSON.stringify(orderInput),
 }).then(assertJsonResponse);
 
-const [currentAddress] = await window.ethereum.request({
+const [currentAddress] = await provider.request({
   method: 'eth_accounts',
 });
-const currentChain = await window.ethereum.request({ method: 'eth_chainId' });
+const currentChain = await provider.request({ method: 'eth_chainId' });
 
 if (signingRequest.version !== '1') {
   throw new Error('Unsupported signing request');
@@ -1016,7 +1042,7 @@ if (
 
 await showFinalOrderConfirmation(signingRequest.order);
 
-const orderSignature = await window.ethereum.request({
+const orderSignature = await provider.request({
   method: 'eth_signTypedData_v4',
   params: [currentAddress, JSON.stringify(signingRequest.typedData)],
 });
@@ -1194,14 +1220,29 @@ For an ambiguous attempt:
    `await trader.get_open_orders(asset_id=token_id)` (Python), or
    `trader.get_open_orders(None).await?` and filter the returned token locally
    (Rust).
-2. A fully filled order may no longer be open. Query the wallet's
-   [V2 fill history](/api-reference/clobv2/wallet-trades) and compare the
-   wallet, token, side, canonical amounts/price, and narrow preparation-time
-   window. Retain the returned order hash as the durable correlation key.
-3. Repeat those reads after a short bounded delay to allow indexing. If one
-   exact candidate is found, attach it to the attempt. If zero or multiple
-   candidates remain, mark the attempt `needs_reconciliation` and surface it
-   for operator/user review.
+2. A fully filled order may no longer be open. Query
+   [V2 fill history](/api-reference/clobv2/wallet-trades) for
+   `attempt.maker`, which is the signing preview's `order.maker` and the
+   session's `funderAddress`. Do **not** query the controlling EOA for a Safe or
+   deposit-wallet order merely because it signed the request.
+3. In that response, `side` means the wallet's role (`maker` or `taker`), not
+   order direction. For the submitted order, consider only `side: "maker"`
+   rows whose `maker` equals `attempt.maker`. Derive direction from the raw
+   token sides: `maker_token_id == "0"` and `taker_token_id == tokenId` is a
+   BUY; the reverse is a SELL. Ignore counterparty-role and compound
+   mint/merge rows.
+4. Group the remaining rows by `order_hash`. Each row is one fill, so partial
+   fills of one order reuse the hash. Convert `maker_usdc` and `taker_usdc`
+   from decimal strings to exact raw six-decimal integers before summing; do
+   not compare them directly with the preview's raw integer strings or parse
+   them as floating-point numbers. The fill-history page gives the exact
+   conversion and candidate rules.
+5. Repeat the open-order and fill reads after a short bounded delay to allow
+   indexing. Attach a hash only when exactly one group matches maker, token,
+   derived BUY/SELL direction, the narrow submission-time window, and the
+   prepared order's exact amount/limit constraints. If zero or multiple groups
+   remain, mark the attempt `needs_reconciliation` and surface it for
+   operator/user review.
 
 Local SDK order history can assist, but it is not sufficient proof after a
 worker crash. Never restore, resubmit, or automatically recreate the consumed
