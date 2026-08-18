@@ -624,7 +624,8 @@
             "group": "Trading",
             "pages": [
               "sdks/trading",
-              "sdks/user-owned-execution"
+              "sdks/user-owned-execution",
+              "sdks/user-owned-web-app"
             ]
           }
         ]
@@ -647,7 +648,8 @@
               "sdks/orderbook",
               "sdks/perps",
               "sdks/trading",
-              "sdks/user-owned-execution"
+              "sdks/user-owned-execution",
+              "sdks/user-owned-web-app"
             ]
           },
           {

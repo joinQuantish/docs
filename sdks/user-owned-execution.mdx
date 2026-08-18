@@ -1,309 +1,155 @@
 ---
 title: "User-owned execution"
 sidebarTitle: "User-owned execution"
-description: "Let each signing wallet trade without builder attribution while keeping wallet control with the user."
+description: "Use wallet-scoped authorization with zero builder attribution and no shared builder relayer allowance."
 icon: "user-shield"
 ---
 
-## What it is
-
-User-owned execution is an optional trading mode for applications whose users
-should trade as themselves instead of attributing activity to a builder account.
+User-owned execution is an optional trading mode for platforms whose users
+should operate with credentials bound to their own signing wallets. Orders
+carry zero builder attribution, and gasless wallet operations do not consume
+the platform's shared builder relayer allowance.
 
 <Note>
-Requires `polynode-sdk >= 0.13.0`, Python `polynode >= 0.13.0`, or Rust
-`polynode >= 0.16.0` with the `trading` feature.
+Use TypeScript `polynode-sdk >= 0.14.0`, Python `polynode >= 0.14.0`, or Rust
+`polynode >= 0.17.0` with its `trading` feature. Wallet authorization requires
+an eligible paid Polynode plan and a valid `pn_live_...` API key. It is included
+in the supported SDK flow; there is no separate add-on or additional service
+URL to configure.
 </Note>
 
-Set `executionMode: "user_owned"` in TypeScript,
-`execution_mode=ExecutionMode.USER_OWNED` in Python, or
-`execution_mode: ExecutionMode::UserOwned` in Rust. Builder mode remains the
-default, so existing integrations do not change unless they opt in.
+Builder mode remains the default. Existing applications do not change until
+they explicitly select `user_owned`.
 
-In user-owned mode:
-
-- Orders use the user's normal CLOB credentials and carry zero builder
-  attribution.
-- Gasless smart-wallet operations use authorization owned by the signing
-  wallet, not a builder credential.
-- Builder credentials, builder authentication headers, and nonzero builder
-  overrides are rejected.
-- Activity does not consume a builder's relayer allowance.
-
-Normal Polymarket wallet, market, balance, and order rules still apply.
-
-## Why use it
-
-Use user-owned execution when a user should be able to trade independently of
-your platform's builder allowance and your platform does not need builder credit
-for that activity.
-
-Keep the default builder mode when your platform wants builder attribution or
-uses its own builder credentials.
+## What changes
 
 | | `builder` (default) | `user_owned` |
 | --- | --- | --- |
-| Builder attribution | Configured builder code | Always zero |
-| Gasless authorization | Builder path | Signing wallet only |
-| Builder credentials allowed | Yes | No |
-| First-use wallet signature | Existing onboarding behavior | One additional ownership signature |
-| Existing integrations | Unchanged | Explicit opt-in |
+| Order attribution | Configured builder code | Always zero |
+| Gasless authorization | Builder path | Credential owned by the signing wallet |
+| Shared builder relayer allowance | Used by eligible operations | Not used |
+| Builder credentials | Supported | Rejected |
+| Positive Polynode application fee | Optional | Rejected |
+| First-use ownership signature | Existing builder flow | Required per signing wallet |
 
-## Wallet control and custody
+User-owned mode removes the shared builder allowance from these operations. It
+does not remove wallet balances, market rules, order API limits, or ordinary
+rate limits, and it should not be presented as universally unlimited trading.
 
-Polynode does not receive or store the user's private key, seed phrase, or wallet
-signer. The user's wallet signs the ownership message, orders, and smart-wallet
-actions. Your application should never ask a user to send you a private key.
+<Warning>
+Choose the execution mode before an operation begins. Never submit in builder
+mode, catch a limit or timeout, and silently replay the same intent as
+user-owned. Ask the user to opt in and complete wallet authorization first.
+</Warning>
 
-The returned wallet-owned relayer credential is not a wallet key and cannot sign
-an order, approve a token, or transfer funds by itself. Treat it as a backend
-secret because it is tied to that user's gasless execution account.
+## Which integration should I use?
 
-The SDK keeps the credential in memory unless your application explicitly saves
-it. Store it only in your own backend secret manager. Do not put it in browser
-storage, logs, analytics, source control, or client-visible configuration.
+<CardGroup cols={2}>
+  <Card title="Web application" icon="browser" href="/sdks/user-owned-web-app">
+    Connect an injected wallet, authorize it, choose browser memory or an
+    encrypted backend vault, and place an actual user-owned order.
+  </Card>
+  <Card title="Service signer" icon="key">
+    Keep using `ensureReady` / `ensure_ready` with your HSM, MPC wallet, Privy
+    server wallet, or controlled private-key signer.
+  </Card>
+</CardGroup>
 
-## Platform integration
+For a normal multi-user platform, use the
+[complete web-app guide](/sdks/user-owned-web-app). It includes the exact
+Connect Wallet UX, sensitive-value table, same-origin routes, versioned vault
+bundle, browser signing request, atomic one-time storage, three backend SDK
+examples, and security checklist.
 
-Treat one signing wallet as the unit of isolation. A platform serving many
-users should keep a separate wallet-owned relayer credential for each wallet
-address and create a separate trader context for the active wallet. Never share
-one trader instance or relayer credential across two users.
+## Credential meanings
 
-For each wallet:
+User-owned execution uses distinct credentials for distinct purposes:
 
-1. Load that wallet's credential from your encrypted backend secret store.
-2. If it does not exist, run the two-step browser authorization below and save
-   the returned credential under the same expected wallet address.
-3. Pass the credential to that wallet's trader configuration and complete
-   onboarding or trading.
-4. Clear the trader context when the request, worker job, or user session ends.
+| Credential | Scope | What it can do | Where to keep it |
+| --- | --- | --- | --- |
+| Polynode API key | Platform | Access eligible SDK services | Backend environment or secret manager only |
+| Wallet-owned relayer credential | One controlling EOA | Authorize gasless activity for that wallet | Encrypted backend vault; optional current-tab memory |
+| Order API key, secret, and passphrase | One trading identity | Authenticate order and account requests | Encrypted backend vault; optional current-tab memory |
+| Wallet signer | User or controlled service wallet | Sign ownership messages, orders, and wallet actions | Wallet, HSM, or MPC system; never a Polynode credential store |
 
-The browser receives only the short-lived message and returns its signature;
-your Polynode API key and wallet-owned relayer credential remain on the
-backend. An individual browser-only application may keep the credential in
-memory for the current page session, but should let it disappear when the page
-closes rather than writing it to browser storage. Reauthorization reuses the
-wallet's existing authorization when available; it does not create builder
-attribution.
+The wallet-owned relayer credential is not a private key and cannot sign an
+order or transfer funds by itself. It is still sensitive. Never log it, commit
+it, put it in a URL, or share it across wallets.
 
-## Supported wallets
+Treat the controlling EOA as the isolation key. One user must never inherit
+another user's trader, challenge, wallet-owned credential, order credentials,
+prepared order, or result.
 
-The first release supports normal EOA signers and EOA-controlled Safe or deposit
-wallet accounts. The signer must support a standard personal-message signature.
+## Supported account types
 
-Gasless `split` and `merge` require an EOA-controlled Safe or deposit wallet. A
-plain EOA can sign orders, but these gasless position methods fail closed rather
-than silently routing through a different wallet.
+- **Deposit wallet (`3`)** is the default for a new V2 user-owned browser or
+  service-signer setup. The controlling EOA signs; the deposit wallet holds
+  collateral and positions.
+- **Existing Safe (`2`)** remains supported when it is the account identity
+  already associated with that user. Do not switch an existing user to a
+  different deterministic account merely because both addresses exist.
+- **EOA (`0`)** can place orders directly. Initial approvals are on-chain
+  transactions and require gas from that EOA.
+- **Legacy proxy/Magic (`1`)** is rejected in user-owned mode.
 
-Legacy `POLY_PROXY` accounts and Magic/DID signers are not supported in
-user-owned mode. Keep those accounts on the default builder path for now.
+Gasless split, merge, wrap, and unwrap operations require the appropriate
+EOA-controlled smart-wallet account. A plain EOA is never silently routed
+through another derived wallet.
 
-## Browser-wallet authorization
+Readiness deploys or verifies the selected account and its permissions. It does
+not create collateral. Fund the returned funder address before a BUY.
 
-Use the two-step API when the user signs in a browser. Keep the Polynode API key
-and the complete challenge object on your backend; send only the displayed
-message to the user's wallet.
+## Service-signer setup
 
-```typescript Backend
-import {
-  beginUserRelayerAuthorization,
-  completeUserRelayerAuthorization,
-  PolyNodeTrader,
-} from 'polynode-sdk';
+Use this model when your existing platform signer can produce both
+personal-message and EIP-712 signatures. The SDK obtains the wallet-scoped
+authorization during readiness and keeps it in memory. Save the returned
+credential in your own encrypted store if the process must restore it later.
 
-const address = '0x...';
-const challenge = await beginUserRelayerAuthorization(
-  'https://trade.polynode.dev',
-  process.env.POLYNODE_API_KEY!,
-  address,
-);
-
-// Keep `challenge` in short-lived, session-bound backend storage.
-// Return only `challenge.message` to the browser for signing.
-
-const credential = await completeUserRelayerAuthorization(
-  'https://trade.polynode.dev',
-  process.env.POLYNODE_API_KEY!,
-  challenge,
-  signatureReturnedByBrowser,
-  address,
-);
-
-// Save `credential` in your backend secret manager for this address.
-const trader = new PolyNodeTrader({
-  polynodeKey: process.env.POLYNODE_API_KEY!,
-  executionMode: 'user_owned',
-  userRelayerCredentials: credential,
-});
-```
-
-```typescript Browser
-import { createWalletClient, custom } from 'viem';
-import { polygon } from 'viem/chains';
-
-export async function signAuthorizationMessage(
-  message: string,
-  browserProvider: Parameters<typeof custom>[0],
-) {
-  const walletClient = createWalletClient({
-    chain: polygon,
-    transport: custom(browserProvider),
-  });
-  const [address] = await walletClient.requestAddresses();
-  const signature = await walletClient.signMessage({ account: address, message });
-
-  // Return only the address and signature to your backend.
-  return { address, signature };
-}
-```
-
-### Python browser backend
-
-```python
-import os
-from polynode.trading import (
-    ExecutionMode,
-    PolyNodeTrader,
-    TraderConfig,
-    UserRelayerAuthorizationChallenge,
-    begin_user_relayer_authorization,
-    complete_user_relayer_authorization,
-)
-
-async def begin_for_browser(address: str) -> UserRelayerAuthorizationChallenge:
-    challenge = await begin_user_relayer_authorization(
-        "https://trade.polynode.dev",
-        os.environ["POLYNODE_API_KEY"],
-        address,
-    )
-    # Keep the complete challenge in short-lived backend storage.
-    # Return only challenge.message to the browser.
-    return challenge
-
-async def finish_from_browser(
-    address: str,
-    challenge: UserRelayerAuthorizationChallenge,
-    signature_returned_by_browser: str,
-) -> PolyNodeTrader:
-    credential = await complete_user_relayer_authorization(
-        "https://trade.polynode.dev",
-        os.environ["POLYNODE_API_KEY"],
-        challenge,
-        signature_returned_by_browser,
-        address,
-    )
-    # Save `credential` in your backend secret manager for this address.
-    return PolyNodeTrader(TraderConfig(
-        polynode_key=os.environ["POLYNODE_API_KEY"],
-        execution_mode=ExecutionMode.USER_OWNED,
-        user_relayer_credentials=credential,
-    ))
-```
-
-### Rust browser backend
-
-```rust,no_run
-use polynode::trading::{
-    Address, ExecutionMode, PolyNodeTrader, TraderConfig,
-    UserRelayerAuthorizationChallenge, UserRelayerCredentials,
-};
-
-async fn begin_for_browser(
-    trader: &PolyNodeTrader,
-    address: Address,
-) -> polynode::Result<UserRelayerAuthorizationChallenge> {
-    // Keep the complete challenge in short-lived backend storage and return
-    // only challenge.message to the browser.
-    trader.begin_user_relayer_authorization(address).await
-}
-
-async fn finish_from_browser(
-    trader: &mut PolyNodeTrader,
-    address: Address,
-    challenge: &UserRelayerAuthorizationChallenge,
-    signature_returned_by_browser: &str,
-) -> polynode::Result<UserRelayerCredentials> {
-    let credential = trader
-        .complete_user_relayer_authorization(
-            challenge,
-            signature_returned_by_browser,
-            address,
-        )
-        .await?;
-    // Save `credential` in your backend secret manager for this address.
-    Ok(credential)
-}
-
-fn restore_trader(
-    polynode_key: String,
-    credential: UserRelayerCredentials,
-) -> polynode::Result<PolyNodeTrader> {
-    PolyNodeTrader::new(TraderConfig {
-        polynode_key,
-        execution_mode: ExecutionMode::UserOwned,
-        user_relayer_credentials: Some(credential),
-        ..Default::default()
-    })
-}
-```
-
-## TypeScript
-
-For a caller-controlled service wallet or signing callback, the combined flow is
-one call:
+<Tabs>
+  <Tab title="TypeScript">
 
 ```typescript
 import { PolyNodeTrader } from 'polynode-sdk';
 
-const serviceWalletPrivateKey = process.env.POLYGON_PRIVATE_KEY;
-if (!serviceWalletPrivateKey) throw new Error('Set POLYGON_PRIVATE_KEY');
+const signer = process.env.POLYGON_PRIVATE_KEY;
+if (!signer) throw new Error('Set POLYGON_PRIVATE_KEY');
 
 const trader = new PolyNodeTrader({
   polynodeKey: process.env.POLYNODE_API_KEY!,
   executionMode: 'user_owned',
+  exchangeVersion: 'v2',
 });
 
-const status = await trader.ensureReady(serviceWalletPrivateKey);
-console.log(status.executionMode);          // "user_owned"
+const status = await trader.ensureReady(signer);
+console.log(status.wallet);
+console.log(status.funderAddress);
 console.log(status.userRelayerAuthorized); // true
 
-await trader.order({
+const result = await trader.order({
   tokenId: '...',
   side: 'BUY',
   price: 0.50,
   size: 5,
+  type: 'GTC',
   postOnly: true,
-});
-
-await trader.split({
-  conditionId: '0x...',
-  amount: 1,
-  negRisk: false,
-});
-
-await trader.merge({
-  conditionId: '0x...',
-  amount: 1,
-  negRisk: false,
 });
 
 trader.close();
 ```
 
-Use `await trader.authorizeUserOwnedExecution(serviceWalletPrivateKey)` when you
-want the combined authorization result without running the rest of onboarding.
+Use `authorizeUserOwnedExecution(signer)` when you need only the authorization
+result instead of full readiness.
 
-## Python
+  </Tab>
+  <Tab title="Python">
 
 ```python
 import os
 from polynode.trading import (
     ExecutionMode,
-    MergeParams,
     OrderParams,
     PolyNodeTrader,
-    SplitParams,
     TraderConfig,
 )
 
@@ -312,50 +158,34 @@ trader = PolyNodeTrader(TraderConfig(
     execution_mode=ExecutionMode.USER_OWNED,
 ))
 
-service_wallet_private_key = os.environ["POLYGON_PRIVATE_KEY"]
-status = await trader.ensure_ready(service_wallet_private_key)
-print(status.execution_mode)           # ExecutionMode.USER_OWNED
+status = await trader.ensure_ready(os.environ["POLYGON_PRIVATE_KEY"])
+print(status.wallet)
+print(status.funder_address)
 print(status.user_relayer_authorized)  # True
 
-await trader.order(OrderParams(
+result = await trader.order(OrderParams(
     token_id="...",
     side="BUY",
     price=0.50,
     size=5,
+    type="GTC",
     post_only=True,
-))
-
-await trader.execute_split(SplitParams(
-    condition_id="0x...",
-    amount=1,
-    neg_risk=False,
-))
-
-await trader.execute_merge(MergeParams(
-    condition_id="0x...",
-    amount=1,
-    neg_risk=False,
 ))
 
 trader.close()
 ```
 
-Use `await trader.authorize_user_owned_execution(service_wallet_private_key)` when
-you want the combined authorization result without running full onboarding.
-The existing synchronous `trader.split()` and `trader.merge()` methods remain
-build-only helpers; use the explicit `execute_*` methods above for gasless
-submission.
+Use `authorize_user_owned_execution(signer)` when you need only the
+authorization result. A caller-controlled `RouterSigner` may implement async
+`get_address()`, `sign_message()`, and `sign_typed_data()` instead of exposing
+a raw private key.
 
-For an HSM, Privy wallet, or another caller-controlled signer, provide async
-`get_address()`, `sign_typed_data(payload)`, and `sign_message(message)`
-methods. `sign_message()` is required for user-owned authorization and gasless
-smart-wallet actions.
-
-## Rust
+  </Tab>
+  <Tab title="Rust">
 
 ```rust,no_run
 use polynode::trading::{
-    ExecutionMode, MergeParams, PolyNodeTrader, PrivateKeySigner, SplitParams,
+    ExecutionMode, OrderParams, OrderSide, PolyNodeTrader, PrivateKeySigner,
     TraderConfig,
 };
 
@@ -370,35 +200,96 @@ let mut trader = PolyNodeTrader::new(TraderConfig {
 })?;
 
 let status = trader.ensure_ready(Box::new(signer), None).await?;
-assert_eq!(status.execution_mode, ExecutionMode::UserOwned);
 assert!(status.user_relayer_authorized);
 
-trader.execute_split(SplitParams {
-    condition_id: "0x...".into(),
-    amount: 1.0,
-}, false).await?;
-
-trader.execute_merge(MergeParams {
-    condition_id: "0x...".into(),
-    amount: 1.0,
-}, false).await?;
+let result = trader.order(OrderParams {
+    token_id: "...".into(),
+    side: OrderSide::Buy,
+    price: 0.50,
+    size: 5.0,
+    post_only: true,
+    ..Default::default()
+}).await?;
 
 trader.close();
 # Ok(())
 # }
 ```
 
-Use `authorize_user_owned_execution(&signer)` when you want the combined result
-without running full onboarding. Supply a previously saved credential through
-`TraderConfig.user_relayer_credentials` on later runs.
+Use `authorize_user_owned_execution(&signer)` when you need only the
+authorization result. A custom `TradingSigner` can delegate signing to an HSM
+or MPC wallet.
 
-## CLOB transport
+  </Tab>
+</Tabs>
 
-User-owned orders go directly from the SDK to the official Polymarket CLOB by
-default. There is no automatic fallback between transports, which prevents an
-ambiguous response from creating a duplicate order.
+## Restore a wallet-owned credential
 
-Integrations may explicitly select Polynode's regional proxy:
+For a returning service signer, load only the credential saved for the active
+wallet and pass it in the trader configuration. The SDK revalidates its owner
+before any user-owned operation.
+
+<Tabs>
+  <Tab title="TypeScript">
+
+```typescript
+const trader = new PolyNodeTrader({
+  polynodeKey: process.env.POLYNODE_API_KEY!,
+  executionMode: 'user_owned',
+  userRelayerCredentials: encryptedVaultRecord.userRelayerCredentials,
+});
+```
+
+  </Tab>
+  <Tab title="Python">
+
+```python
+trader = PolyNodeTrader(TraderConfig(
+    polynode_key=os.environ["POLYNODE_API_KEY"],
+    execution_mode=ExecutionMode.USER_OWNED,
+    user_relayer_credentials=encrypted_vault_record.user_relayer_credentials,
+))
+```
+
+  </Tab>
+  <Tab title="Rust">
+
+```rust
+let trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key,
+    execution_mode: ExecutionMode::UserOwned,
+    user_relayer_credentials: Some(encrypted_vault_record.user_relayer_credentials),
+    ..Default::default()
+})?;
+```
+
+  </Tab>
+</Tabs>
+
+The wallet-owned credential alone does not restore order API credentials or a
+signer. Restore all three from the same wallet record or use the versioned
+bundle flow in the web-app guide.
+
+## Order and position behavior
+
+User-owned mode enforces these invariants before signing or submission:
+
+- V2 order builder attribution is exactly zero.
+- Builder credentials and builder authentication are absent.
+- A positive Polynode fee configuration is rejected.
+- The relayer credential owner, controlling EOA, funder, account type, and
+  active order credentials must describe one wallet identity.
+- There is no automatic transport or attribution fallback.
+
+`split`, `merge`, `convert`, wrap, and unwrap retain their wallet-specific
+requirements. See [Trading and fees](/sdks/trading) for funding and position
+methods. Use the [web-app guide](/sdks/user-owned-web-app) when the user's
+injected wallet signs an order while your backend retains credentials.
+
+## Network path
+
+User-owned order traffic uses the SDK's direct transport by default. Approved
+integrations may explicitly choose Polynode regional egress:
 
 | SDK | Explicit setting |
 | --- | --- |
@@ -406,41 +297,36 @@ Integrations may explicitly select Polynode's regional proxy:
 | Python | `user_owned_clob_transport=UserOwnedClobTransport.PROXY` |
 | Rust | `user_owned_clob_transport: UserOwnedClobTransport::PolynodeProxy` |
 
-The proxy changes only the network path. It does not add builder attribution or
-take wallet custody.
+The selected path is fixed for each request and never falls back automatically.
+Regional egress changes the network path only; it does not add builder
+attribution or wallet custody.
 
-## Important limitations
+## Security checklist
 
-- User-owned mode does not support Polynode fee escrow. A positive SDK fee
-  configuration fails before signing or submitting an order.
-- Normal CLOB credentials are still required and should be protected as
-  secrets.
-- Market balances, token approvals, minimum sizes, rate limits, and order rules
-  are unchanged.
-- A split must be followed by a merge of the same complete set to restore the
-  original collateral amount.
-
-## Integration checklist
-
-1. Enable user-owned execution only for users who opt in.
-2. Keep the Polynode API key and full challenge object on your backend.
-3. Ask the wallet to sign only the exact message returned by the SDK.
-4. Bind the returned signature and credential to the same expected address.
-5. Keep wallet-owned and CLOB credentials in your backend secret manager.
-6. Do not pass builder credentials, a nonzero builder code, or a positive fee
-   configuration.
-7. Confirm the ready status reports user-owned execution before submitting.
-8. Close the trader on shutdown to clear its active signer and in-memory
-   credential.
+1. Enable user-owned mode only after the user explicitly opts in.
+2. Keep the Polynode API key on the backend.
+3. Bind every credential and prepared operation to one expected controlling
+   EOA.
+4. Keep wallet-owned and order API credentials in an encrypted per-wallet
+   vault, or explicitly accept the browser-memory risks.
+5. Never log challenges, credentials, API secrets, passphrases, or signatures.
+6. Do not configure builder credentials, nonzero builder attribution, or a
+   positive Polynode fee on this trader.
+7. Confirm the returned account type and funder before funding it.
+8. Reconcile an ambiguous order result instead of retrying a signed intent.
+9. Close traders and browser sessions when their request, worker job, or login
+   session ends.
 
 ## Common errors
 
 | Error | Meaning |
 | --- | --- |
-| `builder credentials are forbidden` | Remove builder credentials from this trader instance. |
-| `builderCode must be null or zero` | Remove the builder-code override. User-owned mode forces zero attribution. |
-| `does not support legacy POLY_PROXY/Magic wallets` | Keep this wallet on builder mode or use an EOA-controlled Safe/deposit wallet. |
-| `credential does not belong to the signing wallet` | Load the credential saved for the active signer, not another user. |
-| `gasless split/merge requires ... Safe or deposit wallet` | The active account is a plain EOA or is bound to the wrong smart wallet. |
-| `fee ... unavailable in user_owned mode` | Remove the positive fee configuration. |
-| `call ensureReady() first` | Complete wallet authorization and onboarding before the operation. |
+| `invalid or missing X-Polynode-Key` / HTTP 401 | The backend did not send a valid current Polynode API key. Check its environment value; never move it to the frontend. If that key works on normal API calls but this error persists, contact Polynode support to check key synchronization for wallet authorization. |
+| HTTP 403 during wallet authorization | The key or plan is not eligible for user-owned authorization. Use an eligible paid plan; no separate add-on is required. |
+| `builder credentials are forbidden` | Remove builder credentials from this trader. |
+| `builderCode must be null or zero` | Remove the builder override. User-owned mode forces zero attribution. |
+| `credential does not belong to the signing wallet` | Load the credential stored for the active EOA, not another user. |
+| `does not support legacy POLY_PROXY/Magic wallets` | Keep that account on its supported path; user-owned mode accepts EOA, existing Safe, and deposit-wallet identities. |
+| `fee ... unavailable in user_owned mode` | Remove the positive Polynode fee configuration. |
+| `insufficient ... collateral` | Fund the returned funder address, then create a new order request. |
+| `call ensureReady() first` | Complete wallet authorization and readiness before the operation. |
