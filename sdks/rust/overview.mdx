@@ -1,7 +1,7 @@
 ---
 title: "Rust SDK"
 sidebarTitle: "Overview"
-description: "Install polynode 0.16 and make a first V3 request with Tokio."
+description: "Install polynode 0.17 and make a first V3 request with Tokio."
 icon: "rust"
 ---
 
@@ -11,7 +11,7 @@ The Rust crate provides Tokio clients for the complete V3 registry, event stream
 
 ```toml Cargo.toml
 [dependencies]
-polynode = "0.16.0"
+polynode = "0.17.0"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
@@ -59,4 +59,5 @@ async fn main() -> polynode::Result<()> {
   <Card title="PN1 orderbook" icon="book-open" href="/sdks/rust/orderbook">Maintain fail-closed local state.</Card>
   <Card title="Perps stream" icon="chart-line" href="/sdks/rust/perps">Subscribe to tickers, books, trades, and klines.</Card>
   <Card title="Trading and fees" icon="arrow-right-arrow-left" href="/sdks/rust/trading">Enable the trading feature and use V2 defaults.</Card>
+  <Card title="Connect Wallet to order" icon="browser" href="/sdks/user-owned-web-app">Use Rust behind a browser-signing flow.</Card>
 </CardGroup>

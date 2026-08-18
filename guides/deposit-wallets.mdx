@@ -31,9 +31,9 @@ From your perspective as a builder, the key differences are:
 
 ```bash
 # Current beacon-aware wallet resolution and onboarding
-cargo add polynode@0.16.0 --features trading
-npm install polynode-sdk@^0.13.0
-python -m pip install "polynode[trading]>=0.13.0,<0.14"
+cargo add polynode@0.17.0 --features trading
+npm install polynode-sdk@^0.14.0
+python -m pip install "polynode[trading]>=0.14.0,<0.15"
 ```
 
 **If you only read data (positions, trades, /resolve):** existing fields are unchanged. `/resolve` still returns `safe`, `eoa`, `username`, and `type` exactly as before. It also returns the deployed-only `wallets` object and a `wallet_details` list with plain `wallet_type`, `deployed`, and `current` status for each relevant address.
@@ -214,10 +214,10 @@ Yes. The SDK defaults to creating Safe wallets for new users when no wallet is d
 
 <Accordion title="What SDK version do I need?">
 For current beacon-aware resolution, wallet-owned authorization, and full
-onboarding, use TypeScript `polynode-sdk >= 0.13.0`, Python
-`polynode >= 0.13.0,<0.14`, or Rust `polynode >= 0.16.0` with the `trading`
-feature. Current registry releases are TypeScript `0.13.6`, Python `0.13.0`,
-and Rust `0.16.0`.
+onboarding, use TypeScript `polynode-sdk >= 0.14.0`, Python
+`polynode >= 0.14.0,<0.15`, or Rust `polynode >= 0.17.0` with the `trading`
+feature. These releases also include the complete browser-signing flow in
+[Connect Wallet to order](/sdks/user-owned-web-app).
 </Accordion>
 
 <Accordion title="What if a user has both a Safe and a deposit wallet?">

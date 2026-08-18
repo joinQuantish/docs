@@ -186,6 +186,15 @@ Full documentation: [Rust SDK](/sdks/rust)
 - **Fix:** `createPrivySigner`, `createPrivyClient`, and other Privy helpers are now correctly exported from the package root. In v0.5.2 these were only reachable through non-public module paths.
 - **Privy server-auth integration:** `createPrivySigner()` and `createPrivyClient()` for server-side trading with Privy-managed wallets.
 - **Unlimited gasless operations:** Paid tiers get unlimited gasless on-chain operations. Free tier gets basic gasless onboarding.
+
+<Note>
+**Current clarification:** this historical release note described the builder
+plan available at that time. Current user-owned execution removes a platform's
+shared builder relayer allowance by using wallet-scoped authorization with zero
+builder attribution. Normal wallet, market, order API, abuse-prevention, and
+rate-limit rules still apply; do not interpret “unlimited” as unbounded order
+throughput. See [User-owned execution](/sdks/user-owned-execution).
+</Note>
 - **ethers v5/v6 compatibility:** Safe transaction signing works with both ethers v5 and v6.
 
 ```bash

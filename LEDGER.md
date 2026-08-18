@@ -3,6 +3,23 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-18 [codex] — Prepared the public Connect Wallet → user-owned V2
+  order guide for TypeScript `polynode-sdk` 0.14.0, Python `polynode` 0.14.0,
+  and Rust `polynode` 0.17.0. The guide separates browser-safe signing data
+  from backend-only credentials and prepared state, documents browser-memory,
+  encrypted backend-vault, and managed-signer custody models, and supplies the
+  complete authorization, readiness, collateral, preview, signing, atomic
+  submission, reconciliation, and support flow. It explicitly distinguishes
+  developer-owned example routes from Polynode configuration, keeps platform
+  keys and implementation details out of the browser, and documents one-time
+  storage, HMAC-bound multi-worker state, account/chain invalidation, CSRF/CSP,
+  log redaction, encrypted credential storage, ambiguous results, and ordinary
+  rate and market limits. SDK version references, navigation, the concise
+  user-owned overview, and the network-free testing-helper guidance were
+  updated together. Local JSON, frontmatter, code-fence, navigation, link,
+  brand, forbidden-term, and diff checks pass. Publication and live deployment
+  evidence will be recorded after all three packages are available publicly.
+
 - 2026-08-15 [codex] — Completed the cross-SDK user-owned execution
   documentation audit at source commit
   `8c878d8796b30451548a9cc6f84972d198e50924`, merged as

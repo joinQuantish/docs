@@ -1,0 +1,1021 @@
+---
+title: "Web app: connect wallet to an order"
+sidebarTitle: "Connect wallet to an order"
+description: "Build a secure connect-wallet flow that ends with a zero-attribution user-owned order."
+icon: "browser"
+---
+
+This guide takes a platform from **Connect wallet** through the first actual
+user-owned order. It shows what belongs in the browser, what stays on your
+backend, how to retain credentials, and how to support more than one user
+without mixing their state.
+
+<Note>
+Use TypeScript `polynode-sdk >= 0.14.0`, Python `polynode >= 0.14.0`, or Rust
+`polynode >= 0.17.0` with its `trading` feature. Wallet authorization requires
+an eligible paid Polynode plan and a valid `pn_live_...` API key. It is not a
+separate add-on and does not require another service URL.
+</Note>
+
+User-owned mode removes your platform's shared builder relayer allowance from
+these operations by using credentials bound to each signing wallet. Orders
+carry zero builder attribution. This is not a promise of unlimited order
+throughput: wallet balances, market rules, order API limits, and ordinary rate
+limits still apply.
+
+## What the user sees
+
+<Steps>
+  <Step title="Connect the wallet on Polygon">
+    Your application reads the connected EOA and refuses to continue on the
+    wrong chain.
+  </Step>
+  <Step title="Enable user-owned execution">
+    The wallet signs one short-lived ownership message. Your platform never
+    receives a private key or seed phrase.
+  </Step>
+  <Step title="Finish wallet readiness">
+    On first use, the wallet may show additional prompts to create order API
+    credentials and establish the selected trading account's permissions.
+  </Step>
+  <Step title="Confirm the order">
+    Your UI displays the SDK's exact order preview. The wallet signs the exact
+    EIP-712 request produced for that order.
+  </Step>
+  <Step title="Show the result">
+    Your application displays the accepted order ID or a clear failure. A
+    timeout is reconciled as an ambiguous result, never retried blindly.
+  </Step>
+</Steps>
+
+The two signatures have different purposes. The first authorizes wallet-owned
+execution. The second authorizes one exact order. Neither gives your platform
+the wallet's private key.
+
+## Choose a custody model
+
+| Model | Best for | Where wallet-scoped credentials live | Trade-off |
+| --- | --- | --- | --- |
+| Backend vault **(recommended)** | Production applications, multiple workers, returning users | Encrypted per-wallet backend vault | More backend work; strongest browser boundary |
+| Browser memory | Short sessions and the fastest TypeScript integration | Current tab's JavaScript memory only | XSS, extensions, and browser debugging tools can read live secrets |
+| Managed service signer | Bots or platforms that already use an HSM, MPC wallet, or server signer | Existing signer system plus backend secret store | Different UX; the user is not signing each order in an injected wallet |
+
+The first two models use the same wallet authorization. You can begin with the
+browser-memory model, export its versioned credential bundle once to an
+encrypted vault, and then use the recommended browser-sign/backend-submit
+model for later orders.
+
+## Endpoints in your application
+
+The route names below are examples implemented by **your own backend**. The
+browser never needs a second Polynode URL and never receives the platform API
+key.
+
+| Example route | Browser sends | Backend returns | Backend action |
+| --- | --- | --- | --- |
+| `POST /api/user-owned/authorization/start` | Connected address | Authorization ID, expected address, expiry, display message | Call the SDK begin method and retain the complete challenge once |
+| `POST /api/user-owned/authorization/finish` | Authorization ID, address, personal-message signature | Wallet-owned credential in a one-time `no-store` response | Atomically take the challenge and call the SDK completion method |
+| `POST /api/user-owned/vault` | Versioned sensitive credential bundle | Receipt only | Validate with an SDK importer, then encrypt under the authenticated wallet record |
+| `POST /api/user-owned/orders/prepare` | Token, side, price, size, order options | Credential-free signing request | Load that wallet's vault record, prepare, and retain server state once |
+| `POST /api/user-owned/orders/submit` | Request ID, address, typed-data signature | Order result | Atomically take server state, validate, and submit once |
+
+Use equivalent names in your framework if preferred. The security properties,
+field boundaries, authenticated user binding, and one-time semantics are the
+contract that matters.
+
+<Warning>
+Do not silently fall back from builder mode to user-owned mode when a shared
+builder allowance is exhausted. Ask the user to opt in, complete authorization,
+and switch modes before starting an operation. A partially completed builder
+request must not be replayed as a user-owned request.
+</Warning>
+
+## Credential boundary
+
+| Value | Sensitive? | Browser | Backend | Lifetime |
+| --- | --- | --- | --- | --- |
+| Polynode API key | Yes | **Never** | Environment or secret manager | Rotate as a platform credential |
+| Full authorization challenge | Security-sensitive | Only its display message | Short-lived one-time store | Until its expiry; atomic take on completion |
+| Wallet-owned relayer credential | Yes | Optional tab memory only | Encrypted per wallet | Reuse for the same wallet; reauthorize or rotate when needed |
+| Order API key, secret, and passphrase | Yes | Optional tab memory only | Encrypted per wallet | Reuse only with the wallet that created them |
+| Prepared order server state | Security-sensitive | **Never** | One-time session or shared store | Five minutes at most; atomic take before submit |
+| Signing request | No secret | Yes | Keep matching server state | Five minutes at most |
+| Wallet signatures | Yes, single-purpose | Produced here | Validate, then submit | Do not retain in logs or analytics |
+| Private key or seed phrase | Critical | Wallet software only | **Never** | Never request or transmit it |
+| Builder credentials | Not used | **Never** | **Never on this trader** | User-owned mode rejects them |
+
+The wallet-owned relayer credential cannot sign an order or transfer funds by
+itself, but it can authorize gasless activity for its owner. Treat it as a
+secret. Order API credentials can authenticate trading requests and must be
+protected to the same standard.
+
+## Before you start
+
+- Create the platform trader with `executionMode: "user_owned"`,
+  `ExecutionMode.USER_OWNED`, or `ExecutionMode::UserOwned`.
+- Use V2. The browser-signing bridge rejects legacy V1 before it fetches market
+  data or asks for a signature.
+- Keep one encrypted credential record and one trader context per controlling
+  wallet address.
+- Use Polygon chain ID `137` (`0x89`) and fail closed if the wallet changes
+  account or chain.
+- Fund the returned `funderAddress` before a BUY. Readiness creates no balance
+  and never moves collateral automatically. Keep funding as a distinct,
+  wallet-confirmed step in your application.
+- Do not configure builder credentials, a nonzero builder code, or a positive
+  Polynode fee. User-owned mode rejects all three.
+
+New browser sessions default to the current deposit-wallet account type. An
+explicit EOA is also supported, but its initial approvals are on-chain
+transactions paid by that EOA. Existing Safe users can keep their existing
+Safe identity in the backend-vault flow. Legacy proxy/Magic accounts are not
+supported in user-owned mode.
+
+## 1. Connect and bind the wallet
+
+Read the current account and chain before asking your backend to create any
+state. You may offer a deliberate chain-switch button; do not sign while the
+provider reports another chain.
+
+```typescript Frontend
+import { createWalletClient, custom } from 'viem';
+import { polygon } from 'viem/chains';
+
+if (!window.ethereum) throw new Error('Install or open an EIP-1193 wallet');
+
+const walletClient = createWalletClient({
+  chain: polygon,
+  transport: custom(window.ethereum),
+});
+
+const [address] = await walletClient.requestAddresses();
+const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+
+if (chainId !== '0x89') {
+  throw new Error('Switch the connected wallet to Polygon');
+}
+```
+
+Record this as a pending address for the authenticated application user, then
+finalize that binding only after the ownership signature succeeds. On every
+later authorization or order route, compare the request's wallet with that
+server-side binding instead of trusting an address sent in JSON.
+
+## 2. Start wallet authorization on the backend
+
+The backend calls the SDK with its own Polynode API key, keeps the complete
+challenge in a short-lived one-time store, and returns only the fields needed
+for the wallet prompt. The SDK's trader uses the normal Polynode trading service
+configuration; there is no second customer URL to discover.
+
+<Tabs>
+  <Tab title="TypeScript">
+
+```typescript Backend
+import { PolyNodeTrader } from 'polynode-sdk';
+
+const trader = new PolyNodeTrader({
+  polynodeKey: process.env.POLYNODE_API_KEY!,
+  executionMode: 'user_owned',
+  exchangeVersion: 'v2',
+  storage: 'memory',
+});
+
+const challenge = await trader.beginUserRelayerAuthorization(expectedAddress);
+
+await pendingAuthorizations.putOnce(challenge.challengeId, {
+  applicationUserId,
+  expectedAddress,
+  challenge,
+}, { expiresAt: challenge.expiresAt });
+
+return {
+  authorizationId: challenge.challengeId,
+  address: challenge.address,
+  expiresAt: challenge.expiresAt,
+  message: challenge.message,
+};
+```
+
+  </Tab>
+  <Tab title="Python">
+
+```python Backend
+import os
+from polynode.trading import ExecutionMode, PolyNodeTrader, TraderConfig
+
+trader = PolyNodeTrader(TraderConfig(
+    polynode_key=os.environ["POLYNODE_API_KEY"],
+    execution_mode=ExecutionMode.USER_OWNED,
+    db_path=":memory:",
+))
+
+challenge = await trader.begin_user_relayer_authorization(expected_address)
+
+await pending_authorizations.put_once(
+    challenge.challenge_id,
+    {
+        "application_user_id": application_user_id,
+        "expected_address": expected_address,
+        "challenge": challenge,
+    },
+    expires_at=challenge.expires_at,
+)
+
+return {
+    "authorizationId": challenge.challenge_id,
+    "address": challenge.address,
+    "expiresAt": challenge.expires_at,
+    "message": challenge.message,
+}
+```
+
+  </Tab>
+  <Tab title="Rust">
+
+```rust Backend
+use polynode::trading::{ExecutionMode, PolyNodeTrader, TraderConfig};
+
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: std::env::var("POLYNODE_API_KEY")?,
+    execution_mode: ExecutionMode::UserOwned,
+    db_path: ":memory:".into(),
+    ..Default::default()
+})?;
+
+let challenge = trader
+    .begin_user_relayer_authorization(expected_address)
+    .await?;
+
+pending_authorizations.put_once(
+    &challenge.challenge_id,
+    &application_user_id,
+    &expected_address,
+    &challenge,
+    &challenge.expires_at,
+).await?;
+
+// Return only the ID, expected address, expiry, and display message.
+```
+
+  </Tab>
+</Tabs>
+
+`pendingAuthorizations` represents your own server-side store. In a shared
+store, creation must fail if the identifier already exists. Apply a TTL equal
+to the challenge expiry and bind the row to both the authenticated user and
+expected wallet.
+
+The SDK trader may be request-scoped. A completion worker can create a new
+user-owned trader with the same backend configuration and use the stored
+challenge; do not keep a worker or process alive merely to span the wallet
+prompt. Close each trader after its backend job finishes.
+
+## 3. Sign the ownership message
+
+The browser checks that the response still belongs to the connected account,
+then requests a standard personal-message signature.
+
+```typescript Frontend
+async function assertJsonResponse(response: Response) {
+  const text = await response.text();
+  let body: any;
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(`Server returned invalid JSON (${response.status})`);
+  }
+  if (!response.ok) {
+    throw new Error(body.error ?? body.message ?? `Request failed (${response.status})`);
+  }
+  return body;
+}
+
+const authorization = await fetch('/api/user-owned/authorization/start', {
+  method: 'POST',
+  credentials: 'same-origin',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ address }),
+}).then(assertJsonResponse);
+
+if (authorization.address.toLowerCase() !== address.toLowerCase()) {
+  throw new Error('Authorization belongs to another wallet');
+}
+
+const signature = await walletClient.signMessage({
+  account: address,
+  message: authorization.message,
+});
+```
+
+Do not let the frontend change the message. The SDK validates the complete
+challenge shape, wallet, lifetime, chain, and signature format during
+completion.
+
+## 4. Complete authorization on the backend
+
+Atomically remove the saved challenge before completion. Recheck the
+authenticated user and wallet binding, then give the SDK only the original
+challenge and browser signature.
+
+<Tabs>
+  <Tab title="TypeScript">
+
+```typescript Backend
+const pending = await pendingAuthorizations.takeOnce(input.authorizationId);
+if (!pending) throw new Error('Unknown, expired, or already-used authorization');
+assertApplicationUser(pending.applicationUserId);
+assertExpectedWallet(pending.expectedAddress, input.address);
+
+const credential = await trader.completeUserRelayerAuthorization(
+  pending.challenge,
+  input.signature,
+  pending.expectedAddress,
+);
+```
+
+  </Tab>
+  <Tab title="Python">
+
+```python Backend
+pending = await pending_authorizations.take_once(input.authorization_id)
+if pending is None:
+    raise ValueError("Unknown, expired, or already-used authorization")
+assert_application_user(pending["application_user_id"])
+assert_expected_wallet(pending["expected_address"], input.address)
+
+credential = await trader.complete_user_relayer_authorization(
+    pending["challenge"],
+    input.signature,
+    pending["expected_address"],
+)
+```
+
+  </Tab>
+  <Tab title="Rust">
+
+```rust Backend
+let pending = pending_authorizations
+    .take_once(&input.authorization_id)
+    .await?
+    .ok_or("unknown, expired, or already-used authorization")?;
+
+assert_application_user(&pending.application_user_id)?;
+assert_expected_wallet(pending.expected_address, input.address)?;
+
+let credential = trader
+    .complete_user_relayer_authorization(
+        &pending.challenge,
+        &input.signature,
+        pending.expected_address,
+    )
+    .await?;
+```
+
+  </Tab>
+</Tabs>
+
+At this point, choose the browser-memory path below or save the credential in
+the backend-vault path. Never include the Polynode API key in either response.
+
+## Option A: browser-memory session
+
+This is the shortest path to an actual order. It is TypeScript-only in the
+browser, but the authorization backend above may use any of the three SDKs.
+
+Return the wallet-owned credential once over an authenticated same-origin HTTPS
+response with `Cache-Control: no-store`. Do not let an access log, error tracker,
+analytics tool, service worker, or response cache capture the body.
+
+```typescript Frontend
+import { BrowserUserOwnedSession } from 'polynode-sdk/trading/browser';
+
+const finish = await fetch('/api/user-owned/authorization/finish', {
+  method: 'POST',
+  credentials: 'same-origin',
+  cache: 'no-store',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    authorizationId: authorization.authorizationId,
+    address,
+    signature,
+  }),
+}).then(assertJsonResponse);
+
+const session = await BrowserUserOwnedSession.open({
+  wallet: { provider: window.ethereum, address },
+  userRelayerCredentials: finish.userRelayerCredentials,
+});
+
+console.log(session.status.funderAddress);
+console.log(session.status.signatureType);
+```
+
+`open()` forces user-owned V2, direct transport, and memory-only storage. It
+accepts no Polynode key, builder credential, builder code, positive fee, proxy
+setting, or persistent storage. It validates Polygon and the connected account,
+establishes the default trading account when needed, confirms permissions, and
+creates or derives that wallet's order API credentials.
+
+Readiness does not create collateral. Before a BUY, show the funder address and
+balance in your funding UI:
+
+```typescript Frontend
+const balanceRaw = await session.getPolyUsdBalance();
+if (balanceRaw === 0n) {
+  showFundingStep(session.status.funderAddress);
+}
+```
+
+Once funded, place the order. The session builds an exact V2 request with zero
+builder attribution, asks the connected wallet for its EIP-712 signature, checks
+the signer again, and submits it.
+
+```typescript Frontend
+const result = await session.order(
+  {
+    tokenId,
+    side: 'BUY',
+    price: 0.52,
+    size: 5,
+    type: 'GTC',
+    postOnly: true,
+  },
+  {
+    confirm: async (preview) => showFinalOrderConfirmation(preview),
+  },
+);
+
+if (!result.success) {
+  throw new Error(result.error ?? 'Order was not accepted');
+}
+
+showOrderId(result.orderId);
+```
+
+The confirmation callback receives the exact 11-field, credential-free order
+preview. Returning `false` or throwing stops the flow before signing or
+submission. After the callback, the SDK rechecks the account, chain, and BUY
+balance immediately before the signature. It closes the session on `pagehide`,
+`accountsChanged`, or `chainChanged`. Also close it explicitly on logout or
+when your UI no longer needs it:
+
+```typescript
+session.close();
+```
+
+<Warning>
+JavaScript strings cannot be cryptographically zeroized. `close()` removes the
+SDK's references and clears its in-memory maps, but an XSS payload, malicious
+extension, browser debugger, or prior application copy can still observe live
+credentials. Use a strict CSP, trusted dependencies, no third-party analytics
+on this route, and the backend-vault model for long-running production use.
+</Warning>
+
+## Option B: encrypted backend vault
+
+The recommended production model leaves long-lived credentials on your
+backend. The browser keeps them only long enough to transfer one versioned
+bundle to your own vault, then closes the session. Later orders send only a
+short-lived signing request to the browser.
+
+Run `BrowserUserOwnedSession.open(...)` from Option A once to complete wallet
+readiness and create the bound credential set. Choosing the vault model means
+exporting that session immediately after onboarding, not skipping onboarding.
+
+### Export once after onboarding
+
+```typescript Frontend
+const bundle = session.exportForBackendVault(); // succeeds once per session
+
+const response = await fetch('/api/user-owned/vault', {
+  method: 'POST',
+  credentials: 'same-origin',
+  cache: 'no-store',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(bundle),
+});
+
+if (!response.ok) throw new Error('Vault receipt failed');
+session.close();
+```
+
+The sensitive bundle has one stable schema across all three SDKs:
+
+```json
+{
+  "version": "1",
+  "executionMode": "user_owned",
+  "wallet": {
+    "address": "0xControllingEOA",
+    "funderAddress": "0xTradingAccount",
+    "signatureType": 3
+  },
+  "clobCredentials": {
+    "apiKey": "...",
+    "apiSecret": "...",
+    "apiPassphrase": "..."
+  },
+  "userRelayerCredentials": {
+    "key": "...",
+    "address": "0xControllingEOA"
+  }
+}
+```
+
+`signatureType` is `0` for an EOA, `2` for an existing EOA-controlled Safe, or
+`3` for the current deposit-wallet account. Value `1` is rejected.
+
+Your backend must parse the body with a size limit, validate it through the SDK,
+encrypt it under the authenticated user's wallet record, and return no copy of
+the credential. Key vault records by a canonical lowercase wallet address and
+enforce a unique owner. Never use a browser-supplied user ID or funder address
+as the database authority.
+
+### Validate and load the bundle
+
+<Tabs>
+  <Tab title="TypeScript">
+
+```typescript Backend
+const trader = new PolyNodeTrader({
+  polynodeKey: process.env.POLYNODE_API_KEY!,
+  executionMode: 'user_owned',
+  exchangeVersion: 'v2',
+  storage: 'memory',
+});
+
+await trader.importUserOwnedBrowserBundle(bundle);
+await encryptedWalletVault.put(expectedAddress, bundle);
+```
+
+  </Tab>
+  <Tab title="Python">
+
+```python Backend
+from polynode.trading import UserOwnedBrowserBundle
+
+validated = UserOwnedBrowserBundle.from_dict(bundle)
+trader = PolyNodeTrader(TraderConfig(
+    polynode_key=os.environ["POLYNODE_API_KEY"],
+    execution_mode=ExecutionMode.USER_OWNED,
+    db_path=":memory:",
+))
+await trader.import_user_owned_browser_bundle(validated)
+await encrypted_wallet_vault.put(expected_address, bundle)
+```
+
+  </Tab>
+  <Tab title="Rust">
+
+```rust Backend
+let bundle: UserOwnedBrowserBundle = serde_json::from_slice(&bounded_body)?;
+trader.import_user_owned_browser_bundle(bundle).await?;
+encrypted_wallet_vault.put(expected_address, &bounded_body).await?;
+```
+
+  </Tab>
+</Tabs>
+
+The importers reject an unknown version, extra fields, unsupported wallet type,
+wrong credential owner, or funder that does not belong to the controlling EOA.
+They load credentials only into memory and do not install a signer.
+
+The vault record itself still contains secrets. Encrypt it with a managed key,
+restrict decryption to the order worker, audit access without recording values,
+and support per-wallet revocation and replacement.
+
+### Prepare one exact order
+
+For every order, decrypt only that wallet's bundle into a dedicated in-memory
+trader. Ask the SDK to prepare the order, then put the server-only state in a
+one-time store. Return only `signingRequest` to the browser.
+
+<Tabs>
+  <Tab title="TypeScript">
+
+```typescript Backend
+const bundle = await encryptedWalletVault.get(expectedAddress);
+const trader = new PolyNodeTrader({
+  polynodeKey: process.env.POLYNODE_API_KEY!,
+  executionMode: 'user_owned',
+  exchangeVersion: 'v2',
+  storage: 'memory',
+});
+await trader.importUserOwnedBrowserBundle(bundle);
+
+const prepared = await trader.prepareUserOwnedOrder({
+  tokenId: input.tokenId,
+  side: input.side,
+  price: input.price,
+  size: input.size,
+  type: input.type ?? 'GTC',
+  postOnly: input.postOnly ?? false,
+});
+
+const signingRequest = prepared.signingRequest;
+const serverState = trader.exportPreparedUserOwnedOrderState(prepared);
+
+await pendingOrders.putOnce(signingRequest.requestId, {
+  applicationUserId,
+  expectedAddress,
+  serverState,
+}, { expiresAt: signingRequest.expiresAt });
+
+trader.close();
+return signingRequest;
+```
+
+`exportPreparedUserOwnedOrderState()` invalidates the original in-process
+object, which prevents the local copy and shared-store copy from both being
+submitted.
+
+  </Tab>
+  <Tab title="Python">
+
+```python Backend
+bundle = await encrypted_wallet_vault.get(expected_address)
+trader = PolyNodeTrader(TraderConfig(
+    polynode_key=os.environ["POLYNODE_API_KEY"],
+    execution_mode=ExecutionMode.USER_OWNED,
+    db_path=":memory:",
+))
+await trader.import_user_owned_browser_bundle(bundle)
+
+prepared = await trader.prepare_user_owned_order(OrderParams(
+    token_id=input.token_id,
+    side=input.side,
+    price=input.price,
+    size=input.size,
+    type=input.type or "GTC",
+    post_only=bool(input.post_only),
+))
+
+signing_request = prepared.signing_request.to_dict()
+server_state = trader.export_prepared_user_owned_order(prepared)
+
+await pending_orders.put_once(
+    signing_request["requestId"],
+    {
+        "application_user_id": application_user_id,
+        "expected_address": expected_address,
+        "server_state": server_state,
+    },
+    expires_at=signing_request["expiresAt"],
+)
+
+trader.discard_prepared_user_owned_order(prepared)
+trader.close()
+return signing_request
+```
+
+  </Tab>
+  <Tab title="Rust">
+
+```rust Backend
+let bundle: UserOwnedBrowserBundle = encrypted_wallet_vault
+    .get(expected_address)
+    .await?;
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: std::env::var("POLYNODE_API_KEY")?,
+    execution_mode: ExecutionMode::UserOwned,
+    db_path: ":memory:".into(),
+    ..Default::default()
+})?;
+trader.import_user_owned_browser_bundle(bundle).await?;
+
+let prepared = trader.prepare_user_owned_order(OrderParams {
+    token_id: input.token_id,
+    side: input.side,
+    price: input.price,
+    size: input.size,
+    order_type: input.order_type.unwrap_or_default(),
+    post_only: input.post_only,
+    ..Default::default()
+}).await?;
+
+let signing_request = prepared.signing_request().clone();
+let server_state = prepared.to_server_store_json()?;
+
+pending_orders.put_once(
+    &signing_request.request_id,
+    &application_user_id,
+    expected_address,
+    &server_state,
+    signing_request.expires_at,
+).await?;
+
+drop(prepared);
+trader.close();
+// Return signing_request.
+```
+
+  </Tab>
+</Tabs>
+
+The server-state encodings contain no Polynode key, wallet-owned relayer key,
+or order API credential. Each SDK authenticates the complete encoding with a
+domain-separated tag keyed by the backend-held Polynode key and verifies the
+tag again before submission. Every worker handling one pending order must use
+the same key. The state is still backend-only: it contains the exact order
+intent and security bindings and must never be accepted from a browser. Use a
+unique `put-if-absent`, apply the signing request's expiry as the TTL, and
+delete abandoned records. Rotating the platform key intentionally invalidates
+outstanding prepared orders; have users prepare them again.
+
+For a BUY, each SDK compares the exact maker amount with the funder's current
+balance before it returns a signing request. An insufficient balance therefore
+fails before the wallet sees an order-signature prompt. The SDK never funds the
+account or changes the order after preparation.
+
+### Send only the shared signing request
+
+All three SDKs return the same version-1 browser shape:
+
+```json
+{
+  "version": "1",
+  "requestId": "opaque-one-time-id",
+  "address": "0xControllingEOA",
+  "expiresAt": 1787053800,
+  "typedData": {
+    "domain": {},
+    "types": {},
+    "primaryType": "Order",
+    "message": {}
+  },
+  "order": {
+    "tokenId": "12345678901234567890",
+    "side": "BUY",
+    "price": 0.52,
+    "size": 5,
+    "orderType": "GTC",
+    "postOnly": true,
+    "expiration": null,
+    "maker": "0xTradingAccount",
+    "signer": "0xExpectedSigner",
+    "makerAmount": "2600000",
+    "takerAmount": "5000000"
+  }
+}
+```
+
+`primaryType` is determined by the selected wallet account type. Do not assume
+or replace it: sign the entire returned `typedData` object exactly. Large
+typed-data integers are decimal strings. Do not convert token IDs or raw
+amounts to JavaScript `number`; doing so can change the signed value. The
+preview's `price` and `size` are the canonical tick- and size-rounded values
+used by the order. `makerAmount` and `takerAmount` are raw six-decimal-unit
+strings; `maker` is the trading/funder account, while `signer` is the account
+the order signature is bound to.
+
+### Verify, display, and sign in the browser
+
+The browser must check the schema version, expiry, chain, and currently active
+account before it displays the preview. The preview is for confirmation; sign
+the exact `typedData` object, not a new object reconstructed from form inputs.
+
+```typescript Frontend
+const signingRequest = await fetch('/api/user-owned/orders/prepare', {
+  method: 'POST',
+  credentials: 'same-origin',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(orderInput),
+}).then(assertJsonResponse);
+
+const [currentAddress] = await window.ethereum.request({
+  method: 'eth_accounts',
+});
+const currentChain = await window.ethereum.request({ method: 'eth_chainId' });
+
+if (signingRequest.version !== '1') {
+  throw new Error('Unsupported signing request');
+}
+if (Math.floor(Date.now() / 1000) >= signingRequest.expiresAt) {
+  throw new Error('Order signing request expired');
+}
+if (
+  currentChain !== '0x89' ||
+  !currentAddress ||
+  currentAddress.toLowerCase() !== signingRequest.address.toLowerCase()
+) {
+  throw new Error('Reconnect the expected wallet on Polygon');
+}
+
+await showFinalOrderConfirmation(signingRequest.order);
+
+const orderSignature = await window.ethereum.request({
+  method: 'eth_signTypedData_v4',
+  params: [currentAddress, JSON.stringify(signingRequest.typedData)],
+});
+
+const orderResult = await fetch('/api/user-owned/orders/submit', {
+  method: 'POST',
+  credentials: 'same-origin',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    requestId: signingRequest.requestId,
+    address: currentAddress,
+    signature: orderSignature,
+  }),
+}).then(assertJsonResponse);
+```
+
+Do not send `typedData`, the order preview, token ID, price, or size back on the
+submit route. The backend uses only its prepared state plus the browser's
+`requestId`, `address`, and `signature`.
+
+### Atomically take and submit on the backend
+
+Use `GETDEL`, a database `DELETE ... RETURNING`, or an equivalent transaction.
+The take must be atomic across workers. Remove the prepared state before the SDK
+makes the authenticated network request so a timeout cannot make the same
+signature reusable.
+
+<Tabs>
+  <Tab title="TypeScript">
+
+```typescript Backend
+const pending = await pendingOrders.takeOnce(input.requestId);
+if (!pending) throw new Error('Unknown, expired, or already-used order');
+assertApplicationUser(pending.applicationUserId);
+assertExpectedWallet(pending.expectedAddress, input.address);
+
+const bundle = await encryptedWalletVault.get(pending.expectedAddress);
+const trader = new PolyNodeTrader({
+  polynodeKey: process.env.POLYNODE_API_KEY!,
+  executionMode: 'user_owned',
+  exchangeVersion: 'v2',
+  storage: 'memory',
+});
+await trader.importUserOwnedBrowserBundle(bundle);
+
+const prepared = await trader.importPreparedUserOwnedOrderState(pending.serverState);
+const result = await trader.submitPreparedUserOwnedOrder(prepared, {
+  requestId: input.requestId,
+  address: input.address,
+  signature: input.signature,
+});
+
+trader.close();
+return result;
+```
+
+  </Tab>
+  <Tab title="Python">
+
+```python Backend
+pending = await pending_orders.take_once(input.request_id)
+if pending is None:
+    raise ValueError("Unknown, expired, or already-used order")
+assert_application_user(pending["application_user_id"])
+assert_expected_wallet(pending["expected_address"], input.address)
+
+bundle = await encrypted_wallet_vault.get(pending["expected_address"])
+trader = PolyNodeTrader(TraderConfig(
+    polynode_key=os.environ["POLYNODE_API_KEY"],
+    execution_mode=ExecutionMode.USER_OWNED,
+    db_path=":memory:",
+))
+await trader.import_user_owned_browser_bundle(bundle)
+
+prepared = trader.import_prepared_user_owned_order(pending["server_state"])
+result = await trader.submit_prepared_user_owned_order(
+    prepared,
+    request_id=input.request_id,
+    address=input.address,
+    signature=input.signature,
+)
+
+trader.close()
+return result
+```
+
+  </Tab>
+  <Tab title="Rust">
+
+```rust Backend
+let pending = pending_orders
+    .take_once(&input.request_id)
+    .await?
+    .ok_or("unknown, expired, or already-used order")?;
+assert_application_user(&pending.application_user_id)?;
+assert_expected_wallet(pending.expected_address, input.address)?;
+
+let bundle = encrypted_wallet_vault
+    .get(pending.expected_address)
+    .await?;
+let mut trader = PolyNodeTrader::new(TraderConfig {
+    polynode_key: std::env::var("POLYNODE_API_KEY")?,
+    execution_mode: ExecutionMode::UserOwned,
+    db_path: ":memory:".into(),
+    ..Default::default()
+})?;
+trader.import_user_owned_browser_bundle(bundle).await?;
+
+let prepared = PreparedUserOwnedOrder::from_server_store_json(
+    &pending.server_state,
+)?;
+let result = trader.submit_prepared_user_owned_order(
+    prepared,
+    &input.request_id,
+    &input.address,
+    &input.signature,
+).await?;
+
+trader.close();
+```
+
+  </Tab>
+</Tabs>
+
+Before submission, the SDK revalidates the full typed-data and order-state pair,
+request version and expiry, zero builder attribution, active wallet and funder,
+wallet-owned credential owner, canonical low-S signature, and recovered signer.
+It builds authenticated order data only after those checks pass.
+
+If the SDK returns a definite rejection, show the error and let the user prepare
+a new order after correcting it. If the connection ends after submission and
+the result is ambiguous, reconcile open orders, trades, and your local order
+history before creating another intent. Never restore or resubmit the consumed
+state.
+
+## Option C: managed service signer
+
+If your application already uses an HSM, MPC wallet, Privy server wallet, or
+another controlled signer, keep using the normal combined SDK flow. Configure a
+user-owned trader, run `ensureReady`/`ensure_ready`, and call `order`. The signer
+must support both personal-message and typed-data signatures.
+
+This model is appropriate for automated strategies. Do not convert an injected
+wallet user to a service signer merely to avoid implementing the split-signing
+flow, and never ask a user to paste a private key into your application.
+
+## Secure route requirements
+
+Apply these controls to the authorization, vault, prepare, and submit routes:
+
+1. Require HTTPS and an authenticated same-origin application session.
+2. Bind the application user to one expected wallet; never trust a body-supplied
+   user ID.
+3. Protect cookie-authenticated writes with CSRF defenses and restrictive
+   `SameSite` cookies.
+4. Rate-limit by application user, wallet, IP risk signal, and operation.
+5. Set request-body limits and reject unexpected JSON fields.
+6. Use `Cache-Control: no-store` on every response that contains a challenge,
+   credential, bundle, prepared state acknowledgment, or signature result.
+7. Redact request and response bodies from access logs, traces, replay tools,
+   exception reports, support captures, and analytics.
+8. Disable service-worker caching for these paths.
+9. Use a restrictive CSP and audited dependencies on any page that temporarily
+   holds credentials. Do not run advertising or third-party analytics there.
+10. Encrypt vault values at rest, restrict decryption to the order worker, and
+    audit access by wallet ID without logging values.
+11. Use atomic put/take semantics and TTLs for challenges and prepared orders.
+12. Close the SDK trader after each job so active signers and in-memory
+    credentials are released.
+
+For browser-memory mode, credential delivery should be a one-time response. Do
+not place it in a URL, query string, redirect, HTML, local storage, session
+storage, IndexedDB, cookie, global state store, or hydration payload.
+
+## Access and common errors
+
+| Error or symptom | What to check |
+| --- | --- |
+| `invalid or missing X-Polynode-Key` / HTTP 401 | The authorization call must run on the backend through the SDK with a current `pn_live_...` key. Check the environment value and whitespace. Do not move the key into the browser. If that key works on normal API calls but this error persists, contact Polynode support to check key synchronization for wallet authorization. |
+| HTTP 403 during authorization | User-owned authorization is not enabled for that key or plan. Use an eligible paid Polynode plan; no separate add-on is required. |
+| HTTP 429 | A normal API or abuse limit was reached. Back off; do not switch attribution modes mid-request. |
+| `wrong chain`, `wallet changed`, or address mismatch | Reconnect the expected account on Polygon and prepare a new request. Never reuse the old signature. |
+| `unknown, expired, or already-used` | The challenge or prepared order was consumed or reached its TTL. Start that one step again. |
+| `insufficient ... collateral` | Fund the exact `funderAddress`, then prepare a new order. Readiness itself does not add funds. |
+| Approval/readiness failure | Let the first-use setup finish and confirm before preparing an order. EOA approvals require gas. |
+| Builder or fee configuration rejected | Remove builder credentials, nonzero builder code, and positive Polynode fee configuration from this trader. |
+| Signature validation failure | Do not normalize or rebuild typed data in the browser. Sign the SDK object exactly and confirm the active account did not change. |
+| Timeout after submit | Treat it as ambiguous. Reconcile state before taking another action. |
+
+## Production acceptance checklist
+
+- A new user can connect on Polygon, authorize, complete readiness, see the
+  funder address, fund it, review an order, sign it, and receive an order result.
+- A returning user can load the encrypted record without another ownership
+  signature unless reauthorization is required.
+- Two users cannot load one another's vault record, challenge, prepared state,
+  trader, or result.
+- Account and chain changes close browser sessions and invalidate the current
+  UI flow.
+- The browser never sees the Polynode API key or prepared server state.
+- Backend logs and telemetry contain no credential bundle, API secret,
+  passphrase, full challenge, or signature.
+- Builder credentials, builder authentication, builder code, and positive
+  Polynode fees are absent from the user-owned path.
+- Challenges and prepared orders are one-time, short-lived, and atomically
+  consumed across all workers.
+- A timeout cannot cause an automatic duplicate order.
+- Your UI says that user-owned mode removes the shared builder allowance; it
+  does not advertise all activity as universally unlimited.
+
+For mode behavior and gasless position operations, continue with
+[User-owned execution](/sdks/user-owned-execution). For general order inputs,
+funding, cancellation, and result handling, see
+[Trading and fees](/sdks/trading).

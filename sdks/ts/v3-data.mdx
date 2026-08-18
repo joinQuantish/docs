@@ -5,7 +5,7 @@ description: "Use typed TypeScript helpers or execute any of the 120 registered 
 icon: "database"
 ---
 
-TypeScript 0.13.0 exposes the complete shared V3 operation registry at `pn.v3.operations`. Typed helpers cover common reads; `execute()` covers every registered route, including combos, credits, webhooks, and perps.
+TypeScript 0.14.0 exposes the complete shared V3 operation registry at `pn.v3.operations`. Typed helpers cover common reads; `execute()` covers every registered route, including combos, credits, webhooks, and perps.
 
 ## Discover the registry
 
@@ -16,7 +16,7 @@ const apiKey = process.env.POLYNODE_API_KEY;
 if (!apiKey) throw new Error('Set POLYNODE_API_KEY');
 
 const pn = new PolyNode({ apiKey });
-console.log(V3_OPERATION_COUNT); // 120 in 0.13.0
+console.log(V3_OPERATION_COUNT); // 120 in 0.14.0
 
 for (const operation of pn.v3.operations) {
   console.log(operation.method, operation.path, operation.domain);
