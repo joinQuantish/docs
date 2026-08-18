@@ -14,6 +14,30 @@ Returns everything about a single game. This is the most detailed sports endpoin
   Your API key.
 </ParamField>
 
+## Look up a game by event ID or market ID
+
+Every game-scoped endpoint also accepts an explicit Polymarket event ID or market ID. Use the explicit prefix because event IDs and market IDs are separate numeric namespaces.
+
+| Lookup | Path |
+| --- | --- |
+| Event ID | `/v2/sports/games/by-event/{event_id}` |
+| Market ID | `/v2/sports/games/by-market/{market_id}` |
+
+For example, both requests return the full parent event and all of its normalized markets:
+
+```bash
+curl "https://api.polynode.dev/v2/sports/games/by-event/53042?key=YOUR_KEY"
+curl "https://api.polynode.dev/v2/sports/games/by-market/619816?key=YOUR_KEY"
+```
+
+Append `/state`, `/context`, `/prices`, or `/history` to either ID path exactly as you would for a slug:
+
+```bash
+curl "https://api.polynode.dev/v2/sports/games/by-market/619816/state?key=YOUR_KEY"
+```
+
+A market-ID lookup resolves the market to its parent event, so the response's `slug` is always the canonical event slug—not the individual market slug.
+
 <ResponseExample>
 ```json
 {

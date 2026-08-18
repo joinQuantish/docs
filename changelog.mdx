@@ -5,6 +5,23 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-08-18 - Query sports games by event or market ID
+
+Sports game endpoints can now be queried by Polymarket event ID or market ID.
+
+What's new:
+
+* Use `/v2/sports/games/by-event/{event_id}` for an event ID.
+* Use `/v2/sports/games/by-market/{market_id}` for a market ID. The response
+  contains the full parent event and its canonical event slug.
+* Append `/state`, `/context`, `/prices`, or `/history` to either identifier
+  route for the corresponding game data.
+* Existing slug-based routes are unchanged.
+
+Docs: [Game Detail](/api-reference/sports/game-detail)
+
+***
+
 ## 2026-08-18 - Connect Wallet to user-owned V2 orders
 
 The TypeScript, Python, and Rust SDKs now provide one documented platform flow
