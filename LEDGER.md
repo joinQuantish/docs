@@ -3,6 +3,15 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-18 [codex] — Prepared sports game identifier documentation for the
+  additive event-ID and market-ID lookup routes. Game detail, the sports route
+  index, and league game discovery now show the explicit `by-event` and
+  `by-market` paths, explain why the independent numeric namespaces must not be
+  guessed, document canonical parent-event slug behavior, and confirm that
+  state, context, prices, and history accept the same identifier forms. Source,
+  merge, validation, deployment, and live-page evidence will be recorded after
+  rollout.
+
 - 2026-08-18 [codex] — Completed the strict public changelog reconciliation
   through August 18. Reviewed source
   `1bbe95a7f71a23797c53f298af37231bda69f7bb` merged through PR #54 as

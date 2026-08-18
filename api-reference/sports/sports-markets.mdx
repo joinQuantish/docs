@@ -2,7 +2,7 @@
 title: "Sports Markets"
 ---
 
-PolyNode sports endpoints expose Polymarket-native sports market data: leagues, teams, games, markets, token IDs, current CLOB prices, and historical price series.
+Polynode sports endpoints expose Polymarket-native sports market data: leagues, teams, games, markets, token IDs, current CLOB prices, and historical price series.
 
 These endpoints replace the old sportsbook/OddsJam experiment. They do not return sportsbook odds. They return Polymarket market prices and metadata, normalized around sports games.
 
@@ -16,12 +16,16 @@ These endpoints replace the old sportsbook/OddsJam experiment. They do not retur
 | `GET /v2/sports/leagues/{league}/teams` | Teams for a league, with logos and records when available |
 | `GET /v2/sports/leagues/{league}/games` | Games/events for a league, including markets, token IDs, and Gamma fallback metadata |
 | `GET /v2/sports/games/{slug}` | Full game/event detail with normalized markets |
+| `GET /v2/sports/games/by-event/{event_id}` | The same game detail resolved by Polymarket Gamma event ID |
+| `GET /v2/sports/games/by-market/{market_id}` | The parent game detail resolved by Polymarket Gamma market ID |
 | `GET /v2/sports/games/{slug}/state` | Canonical game state: metadata, score fields, markets, current prices, and subscribe payload |
 | `GET /v2/sports/games/{slug}/context` | Agent-friendly context bundle from generated game queries and optional external sources |
 | `GET /v2/sports/games/{slug}/prices` | Current bid, ask, midpoint, and spread for game tokens |
 | `GET /v2/sports/games/{slug}/history` | Batch CLOB price history for game tokens |
 | `GET /v2/sports/market-types` | Polymarket sports market type codes with PolyNode labels/categories |
 | `GET /v2/sports/search?q={query}` | Search sports events and teams |
+
+The event-ID and market-ID forms support the same `/state`, `/context`, `/prices`, and `/history` suffixes as the slug form. Keep the `by-event` or `by-market` prefix: Gamma event IDs and market IDs are separate numeric namespaces, so a bare numeric lookup would be ambiguous. Market-ID responses use the canonical parent event slug and contain the full event's markets.
 
 ## Game state
 

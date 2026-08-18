@@ -117,7 +117,7 @@ curl "https://api.polynode.dev/v2/sports/leagues/fifwc/games?status=active&sort=
 curl "https://api.polynode.dev/v2/sports/leagues/nhl/games?status=active&limit=20&key=YOUR_KEY"
 ```
 
-Each game has a `slug` field. Use it with the [Game Detail](/api-reference/sports/game-detail) endpoint to get full team info, all markets, and AI-generated game previews.
+Each game has an event `id` and a `slug`, while every nested market has its own market `id`. Use any of them with the [Game Detail](/api-reference/sports/game-detail) endpoint to get full team info, all markets, and AI-generated game previews. Event-ID and market-ID lookups use the explicit `/by-event/{event_id}` and `/by-market/{market_id}` paths documented there.
 
 ## Esports score format
 
