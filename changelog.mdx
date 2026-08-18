@@ -12,11 +12,15 @@ from wallet connection through an actual zero-attribution user-owned V2 order.
 
 What's new:
 
-* TypeScript `polynode-sdk` 0.14.1 provides a browser-memory session, standard
+* TypeScript `polynode-sdk` 0.14.2 provides a browser-memory session, standard
   viem provider typing, wallet-confirmed USDC.e → pUSD funding, exact order
-  preview/signing, and authenticated open-order reconciliation.
-* TypeScript 0.14.1, Python `polynode` 0.14.0, and Rust `polynode` 0.17.0 share
+  preview/signing, a durable pre-submit order-hash callback, and authenticated
+  open-order reconciliation.
+* TypeScript 0.14.2, Python `polynode` 0.14.1, and Rust `polynode` 0.17.1 share
   one browser-safe signing-request and encrypted backend-vault bundle contract.
+  Prepared orders expose the canonical exchange order hash before transport so
+  open orders and fills can be reconciled by exact identity instead of an
+  amount/time heuristic.
 * Platforms can authorize each connected wallet once, retain wallet-scoped
   credentials in an encrypted vault, prepare one short-lived order on any
   worker, send only typed data to the browser, and consume submission state
@@ -165,9 +169,9 @@ Docs: [Combo Redemptions](/data/combos/redemptions) and [Wallet Combo Redemption
 
 ***
 
-## 2026-07-22 - PolyNode is now part of Agg
+## 2026-07-22 - Polynode is now part of Agg
 
-PolyNode has joined Agg and will continue as a standalone product for Polymarket data customers.
+Polynode has joined Agg and will continue as a standalone product for Polymarket data customers.
 
 What this means for customers:
 
@@ -221,7 +225,7 @@ Endpoint names, API-key values, plan names, and current plan prices are unchange
 
 ## 2026-07-20 - Updated card checkout and billing portal
 
-Moved new card purchases to the current PolyNode subscription catalog while preserving active access and in-progress checkouts during the transition.
+Moved new card purchases to the current Polynode subscription catalog while preserving active access and in-progress checkouts during the transition.
 
 What's improved:
 

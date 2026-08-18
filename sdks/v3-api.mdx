@@ -5,7 +5,7 @@ description: "Call every current V3 route from TypeScript, Python, or Rust throu
 icon: "database"
 ---
 
-Every SDK ships the same V3 operation registry. In TypeScript 0.14.1, Python 0.14.0, and Rust 0.17.0 it contains 120 operations, so new and less-common routes do not have to wait for a language-specific helper.
+Every SDK ships the same V3 operation registry. In TypeScript 0.14.2, Python 0.14.1, and Rust 0.17.1 it contains 120 operations, so new and less-common routes do not have to wait for a language-specific helper.
 
 Use a named helper when one exists and improves readability. Use the registered executor for complete coverage.
 
@@ -34,7 +34,7 @@ The registry is the SDK contract for route availability. Endpoint reference page
     ```typescript
     import { V3_OPERATION_COUNT, V3_OPERATIONS } from 'polynode-sdk';
 
-    console.log(V3_OPERATION_COUNT); // 120 in polynode-sdk 0.14.1
+    console.log(V3_OPERATION_COUNT); // 120 in polynode-sdk 0.14.2
     for (const operation of V3_OPERATIONS.filter((item) => item.domain === 'perps')) {
       console.log(operation.method, operation.path);
     }
@@ -44,7 +44,7 @@ The registry is the SDK contract for route availability. Endpoint reference page
     ```python
     from polynode import V3_OPERATION_COUNT, V3_OPERATIONS
 
-    print(V3_OPERATION_COUNT)  # 120 in polynode 0.14.0
+    print(V3_OPERATION_COUNT)  # 120 in polynode 0.14.1
     for operation in V3_OPERATIONS:
         if operation.domain == "perps":
             print(operation.method, operation.path)
@@ -55,7 +55,7 @@ The registry is the SDK contract for route availability. Endpoint reference page
     use polynode::{V3_OPERATIONS, V3_OPERATION_COUNT};
 
     fn main() {
-        println!("{V3_OPERATION_COUNT}"); // 120 in polynode 0.17.0
+        println!("{V3_OPERATION_COUNT}"); // 120 in polynode 0.17.1
         for operation in V3_OPERATIONS.iter().filter(|item| item.domain == "perps") {
             println!("{} {}", operation.method, operation.path);
         }

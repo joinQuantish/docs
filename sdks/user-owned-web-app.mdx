@@ -11,8 +11,8 @@ backend, how to retain credentials, and how to support more than one user
 without mixing their state.
 
 <Note>
-Use TypeScript `polynode-sdk >= 0.14.1`, Python `polynode >= 0.14.0`, or Rust
-`polynode >= 0.17.0` with its `trading` feature. Wallet authorization requires
+Use TypeScript `polynode-sdk >= 0.14.2`, Python `polynode >= 0.14.1`, or Rust
+`polynode >= 0.17.1` with its `trading` feature. Wallet authorization requires
 an eligible paid Polynode plan and a valid `pn_live_...` API key. It is not a
 separate add-on and does not require another service URL.
 </Note>
@@ -78,6 +78,7 @@ key.
 | `POST /api/user-owned/vault` | Versioned sensitive credential bundle | Receipt only | Validate with an SDK importer, then encrypt under the authenticated wallet record |
 | `POST /api/user-owned/orders/prepare` | Token, side, price, size, order options | Credential-free signing request | Load that wallet's vault record, prepare, and retain server state once |
 | `POST /api/user-owned/orders/submit` | Request ID, address, typed-data signature | Order result | Atomically take server state, validate, and submit once |
+| `POST /api/user-owned/order-attempts` | Canonical order hash and credential-free preview | Receipt only | Browser-memory model only: durably bind the attempt to the authenticated user and funder before direct submission |
 
 Use equivalent names in your framework if preferred. The security properties,
 field boundaries, authenticated user binding, and one-time semantics are the
@@ -128,6 +129,7 @@ request must not be replayed as a user-owned request.
 | Order API key, secret, and passphrase | Yes | Optional tab memory only | Encrypted per wallet | Reuse only with the wallet that created them |
 | Prepared order server state | Security-sensitive | **Never** | One-time session or shared store | Five minutes at most; atomic take before submit |
 | Signing request | No secret | Yes | Keep matching server state | Five minutes at most |
+| Canonical order hash | No secret | Yes in browser-memory mode | Persist with the attempt before submit | Durable reconciliation key; never an authorization credential |
 | Wallet signatures | Yes, single-purpose | Produced here | Validate, then submit | Do not retain in logs or analytics |
 | Private key or seed phrase | Critical | Wallet software only | **Never** | Never request or transmit it |
 | Builder credentials | Not used | **Never** | **Never on this trader** | User-owned mode rejects them |
@@ -143,7 +145,7 @@ Every injected-wallet integration uses the browser entry point, even when the
 prepare and submit backend is written in Python or Rust:
 
 ```bash Browser
-npm install polynode-sdk@^0.14.1 viem
+npm install polynode-sdk@^0.14.2 viem
 ```
 
 That is the complete browser install. Do not add the optional builder-relayer,
@@ -181,14 +183,14 @@ Install the backend SDK for the language that owns your routes:
   <Tab title="TypeScript">
 
 ```bash
-npm install polynode-sdk@^0.14.1 viem
+npm install polynode-sdk@^0.14.2 viem
 ```
 
   </Tab>
   <Tab title="Python">
 
 ```bash
-pip install "polynode[trading]>=0.14.0,<0.15"
+pip install "polynode[trading]>=0.14.1,<0.15"
 ```
 
   </Tab>
@@ -196,7 +198,7 @@ pip install "polynode[trading]>=0.14.0,<0.15"
 
 ```toml Cargo.toml
 [dependencies]
-polynode = { version = "0.17.0", features = ["trading"] }
+polynode = { version = "0.17.1", features = ["trading"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -586,7 +588,7 @@ console.log(session.status.funderAddress);
 console.log(session.status.signatureType);
 ```
 
-Version 0.14.1 accepts viem's standard `EIP1193Provider` directly; no provider
+Version 0.14.2 accepts viem's standard `EIP1193Provider` directly; no provider
 cast or adapter is required. `open()` still checks at runtime that the injected
 provider supplies `request`, `on`, and `removeListener`.
 
@@ -658,6 +660,15 @@ const result = await session.order(
   },
   {
     confirm: async (preview) => showFinalOrderConfirmation(preview),
+    beforeSubmit: async ({ orderHash, order }) => {
+      const response = await fetch('/api/user-owned/order-attempts', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderHash, order }),
+      });
+      await assertJsonResponse(response);
+    },
   },
 );
 
@@ -670,10 +681,18 @@ showOrderId(result.orderId);
 
 The confirmation callback receives the exact 11-field, credential-free order
 preview. Returning `false` or throwing stops the flow before signing or
-submission. After the callback, the SDK rechecks the account, chain, and BUY
-balance immediately before the signature. It closes the session on `pagehide`,
-`accountsChanged`, or `chainChanged`. Also close it explicitly on logout or
-when your UI no longer needs it:
+submission. `beforeSubmit` receives a frozen, credential-free
+`BrowserBeforeSubmitOrder` containing the canonical exchange `orderHash` and
+that preview. The SDK awaits it after finalizing the signature but before the
+submission request; if durable storage fails, it sends no order. Bind this
+record to the authenticated application user and expected funder. A
+browser-supplied record is useful for that user's reconciliation but must never
+authorize another action or another user's read.
+
+After each callback, the SDK rechecks the account and chain immediately before
+continuing. It also checks BUY balance before the signature. It closes the
+session on `pagehide`, `accountsChanged`, or `chainChanged`. Also close it
+explicitly on logout or when your UI no longer needs it:
 
 ```typescript
 session.close();
@@ -839,11 +858,14 @@ try {
   });
 
   const signingRequest = prepared.signingRequest;
+  const orderHash = prepared.orderHash;
   const serverState = trader.exportPreparedUserOwnedOrderState(prepared);
 
   await pendingOrders.putOnce(signingRequest.requestId, {
     applicationUserId,
     expectedAddress,
+    orderHash,
+    order: signingRequest.order,
     serverState,
   }, { expiresAt: signingRequest.expiresAt });
 
@@ -883,6 +905,7 @@ try:
     ))
 
     signing_request = prepared.signing_request.to_dict()
+    order_hash = prepared.order_hash
     server_state = trader.export_prepared_user_owned_order(prepared)
 
     await pending_orders.put_once(
@@ -890,6 +913,8 @@ try:
         {
             "application_user_id": application_user_id,
             "expected_address": expected_address,
+            "order_hash": order_hash,
+            "order": signing_request["order"],
             "server_state": server_state,
         },
         expires_at=signing_request["expiresAt"],
@@ -933,12 +958,15 @@ let prepared = trader.prepare_user_owned_order(OrderParams {
 }).await?;
 
 let signing_request = prepared.signing_request().clone();
+let order_hash = prepared.order_hash()?;
 let server_state = prepared.to_server_store_json()?;
 
 pending_orders.put_once(
     &signing_request.request_id,
     &application_user_id,
     expected_address,
+    &order_hash,
+    &signing_request.order,
     &server_state,
     signing_request.expires_at,
 ).await?;
@@ -960,6 +988,13 @@ intent and security bindings and must never be accepted from a browser. Use a
 unique `put-if-absent`, apply the signing request's expiry as the TTL, and
 delete abandoned records. Rotating the platform key intentionally invalidates
 outstanding prepared orders; have users prepare them again.
+
+The prepared object's `orderHash` / `order_hash` / `order_hash()` is the
+canonical standard exchange `Order` EIP-712 digest. It is intentionally not
+the deposit wallet's outer `TypedDataSign` digest. It is non-secret and does
+not change the opaque server-state schema, but read it from the integrity-bound
+prepared object before export and persist it with the attempt. Never accept a
+replacement hash from the order-signature response.
 
 For a BUY, each SDK compares the exact maker amount with the funder's current
 balance before it returns a signing request. An insufficient balance therefore
@@ -1095,6 +1130,17 @@ try {
   await trader.importUserOwnedBrowserBundle(bundle);
 
   const prepared = await trader.importPreparedUserOwnedOrderState(pending.serverState);
+  if (prepared.orderHash.toLowerCase() !== pending.orderHash.toLowerCase()) {
+    throw new Error('Prepared order identity mismatch');
+  }
+  await orderAttempts.putOnce(pending.orderHash, {
+    requestId: input.requestId,
+    applicationUserId,
+    expectedAddress,
+    order: pending.order,
+    status: 'submitting',
+    startedAt: new Date().toISOString(),
+  });
   return await trader.submitPreparedUserOwnedOrder(prepared, {
     requestId: input.requestId,
     address: input.address,
@@ -1109,6 +1155,8 @@ try {
   <Tab title="Python">
 
 ```python Backend
+from datetime import datetime, timezone
+
 pending = await pending_orders.take_once_for_owner(
     input.request_id,
     application_user_id=application_user_id,
@@ -1129,6 +1177,16 @@ try:
     await trader.import_user_owned_browser_bundle(bundle)
 
     prepared = trader.import_prepared_user_owned_order(pending["server_state"])
+    if prepared.order_hash.lower() != pending["order_hash"].lower():
+        raise ValueError("Prepared order identity mismatch")
+    await order_attempts.put_once(pending["order_hash"], {
+        "request_id": input.request_id,
+        "application_user_id": application_user_id,
+        "expected_address": expected_address,
+        "order": pending["order"],
+        "status": "submitting",
+        "started_at": datetime.now(timezone.utc).isoformat(),
+    })
     return await trader.submit_prepared_user_owned_order(
         prepared,
         request_id=input.request_id,
@@ -1172,6 +1230,17 @@ trader.import_user_owned_browser_bundle(bundle).await?;
 let prepared = PreparedUserOwnedOrder::from_server_store_json(
     &pending.server_state,
 )?;
+if prepared.order_hash()?.to_lowercase() != pending.order_hash.to_lowercase() {
+    return Err("prepared order identity mismatch".into());
+}
+order_attempts.put_once(
+    &pending.order_hash,
+    &input.request_id,
+    &application_user_id,
+    expected_address,
+    &pending.order,
+    "submitting",
+).await?;
 let result = trader.submit_prepared_user_owned_order(
     prepared,
     &input.request_id,
@@ -1208,10 +1277,16 @@ classification:
   When in doubt, classify it as ambiguous.
 
 Before invoking submission, persist a non-secret attempt record separately
-from the consumed state: `requestId`, authenticated user, wallet/funder,
-`tokenId`, side, canonical price/size, raw maker/taker amounts, and preparation
-time. Set its status to `submitting`. Do not put the signature, credential
-bundle, or reusable prepared state in that record.
+from the consumed state: the SDK-derived canonical `orderHash`, `requestId`,
+authenticated user, wallet/funder, the credential-free order preview, and
+submission time. Set its status to `submitting`. The durable write must finish
+before the SDK is allowed to start the submission request. Do not put the
+signature, credential bundle, or reusable prepared state in that record.
+
+This identity requirement is not optional. Token, direction, price, size, and
+time can describe two different orders from the same wallet. They may validate
+an exact-hash match as defense-in-depth, but they must never select a candidate
+on their own.
 
 For an ambiguous attempt:
 
@@ -1219,41 +1294,38 @@ For an ambiguous attempt:
    `trader.getOpenOrders({ assetId: tokenId })` (TypeScript),
    `await trader.get_open_orders(asset_id=token_id)` (Python), or
    `trader.get_open_orders(None).await?` and filter the returned token locally
-   (Rust).
+   (Rust). Match only an order whose `id`, case-insensitively, equals the
+   persisted `orderHash`. If it exists, the exact order was accepted and is
+   still open or partially open.
 2. A fully filled order may no longer be open. Query
    [V2 fill history](/api-reference/clobv2/wallet-trades) for
-   `attempt.maker`, which is the signing preview's `order.maker` and the
+   `attempt.order.maker`, which is the signing preview's `order.maker` and the
    session's `funderAddress`. Do **not** query the controlling EOA for a Safe or
-   deposit-wallet order merely because it signed the request.
-3. In that response, `side` means the wallet's role (`maker` or `taker`), not
-   order direction. For the submitted order, consider only `side: "maker"`
-   rows whose `maker` equals `attempt.maker`. Derive direction from the raw
-   token sides: `maker_token_id == "0"` and `taker_token_id == tokenId` is a
-   BUY; the reverse is a SELL. Ignore counterparty-role and compound
-   mint/merge rows.
-4. Group the remaining rows by `order_hash`. Each row is one fill, so partial
-   fills of one order reuse the hash. Convert `maker_usdc` and `taker_usdc`
-   from decimal strings to exact raw six-decimal integers before summing; do
-   not compare them directly with the preview's raw integer strings or parse
-   them as floating-point numbers. The fill-history page gives the exact
-   conversion and candidate rules.
-5. Repeat the open-order and fill reads after a short bounded delay to allow
-   indexing. Attach a hash only when exactly one group matches maker, token,
-   derived BUY/SELL direction, the narrow submission-time window, and the
-   prepared order's exact amount/limit constraints. If zero or multiple groups
-   remain, mark the attempt `needs_reconciliation` and surface it for
-   operator/user review.
+   deposit-wallet order merely because it signed the request. Keep only rows
+   whose `order_hash`, case-insensitively, equals the persisted `orderHash`,
+   then group those exact rows to summarize partial fills.
+3. Validate the exact-hash rows against the expected maker, token, BUY/SELL
+   direction, raw amount bounds, and integer-rounded limit described on the
+   fill-history page. A mismatch is a data-integrity error, not permission to
+   search for a different hash.
+4. Repeat the exact open-order and fill reads after a short bounded delay to
+   allow indexing. If the hash remains absent, mark the attempt
+   `needs_reconciliation` and surface it for operator/user review. An accepted
+   order could have been cancelled or expired before the read; absence is not
+   proof that submission failed.
 
 Local SDK order history can assist, but it is not sufficient proof after a
 worker crash. Never restore, resubmit, or automatically recreate the consumed
 state merely because the first reconciliation read found nothing.
 
-For the browser-memory model, version 0.14.1 exposes the same authenticated
+For the browser-memory model, `beforeSubmit` is the only safe place to create
+the durable attempt: it exposes the exact hash and the SDK awaits your storage
+receipt before transport. Version 0.14.2 also exposes the authenticated
 open-order read as
-`await session.getOpenOrders({ assetId: attempt.tokenId })`. Keep the
-non-secret attempt record outside the session so it survives a tab refresh;
-use the same fill-history comparison and ambiguity rules. The browser session
-does not invent an idempotency key that the order API does not support.
+`await session.getOpenOrders({ assetId: attempt.order.tokenId })`.
+Keep the attempt outside the session so it survives a tab refresh; use the same
+exact-hash fill comparison and ambiguity rules. The hash is a correlation key,
+not an idempotency key, and the SDK never resubmits automatically.
 
 ## Option C: managed service signer
 
@@ -1307,7 +1379,7 @@ storage, IndexedDB, cookie, global state store, or hydration payload.
 | Approval/readiness failure | Let the first-use setup finish and confirm before preparing an order. EOA approvals require gas. |
 | Builder or fee configuration rejected | Remove builder credentials, nonzero builder code, and positive Polynode fee configuration from this trader. |
 | Signature validation failure | Do not normalize or rebuild typed data in the browser. Sign the SDK object exactly and confirm the active account did not change. |
-| Timeout after submit | Treat it as ambiguous. Reconcile state before taking another action. |
+| Timeout after submit | Treat it as ambiguous. Compare the persisted canonical order hash with open-order `id` and fill `order_hash`; never select by amount/time similarity or retry automatically. |
 
 ## Production acceptance checklist
 
@@ -1327,6 +1399,8 @@ storage, IndexedDB, cookie, global state store, or hydration payload.
 - Challenges and prepared orders are one-time, short-lived, and atomically
   consumed across all workers with the authenticated user and wallet included
   in the same conditional take.
+- The canonical exchange order hash is durably stored before every submit
+  request and exact-matched during open-order and fill reconciliation.
 - A timeout cannot cause an automatic duplicate order.
 - Your UI says that user-owned mode removes the shared builder allowance; it
   does not advertise all activity as universally unlimited.

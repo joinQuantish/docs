@@ -11,8 +11,8 @@ carry zero builder attribution, and gasless wallet operations do not consume
 the platform's shared builder relayer allowance.
 
 <Note>
-Use TypeScript `polynode-sdk >= 0.14.1`, Python `polynode >= 0.14.0`, or Rust
-`polynode >= 0.17.0` with its `trading` feature. Wallet authorization requires
+Use TypeScript `polynode-sdk >= 0.14.2`, Python `polynode >= 0.14.1`, or Rust
+`polynode >= 0.17.1` with its `trading` feature. Wallet authorization requires
 an eligible paid Polynode plan and a valid `pn_live_...` API key. It is included
 in the supported SDK flow; there is no separate add-on or additional service
 URL to configure.
@@ -59,7 +59,8 @@ For a normal multi-user platform, use the
 [complete web-app guide](/sdks/user-owned-web-app). It includes the exact
 Connect Wallet UX, sensitive-value table, same-origin routes, versioned vault
 bundle, browser signing request, atomic one-time storage, three backend SDK
-examples, and security checklist.
+examples, canonical pre-submit order identity, exact-hash timeout
+reconciliation, and security checklist.
 
 ## Credential meanings
 
