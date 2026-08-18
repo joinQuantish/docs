@@ -3,6 +3,29 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-18 [codex] — Completed the strict public changelog reconciliation
+  through August 18. Reviewed source
+  `1bbe95a7f71a23797c53f298af37231bda69f7bb` merged through PR #54 as
+  `8724864bff56bd985af43a13f01f825081ad150d`; both commits have exact tree
+  `192ffa256e4f80f13832022237bd47b49650a7db`. Mintlify strict validation,
+  the complete local-link check, changed-page example checks, JSON,
+  frontmatter, fence, archive-size, chronology, duplicate-heading, diff,
+  brand, secret, and hostile public-copy checks passed. Mintlify deployment
+  check `95702926682` succeeded. Cache-busted public Markdown and rendered HTML
+  returned HTTP `200` for the current changelog, all four new weekly archives,
+  and the global leaderboard page; exact release headings, archive navigation,
+  first-use signature counts, faster confirmed-trade delivery, and
+  `leaderboard_offset_too_deep` were present. Public Markdown SHA-256 values in
+  page order were
+  `9564161a619096c7391fafb13a680d2727e546d342886487bff96ccfec84ce55`,
+  `8b2bdc526e9bb7690140f8628fb9567f8e74b977e0f96f1deb39767a18f9e4fc`,
+  `c3a4084c268d92011a3512502873ad8cbb633c76fd38d95f5aee9c52d902f60a`,
+  `b85ffbdc94bbc1a982ce3e4f9f4760f881c0def8420fe587aedfc6f313e2540f`,
+  `ba58f20709f79a673fe2c74f73a9e25fd3f83079d87e47e36a9cba52d2acc62f`,
+  and
+  `53a9cf3d56f92976012a8241d3d240d7a5bb2e31c091e9b804da0bb7cb9d1468`.
+  No SDK, credential, wallet, funding, or order mutation was made.
+
 - 2026-08-18 [codex] — Prepared a strict public changelog reconciliation for
   customer-visible releases from July 20 through August 18. The current page
   now highlights the complete Connect Wallet to user-owned V2 order flow,
