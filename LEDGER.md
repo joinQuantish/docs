@@ -3,6 +3,20 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-18 [codex] — Completed the sports event-ID and market-ID lookup
+  documentation and public changelog rollout. Documentation source
+  `5c60a91af71f7ce56f9bc677b59060d760197357` merged through PR #56 as
+  `cff945ed9f9351edc5d95c218f836685991911d6` with tree
+  `0c31f5c652ded6f2660a9f851b85741b8e3d5af9`. Mintlify strict validation,
+  the complete link check, changed-page example checks, changelog size, diff,
+  and public-copy checks passed. Mintlify deployment check `95753450308`
+  succeeded. Cache-busted public rendered pages returned HTTP 200 and showed
+  both identifier paths, examples, all four suffixes, canonical parent-event
+  behavior, unchanged slug compatibility, and the dated changelog entry. The
+  Game Detail and changelog HTML SHA-256 values were
+  `c26a95d4c66139706b5accfaf30b6e96bcec0a200124c4ea7c1a8e3acd3ba891` and
+  `da6489dcbc6c3ea31e1695683b4cfd0d324c3ce111694ccca4610628168e36ed`.
+
 - 2026-08-18 [codex] — Prepared sports game identifier documentation and a
   public changelog entry for the
   additive event-ID and market-ID lookup routes. Game detail, the sports route
