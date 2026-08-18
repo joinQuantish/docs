@@ -91,6 +91,74 @@ Bad input → `400 Bad Request`.
 | `offset` | integer | The offset used. |
 | `trades[]` | array | One entry per fill. Shape is **identical** to [`/clobv2/trades`](/api-reference/clobv2/trades) trades, except `side` is **always present** (`"maker"` or `"taker"`) — see that page for full field descriptions. |
 
+### Correlate a submitted order safely
+
+The wallet feed's `side` field is a **role**, not a BUY/SELL direction. An
+`order_hash` identifies the order owned by that row's `maker`. Therefore, when
+you are reconciling an order submitted for a wallet:
+
+1. Query the order's trading/funder address. For a Safe or deposit wallet this
+   is the signing preview's `order.maker`, not its controlling EOA signer.
+2. Keep only rows with `side: "maker"` and a matching `maker` address. A
+   `side: "taker"` row describes an order owned by the counterparty, so its
+   `order_hash` is not the queried wallet's submitted order.
+3. For ordinary outcome/collateral fills, derive the submitted order direction
+   from the raw token sides:
+
+| `maker_token_id` | `taker_token_id` | Maker order direction |
+| --- | --- | --- |
+| `"0"` | Expected outcome `tokenId` | BUY |
+| Expected outcome `tokenId` | `"0"` | SELL |
+| Any other pairing | Any other pairing | Compound mint/merge row; do not use it for this ordinary-order match |
+
+4. Group matching rows by `order_hash`. The endpoint returns one row per fill,
+   and a partially filled order can appear in several rows with the same hash.
+5. Convert each row's `maker_usdc` and `taker_usdc` decimal string back to raw
+   six-decimal units, then sum each leg within the group. Despite their
+   historical names, the non-collateral leg represents outcome-token shares.
+   Never use a binary floating-point type for this conversion.
+
+This TypeScript helper performs the exact decimal conversion and rejects a
+value that cannot have originated from a six-decimal raw amount:
+
+```typescript
+function sixDecimalToRaw(value: string): bigint {
+  const match = /^(\d+)(?:\.(\d+))?$/.exec(value);
+  if (!match) throw new Error('Invalid non-negative decimal amount');
+
+  const whole = match[1];
+  const fraction = match[2] ?? '';
+  if (fraction.length > 6 && /[1-9]/.test(fraction.slice(6))) {
+    throw new Error('Amount has precision below one raw unit');
+  }
+
+  const six = fraction.slice(0, 6).padEnd(6, '0');
+  return BigInt(whole) * 1_000_000n + BigInt(six);
+}
+```
+
+Let `rowMaker` and `rowTaker` be one fill's converted raw values, and let
+`orderMaker` and `orderTaker` be `BigInt(preview.makerAmount)` and
+`BigInt(preview.takerAmount)`. Every candidate row must have positive values
+and satisfy the order's integer-rounded minimum received amount:
+
+```typescript
+const minimumRowTaker = rowMaker * orderTaker / orderMaker;
+if (rowTaker < minimumRowTaker) rejectCandidate();
+```
+
+Use integer division exactly as shown because each on-chain fill rounds its
+received leg down to a raw unit before any later grouping. After validating
+each row, require the group's positive summed maker leg to be no greater than
+`orderMaker`. Equality with the full preview amounts is not required: the order
+may be partially filled, per-fill integer rounding can accumulate, and price
+improvement may make the received leg larger than its preview minimum. Also
+require the expected token, derived BUY/SELL direction, maker address, and a
+narrow submission-time window. If exactly one hash group passes every
+condition, retain that hash as the durable correlation key. If none or more
+than one pass, the result is still ambiguous: mark it for operator/user review
+and never automatically resubmit the consumed order.
+
 ### Rate-limit headers
 
 Same as every clobv2 endpoint: `x-ratelimit-limit`, `x-ratelimit-remaining`, `x-ratelimit-reset`.

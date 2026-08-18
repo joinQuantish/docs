@@ -215,7 +215,7 @@ if open_orders:
 ```
 
 ```rust Rust
-let open_orders = trader.get_open_orders().await?;
+let open_orders = trader.get_open_orders(None).await?;
 if let Some(order) = open_orders.first() {
     trader.cancel_order(&order.id).await?;
 }
