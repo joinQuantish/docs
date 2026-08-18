@@ -17,10 +17,7 @@ Trading methods sign messages and can place orders or submit on-chain transactio
 
 <CodeGroup>
 ```bash TypeScript
-npm install polynode-sdk@^0.14.0 viem better-sqlite3 \
-  @polymarket/clob-client \
-  @polymarket/builder-relayer-client \
-  @polymarket/builder-signing-sdk
+npm install polynode-sdk@^0.14.1 viem
 ```
 
 ```bash Python
@@ -33,6 +30,21 @@ polynode = { version = "0.17.0", features = ["trading"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 </CodeGroup>
+
+That TypeScript command is complete for the injected-wallet user-owned flow.
+The private-key server-trader examples below additionally need
+`@polymarket/clob-client@^5.8.1`. Add `better-sqlite3` only for persistent local
+storage. Add `@polymarket/builder-relayer-client@0.0.10` and
+`@polymarket/builder-signing-sdk@^1.0.0` only for a separate shared-builder
+relayer integration; those optional packages are not part of the browser
+entry's dependency graph.
+
+<Warning>
+The optional builder-relayer client currently brings legacy Axios/ethers audit
+advisories into a full install. The Polynode SDK does not bundle that tree.
+Keep the safer minimal user-owned install unless you intentionally operate the
+separate builder flow, then pin and audit the optional peers independently.
+</Warning>
 
 Store credentials outside source control:
 

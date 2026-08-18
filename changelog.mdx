@@ -5,6 +5,34 @@ description: "Recent Polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-08-18 - Connect Wallet to user-owned V2 orders
+
+The TypeScript, Python, and Rust SDKs now provide one documented platform flow
+from wallet connection through an actual zero-attribution user-owned V2 order.
+
+What's new:
+
+* TypeScript `polynode-sdk` 0.14.1 provides a browser-memory session, standard
+  viem provider typing, wallet-confirmed USDC.e → pUSD funding, exact order
+  preview/signing, and authenticated open-order reconciliation.
+* TypeScript 0.14.1, Python `polynode` 0.14.0, and Rust `polynode` 0.17.0 share
+  one browser-safe signing-request and encrypted backend-vault bundle contract.
+* Platforms can authorize each connected wallet once, retain wallet-scoped
+  credentials in an encrypted vault, prepare one short-lived order on any
+  worker, send only typed data to the browser, and consume submission state
+  exactly once.
+* User-owned orders contain zero builder attribution and do not consume a
+  platform's shared builder allowance. Market rules, collateral, API rate
+  limits, and ordinary service limits still apply.
+* The guide includes credential sensitivity, account/chain binding,
+  ownership-conditional atomic storage, exception-safe cleanup, minimal
+  dependency installs, and conservative ambiguous-submit reconciliation.
+
+Docs: [Connect Wallet to order](/sdks/user-owned-web-app) and
+[User-owned execution](/sdks/user-owned-execution)
+
+***
+
 ## 2026-08-08 - Account usage dashboard and one-time capacity packages
 
 The signed-in Polynode dashboard now shows account-level API requests, Order Book + Chainlink transfer, and On-chain event transfer for the current service period.
