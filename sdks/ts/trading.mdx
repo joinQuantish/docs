@@ -11,7 +11,7 @@ wallet/user-owned flow needs only:
 For optional zero-builder attribution backed by the signing wallet, see [User-owned execution](/sdks/user-owned-execution). For an injected-wallet application, follow [Connect Wallet to order](/sdks/user-owned-web-app).
 
 ```bash
-npm install polynode-sdk@^0.14.1 viem
+npm install polynode-sdk@^0.14.2 viem
 ```
 
 For a server-signer trader, add the CLOB client and SQLite only when that
@@ -30,7 +30,7 @@ npm install @polymarket/builder-relayer-client@0.0.10 \
 
 <Warning>
 The optional official Polymarket relayer client currently brings legacy
-Axios/ethers audit advisories into a full trading install. Polynode SDK 0.14.1
+Axios/ethers audit advisories into a full trading install. Polynode SDK 0.14.2
 does not bundle that dependency tree: its only direct runtime dependency is
 `viem`. Pin the relayer client to the SDK's declared peer version, keep relayer
 destinations fixed, and review upstream updates before changing that pin.

@@ -3,6 +3,30 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-18 [codex] — Prepared the exact-order-identity correction for the
+  Connect Wallet → user-owned V2 guide after a clean-room audit reproduced a
+  false-positive timeout match between two same-wallet orders with identical
+  descriptive fields. The guide now requires the canonical standard exchange
+  order hash to be durably recorded before transport and exact-matched against
+  open-order `id` and fill `order_hash`; amount, price, token, direction, and
+  time are validation only and never candidate identity. TypeScript source
+  `bd8b7d21fd088b6be11d25dbc2a66674a6210266` merged as
+  `594f3369f08212ec267d9f5e580253c274b23e44`; public
+  `polynode-sdk` 0.14.2 has SHA-256
+  `747039c7cc4b2cd4672956eb625261731f82cff7b461a2c45cc4085023256626`.
+  Python source `ccb105154351c7e03d0a332210ce3851e689fde5` merged as
+  `19455ab035f4ab0c168d6b16387c6d72f0a0b77c`; public `polynode` 0.14.1
+  wheel and sdist have SHA-256
+  `e6a1bfe8c5cd6e9fbd16207372329a09f3002d81458215704705dfa85bc2a69f`
+  and `cb3973c405e4ac40bfcc31b494a4ebf42056fb1ba4bdb8975e591ed28fcd0b03`.
+  Rust source `1195e6d066857d7569476eacf122791343093109` merged as
+  `d6c5ce4f01de5453609dd4cceb94c395e8540eaa`; public `polynode` 0.17.1
+  has registry checksum
+  `ec244f32da7f097b6be6c4f08f8daeda888c54245a01875807f859021d6fb805`.
+  Changed-page JSON, frontmatter, fence, local-link, diff, brand, version,
+  secret, private-path, and frontend-artifact checks pass. Deployment and a
+  final fresh public-documentation-only audit will be recorded after rollout.
+
 - 2026-08-18 [codex] — Prepared the clean-room audit follow-up for the public
   Connect Wallet → user-owned order documentation and published TypeScript
   `polynode-sdk` 0.14.1. The revised guide adds the minimal zero-advisory
