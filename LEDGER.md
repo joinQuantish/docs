@@ -3,6 +3,21 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-18 [codex] — Prepared an explicit wallet-prompt contract for the
+  Connect Wallet → user-owned V2 guide after a fresh public
+  `polynode-sdk` 0.14.2 run showed that the former “two signatures” summary
+  omitted first-use approval and CLOB-auth prompts. A newly generated default
+  deposit wallet required one ownership signature, one four-call EIP-712 base
+  approval batch, and one EIP-712 `ClobAuth` signature; deployment and the
+  relayed approval transaction succeeded, all four permissions were confirmed
+  on-chain, and a second open with the exported vault credentials required no
+  setup signature. The guide now separates connection, deployment, readiness,
+  optional funding conversion, and per-order prompts; distinguishes the
+  explicit EOA approval path; and states first-use and returning-user totals.
+  The audit wallet was not funded and no order was submitted. Validation,
+  source/merge commits, deployment, and anonymous live-page evidence will be
+  recorded after rollout.
+
 - 2026-08-18 [codex] — Completed the final public-only acceptance audit for
   Connect Wallet → user-owned V2 orders. Documentation source
   `14e4fcaf887ca40fa61bf65a12692265417cb082` merged as
