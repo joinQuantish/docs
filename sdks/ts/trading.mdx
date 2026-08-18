@@ -5,20 +5,32 @@ description: "Use the TypeScript V2 trading defaults and keep protocol fees, bui
 icon: "arrow-right-arrow-left"
 ---
 
-Install the optional trading dependencies:
+Install only the dependencies for the execution model you use. The injected
+wallet/user-owned flow needs only:
 
 For optional zero-builder attribution backed by the signing wallet, see [User-owned execution](/sdks/user-owned-execution). For an injected-wallet application, follow [Connect Wallet to order](/sdks/user-owned-web-app).
 
 ```bash
-npm install polynode-sdk@^0.14.0 viem better-sqlite3 \
-  @polymarket/clob-client \
-  @polymarket/builder-relayer-client \
-  @polymarket/builder-signing-sdk
+npm install polynode-sdk@^0.14.1 viem
+```
+
+For a server-signer trader, add the CLOB client and SQLite only when that
+process uses them:
+
+```bash
+npm install @polymarket/clob-client@^5.8.1 better-sqlite3
+```
+
+Only a separate shared-builder relayer integration needs these peers:
+
+```bash
+npm install @polymarket/builder-relayer-client@0.0.10 \
+  @polymarket/builder-signing-sdk@^1.0.0
 ```
 
 <Warning>
 The optional official Polymarket relayer client currently brings legacy
-Axios/ethers audit advisories into a full trading install. Polynode SDK 0.14.0
+Axios/ethers audit advisories into a full trading install. Polynode SDK 0.14.1
 does not bundle that dependency tree: its only direct runtime dependency is
 `viem`. Pin the relayer client to the SDK's declared peer version, keep relayer
 destinations fixed, and review upstream updates before changing that pin.

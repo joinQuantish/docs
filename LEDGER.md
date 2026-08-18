@@ -3,6 +3,23 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-18 [codex] — Prepared the clean-room audit follow-up for the public
+  Connect Wallet → user-owned order documentation and published TypeScript
+  `polynode-sdk` 0.14.1. The revised guide adds the minimal zero-advisory
+  browser install, direct viem provider typing, wallet-confirmed USDC.e → pUSD
+  funding, exact authorization response and Rust expiry/address/dependency
+  contracts, authenticated-owner conditional atomic takes, exception-safe
+  trader cleanup, and a conservative cross-SDK ambiguous-submit correlation
+  procedure. General trading installs now separate optional builder-relayer
+  peers and their upstream advisories from the user-owned dependency graph;
+  account-selection language distinguishes the browser session from the
+  legacy server-signer fallback. The public 0.14.1 tarball has SHA-256
+  `7ef9af89d0733b44942116a8f45e788c45ec43930b3effbb7586e4d639f29120`;
+  anonymous ESM/CommonJS, strict viem-provider typing, production audit, and
+  Vite browser gates passed. Changed-page JSON, frontmatter, fence, component,
+  local-link, brand, version, and diff checks pass. Deployment and final fresh
+  public-doc-only agent-audit evidence will be recorded after live rollout.
+
 - 2026-08-18 [codex] — Prepared the public Connect Wallet → user-owned V2
   order guide for TypeScript `polynode-sdk` 0.14.0, Python `polynode` 0.14.0,
   and Rust `polynode` 0.17.0. The guide separates browser-safe signing data

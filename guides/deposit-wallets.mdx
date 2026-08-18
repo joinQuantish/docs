@@ -32,7 +32,7 @@ From your perspective as a builder, the key differences are:
 ```bash
 # Current beacon-aware wallet resolution and onboarding
 cargo add polynode@0.17.0 --features trading
-npm install polynode-sdk@^0.14.0
+npm install polynode-sdk@^0.14.1
 python -m pip install "polynode[trading]>=0.14.0,<0.15"
 ```
 
@@ -50,6 +50,11 @@ For trading, the SDK auto-detects wallet type when you call `ensureReady()` or `
 4. Nothing deployed -> defaults to `POLY_GNOSIS_SAFE` (new Safe will be created)
 
 This controls how the SDK signs orders. The `/resolve` identity endpoint uses a different rule for compatibility with Polymarket's deposit-wallet migration: if a resolved EOA has a deployed deposit wallet, `/resolve` returns that deposit wallet in `safe`.
+
+That list describes the general server-signer trader. The dedicated
+`BrowserUserOwnedSession` used by [Connect Wallet to order](/sdks/user-owned-web-app)
+defaults a new injected-wallet session to type 3, supports an explicit type 0
+EOA, and preserves an existing type 2 Safe through the backend-vault model.
 
 ```typescript
 import { PolyNodeTrader } from 'polynode-sdk';
@@ -209,12 +214,16 @@ No. No existing field was renamed or removed. The endpoint still returns `safe`,
 </Accordion>
 
 <Accordion title="Can I still create new Safe wallets?">
-Yes. The SDK defaults to creating Safe wallets for new users when no wallet is detected on-chain. Deposit wallets are created through Polymarket's frontend or relayer, not through the polynode SDK's default flow.
+Yes. The general server-signer trader defaults to a Safe when no wallet is
+detected on-chain. The specialized injected-wallet user-owned session instead
+defaults to an order-capable deposit wallet and completes its readiness flow
+through the connected wallet. Choose the documented entry point deliberately;
+neither silently changes an existing account type.
 </Accordion>
 
 <Accordion title="What SDK version do I need?">
 For current beacon-aware resolution, wallet-owned authorization, and full
-onboarding, use TypeScript `polynode-sdk >= 0.14.0`, Python
+onboarding, use TypeScript `polynode-sdk >= 0.14.1`, Python
 `polynode >= 0.14.0,<0.15`, or Rust `polynode >= 0.17.0` with the `trading`
 feature. These releases also include the complete browser-signing flow in
 [Connect Wallet to order](/sdks/user-owned-web-app).
