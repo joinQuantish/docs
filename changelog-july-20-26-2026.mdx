@@ -1,0 +1,139 @@
+---
+title: "Changelog - July 20-26, 2026"
+sidebarTitle: "July 20-26"
+description: "Archived polynode combo, trade, WebSocket, account, and billing changes from July 20 through July 26, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+[Earlier: July 13-19, 2026 →](/changelog-july-13-19-2026)
+
+## 2026-07-25 - Full and partial combo redemption lineage
+
+Added dedicated combo redemption endpoints without changing existing position
+or activity responses.
+
+What's new:
+
+* `GET /v3/combos/redemptions` returns canonical combo redemption and reduction
+  history across wallets.
+* `GET /v3/wallets/{address}/combos/redemptions` returns the same history for
+  one wallet.
+* Every row identifies `redemption_scope` as `full`, `partial`, or
+  `transformation` and exposes its supporting `redemption_evidence`.
+* Full redemptions map automated redemption activity to the actual user and
+  combo position.
+* Partial reductions expose source, destination, removed, remaining, parent,
+  and child identifiers, with `leg_transition` values such as `5_to_1`.
+* When canonical market metadata exists, enriched legs include token, result,
+  and current-price fields. Permissionless legs retain their exact position ID
+  without guessed market fields.
+* Filters cover wallet, condition, position, event kind, scope, transaction
+  hash, and time range.
+
+Docs: [Combo Redemptions](/data/combos/redemptions) and
+[Wallet Combo Redemptions](/data/combos/wallet-redemptions)
+
+---
+
+## 2026-07-24 - Clearer WebSocket and RPC capacity limits
+
+Updated the public limit contract so client connection planning is distinct
+from subscription planning.
+
+What's clarified:
+
+* A WebSocket physical-connection allowance is separate from the number of
+  logical subscriptions and filters multiplexed over each connection.
+* Requests authenticated by a member-owned API key use that key's own plan
+  limits rather than a shared platform key's allowance.
+* Eligible paid API keys can use the documented Polygon RPC allowance of 50
+  requests per second.
+* Existing endpoint, message, and authentication formats are unchanged.
+
+Docs: [Rate limits](/guides/rate-limits)
+
+---
+
+## 2026-07-22 - polynode is now part of Agg
+
+polynode joined Agg and continues as a standalone product for Polymarket data
+customers.
+
+What this means for customers:
+
+* Existing API and WebSocket domains, endpoints, API keys, SDK workflows, and
+  documentation remain available. No client migration is required.
+* Current plan names and pricing remain in place, and the product stays open
+  to all builders.
+* The product focus remains faster maintenance, stronger reliability, and
+  broader data coverage.
+
+[Read the announcement](https://www.tradingview.com/news/chainwire:7f0ceb3a3094b:0-agg-market-acquires-polynode-the-fastest-polymarket-data-api/)
+
+---
+
+## 2026-07-21 - Query trades by order hash
+
+V3 trade feeds can now return every fill associated with one exact Polymarket
+order hash.
+
+What's new:
+
+* Use `order_hash` on `GET /v3/trades`,
+  `GET /v3/wallets/{address}/trades`,
+  `GET /v3/markets/{token_id}/trades`, and
+  `GET /v3/markets/slug/{slug}/trades`.
+* Wallet queries can combine the hash with maker/taker role, token, condition,
+  market, event, time, and amount filters. Filtering occurs before pagination.
+* `group_by=order_hash` and `sort_by=order_hash` work consistently across the
+  global, wallet, market-token, and market-slug routes.
+* A valid hash with no matching fills returns an empty page. A malformed hash
+  returns HTTP `400`.
+* Combo trades do not expose a Polymarket order hash, so combining
+  `order_hash` with `include_combos=true` returns HTTP `400`.
+
+Docs: [Trades by Order Hash](/data/query-catalog/trades/by-order-hash) and
+[Wallet Trades](/data/wallets/trades)
+
+---
+
+## 2026-07-21 - Clearer subscription expiry and resubscription
+
+Updated how the dashboard handles an earlier paid subscription after its
+recorded access period ends.
+
+What's changed:
+
+* Paid access moves to the Free plan at the recorded end time rather than
+  remaining indefinitely on an expired subscription.
+* Existing API keys remain active and adopt Free-plan access and limits.
+* A Free account sees **Subscribe** in Settings and is sent to current pricing,
+  even when the account retains an older billing reference.
+* A newer active subscription or another valid paid-access method takes
+  precedence, so an old expiry cannot overwrite current access.
+* Delayed billing events from an earlier subscription cannot overwrite a newer
+  successful resubscription.
+
+[View current pricing](https://polynode.dev/pricing)
+
+---
+
+## 2026-07-20 - Updated card checkout and billing portal
+
+Moved new card purchases to the current polynode subscription catalog while
+preserving active access and in-progress checkouts during the transition.
+
+What's improved:
+
+* Starter, Growth, and Enterprise purchase buttons open the current card
+  checkout for the published plan and price.
+* The Starter plan retains its three-day trial.
+* A checkout opened from an older browser session is translated to the
+  corresponding current plan instead of failing on an outdated reference.
+* Customers with an active subscription are sent to the correct billing portal
+  instead of creating a duplicate Checkout.
+* Existing paid access remains valid through its recorded paid-through period.
+
+[View current pricing](https://polynode.dev/pricing)

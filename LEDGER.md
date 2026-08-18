@@ -3,6 +3,19 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-18 [codex] — Prepared a strict public changelog reconciliation for
+  customer-visible releases from July 20 through August 18. The current page
+  now highlights the complete Connect Wallet to user-owned V2 order flow,
+  exact first-use and returning-wallet signature counts, canonical order-hash
+  reconciliation, and faster confirmed-trade delivery. Four Monday-through-
+  Sunday archives preserve SDK, API, WebSocket, billing, account, latency,
+  correctness, and documented-limit changes, while the global leaderboard page
+  now states its 10,000-rank request ceiling and structured HTTP `400` result.
+  Only verified customer-visible results were selected for the public release
+  notes.
+  Source, merge, validation, deployment, and anonymous live-page evidence will
+  be recorded after rollout.
+
 - 2026-08-18 [codex] — Completed deployment of the explicit first-use and
   returning-user wallet signature counts. Source
   `f9dd2c0dcf552203a500eda159b5df447630fae2` merged through PR #52 as

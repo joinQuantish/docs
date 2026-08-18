@@ -31,6 +31,13 @@ GET /v3/leaderboard
 | `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
+<Warning>
+For the global leaderboard, `offset + limit` must be at most 10,000. A deeper
+window returns HTTP `400` with `error: "leaderboard_offset_too_deep"` and the
+`max_rank`, `max_offset`, `limit`, and `offset` values. Tag-scoped leaderboards
+retain their existing pagination behavior.
+</Warning>
+
 ## Example
 
 ```bash

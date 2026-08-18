@@ -1,0 +1,222 @@
+---
+title: "Changelog - August 3-9, 2026"
+sidebarTitle: "August 3-9"
+description: "Archived polynode usage, billing, V3, WebSocket, perps, Chainlink, and dashboard changes from August 3 through August 9, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+[Earlier: July 27-August 2, 2026 →](/changelog-july-27-august-2-2026)
+
+## 2026-08-09 - Usage pace and capacity projections
+
+The signed-in Usage page now turns current account usage into an end-of-cycle
+projection for each monthly resource.
+
+What's new:
+
+* Each resource shows the account's current average per day and projected total
+  through the end of the service period.
+* The page calculates the exact additional 10-million-request or 100-GB package
+  count needed at the current pace.
+* When added capacity is needed, the page shows the one-time package cost and a
+  direct guarded Checkout action.
+* Accounts that already fit their capacity see that explicitly. Very large
+  projections direct the customer to the Enterprise/Institutional contact
+  path.
+* Projections update as account usage changes and do not change plan capacity
+  or enable monthly enforcement.
+
+Docs: [Monthly usage allowances and packages](/guides/rate-limits#monthly-usage-allowances)
+
+---
+
+## 2026-08-08 - Account usage dashboard and one-time capacity packages
+
+The signed-in polynode dashboard now shows account-level API requests, Order
+Book + Chainlink transfer, and On-chain event transfer for the current service
+period.
+
+What's new:
+
+* Included plan capacity and added packages are displayed separately with exact
+  remaining amounts and dates.
+* Every active API key owned by an account contributes to the same account
+  totals.
+* The monthly calculator estimates 24/7 WebSocket transfer and API-request
+  needs, then suggests matching packages.
+* One-time Stripe Checkout supports 10-million-request, 100-GB Order Book +
+  Chainlink, and 100-GB On-chain event packages. Each package costs $20 and
+  remains active for 90 days.
+* Existing per-minute, per-second, connection, and Free-session limits are
+  unchanged.
+* Monthly usage enforcement is not active yet; this release adds visibility
+  and prepaid capacity first.
+
+Docs: [Monthly usage allowances and packages](/guides/rate-limits#monthly-usage-allowances)
+
+---
+
+## 2026-08-07 - Faster recent wallet trades and positions
+
+Improved the default and recent-window paths for wallet trades and wallet
+positions without changing their response contracts.
+
+Release measurements:
+
+* An exact trade request that returned HTTP `504` in 3.05 seconds returned
+  HTTP `200` in 82 milliseconds after release.
+* The next 2,000 wallet-trade requests were 2,000/2,000 HTTP `200`, with 81
+  milliseconds p99 and zero 5xx responses.
+* Four other observed timeout wallets returned in 67 to 85 milliseconds.
+* The subsequent recent-position window was 296/296 HTTP `200`, with 664
+  milliseconds p99 and 809 milliseconds maximum.
+
+Fields, values, ordering, pagination, grouping, and filters remain compatible.
+
+Docs: [Wallet Trades](/data/wallets/trades) and
+[Wallet Positions](/data/wallets/positions)
+
+---
+
+## 2026-08-07 - Chainlink TWAP default cutover completed
+
+The default `chainlink` WebSocket subscription now delivers both published
+TWAP windows.
+
+What's changed:
+
+* Default subscriptions receive 30-second and 60-second Chainlink TWAP events.
+* Clients that need one window can continue to select `twap_windows: [30]` or
+  `[60]` explicitly.
+* Every event identifies its window through `is_twap` and
+  `twap_window_seconds`.
+* Existing sockets, feed names, API keys, and subscription messages remain
+  compatible. The orderbook stream is unaffected.
+
+Docs: [Chainlink TWAP Prices](/crypto/twap)
+
+---
+
+## 2026-08-06 - Global leaderboard rank ceiling
+
+`GET /v3/leaderboard` now serves ranks 1 through 10,000 and rejects deeper
+windows before running an expensive query.
+
+Client behavior:
+
+* `offset + limit` may be at most 10,000 on the global leaderboard.
+* A deeper request returns HTTP `400` with
+  `error: "leaderboard_offset_too_deep"`, plus `max_rank`, `max_offset`,
+  `limit`, and `offset`.
+* Normal pages and tag-scoped leaderboards retain their existing behavior.
+* In the release sample, over-cap requests were rejected in at most 3.86
+  milliseconds while a two-minute V3 window completed with zero requests at
+  or above 2.9 seconds.
+
+Docs: [Global Leaderboard](/data/leaderboard/global)
+
+---
+
+## 2026-08-06 - More reliable perps WebSocket delivery
+
+The perps WebSocket no longer leaves a connected client attached to stale
+ticker data when a market-data session becomes silent.
+
+Release validation retained the same connected client through a reproduced
+silent period and then observed 6,800 current ticker events in 20 seconds. The
+public authenticated socket subsequently delivered 5,066 ticker events in 15
+seconds with current data and no gateway error.
+
+Event schemas, subscriptions, authentication, and REST routes are unchanged.
+
+Docs: [Perps WebSocket](/perps/websocket/overview)
+
+---
+
+## 2026-08-06 - Explicit API-key copy failures
+
+The dashboard now reports when the browser cannot place a newly created API key
+on the clipboard instead of showing a false success state.
+
+The key remains visible for the existing one-time copy flow, so the user can
+copy it manually. API-key values, issuance, and authentication are unchanged.
+
+---
+
+## 2026-08-05 - Migrate a legacy subscription without losing prepaid time
+
+Eligible subscribers from the earlier billing catalog can now move through the
+current card Checkout while preserving their recorded paid-through date.
+
+What's improved:
+
+* The dashboard sends an eligible legacy subscriber to current Checkout instead
+  of a closed legacy billing portal.
+* The new subscription begins billing at the verified end of the prepaid
+  period, with no proration charge for time already paid.
+* The existing entitlement remains authoritative until Checkout succeeds, so
+  an abandoned session does not remove access.
+* Repeated attempts reuse the same open same-plan Checkout and do not create a
+  duplicate subscription.
+* Current-account subscribers continue to use the current billing portal.
+
+[View current pricing](https://polynode.dev/pricing)
+
+---
+
+## 2026-08-04 - Faster bounded historical trade pages
+
+Improved historical V3 trade pagination when a bounded time window is combined
+with a deeper offset.
+
+Release measurements:
+
+* The reported `after=1783768438&offset=585&order=asc&limit=1` request improved
+  from HTTP `504` in 3.32 seconds to HTTP `200` in 186 milliseconds.
+* Related offset-zero and bounded `before` variants returned in 84 to 86
+  milliseconds.
+
+Response fields, ordering, inclusive time behavior, offsets, and filters remain
+compatible.
+
+Docs: [Wallet Trades](/data/wallets/trades)
+
+---
+
+## 2026-08-04 - Correct compact combo execution fills
+
+Reconciled `combo_execution` with the static combo API and the standard
+maker/taker vocabulary used by settlement events.
+
+What's improved:
+
+* Top-level fields describe the taker execution while `trades[]` describes each
+  signed order from the maker's perspective.
+* `size` is shares, `amount_usdc` is dollars, and `price` is the actual fill
+  price rather than the signed limit when price improvement occurs.
+* Each signed order includes its canonical exchange `order_hash` for exact
+  correlation.
+* Validation covered 48 historical confirmed combo transactions and 101
+  receipt fills, including multi-maker, BUY, SELL, standard, and negative-risk
+  cases.
+
+Docs: [Combo Execution](/websocket/events/combo-execution)
+
+---
+
+## 2026-08-03 - Recover a past-due subscription without duplicating it
+
+Accounts with a current subscription in payment recovery are now directed to
+that subscription's Billing Portal instead of a new Checkout.
+
+What's improved:
+
+* A customer can update the payment method and pay the existing invoice.
+* Paid access is restored only after a successful payment event.
+* Card updates alone cannot incorrectly restore a still-unpaid subscription.
+* Repeated recovery actions cannot create a second current subscription.
+* Existing API keys are preserved throughout recovery.
+
+[View current pricing](https://polynode.dev/pricing)
