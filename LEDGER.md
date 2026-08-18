@@ -3,6 +3,26 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-18 [codex] — Completed the final public-only acceptance audit for
+  Connect Wallet → user-owned V2 orders. Documentation source
+  `14e4fcaf887ca40fa61bf65a12692265417cb082` merged as
+  `8173502222a10181af5e964a814b23341bf40435` with exact tree
+  `8bcf7bc9ee3e6e03846cc98f935da94bfe11fe95`; Mintlify check
+  `95606115752` succeeded. Uncached public Markdown confirmed the complete
+  authorization, custody, funding, prepare/sign, durable pre-submit identity,
+  atomic submission, and exact-hash reconciliation contracts. Fresh anonymous
+  TypeScript, Python, and Rust consumers accepted the documented APIs. Strict
+  TypeScript, Vite and esbuild production builds, 13 Python offline flow tests,
+  Python/browser type checks, Rust public-crate compilation, dependency audits,
+  and package/private-path/frontend-artifact scans passed. The adversarial
+  same-wallet/token/direction/price/size/time fixture with a different order
+  hash remained `needs_reconciliation` in every language; exact-hash maker or
+  amount inconsistencies fail as integrity errors. The public-doc audit found
+  zero blockers, majors, or minors. Public guide and wallet-fill Markdown had
+  SHA-256 `135042fbceb6b17e23371d4ab3694b780a453a96d0df395197177c85c7a7e8d3`
+  and `53305391da2d753664358bef99ee2c2dd7309d841986bf6fe2d9fb90d5f54eeb`.
+  No credential, wallet, funding, authorization, or order mutation was made.
+
 - 2026-08-18 [codex] — Prepared the exact-order-identity correction for the
   Connect Wallet → user-owned V2 guide after a clean-room audit reproduced a
   false-positive timeout match between two same-wallet orders with identical
