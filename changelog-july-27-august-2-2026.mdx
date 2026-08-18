@@ -1,0 +1,182 @@
+---
+title: "Changelog - July 27-August 2, 2026"
+sidebarTitle: "July 27-August 2"
+description: "Archived polynode SDK, combo, Chainlink, V3, order-book, and account changes from July 27 through August 2, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+[Earlier: July 20-26, 2026 →](/changelog-july-20-26-2026)
+
+## 2026-08-02 - Restored combo execution and redemption delivery
+
+Restored real-time combo execution and redemption event delivery.
+
+What's improved:
+
+* Existing `combo_execution` and combo-redemption subscriptions resume without
+  a client message or parser change.
+* Execution payloads retain canonical signed-order hashes and maker/taker
+  semantics.
+* Combo legs are enriched with current canonical market category, tags, images,
+  event metadata, and a nested `market` object while legacy fields remain.
+* Release validation covered current execution, full-redemption, and
+  partial-reduction shapes.
+
+Docs: [Combo WebSocket events](/websocket/combos),
+[Combo Markets](/data/combos/markets), and
+[Combo Redemptions](/data/combos/redemptions)
+
+---
+
+## 2026-08-01 - Full core coverage in the TypeScript, Python, and Rust SDKs
+
+The three public SDKs now expose the same core V3 REST, Event WebSocket,
+Order Book, crypto, and perps surfaces with language-native types.
+
+What's new:
+
+* TypeScript `polynode-sdk` 0.12.0, Python `polynode` 0.12.0, and Rust
+  `polynode` 0.15.0 cover all 120 V3 operations available at release.
+* Settlement subscriptions reconnect with their cursor and preserve raw
+  unknown additive events, allowing forward-compatible consumers to inspect
+  new event families.
+* PN1 Order Book helpers retain exact decimal values and expose integrity
+  state for snapshot and delta handling.
+* Perps REST and WebSocket clients use the documented public perps endpoints.
+* The 0.12.2 TypeScript/Python and 0.15.2 Rust patch releases added optional
+  condition IDs to event-search filters without breaking older callers.
+
+Docs: [TypeScript SDK](/sdks/ts/overview),
+[Python SDK](/sdks/python/overview), and [Rust SDK](/sdks/rust/overview)
+
+---
+
+## 2026-07-31 - Chainlink TWAP streams and August 7 cutover
+
+Affected Polymarket crypto up-or-down markets changed from a single
+snapshot-in-time price to a Chainlink-computed time-weighted average price.
+The values delivered by polynode are Chainlink prices; polynode does not
+calculate the TWAP.
+
+What's new:
+
+* Use `twap_windows: [30]`, `[60]`, or `[30, 60]` on the existing `chainlink`
+  WebSocket subscription.
+* The published mapping uses the 30-second lookback for 5-minute markets and
+  the 60-second lookback for 15-minute and 4-hour markets.
+* On August 7 at 00:00 UTC, the default `chainlink` subscription switched from
+  spot to both TWAP windows alongside the resolution change.
+* Every price event includes additive `is_twap` and `twap_window_seconds`
+  fields. Existing event fields, feed names, API keys, and subscription
+  messages remain compatible.
+* Existing sockets did not need to reconnect or resubscribe at cutover. The
+  order-book stream was unaffected.
+
+Docs: [Chainlink TWAP Prices](/crypto/twap)
+
+---
+
+## 2026-07-30 - Faster PolyUSD flows and P&L leaderboards
+
+Improved high-volume V3 wallet and leaderboard requests without changing
+returned data, fields, ordering, filters, or pagination behavior.
+
+Release measurements:
+
+* A representative large-wallet `GET /v3/wallets/{address}/polyusd-flows`
+  request improved from 8.29 seconds to 3.34 seconds.
+* A representative filtered `GET /v3/leaderboard` request improved from 10.0
+  seconds to 0.59 seconds.
+* A representative global top-100 leaderboard request improved from 7.17
+  seconds to 0.14 seconds.
+
+Docs: [Wallet PolyUSD Flows](/data/wallets/polyusd-flows),
+[Global Leaderboard](/data/leaderboard/global), and
+[Tag Leaderboard](/data/leaderboard/tag-leaderboard)
+
+---
+
+## 2026-07-29 - Faster V3 wallet-position pages
+
+Improved `GET /v3/wallets/{address}/positions` for wallets with long histories
+and deep result pages.
+
+Release measurements:
+
+* Representative pages improved from 18.36 seconds to 1.89 seconds, 6.24
+  seconds to 0.36 seconds, and 2.90 seconds to 0.54 seconds.
+* A representative deep request that previously timed out completed in 1.32
+  seconds.
+* In the post-release sample, the observed HTTP `504` rate fell from 2.69% to
+  0.23%, while successful requests had a 283-millisecond p95 response time.
+
+Fields, values, ordering, result counts, filters, and pagination remain
+compatible.
+
+Docs: [Wallet Positions](/data/wallets/positions)
+
+---
+
+## 2026-07-28 - Broader wallet resolution and safer token-price responses
+
+Existing wallet and token lookup endpoints now handle two previously
+incomplete edge cases without changing their response contracts.
+
+What's improved:
+
+* `GET /v1/resolve/{query}` can resolve the controlling EOA for older proxy
+  wallet addresses, including the associated username when available.
+* `GET /v3/tokens/{token_id}` and `GET /v3/markets/{token_id}/price` return the
+  established numeric `0` price instead of HTTP `502` when a token exists but
+  no current price has been established.
+* Existing fields, API-key behavior, and not-found responses remain compatible.
+
+Docs: [Resolve Wallet](/api-reference/wallets/resolve),
+[Token Info](/data/tokens/info), and [Token Price](/data/markets/price)
+
+---
+
+## 2026-07-28 - Clearer account onboarding
+
+The signed-in account flow now lets a customer identify the account as an
+individual or company, with a visible option to defer the choice.
+
+The public site also presents Enterprise/Institutional access through the
+contact path and includes a stability fix for the landing page on iOS Safari.
+Existing accounts, API keys, plans, and authentication remain unchanged.
+
+---
+
+## 2026-07-27 - Complete wallet redemptions with transaction hashes
+
+`GET /v3/wallets/{address}/redemptions` now returns redemptions attributed to
+the wallet across direct, negative-risk, and AutoRedeemer execution paths.
+
+What's new:
+
+* Direct and AutoRedeemer redemptions are merged across available history before
+  pagination.
+* Every row includes `transaction_hash`, `block_number`, and `log_index` for
+  exact onchain event identification.
+* `redemption_source` distinguishes direct, negative-risk, binary, and combo
+  sources while `source_event` preserves the protocol event family.
+* AutoRedeemer activity is attributed to the beneficiary wallet rather than
+  the protocol contract.
+* `order=asc|desc`, `next_offset`, and deterministic cross-source pagination
+  are explicit in the response contract.
+
+Docs: [Wallet Redemptions](/data/wallets/redemptions)
+
+---
+
+## 2026-07-27 - New order-book markets without reconnecting
+
+Newly available markets are now added to the live Order Book service without
+requiring a service restart or client reconnect.
+
+Subscription messages, PN1 frames, sequence rules, API keys, and existing
+market behavior remain unchanged.
+
+Docs: [Order Book overview](/orderbook/overview)

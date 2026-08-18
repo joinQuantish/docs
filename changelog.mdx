@@ -1,7 +1,7 @@
 ---
 title: "Changelog"
 sidebarTitle: "Changelog"
-description: "Recent Polynode API, SDK, account, and product changes, with older releases preserved in linked archives."
+description: "Recent polynode API, SDK, account, and product changes, with older releases preserved in linked weekly archives."
 icon: "clock-rotate-left"
 ---
 
@@ -13,7 +13,7 @@ from wallet connection through an actual zero-attribution user-owned V2 order.
 What's new:
 
 * TypeScript `polynode-sdk` 0.14.2 provides a browser-memory session, standard
-  viem provider typing, wallet-confirmed USDC.e → pUSD funding, exact order
+  viem provider typing, wallet-confirmed USDC.e to pUSD funding, exact order
   preview/signing, a durable pre-submit order-hash callback, and authenticated
   open-order reconciliation.
 * TypeScript 0.14.2, Python `polynode` 0.14.1, and Rust `polynode` 0.17.1 share
@@ -28,7 +28,15 @@ What's new:
 * User-owned orders contain zero builder attribution and do not consume a
   platform's shared builder allowance. Market rules, collateral, API rate
   limits, and ordinary service limits still apply.
-* The guide includes credential sensitivity, account/chain binding,
+* The default fresh deposit-wallet path requires three setup signatures: one
+  ownership message, one EIP-712 approval batch containing all four base-order
+  permissions, and one EIP-712 `ClobAuth` signature. Wallet deployment itself
+  does not require a signature.
+* A first order therefore requires four total signatures when pUSD is already
+  funded, or five when an SDK-confirmed USDC.e to pUSD conversion is also
+  needed. A returning wallet restored from the encrypted vault has no setup
+  signatures and signs only the exact order.
+* The guide covers credential sensitivity, account and chain binding,
   ownership-conditional atomic storage, exception-safe cleanup, minimal
   dependency installs, and conservative ambiguous-submit reconciliation.
 
@@ -37,215 +45,42 @@ Docs: [Connect Wallet to order](/sdks/user-owned-web-app) and
 
 ***
 
-## 2026-08-08 - Account usage dashboard and one-time capacity packages
+## 2026-08-18 - Faster confirmed trade delivery
 
-The signed-in Polynode dashboard now shows account-level API requests, Order Book + Chainlink transfer, and On-chain event transfer for the current service period.
-
-What's new:
-
-* Included plan capacity and added packages are displayed separately with exact remaining amounts and dates.
-* Every active API key owned by an account contributes to the same account totals.
-* The monthly calculator estimates 24/7 WebSocket transfer and API-request needs, then suggests matching packages.
-* One-time Stripe Checkout supports 10-million-request, 100-GB Order Book + Chainlink, and 100-GB On-chain event packages. Each package costs $20 and remains active for 90 days.
-* Existing per-minute, per-second, connection, and Free-session limits are unchanged.
-* Monthly usage enforcement is not active yet; this release adds visibility and prepaid capacity first.
-
-Docs: [Monthly usage allowances and packages](/guides/rate-limits#monthly-usage-allowances)
-
-***
-
-## 2026-07-31 - Chainlink TWAP streams and August 7 cutover
-
-Affected Polymarket crypto up-or-down markets are changing from a single
-snapshot-in-time price to a Chainlink-computed time-weighted average price to
-protect market integrity. The values delivered by polynode are Chainlink
-prices; polynode does not calculate the TWAP.
-
-What's new:
-
-* Starting August 4, use `twap_windows: [30]`, `[60]`, or `[30, 60]` on the existing `chainlink` WebSocket subscription to test the production TWAP streams.
-* The published mapping uses the 30-second lookback for 5-minute markets and the 60-second lookback for 15-minute and 4-hour markets.
-* On August 7 at 00:00 UTC, polynode's default `chainlink` subscription switches from spot to both TWAP windows alongside Polymarket's resolution change.
-* Every price event now includes additive `is_twap` and `twap_window_seconds` fields. Existing event fields, feed names, API keys, and subscription messages remain compatible.
-* Chainlink spot events now emit one canonical price update instead of duplicate events for the same tick.
-* Existing WebSocket connections do not need to reconnect or resubscribe at cutover. Clients that need one market duration can select its window explicitly.
-* The orderbook stream is unaffected.
-
-Docs: [Chainlink TWAP Prices](/crypto/twap)
-
-***
-
-## 2026-07-30 - Faster PolyUSD flows and P&L leaderboards
-
-High-volume V3 wallet and leaderboard requests now complete faster. Returned
-data, field names, ordering, filters, and pagination behavior remain
-compatible.
+Confirmed `trade` events and `status_update.confirmed_fills` now arrive
+promptly during high-volume periods.
 
 What's improved:
 
-* A representative large-wallet `GET /v3/wallets/{address}/polyusd-flows` request improved from 8.29 seconds to 3.34 seconds.
-* A representative filtered `GET /v3/leaderboard` request improved from 10.0 seconds to 0.59 seconds.
-* A representative global top-100 leaderboard request improved from 7.17 seconds to 0.14 seconds.
+* The confirmed-trade payload, receipt-derived values, order hashes,
+  deduplication, and status ordering are unchanged.
+* A release investigation reproduced 10 to 28-second confirmed-trade delays
+  while status delivery remained current. The corrected path removed that
+  accumulated delay.
+* The first complete post-release comparison covered 1,886 confirmed trades.
+  Observed delivery measured 246.7 milliseconds ahead at the median, 318.2
+  milliseconds behind at p90, and 492.4 milliseconds behind at p99.
+* A separate acceptance window covered 13 consecutive Polygon heads, 340
+  settlements, and 178 status updates with no gaps, duplicates, reversals, or
+  parse errors.
 
-Docs: [Wallet PolyUSD Flows](/data/wallets/polyusd-flows), [Global Leaderboard](/data/leaderboard/global), and [Tag Leaderboard](/data/leaderboard/tag-leaderboard)
+No subscription or parser change is required.
 
-***
-
-## 2026-07-29 - Faster V3 wallet-position pages
-
-Further improved `GET /v3/wallets/{address}/positions` performance for wallets
-with long histories and deep result pages.
-
-What's improved:
-
-* Representative pages improved from 18.36 seconds to 1.89 seconds, 6.24 seconds to 0.36 seconds, and 2.90 seconds to 0.54 seconds.
-* A representative deep request that previously timed out completed in 1.32 seconds.
-* In the post-release sample, the observed `504` rate fell from 2.69% to 0.23%, while successful requests had a 283 ms p95 response time.
-
-Fields, values, row ordering, result counts, filters, and pagination remain
-compatible. No client changes are required.
-
-Docs: [Wallet Positions](/data/wallets/positions)
-
-***
-
-## 2026-07-28 - Broader wallet resolution and safer token-price responses
-
-Existing wallet and token lookup endpoints now handle two previously
-incomplete edge cases without changing their response contracts.
-
-What's improved:
-
-* `GET /v1/resolve/{query}` can now resolve the controlling EOA for older proxy-wallet addresses, along with the associated username when available.
-* `GET /v3/tokens/{token_id}` and `GET /v3/markets/{token_id}/price` now return the established numeric `0` price instead of a `502` when a token exists but no current price has been established yet.
-* Existing fields, API-key behavior, and not-found responses remain compatible.
-
-Docs: [Resolve Wallet](/api-reference/wallets/resolve), [Token Info](/data/tokens/info), and [Token Price](/data/markets/price)
-
-***
-
-## 2026-07-27 - Complete wallet redemptions with transaction hashes
-
-`GET /v3/wallets/{address}/redemptions` now returns redemptions attributed to the wallet across direct, negative-risk, and AutoRedeemer execution paths.
-
-What's new:
-
-* Direct and AutoRedeemer redemptions are merged across all indexed history before pagination.
-* Every row includes `transaction_hash`, `block_number`, and `log_index` for exact onchain event identification.
-* `redemption_source` distinguishes `direct_ctf`, `direct_neg_risk`, `auto_binary`, `auto_neg_risk`, and `auto_combo` rows. `source_event` preserves the protocol event family.
-* AutoRedeemer activity is attributed to the beneficiary wallet instead of the protocol contract address.
-* Existing redemption and market-enrichment fields remain compatible. `index_sets` can be null when the AutoRedeemer lifecycle event does not expose it.
-* `order=asc|desc`, `next_offset`, and deterministic cross-source pagination are now explicit in the response contract.
-
-Docs: [Wallet Redemptions](/data/wallets/redemptions)
-
-***
-
-## 2026-07-25 - Full and partial combo redemption lineage
-
-Added dedicated combo redemption endpoints without changing existing position or activity responses.
-
-Polymarket's public [combo activity API](https://docs.polymarket.com/api-reference/core/get-user-combo-activity) reports combo lifecycle events and the legs attached to the reported combo. These endpoints preserve that basic record and add an explicit before-and-after explanation, so users do not have to infer whether a redemption was full or partial by joining activity and position data.
-
-What's new:
-
-* `GET /v3/combos/redemptions` returns combo redemption and reduction history across wallets.
-* `GET /v3/wallets/{address}/combos/redemptions` returns the same canonical history for one wallet.
-* Every row identifies its `redemption_scope` as `full`, `partial`, or `transformation`, includes matching boolean flags, and exposes `redemption_evidence`.
-* `Compressed` rows identify terminal or partial post-resolution transitions. `Extracted` rows expose smaller-combo lineage without being mislabeled as redemption payouts.
-* Full redemptions map router and auto-redeemer activity to the actual user and combo position while preserving Polymarket's `PositionRedeemed` event shape.
-* Partial reductions expose the full, reduced, residual, parent, child, source, and destination identifiers emitted on chain. When leg metadata is available, `remaining_legs`, `removed_legs`, and `residual_legs` show how the combo changed.
-* `source_leg_count`, `removed_leg_count`, `remaining_leg_count`, and `leg_transition` report the exact before-and-after leg change, such as `5_to_1` or `4_to_0`.
-* Enriched legs can include the canonical `market_token_id`, selected-outcome `leg_result`, `leg_current_price`, and `leg_price_source` for follow-up price, order-book, trade, or candle queries.
-* Partial reductions include a compact `remaining_combo` with the destination condition and position, shares created, and current wallet balance and holding status when available.
-* Permissionless on-chain legs that do not have a Polymarket CLOB market retain their exact `leg_position_id`; standard-market token, result, and price fields are omitted instead of being guessed.
-* Filters cover wallet, any condition in the lineage, any position in the transition, event kind, scope, type, transaction hash, and time range.
-
-From a consumer perspective, `3_to_0` means the whole three-leg combo was redeemed, while `5_to_1` means four legs were removed and a one-leg combo remained. From a developer perspective, the source and destination IDs, separate changed-leg arrays, and `remaining_combo` snapshot make that transition usable in one response.
-
-Existing standard positions, combo positions, and combo activity contracts are unchanged.
-
-Docs: [Combo Redemptions](/data/combos/redemptions) and [Wallet Combo Redemptions](/data/combos/wallet-redemptions)
-
-***
-
-## 2026-07-22 - Polynode is now part of Agg
-
-Polynode has joined Agg and will continue as a standalone product for Polymarket data customers.
-
-What this means for customers:
-
-* Existing API and WebSocket domains, endpoints, API keys, SDK workflows, and documentation remain available. No client migration is required.
-* Current plan names and pricing remain in place, and the product stays open to all builders.
-* The near-term product focus remains faster maintenance, stronger reliability, and broader data coverage.
-
-The site-wide announcement banner now links to the full public announcement.
-
-[Read the announcement](https://www.tradingview.com/news/chainwire:7f0ceb3a3094b:0-agg-market-acquires-polynode-the-fastest-polymarket-data-api/)
-
-***
-
-## 2026-07-21 - Query trades by order hash
-
-V3 trade feeds can now return every fill associated with one exact Polymarket order hash.
-
-What's new:
-
-* Use `order_hash` on `GET /v3/trades`, `GET /v3/wallets/{address}/trades`, `GET /v3/markets/{token_id}/trades`, and `GET /v3/markets/slug/{slug}/trades`.
-* Wallet queries can combine `order_hash` with maker/taker role, token, condition, market, event, time, and amount filters. Filtering happens before pagination, so pages contain only matching fills.
-* `group_by=order_hash` and `sort_by=order_hash` now work consistently across global, wallet, market-token, and market-slug trade routes.
-* A valid hash with no matching fills returns an empty page. Malformed hashes return `400`.
-* Combo trades do not expose a Polymarket order hash, so combining `order_hash` with `include_combos=true` returns `400`.
-
-Docs:
-
-* [Trades by Order Hash](/data/query-catalog/trades/by-order-hash)
-* [Wallet Trades](/data/wallets/trades)
-
-***
-
-## 2026-07-21 - Clearer subscription expiry and resubscription
-
-Updated how the dashboard handles an earlier paid subscription after its recorded access period ends.
-
-What's changed:
-
-* Paid access moves to the Free plan at the recorded end time rather than remaining indefinitely on an expired subscription.
-* Existing API keys stay active; they adopt the Free plan's access and limits instead of being deleted or requiring regeneration.
-* A Free account now sees **Subscribe** in Settings and is sent directly to the current pricing page, even if an older billing reference is retained on the account.
-* Starting a new subscription restores the selected paid plan through the current checkout flow.
-* A newer active subscription or another valid paid-access method takes precedence, so an older expiry cannot overwrite current access.
-* Delayed checkout, invoice, or cancellation events from the earlier subscription cannot overwrite a newer successful resubscription.
-
-Endpoint names, API-key values, plan names, and current plan prices are unchanged.
-
-[View current pricing](https://polynode.dev/pricing)
-
-***
-
-## 2026-07-20 - Updated card checkout and billing portal
-
-Moved new card purchases to the current Polynode subscription catalog while preserving active access and in-progress checkouts during the transition.
-
-What's improved:
-
-* Starter, Growth, and Enterprise purchase buttons now open the current card checkout for the same published plan names and monthly prices.
-* The Starter plan keeps its three-day trial.
-* A checkout started from an older open browser session is translated to the corresponding current plan instead of failing on an outdated plan reference.
-* Customers who already have an active subscription are sent to the correct billing portal instead of accidentally creating a duplicate subscription.
-* Existing paid access remains valid through its recorded paid-through period.
-* Checkout, plan activation, billing-portal access, cancellation, resubscription, and delayed-event handling were validated together before release.
-
-Referral codes continue to be recorded, but the first-month referral discount is temporarily not applied in the current card checkout. New USDC purchases also remain temporarily unavailable on the website; existing USDC-paid access is unaffected.
-
-[View current pricing](https://polynode.dev/pricing)
+Docs: [Trade events](/websocket/events/trade),
+[Status updates](/websocket/events/status-update), and
+[Trade tracking](/guides/trade-tracking)
 
 ***
 
 ## Earlier releases
 
-Older entries are grouped into smaller archive pages for fast, reliable loading.
+Older entries are grouped into Monday-through-Sunday archive pages for fast,
+reliable loading.
 
+- [August 10-16, 2026](/changelog-august-10-16-2026)
+- [August 3-9, 2026](/changelog-august-3-9-2026)
+- [July 27-August 2, 2026](/changelog-july-27-august-2-2026)
+- [July 20-26, 2026](/changelog-july-20-26-2026)
 - [July 13-19, 2026](/changelog-july-13-19-2026)
 - [July 6-12, 2026](/changelog-july-6-12-2026)
 - [June 29-July 5, 2026](/changelog-june-29-july-5-2026)
@@ -257,10 +92,10 @@ Older entries are grouped into smaller archive pages for fast, reliable loading.
 - [May 2-24, 2026](/changelog-may-2-24-2026)
 - [May 1, 2026](/changelog-may-1-2026)
 - [April 30, 2026](/changelog-april-30-2026)
-- [April 27, 2026 — Positions](/changelog-april-27-2026-positions)
-- [April 27, 2026 — Trades](/changelog-april-27-2026-trades)
+- [April 27, 2026 - Positions](/changelog-april-27-2026-positions)
+- [April 27, 2026 - Trades](/changelog-april-27-2026-trades)
 - [April 26, 2026](/changelog-april-26-2026)
-- [April 17–25, 2026](/changelog-april-17-25-2026)
-- [April 1–15, 2026](/changelog-april-1-15-2026)
-- [March 28–31, 2026](/changelog-march-28-31-2026)
-- [March 15–26, 2026](/changelog-march-15-26-2026)
+- [April 17-25, 2026](/changelog-april-17-25-2026)
+- [April 1-15, 2026](/changelog-april-1-15-2026)
+- [March 28-31, 2026](/changelog-march-28-31-2026)
+- [March 15-26, 2026](/changelog-march-15-26-2026)

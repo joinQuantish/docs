@@ -1,0 +1,207 @@
+---
+title: "Changelog - August 10-16, 2026"
+sidebarTitle: "August 10-16"
+description: "Archived polynode SDK, billing, V3, WebSocket, Chainlink, and user-owned execution changes from August 10 through August 16, 2026."
+icon: "clock-rotate-left"
+---
+
+[← Back to the current changelog](/changelog)
+
+[Earlier: August 3-9, 2026 →](/changelog-august-3-9-2026)
+
+## 2026-08-15 - More reliable TypeScript V2 trading and a smaller npm install
+
+The TypeScript SDK's 0.13.x release series closed several V2 trading edge cases
+and reduced the public package to its intended runtime surface.
+
+What's improved:
+
+* Concurrent V2 orders now receive distinct order identities even when they are
+  prepared during the same second.
+* Fill-or-kill results that become ambiguous at the HTTP boundary are
+  reconciled conservatively instead of being reported as a definite failure.
+* Repeated deposit-wallet setup and relayed calls do not repeat an already
+  completed setup step.
+* `polynode-sdk` 0.13.6 reduced the package to one direct runtime dependency,
+  `viem`. Optional trading integrations remain separately installable.
+* Clean ESM and CommonJS consumer installs passed with zero production audit
+  findings.
+
+These fixes are included in the current `polynode-sdk` 0.14.2 release.
+
+Docs: [TypeScript trading](/sdks/ts/trading)
+
+---
+
+## 2026-08-14 - User-owned execution across all three SDKs
+
+TypeScript `polynode-sdk` 0.13.0, Python `polynode` 0.13.0, and Rust
+`polynode` 0.16.0 introduced the first shared user-owned execution mode.
+
+What's new:
+
+* A connected wallet can authorize wallet-scoped relayer credentials without
+  giving polynode or the integrating platform its private key or seed phrase.
+* User-owned orders use the wallet's own trading credentials, carry zero
+  builder attribution, and do not consume the platform's shared builder
+  allowance.
+* EOA, Safe, and default deposit-wallet account types are supported with exact
+  wallet and funder binding.
+* The SDKs reject builder credentials, builder codes, and positive polynode
+  fees when user-owned mode is selected.
+* The existing `https://trade.polynode.dev` service URL is used. No separate
+  cosigner URL or additional service purchase is required.
+
+The August 18 release added the complete browser-signing, encrypted-vault,
+funding, exact-order identity, and Connect Wallet guide on top of this base.
+
+Docs: [User-owned execution](/sdks/user-owned-execution)
+
+---
+
+## 2026-08-12 - Explicit Chainlink spot subscriptions
+
+Clients can now request the Chainlink spot stream explicitly while the default
+`chainlink` subscription continues to follow both TWAP windows.
+
+What's new:
+
+* Set `price_source: "spot"` at the subscription top level or inside
+  `filters` to receive only spot events.
+* Continue using `twap_windows: [30]`, `[60]`, or `[30, 60]` for explicit TWAP
+  selection.
+* A subscription cannot combine spot and TWAP selectors. Invalid combinations
+  fail closed with a protocol error.
+* Spot and TWAP events retain the same feed names and additive identity fields.
+  Default subscriptions remain on the two TWAP windows.
+
+Docs: [Chainlink TWAP Prices](/crypto/twap)
+
+---
+
+## 2026-08-12 - Safer paid-access recovery and resubscription
+
+Corrected two billing-state edge cases that could leave a successfully paid or
+newly resubscribed account on older access state.
+
+What's improved:
+
+* A successful current payment restores the matching paid entitlement before
+  older period records are considered.
+* Successive paid periods no longer overlap in a way that lets an earlier
+  correction replace the current period.
+* Accounts whose recorded legacy period has ended can start a current
+  subscription from the pricing flow without the old record blocking them.
+* Existing API keys remain attached to the account and adopt the restored plan
+  limits after the successful billing event.
+
+[View current pricing](https://polynode.dev/pricing)
+
+---
+
+## 2026-08-11 - Faster deep wallet-position pages
+
+Improved `GET /v3/wallets/{address}/positions` for deep pages and terminal
+status filters that could still exceed the public timeout.
+
+Release measurements:
+
+* The exact reproduced query improved from 6.6 seconds to about 0.6
+  seconds.
+* The prior public timeout returned HTTP `200` in 657 milliseconds after the
+  change.
+* A 24-case public matrix across open, closed, redeemable, and redeemed states
+  and offsets through 4,800 returned HTTP `200` throughout, from 70
+  milliseconds to 1.17 seconds.
+
+Fields, values, ordering, filters, and pagination remain compatible.
+
+Docs: [Wallet Positions](/data/wallets/positions)
+
+---
+
+## 2026-08-11 - Restart an expired legacy subscription
+
+Accounts that reached the end of an earlier recorded paid period now receive a
+clear current-subscription path instead of a dead-end legacy billing action.
+
+What's improved:
+
+* The Billing page directs eligible expired accounts to the current pricing
+  flow.
+* A successful current subscription takes precedence over the expired record.
+* Existing API keys are retained and receive the selected plan's limits after
+  activation.
+* Ambiguous or still-active billing records continue to fail closed instead of
+  creating a duplicate subscription.
+
+[View current pricing](https://polynode.dev/pricing)
+
+---
+
+## 2026-08-10 - Complete billing self-service and invoice history
+
+The signed-in dashboard now uses a dedicated Billing page for current plan
+details, limits, invoices, and subscription actions.
+
+What's new:
+
+* Current plan and capacity are shown together with the correct Manage,
+  Subscribe, or payment-recovery action.
+* Current and legacy invoice history appear in one timeline.
+* Archived invoices remain visible without presenting an invalid action for a
+  closed billing account.
+* Active current subscribers are sent to the current billing portal rather
+  than a legacy portal or duplicate Checkout.
+
+No API-key value or active plan entitlement changes merely by viewing the
+page.
+
+---
+
+## 2026-08-10 - Faster recent position pages
+
+Improved recent open-position pages that previously timed out while checking
+whether historical rows still needed repair.
+
+Release measurements:
+
+* The reproduced `status=open&offset=300&limit=500` request improved from
+  HTTP `504` at about 3.04 seconds to HTTP `200` in 0.32 to 0.41 seconds.
+* Eight of twelve historical timeout shapes returned HTTP `200` on their first
+  replay after the release.
+
+The response contract, ordering, and pagination are unchanged.
+
+Docs: [Wallet Positions](/data/wallets/positions)
+
+---
+
+## 2026-08-10 - Correct V2 taker execution amounts
+
+Corrected V2 taker-fill interpretation in the Event WebSocket.
+
+What's improved:
+
+* Pending `fills` and settlement rows now preserve the wallet's actual side,
+  execution price, and share size for direct BUY/SELL, BUY/BUY mint, SELL/SELL
+  merge, mixed-side, standard, and negative-risk V2 fills.
+* A release proof matched 1,450 pending fill rows to pending settlements and
+  matched 1,417 receipt-confirmed fills on side, price, and size with zero
+  mismatch.
+* Existing event names and field types are unchanged.
+
+Docs: [Fills subscription](/websocket/subscribing#fills) and
+[Trade tracking](/guides/trade-tracking)
+
+---
+
+## 2026-08-10 - Improved confirmation-stream continuity
+
+Improved Event WebSocket confirmation timeliness and continuity during
+transient data interruptions.
+
+The public subscription protocol, confirmation payloads, event ordering, and
+API-key behavior are unchanged. Post-release acceptance retained contiguous
+Polygon heads and current settlement/status delivery through the reproduced
+failure cases, so no client change is required.
