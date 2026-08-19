@@ -4,7 +4,7 @@ openapi: "GET /v3/builders/{code}"
 description: "Get stats and public profile metadata for a single builder by hex code."
 ---
 
-Returns fill count, volume, fees, normalized side-aware volume, and public profile metadata for a specific builder.
+Returns fill count, Polymarket-compatible V2 share-notional volume, fees, buy/sell volume, raw maker/taker totals, and public profile metadata for a specific builder.
 
 ## Request
 
@@ -31,8 +31,9 @@ curl https://api.polynode.dev/v3/builders/0xd1d9dd6983c40006b0dc8eab84a41ac9a4f2
   "builder_logo": "https://polymarket-upload.s3.us-east-2.amazonaws.com/profile-image-5148537-b5dbf263-8d5f-41d7-bba1-387bfa17075c.png",
   "builder_name": "MagicMarkets",
   "builder_verified": true,
-  "buy_volume_e6": "8805777867302",
-  "buy_volume_usdc": "8805777.867302000000",
+  "buy_volume_e6": "18512535904523",
+  "buy_volume_usdc": "18512535.904523000000",
+  "buy_volume": "18512535.904523000000",
   "elapsed_ms": 3,
   "external_active_users": 3,
   "external_rank": 23,
@@ -43,6 +44,7 @@ curl https://api.polynode.dev/v3/builders/0xd1d9dd6983c40006b0dc8eab84a41ac9a4f2
   "last_fill": "1782307555",
   "sell_volume_e6": "0",
   "sell_volume_usdc": "0.000000000000000000000000",
+  "sell_volume": "0.000000000000000000000000",
   "source": "builder_fee_stats",
   "stats_checked_at": "2026-06-24 13:28:05.26204+00",
   "stats_pending": false,
@@ -54,8 +56,11 @@ curl https://api.polynode.dev/v3/builders/0xd1d9dd6983c40006b0dc8eab84a41ac9a4f2
   "total_maker_volume_usdc": "8805777.867302000000",
   "total_taker_volume": "18512535904523",
   "total_taker_volume_usdc": "18512535.904523000000",
-  "volume_e6": "8805777867302",
-  "volume_usdc": "8805777.867302000000"
+  "volume_e6": "18512535904523",
+  "volume_usdc": "18512535.904523000000",
+  "volume": "18512535.904523000000",
+  "volume_scope": "clob_v2_onchain",
+  "volume_semantics": "outcome_share_par_notional"
 }
 ```
 
@@ -78,20 +83,25 @@ Same fields as the [Builder Leaderboard](/data/builders/list) response, without 
 | `total_fees` | string | Total fees generated in raw 6-decimal USDC units |
 | `total_fees_usdc` | string \| null | Total fees normalized to decimal USDC |
 | `total_maker_volume` | string | Sum of raw maker-side amount fields in 6-decimal units, kept for compatibility |
-| `total_maker_volume_usdc` | string \| null | Maker-side total normalized to decimal USDC |
+| `total_maker_volume_usdc` | string \| null | Legacy decimal-scaled maker amount. Depending on the fill side, this raw leg can be collateral or outcome shares. |
 | `total_taker_volume` | string | Sum of raw taker-side amount fields in 6-decimal units, kept for compatibility |
-| `total_taker_volume_usdc` | string \| null | Taker-side total normalized to decimal USDC |
-| `volume_e6` | string \| null | Side-aware builder volume in raw 6-decimal USDC units. For buys this uses maker collateral; for sells this uses taker collateral. |
-| `volume_usdc` | string \| null | `volume_e6` normalized to decimal USDC. Prefer this for displayed builder volume. |
-| `buy_volume_e6` | string \| null | Buy-side normalized-volume numerator in raw 6-decimal USDC units |
-| `buy_volume_usdc` | string \| null | Buy-side normalized volume in decimal USDC |
-| `sell_volume_e6` | string \| null | Sell-side normalized-volume numerator in raw 6-decimal USDC units |
-| `sell_volume_usdc` | string \| null | Sell-side normalized volume in decimal USDC |
+| `total_taker_volume_usdc` | string \| null | Legacy decimal-scaled taker amount. Depending on the fill side, this raw leg can be collateral or outcome shares. |
+| `volume_e6` | string \| null | Canonical total builder volume as outcome-share par notional in raw 6-decimal units |
+| `volume` | string \| null | Preferred decimal total builder volume; one outcome share counts as $1 of par notional |
+| `volume_usdc` | string \| null | Compatibility alias for `volume`; it is par notional, not collateral cash paid |
+| `buy_volume_e6` | string \| null | Buy-side outcome-share par notional in raw 6-decimal units |
+| `buy_volume` | string \| null | Decimal buy-side outcome-share par notional |
+| `buy_volume_usdc` | string \| null | Compatibility alias for `buy_volume` |
+| `sell_volume_e6` | string \| null | Sell-side outcome-share par notional in raw 6-decimal units |
+| `sell_volume` | string \| null | Decimal sell-side outcome-share par notional |
+| `sell_volume_usdc` | string \| null | Compatibility alias for `sell_volume` |
+| `volume_scope` | string | `clob_v2_onchain`; legacy pre-V2 builder attribution is outside this total |
+| `volume_semantics` | string | `outcome_share_par_notional` |
 | `external_rank` | integer \| null | Polymarket's public builder leaderboard rank, when available |
 | `external_volume` | string \| null | Polymarket's public builder leaderboard volume, when available |
 | `external_active_users` | integer \| null | Polymarket's public active-user count, when available |
-| `stats_refreshed_at` | string \| null | Time PolyNode last rewrote local stats for this builder |
-| `stats_checked_at` | string \| null | Time PolyNode last checked this builder, including no-op refreshes |
+| `stats_refreshed_at` | string \| null | Time Polynode last rewrote local stats for this builder |
+| `stats_checked_at` | string \| null | Time Polynode last checked this builder, including no-op refreshes |
 | `stats_pending` | boolean | `true` when profile metadata exists but the local stats row has not been populated yet |
 | `fee_semantics` | string | Reminder that builder fees are trader-paid fees attributed to builder order flow, not a builder rebate payout |
 | `elapsed_ms` | integer | Server-side query time in milliseconds |

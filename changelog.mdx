@@ -5,6 +5,30 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-08-19 - Builder volume aligned with Polymarket's V2 convention
+
+Builder volume now counts locally indexed outcome shares, with one share
+represented as $1 of par notional. This matches Polymarket's builder-volume
+convention over the same CLOB V2 history without importing Polymarket's
+leaderboard totals or pre-V2 attribution.
+
+What's new:
+
+* `GET /v3/builders` and `GET /v3/builders/{code}` add `volume`,
+  `buy_volume`, and `sell_volume` aliases.
+* `volume_scope=clob_v2_onchain` and
+  `volume_semantics=outcome_share_par_notional` make the coverage and unit
+  explicit.
+* Existing fill count, fees, raw maker/taker totals, timestamps, profile
+  metadata, and compatibility fields remain available.
+* `sort=volume` uses only Polynode's local builder aggregate. Public
+  Polymarket volume is not used as a fallback or ranking input.
+
+Docs: [Builder Leaderboard](/data/builders/list) and
+[Builder Detail](/data/builders/detail)
+
+***
+
 ## 2026-08-18 - Query sports games by event or market ID
 
 Sports game endpoints can now be queried by Polymarket event ID or market ID.
