@@ -1,13 +1,13 @@
 ---
 title: "Builder Leaderboard"
-description: "Rank builders by fills, volume, fees, makers, or takers."
+description: "Rank builders by V2-attributed share-notional volume, fills, or fees."
 ---
 
 Canonical reference: [Builder Leaderboard](/data/builders/list)
 
 ```bash
-curl "https://api.polynode.dev/v3/builders?sort=fees&limit=1" \
+curl "https://api.polynode.dev/v3/builders?sort=volume&limit=1" \
   -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
-Sort options include `fills`, `volume`, `fees`, `makers`, and `takers`.
+`sort=volume` uses locally indexed outcome-share par notional, matching Polymarket's builder-volume convention for CLOB V2 history. Supported sorts are `fills`, `volume`, and `fees`.
