@@ -11,3 +11,5 @@ curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618
 ```
 
 Supported period shortcuts are `1d`, `7d`, `30d`, and `1y`. You can also use `after` and `before` Unix timestamps.
+
+This query returns the change in **weighted-average-cost realized state** from immediately before the inclusive start through the inclusive end. It is not a historical snapshot of the all-time leaderboard. A position held through resolution can contribute to current all-time P&L without changing realized state inside a time window. `include_unrealized=true` adds current unrealized P&L; it does not reconstruct historical unrealized P&L. See [Wallet P&L](/data/wallets/pnl) for the complete reconciliation and timeout behavior.

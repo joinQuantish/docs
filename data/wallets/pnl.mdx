@@ -4,9 +4,22 @@ openapi: "GET /v3/wallets/{address}/pnl"
 description: "Get profit and loss for a wallet in USD. Supports time-windowed P&L with ?period=1d|7d|30d|1y plus tag, category, market, event, and condition filters."
 ---
 
-Returns P&L data for a wallet in USD. Without a `period` parameter, returns all-time P&L. With `period`, `after`, or `before`, returns realized P&L for that time window.
+Returns P&L data for a wallet in USD. Without a time parameter, it returns the wallet's current all-time P&L. With `period`, `after`, or `before`, it returns this boundary calculation across all matching positions:
 
-The two modes have different counting semantics: all-time `wins` and `losses` are position counts; time-windowed `wins`, `losses`, and `events` are realized P&L event counts. Do not compare the counts directly.
+```text
+time-window realized P&L = realized state at or before `before`
+                         - realized state immediately before `after`
+```
+
+Both boundaries are inclusive. A state change timestamped exactly at `after` or `before` is included.
+
+The two modes have different counting semantics: all-time `wins` and `losses` are current position counts; time-windowed `wins`, `losses`, and the legacy `events` field count positions whose realized state changed. Time-windowed responses declare `count_type: "positions_changed"`. Do not compare the counts directly.
+
+<Warning>
+Time-windowed P&L is a **realized-state change**, not a historical snapshot of the all-time leaderboard. It captures realized changes reflected by sells, merges, redemptions, and timestamped corrections. A buy-and-hold position can therefore contribute `0` to a window even if terminal treatment makes the resolved position profitable in current all-time P&L. For the same reason, an `after=1&before=now` result is not expected to equal the all-time response or leaderboard total.
+</Warning>
+
+The boundary calculation uses Polynode's recovered Polymarket weighted-average-cost state. The difference is scope and timing, not a simpler cost-basis formula: all-time P&L uses the current recovered portfolio state, including terminal treatment for resolved holdings and current unrealized P&L, while a time window reports only the change in realized state across its boundaries.
 
 <Note>
 Wallet P&L supports focused market filters such as `category`, `tags`/`tag_slug`, `market`/`market_slug`, `event_slug`, and `condition_id`. For leaderboard views, use one primary filter dimension per request.
@@ -32,7 +45,7 @@ GET /v3/wallets/{address}/pnl
 | `market_slug` | string | -- | Filter by market slug |
 | `event_slug` | string | -- | Filter by parent event slug |
 | `condition_id` | string | -- | Filter by market condition ID |
-| `include_unrealized` | string | `false` | Set to `true` to include current unrealized P&L alongside the realized event-window result. Only applies to time-filtered queries. |
+| `include_unrealized` | string | `false` | Set to `true` to add current unrealized P&L to the realized event-window result. This is the current value, not the change between the two requested boundaries. Only applies to time-filtered queries. |
 | `include_combos` | boolean | `false` | Add combo position P&L to all-time wallet P&L. If the wallet has no combo exposure, the response remains 200 with a zero combo contribution. |
 
 ## Examples
@@ -109,7 +122,8 @@ curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c
   "wins": 33039,
   "losses": 58867,
   "events": 91906,
-  "source": "realized_pnl_series",
+  "count_type": "positions_changed",
+  "source": "recovered_realized_boundaries",
   "period": "30d",
   "after": 1776134996,
   "before": 1778726996,
@@ -128,7 +142,7 @@ curl "https://api.polynode.dev/v3/wallets/0x952d11ebff81d6bd3185e608ed3515b94618
 
 ### 30-day P&L with unrealized
 
-Pass `include_unrealized=true` to include current unrealized P&L alongside the realized event-window result.
+Pass `include_unrealized=true` to add current unrealized P&L to the realized-state change. This does not turn the response into a historical portfolio-value change between `after` and `before`.
 
 ```bash
 curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c684/pnl?period=30d&include_unrealized=true
@@ -146,7 +160,8 @@ curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c
   "wins": 33039,
   "losses": 58867,
   "events": 91906,
-  "source": "realized_pnl_series",
+  "count_type": "positions_changed",
+  "source": "recovered_realized_boundaries",
   "period": "30d",
   "after": 1776135002,
   "before": 1778727002,
@@ -176,21 +191,29 @@ curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `realized_pnl` | number | Realized P&L in the time window (USD) |
-| `gross_profit` | number | Sum of winning events in the window (USD) |
-| `gross_loss` | number | Sum of losing events in the window (USD, negative) |
-| `wins` | integer | Winning event count |
-| `losses` | integer | Losing event count |
-| `events` | integer | Total P&L events in the window |
+| `realized_pnl` | number | Weighted-average-cost realized state at `before` minus the state immediately before `after` (USD) |
+| `gross_profit` | number | Sum of positive changed-position deltas in the window (USD) |
+| `gross_loss` | number | Sum of negative changed-position deltas in the window (USD, negative) |
+| `wins` | integer | Positions with a positive realized-state delta |
+| `losses` | integer | Positions with a negative realized-state delta |
+| `events` | integer | Legacy field name; total positions with a nonzero realized-state delta |
+| `count_type` | string | `positions_changed` for time-windowed queries |
 | `period` | string | The requested period |
 | `after` | integer | Start timestamp (Unix seconds) |
 | `before` | integer | End timestamp (Unix seconds) |
-| `source` | string | Dataset label for time-windowed queries |
+| `source` | string | Dataset label for time-windowed queries; currently `recovered_realized_boundaries` |
 
 ### Additional fields (with `include_unrealized=true`)
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `unrealized_pnl` | number | Current unrealized P&L for open positions (USD), returned alongside the realized event-window result. |
+| `unrealized_pnl` | number | Current unrealized P&L for open positions (USD), not the change in unrealized P&L between the requested boundaries. |
 | `total_pnl` | number | `realized_pnl + unrealized_pnl` (USD) |
 | `open_positions_at_date` | integer | Current open position count returned with the unrealized P&L estimate |
+
+## Errors
+
+| HTTP | Error | When |
+|------|-------|------|
+| `400` | Invalid request | The wallet address, period, filter, or boundary is invalid |
+| `503` | `time_filtered_pnl_unavailable` | The selected wallet and window exceed the serving deadline. Retry with a narrower window. The response includes `reason: "query_timeout"`. |
