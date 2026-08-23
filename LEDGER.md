@@ -3,6 +3,22 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-23 [codex] — Completed the canonical time-filtered wallet P&L
+  documentation rollout. Source `b4177db20dbe087e1d67fc95018f7fb989c6816c`
+  merged through PR #59 as
+  `9dbc4fb748661cf500dc93e5f6ac7ab6e08c11bf`. Mintlify 4.2.819 strict
+  validation, JSON, diff, changed-link, brand, and secret checks passed;
+  Mintlify deployment check `97183154530` succeeded. Cache-busted public
+  wallet reference, query-catalog, and event-series pages returned HTTP 200
+  and exposed the inclusive boundary formula, `positions_changed`,
+  `recovered_realized_boundaries`, current-only unrealized semantics, the
+  non-parity explanation for current all-time/leaderboard P&L, and the
+  structured `time_filtered_pnl_unavailable` / `query_timeout` contract.
+  Their rendered HTML SHA-256 values were
+  `9a206f2eb804f81c95ca3bfe406fa1ccb50b094b6e6bc2dff22fb1125904d4b3`,
+  `98d455c851bdf47106a28c1c13ef3f631d79b960def583d13fd2b046c667bd9b`,
+  and `f3780a375431b22831cb10f9abc300378af4fd5226a38886975c632673ff3405`.
+
 - 2026-08-23 [codex] — Prepared the canonical time-filtered wallet P&L
   documentation after the production boundary-state correction. The wallet
   reference, query catalog, event-series distinction, and OpenAPI description
