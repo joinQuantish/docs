@@ -3,6 +3,18 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-23 [codex] — Prepared the canonical time-filtered wallet P&L
+  documentation after the production boundary-state correction. The wallet
+  reference, query catalog, event-series distinction, and OpenAPI description
+  now define time-window P&L as the sum of per-position weighted-average-cost
+  realized-state changes from immediately before the inclusive start through
+  the inclusive end. They explicitly distinguish that metric from the current
+  all-time portfolio/leaderboard total, explain that optional unrealized P&L
+  is current-only, lock `positions_changed` counting and the boundary source,
+  and document the structured 503 serving deadline for exceptional large
+  wallet/windows. JSON, documentation structure, link, example, and public
+  rendering evidence will be recorded after rollout.
+
 - 2026-08-18 [codex] — Completed the sports event-ID and market-ID lookup
   documentation and public changelog rollout. Documentation source
   `5c60a91af71f7ce56f9bc677b59060d760197357` merged through PR #56 as

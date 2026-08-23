@@ -6,6 +6,8 @@ description: "Realized P&L bucketed by hour, day, week, or month — chart-ready
 
 Returns wallet P&L buckets for charting. With `period`, `after`, or `before`, each row is a fixed time window (hour, day, week, or month). A running `cumulative_pnl` is included so the response can be plotted directly.
 
+Event-series mode is separate from the boundary-state calculation used by time-filtered [`GET /v3/wallets/{address}/pnl`](/data/wallets/pnl). Each bucket sums recorded weighted-average-cost realized-P&L event deltas. It is not a historical all-time-portfolio snapshot: holdings that are only bought and held can contribute `0`, even when a resolved holding contributes profit to the current all-time P&L. Baseline corrections without an event timestamp are not placed into a bucket.
+
 Without an explicit time filter, the endpoint returns a single all-time summary bucket that matches [`GET /v3/wallets/{address}/pnl`](/data/wallets/pnl).
 
 In event-series mode, `wins`, `losses`, and `events` count realized P&L events in the selected window. In default summary mode, counts are position counts and the response includes `count_type: "positions"` and `summary_bucket: true`.
@@ -124,7 +126,6 @@ curl "https://api.polynode.dev/v3/wallets/0x44c1dfe43260c94ed4f1d00de2e1f80fb113
   "total_events": 29,
   "total_wins": 26,
   "total_losses": 3,
-  "source": "realized_pnl_series",
   "elapsed_ms": 4
 }
 ```
@@ -152,7 +153,7 @@ curl "https://api.polynode.dev/v3/wallets/0x44c1dfe43260c94ed4f1d00de2e1f80fb113
 | `bucket_count` | integer | Number of buckets returned |
 | `buckets` | array | Time-series rows, ordered oldest → newest |
 | `buckets[].bucket` | integer | Bucket start timestamp (Unix seconds, UTC, truncated to bucket boundary) |
-| `buckets[].realized_pnl` | number | Realized P&L in that bucket (USD) |
+| `buckets[].realized_pnl` | number | Weighted-average-cost realized P&L changes from indexed events in that bucket (USD) |
 | `buckets[].cumulative_pnl` | number | Running sum of `realized_pnl` over the returned series (USD) |
 | `buckets[].gross_profit` | number | Sum of winning events in that bucket (USD) |
 | `buckets[].gross_loss` | number | Sum of losing events in that bucket (USD, negative) |
@@ -164,11 +165,11 @@ curl "https://api.polynode.dev/v3/wallets/0x44c1dfe43260c94ed4f1d00de2e1f80fb113
 | `buckets[].unrealized_pnl` | number | Current unrealized P&L. Present in default summary mode. |
 | `buckets[].total_pnl` | number | `realized_pnl + unrealized_pnl`. Present in default summary mode. |
 | `buckets[].total_volume` | number | Wallet volume from the summary source. Present in default summary mode. |
-| `total_realized_pnl` | number | Sum of `realized_pnl` across all returned buckets (USD) |
+| `total_realized_pnl` | number | Sum of event-realized `realized_pnl` across all returned buckets (USD); it is not expected to equal the current all-time P&L |
 | `total_events` | integer | Sum of `events` across all returned buckets |
 | `total_wins` | integer | Sum of `wins` across all returned buckets |
 | `total_losses` | integer | Sum of `losses` across all returned buckets |
-| `source` | string | Dataset label |
+| `source` | string | Dataset label. Present in default summary mode. |
 | `count_type` | string | `positions` in default summary mode |
 | `summary_bucket` | boolean | `true` in default summary mode |
 | `elapsed_ms` | integer | Server-side query time in milliseconds |
