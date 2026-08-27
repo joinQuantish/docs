@@ -3,4 +3,20 @@ title: "Liquidations"
 openapi: "GET /v3/perps/liquidations"
 ---
 
-Likely liquidations — positions wiped at a large loss, detected from the position-event stream. Filter by `instrument`, `min_notional`, and `after`. No competitor surfaces liquidation data for Polymarket perps.
+Likely liquidations are position closes detected at a large loss. Filter by
+`type`, `instrument`, `min_notional`, `address`, and `after`.
+
+Responses are newest first and include `has_more` plus an opaque
+`next_cursor`. Send that value as `cursor` with the same filters to continue
+through the fixed traversal:
+
+```text
+GET /v3/perps/liquidations?min_notional=10000&limit=100
+GET /v3/perps/liquidations?min_notional=10000&limit=100&cursor=<next_cursor>
+```
+
+Cursors expire after 24 hours and cannot be reused on the general position
+events route. A malformed cursor returns HTTP `400` with
+`{"error":"invalid cursor"}`. An expired cursor returns
+`{"error":"cursor has expired"}`. Changing a filter returns HTTP `400` with a
+clean cursor-mismatch message. Start again without the cursor in each case.

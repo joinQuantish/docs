@@ -5,6 +5,31 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-08-28 - Stable perps activity pagination
+
+Archived perps trades, position events, likely liquidations, and wallet
+collateral flows now support stable cursor pagination.
+
+What's new:
+
+* Responses return `has_more` and an opaque `next_cursor`. Archived trade
+  responses also preserve the existing `more` field.
+* Reusing the same route and filters keeps pages disjoint while new activity
+  arrives. Cursors expire after 24 hours.
+* Wallet-flow deposit and withdrawal totals and counts stay identical across
+  every page in one traversal.
+* Malformed, expired, route-mismatched, and filter-mismatched cursors return
+  clean HTTP `400` errors.
+* Cumulative volume delta remains a bounded single-page series and is not part
+  of this cursor contract.
+
+Docs: [Archived trades](/perps/market-data/trades),
+[Position events](/perps/analytics/events),
+[Liquidations](/perps/analytics/liquidations), and
+[Wallet flows](/perps/onchain/flows)
+
+***
+
 ## 2026-08-27 - Complete market, event, and leaderboard discovery
 
 New V3 discovery routes make it possible to walk the full market and event

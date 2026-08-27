@@ -6948,7 +6948,7 @@
           "Perps"
         ],
         "summary": "Trades",
-        "description": "Recent executions (price, quantity, side, time). Add `after`/`before` for archived history deeper than the exchange serves.",
+        "description": "Recent executions (price, quantity, side, time). Add `after`/`before` for archived history. Archived pages are newest first and return `has_more`, `next_cursor`, and the existing `more` field. Reuse the same filters with each cursor.",
         "operationId": "perps_trades",
         "parameters": [
           {
@@ -7022,6 +7022,15 @@
             "schema": {
               "type": "number"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque `next_cursor` from the preceding archived page. Reuse the same instrument and filters within 24 hours.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -7051,7 +7060,20 @@
                     }
                   ],
                   "instrument_id": 6,
-                  "symbol": "BTC-USD"
+                  "symbol": "BTC-USD",
+                  "more": true,
+                  "has_more": true,
+                  "next_cursor": "<opaque_cursor>"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed, expired, or route/filter-mismatched cursor.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "invalid cursor"
                 }
               }
             }
@@ -9076,7 +9098,7 @@
           "Perps"
         ],
         "summary": "Wallet flows",
-        "description": "One wallet's collateral flow: total deposited, withdrawn, net, and recent events. Resolved to the signer.",
+        "description": "One wallet's collateral flow: total deposited, withdrawn, net, and stable pages of deposit or withdrawal events. Resolved to the signer. Totals and counts remain fixed across pages in one traversal.",
         "parameters": [
           {
             "name": "address",
@@ -9094,6 +9116,15 @@
             "description": "Max rows.",
             "schema": {
               "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque `next_cursor` from the preceding page. Reuse it for this wallet within 24 hours.",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -9119,10 +9150,22 @@
                       "usd": "117553.8245"
                     }
                   ],
+                  "has_more": false,
                   "net_usd": "2656777.090896",
+                  "next_cursor": null,
                   "signer": "0xe666b1fed887af4c9cb8e8f6feb7fc1c537e74a5",
                   "withdrawal_count": 0,
                   "withdrawn_usd": "0"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed, expired, or wallet-mismatched cursor.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "invalid cursor"
                 }
               }
             }
@@ -9310,7 +9353,7 @@
           "Perps"
         ],
         "summary": "Trade flow / CVD",
-        "description": "Per time bucket: taker buy vs sell notional, net quantity, and the running cumulative volume delta (CVD). side = taker direction.",
+        "description": "Per time bucket: taker buy versus sell notional, net quantity, and running cumulative volume delta (CVD). This is a bounded single-page series and does not accept a cursor.",
         "parameters": [
           {
             "name": "instrument",
@@ -9525,7 +9568,7 @@
           "Perps"
         ],
         "summary": "Position events",
-        "description": "Real-time whale-activity feed: opened / closed / increased / reduced / flipped, built by diffing position snapshots. Filter by type, instrument, min_notional, address, liquidation, after.",
+        "description": "Position activity feed: opened / closed / increased / reduced / flipped. Filter by type, instrument, min_notional, address, liquidation, and after. Continue newest first through a fixed traversal with `next_cursor`.",
         "parameters": [
           {
             "name": "type",
@@ -9589,6 +9632,15 @@
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque `next_cursor` from the preceding page. Reuse the same route and filters within 24 hours.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -9624,7 +9676,19 @@
                       "timestamp": 1783739413988,
                       "unrealized_pnl": "-143.05582313907624"
                     }
-                  ]
+                  ],
+                  "has_more": false,
+                  "next_cursor": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed, expired, or route/filter-mismatched cursor.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "invalid cursor"
                 }
               }
             }
@@ -9638,8 +9702,17 @@
           "Perps"
         ],
         "summary": "Liquidations",
-        "description": "Likely liquidations - position closes wiped at a large loss. Same shape as events.",
+        "description": "Likely liquidations detected from position closes at a large loss. Returns the same stable cursor response shape as position events, with route-specific cursors.",
         "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "opened | closed | increased | reduced | flipped",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "instrument",
             "in": "query",
@@ -9659,6 +9732,15 @@
             }
           },
           {
+            "name": "address",
+            "in": "query",
+            "required": false,
+            "description": "One account.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "after",
             "in": "query",
             "required": false,
@@ -9674,6 +9756,15 @@
             "description": "Max rows.",
             "schema": {
               "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque `next_cursor` from the preceding page. Reuse the same route and filters within 24 hours.",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -9697,7 +9788,19 @@
                       "timestamp": 1783627137347,
                       "unrealized_pnl": "-0.028244943473625"
                     }
-                  ]
+                  ],
+                  "has_more": false,
+                  "next_cursor": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed, expired, or route/filter-mismatched cursor.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "invalid cursor"
                 }
               }
             }

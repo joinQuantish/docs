@@ -3,6 +3,14 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-28 [codex] - Prepared public documentation, OpenAPI examples, and a
+  changelog entry for stable cursor pagination across archived perps trades,
+  position events, likely liquidations, and wallet collateral flows. The copy
+  preserves existing response fields, records fixed wallet-flow totals and
+  clean cursor errors, and explicitly leaves CVD as a bounded single-page
+  series. Strict Mintlify validation, local link/navigation validation, JSON
+  parsing, and targeted example scans passed. Publication remains pending.
+
 - 2026-08-28 [codex] - Completed publication of the V3 market and event
   catalogs, catalog statistics, rolling leaderboard scope discovery, and
   list-only reward-market context documentation. Reviewed source

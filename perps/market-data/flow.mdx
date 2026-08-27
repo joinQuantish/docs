@@ -3,6 +3,14 @@ title: "Trade Flow / CVD"
 openapi: "GET /v3/perps/flow/{instrument}"
 ---
 
-Order-flow analytics per time bucket: taker buy vs sell notional, net quantity, and the running **cumulative volume delta** (CVD) — a classic pressure signal. `side` is the taker's direction (long = bought). Choose `bucket` (1m to 1d) and bound with `after` / `before`.
+Order-flow analytics per time bucket: taker buy versus sell notional, net
+quantity, and running **cumulative volume delta** (CVD). `side` is the taker's
+direction (`long` means bought). Choose a `bucket` from 1m to 1d and bound the
+response with `after` and `before`.
 
-Buckets are **oldest first**, because CVD is a running sum from the start of the window. A plain call therefore starts at the beginning of our archive (July 9, 2026) — for recent flow, pass `after` (e.g. `?after=` 24 hours ago) so the CVD accumulates over exactly the window you care about.
+Buckets are **oldest first** because CVD is a running sum from the start of the
+window. A plain call starts at the beginning of the archive on July 9, 2026.
+For recent flow, pass `after` so CVD accumulates over exactly the requested
+window.
+
+CVD remains a bounded single-page series. This route does not accept a cursor.
