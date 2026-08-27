@@ -3,6 +3,25 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-28 [codex] - Completed publication of the V3 market and event
+  catalogs, catalog statistics, rolling leaderboard scope discovery, and
+  list-only reward-market context documentation. Reviewed source
+  `c5c70010fd4cdc353c01a0b61448f5b52ec0cc80` merged through PR #63 as
+  `b230def9491aef71d606449bcfdcb66d384ee639`; Mintlify deployment check
+  `98691351028` succeeded. Cache-busted public HTML returned HTTP 200 with the
+  expected route and contract markers for every new catalog, statistics,
+  scope, reward, query-catalog, and changelog page. The public OpenAPI JSON
+  returned HTTP 200 and contained `/v3/markets`, `/v3/events`, their statistics
+  routes, and `/v3/leaderboard/scopes`. Representative HTML SHA-256 values were
+  `a89bd8b44a3f75dd95210dbbdc8b9400cbb885264798cbd24b4ef21cea9aee3b`
+  for the market catalog,
+  `02d3991783c2d7ca88b6acac12c46d33d2d768a08b094eb3670b33a64ec18422`
+  for the event catalog,
+  `549839ef79110b281aa454ed9384eb0b1a25b5a35de886dfb607ca35acf953de`
+  for leaderboard scopes, and
+  `444b246efcc56b47bbdfe5d59c056facfe911e2cc2381143a9643510de16f06c`
+  for the changelog.
+
 - 2026-08-28 [codex] - Prepared public documentation, OpenAPI schemas,
   navigation, and a 2026-08-27 changelog entry for the complete V3 market and
   event catalogs, catalog statistics, rolling leaderboard scope discovery,
