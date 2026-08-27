@@ -5,6 +5,29 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-08-28 - Daily builder activity
+
+Builder analytics now include calendar-day comparison series and detailed
+per-builder market and category breakdowns.
+
+What's new:
+
+* Compare up to 20 selected builders with an exact `Other` series, or request
+  one builder directly.
+* Daily rows include volume, trades, active traders, trader-paid fees, buy
+  volume, and sell volume.
+* Per-builder requests rank markets and categories across the complete
+  requested range. Bulk comparisons keep those arrays empty and bounded.
+* Requests default to the most recent 30 calendar days. The accepted range is
+  capped at 366 days, subject to date availability.
+* Invalid inputs return clean HTTP `400` errors, while unavailable dates return
+  one generic HTTP `503` response.
+
+Docs: [Builder Daily Activity](/data/builders/activity-daily) and
+[Builder Daily Activity by Builder](/data/builders/activity-daily-by-builder)
+
+***
+
 ## 2026-08-28 - Stable perps activity pagination
 
 Archived perps trades, position events, likely liquidations, and wallet

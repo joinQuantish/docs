@@ -1,0 +1,138 @@
+---
+title: "Builder Daily Activity"
+openapi: "GET /v3/builders/activity/daily"
+description: "Compare daily activity for up to 20 builders with an exact Other series."
+---
+
+Compare selected builders across a calendar range. The response returns the
+selected builders in request order, followed by `Other`, which aggregates every
+builder not selected in the request.
+
+```http
+GET /v3/builders/activity/daily
+```
+
+## Query parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `builders` | string | Yes | One to 20 comma-separated, 32-byte builder codes. `builder_codes` is an accepted alias. |
+| `start_date` | string | No | First day, inclusive, in `YYYY-MM-DD` format. |
+| `end_date` | string | No | Last day, inclusive, in `YYYY-MM-DD` format. |
+
+Omitting both dates selects the most recent 30 calendar days, including today.
+The API accepts inclusive ranges of up to 366 days, beginning no earlier than
+`2020-01-01` and ending no later than today. A requested range that is not yet
+available returns the generic temporary-unavailability response described
+below.
+
+## Example
+
+```bash
+curl -H "x-api-key: pn_live_YOUR_KEY" \
+  "https://api.polynode.dev/v3/builders/activity/daily?builders=0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df,0xd1d9dd6983c40006b0dc8eab84a41ac9a4f27643296178479ffbebbc01ab7bde&start_date=2026-08-28&end_date=2026-08-28"
+```
+
+```json
+{
+  "start_date": "2026-08-28",
+  "end_date": "2026-08-28",
+  "volume_scope": "clob_v2_onchain",
+  "volume_semantics": "outcome_share_par_notional",
+  "fee_semantics": "Trader-paid fees attributed to fills. These are not builder rebates.",
+  "series": [
+    {
+      "builder_code": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
+      "builder_name": "Example Builder",
+      "builder_logo": null,
+      "builder_verified": true,
+      "is_other": false,
+      "days": [
+        {
+          "date": "2026-08-28",
+          "volume_e6": "125000000",
+          "volume": "125.000000",
+          "trades": 18,
+          "active_traders": 7,
+          "trader_paid_fees_e6": "42000",
+          "trader_paid_fees": "0.042000",
+          "buy_volume_e6": "75000000",
+          "buy_volume": "75.000000",
+          "sell_volume_e6": "50000000",
+          "sell_volume": "50.000000"
+        }
+      ],
+      "top_markets": [],
+      "top_categories": []
+    },
+    {
+      "builder_code": null,
+      "builder_name": "Other",
+      "builder_logo": null,
+      "builder_verified": null,
+      "is_other": true,
+      "days": [
+        {
+          "date": "2026-08-28",
+          "volume_e6": "0",
+          "volume": "0",
+          "trades": 0,
+          "active_traders": 0,
+          "trader_paid_fees_e6": "0",
+          "trader_paid_fees": "0",
+          "buy_volume_e6": "0",
+          "buy_volume": "0",
+          "sell_volume_e6": "0",
+          "sell_volume": "0"
+        }
+      ],
+      "top_markets": [],
+      "top_categories": []
+    }
+  ]
+}
+```
+
+## Metrics and aggregation
+
+Each `days` row contains six product metrics:
+
+| Metric | Description |
+| --- | --- |
+| `volume` | Outcome-share par notional attributed to the builder. |
+| `trades` | Attributed fill count. |
+| `active_traders` | Distinct traders active on that day. |
+| `trader_paid_fees` | Fees paid by traders on attributed fills. These are not builder rebates. |
+| `buy_volume` | Buy-side outcome-share par notional. |
+| `sell_volume` | Sell-side outcome-share par notional. |
+
+Monetary values are decimal strings. Their `_e6` companions contain exact raw
+6-decimal units. Bulk responses keep `top_markets` and `top_categories` empty
+so comparison cost remains bounded. Use the
+[per-builder route](/data/builders/activity-daily-by-builder) for ranked market
+and category aggregates over the whole requested range.
+
+`Other` is computed across all non-selected builders. Its daily
+`active_traders` value is a distinct count across that complete remainder, not
+the sum of per-builder counts.
+
+## Errors
+
+Invalid builder codes, dates, or ranges return HTTP `400`
+with a stable product error code and message. A range that cannot currently be
+served returns HTTP `503`:
+
+```json
+{
+  "error": "temporarily_unavailable",
+  "message": "Builder activity is temporarily unavailable."
+}
+```
+
+## Related endpoints
+
+| Endpoint | Description |
+| --- | --- |
+| [`GET /v3/builders/{code}/activity/daily`](/data/builders/activity-daily-by-builder) | Daily activity for one builder, without an Other series |
+| [`GET /v3/builders`](/data/builders/list) | All-time builder leaderboard |
+| [`GET /v3/builders/{code}`](/data/builders/detail) | Builder profile and all-time totals |

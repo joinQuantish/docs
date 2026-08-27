@@ -3,6 +3,16 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-28 [codex] - Prepared public reference pages, navigation, OpenAPI,
+  and changelog copy for bulk and per-builder daily activity. The contract
+  documents six daily metrics, exact Other aggregation, per-builder ranked
+  markets and categories, bounded bulk comparison, the 30-day default, the
+  366-day request limit, and clean product errors without claiming unavailable
+  history. Publication remains pending.
+  Strict Mintlify validation, JSON parsing, local navigation and link checks,
+  schema reference checks, changed-copy guards, and targeted example scans
+  pass.
+
 - 2026-08-28 [codex] - Completed publication of stable cursor pagination for
   archived perps trades, position events, likely liquidations, and wallet
   collateral flows. Source `79599868793471b6d676246a68463e582234c15d`
