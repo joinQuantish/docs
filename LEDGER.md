@@ -3,6 +3,19 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-27 [codex] - Prepared the public rolling realized-P&L leaderboard
+  reference and changelog. The global and tag pages now define the `1d`, `7d`,
+  and `30d` modes, category and single-tag scopes, all-time compatibility,
+  mode-specific row fields, pagination limits, empty results, and public error
+  behavior. The query catalog includes global, category, and tag recipes, and
+  the OpenAPI document now defines both leaderboard routes. Strict documentation
+  validation, JSON parsing, changed-link checks, and targeted example checks
+  pass. The four changed example pages contain no runnable JavaScript or
+  TypeScript blocks. The full unchanged-repository example census found 61
+  runnable blocks: 49 passed, one returned an authentication result, and 11
+  failed in unchanged pages. Publication and live-page verification remain
+  pending.
+
 - 2026-08-23 [codex] — Completed the canonical time-filtered wallet P&L
   documentation rollout. Source `b4177db20dbe087e1d67fc95018f7fb989c6816c`
   merged through PR #59 as

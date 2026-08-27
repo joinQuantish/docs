@@ -4760,6 +4760,247 @@
         ]
       }
     },
+    "/v3/leaderboard": {
+      "get": {
+        "tags": [
+          "V3 Leaderboard"
+        ],
+        "summary": "Trader leaderboard",
+        "description": "Rank wallets using all-time metrics, or set period to 1d, 7d, or 30d for a realized-P&L leaderboard. Rolling leaderboards can cover all markets, one category, or one tag.",
+        "operationId": "v3_leaderboard",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1d",
+                "7d",
+                "30d",
+                "all"
+              ],
+              "default": "all"
+            },
+            "description": "Ranking window. Aliases day, week, and month are also accepted. Values all_time and all-time also select all-time mode."
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "All-time supports total_pnl, realized_pnl, unrealized_pnl, gross_profit, gross_loss, volume, wins, and position_count, plus documented aliases. Rolling supports realized_pnl only."
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            },
+            "description": "All-time supports ascending or descending order. Rolling supports descending order only."
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter to one market category. A rolling request may use one category or one tag, not both."
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by tag. Rolling mode accepts exactly one tag."
+          },
+          {
+            "name": "tag_slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Alias for one tags value."
+          },
+          {
+            "name": "market",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "All-time only. Filter by condition ID or market slug."
+          },
+          {
+            "name": "market_slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "All-time only. Filter by market slug."
+          },
+          {
+            "name": "event_slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "All-time only. Filter by parent event slug."
+          },
+          {
+            "name": "condition_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "All-time only. Filter by market condition ID."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": "Rows per page. Values below 1 use 1; values above 100 use 100."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Pagination offset. Negative values use 0. Global all-time rankings stop at 10,000; rolling rankings stop at 1,000."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked wallets. A valid rolling category or tag with no results returns an empty leaderboard."
+          },
+          "400": {
+            "description": "Invalid period, sort, order, filter combination, or rank window."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "503": {
+            "description": "The requested leaderboard is temporarily unavailable."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v3/tags/{slug}/leaderboard": {
+      "get": {
+        "tags": [
+          "V3 Leaderboard"
+        ],
+        "summary": "Tag trader leaderboard",
+        "description": "Rank wallets within one tag using all-time metrics, or set period to 1d, 7d, or 30d for realized P&L.",
+        "operationId": "v3_tag_leaderboard",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "One tag slug, matched case-insensitively."
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1d",
+                "7d",
+                "30d",
+                "all"
+              ],
+              "default": "all"
+            },
+            "description": "Ranking window. Aliases day, week, and month are also accepted. Values all_time and all-time also select all-time mode."
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "All-time supports the documented all-time sort set. Rolling supports realized_pnl only."
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            },
+            "description": "All-time supports ascending or descending order. Rolling supports descending order only."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": "Rows per page. Values below 1 use 1; values above 100 use 100."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Pagination offset. Negative values use 0. Rolling rankings stop at rank 1,000."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked wallets. A tag with no realized results in a valid rolling window returns an empty leaderboard."
+          },
+          "400": {
+            "description": "Invalid tag scope, period, sort, order, filter combination, or rank window."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "503": {
+            "description": "The requested leaderboard is temporarily unavailable."
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v3/wallets/{address}/pnl": {
       "get": {
         "tags": [

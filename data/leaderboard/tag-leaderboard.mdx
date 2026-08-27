@@ -1,75 +1,106 @@
 ---
 title: "Tag Leaderboard"
 openapi: "GET /v3/tags/{slug}/leaderboard"
-description: "Rank wallets by P&L within a specific market category (tag). Works for niche tags."
+description: "Rank wallets within one market tag using all-time metrics or 1-day, 7-day, and 30-day realized P&L."
 ---
 
-Returns a P&L leaderboard filtered to markets with a specific tag. This direct tag route is best for smaller/niche tags.
-
-<Note>
-For broad tags or categories such as `crypto`, `sports`, or `politics`, use the projected global leaderboard with `?tags=` or `?category=`. It is the preferred route for high-cardinality leaderboard filters.
-</Note>
+`GET /v3/tags/{slug}/leaderboard` is the path form of a single-tag leaderboard. It supports the same all-time and rolling modes as [`GET /v3/leaderboard`](/data/leaderboard/global).
 
 ## Request
 
-```
+```text
 GET /v3/tags/{slug}/leaderboard
 ```
+
+### Path parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `slug` | string | One lower-case tag slug such as `sports`, `ufc`, or `us-election`. Matching is case-insensitive. |
 
 ### Query parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `sort` | string | `net_pnl` | Sort by `net_pnl` (default), `volume`, `profit`, or `loss` |
-| `limit` | integer | 100 | Max 300 |
-| `offset` | integer | 0 | Pagination offset |
+| `period` | string | `all` | `1d`, `7d`, `30d`, or `all`. Aliases `day`, `week`, and `month` are accepted. `all_time` and `all-time` also select all-time mode. |
+| `sort` | string | mode-dependent | All-time supports the full all-time sort set. Rolling supports `realized_pnl` only. |
+| `order` | string | `desc` | All-time supports `asc` and `desc`. Rolling supports `desc` only. |
+| `limit` | integer | 20 | Number of rows. Values below 1 use 1; values above 100 use 100. |
+| `offset` | integer | 0 | Pagination offset. Negative values use 0. |
 
-### Slug handling
+Do not combine the path slug with a different `tags` or `tag_slug` query value. A conflict returns `400 conflicting_tag_scope`.
 
-The tag slug is matched case-insensitively. URL-style hyphens are also converted to spaces, so `/v3/tags/us-election/leaderboard` resolves to the stored tag `US Election`.
-
-### Broad tag alternative
+## Rolling example
 
 ```bash
-curl "https://api.polynode.dev/v3/leaderboard?tags=crypto&limit=20"
-curl "https://api.polynode.dev/v3/leaderboard?category=crypto&limit=20"
+curl "https://api.polynode.dev/v3/tags/sports/leaderboard?period=7d&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
-Use [`GET /v3/leaderboard`](/data/leaderboard/global) for broad tag/category rankings or pick a more specific tag for this route.
-
-## Example
+The equivalent query form is:
 
 ```bash
-curl https://api.polynode.dev/v3/tags/taylor-swift/leaderboard?limit=1
+curl "https://api.polynode.dev/v3/leaderboard?period=7d&tag_slug=sports&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
 ```json
 {
-  "data": [
+  "leaderboard": [
     {
-      "wallet": "0x4aec3e3c555ecbeec58adba532e8ea8b1c76e9b6",
-      "net_pnl": "60212.914000000000",
-      "gross_profit": "60212.914000000000",
-      "gross_loss": "0.000000000000000000",
-      "total_volume": "62721.000000000000",
-      "position_count": 3
+      "rank": 1,
+      "wallet": "0x1111111111111111111111111111111111111111",
+      "net_realized_pnl": 125000.5,
+      "realized_pnl": 125000.5,
+      "gross_profit": 140000.5,
+      "gross_loss": -15000,
+      "wins": 42,
+      "losses": 8,
+      "position_count": 50,
+      "event_count": 73,
+      "condition_count": 31
     }
   ],
-  "rows_returned": 1,
-  "has_more": true,
+  "count": 1,
+  "limit": 20,
   "offset": 0,
-  "limit": 1,
-  "elapsed_ms": 26
+  "has_more": true,
+  "period": "7d",
+  "sort": "realized_pnl",
+  "order": "desc",
+  "category": null,
+  "tags": ["sports"]
 }
 ```
 
-## Response fields (per row in `data`)
+## All-time example
 
-| Field | Type | Description |
-|--------|------|-------------|
-| `wallet` | string | Wallet address |
-| `net_pnl` | string (decimal) | Net realized P&L in this tag (USD) |
-| `gross_profit` | string (decimal) | Sum of winning positions (USD) |
-| `gross_loss` | string (decimal) | Sum of losing positions (USD, negative or zero) |
-| `total_volume` | string (decimal) | Total volume traded in this tag (USD) |
-| `position_count` | integer | Number of positions in markets with this tag |
+```bash
+curl "https://api.polynode.dev/v3/tags/ufc/leaderboard?sort=total_pnl&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Omitting `period` preserves the all-time response and sort behavior. See [Leaderboard response fields](/data/leaderboard/global#row-fields) for the exact all-time and rolling row shapes.
+
+## Pagination, empty results, and errors
+
+* Rolling tag leaderboards expose ranks 1 through 1,000, with up to 100 rows per request.
+* All-time tag leaderboards retain their existing offset pagination and do not use the global all-time 10,000-rank cap.
+* A tag with no realized results in a valid rolling window returns HTTP `200` with an empty `leaderboard`.
+* A rolling view that is temporarily unavailable returns `503 leaderboard_unavailable`.
+* An invalid period, sort, order, filter combination, or rank window returns HTTP `400` with a stable error code.
+
+| Status | Error | When it occurs |
+|--------|-------|----------------|
+| `400` | `invalid_tag` | The path does not contain one valid tag slug. |
+| `400` | `conflicting_tag_scope` | A query tag differs from the path tag. |
+| `400` | `invalid_period`, `invalid_sort`, or `invalid_order` | A value is not supported by the selected mode. |
+| `400` | `unsupported_leaderboard_filter` | A rolling request uses an unsupported filter combination. |
+| `400` | `leaderboard_offset_too_deep` | A rolling request goes beyond rank 1,000. |
+| `401` | authentication error | The API key is missing or invalid. |
+| `503` | `leaderboard_unavailable` | The rolling tag leaderboard is temporarily unavailable. |
+| `503` | `pnl_unavailable` | The all-time tag leaderboard is temporarily unavailable. |
+
+<Note>
+  Rolling tag rows contain realized metrics, `event_count`, and `condition_count`. They do not contain historical unrealized P&L, total P&L, open-position counts, or volume.
+</Note>

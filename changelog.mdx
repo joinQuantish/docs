@@ -5,6 +5,22 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-08-27 - Rolling realized-P&L leaderboards
+
+Trader leaderboards now support 1-day, 7-day, and 30-day realized-P&L rankings across all markets, one category, or one tag.
+
+What's new:
+
+* Set `period=1d`, `7d`, or `30d` on `GET /v3/leaderboard` or `GET /v3/tags/{slug}/leaderboard`.
+* Rolling rows are ranked by `realized_pnl` descending and include realized profit, loss, win, position, event, and market counts. Historical unrealized P&L is not included.
+* Each request returns up to 100 rows, and the first 1,000 ranks are available for every rolling scope.
+* A valid category or tag with no realized results in the selected window returns HTTP `200` with an empty leaderboard.
+* Omitting `period`, or using `period=all`, preserves the existing all-time leaderboard and its sort options.
+
+Docs: [Leaderboard](/data/leaderboard/global) and [Tag Leaderboard](/data/leaderboard/tag-leaderboard)
+
+***
+
 ## 2026-08-19 - Builder volume aligned with Polymarket's V2 convention
 
 Builder volume now counts locally indexed outcome shares, with one share

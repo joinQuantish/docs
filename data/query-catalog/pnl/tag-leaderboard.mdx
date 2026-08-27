@@ -1,23 +1,27 @@
 ---
 title: "Tag P&L Leaderboard"
-description: "Rank wallets inside a tag or category."
+description: "Rank wallets inside one tag using all-time metrics or rolling realized P&L."
 ---
 
 Canonical reference: [Tag Leaderboard](/data/leaderboard/tag-leaderboard)
 
 ```bash
-curl "https://api.polynode.dev/v3/tags/ufc/leaderboard?limit=1" \
+curl "https://api.polynode.dev/v3/tags/ufc/leaderboard?period=7d&limit=20" \
   -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
-Use direct tag leaderboards for niche tags, sport-specific pages, or event-family rankings.
-
-For broad tags/categories, prefer the projected global leaderboard filter:
+The equivalent query form is:
 
 ```bash
-curl "https://api.polynode.dev/v3/leaderboard?tags=crypto&limit=20" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-
-curl "https://api.polynode.dev/v3/leaderboard?category=crypto&limit=20" \
+curl "https://api.polynode.dev/v3/leaderboard?period=7d&tag_slug=ufc&limit=20" \
   -H "x-api-key: $POLYNODE_API_KEY"
 ```
+
+Omit `period` for the all-time tag leaderboard:
+
+```bash
+curl "https://api.polynode.dev/v3/tags/ufc/leaderboard?sort=total_pnl&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Rolling tag leaderboards support `1d`, `7d`, and `30d`, rank by `realized_pnl` descending, and expose the first 1,000 ranks. A tag with no realized results in the selected window returns HTTP `200` with an empty `leaderboard`.

@@ -1,6 +1,6 @@
 ---
 title: "Global P&L Leaderboard"
-description: "Rank wallets by P&L, volume, profit, or win count."
+description: "Rank wallets all-time or by 1-day, 7-day, and 30-day realized P&L."
 ---
 
 Canonical reference: [Leaderboard](/data/leaderboard/global)
@@ -10,16 +10,27 @@ curl "https://api.polynode.dev/v3/leaderboard?sort=total&limit=1" \
   -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
-Use `sort=total`, `realized`, `volume`, `profit`, or `wins` depending on the leaderboard view.
+Omitting `period` selects the all-time leaderboard. Use `sort=total`, `realized`, `unrealized`, `volume`, `profit`, `loss`, `wins`, or `positions` depending on the view.
 
-For filtered leaderboards, use one primary market dimension per request:
+Use `period=1d`, `7d`, or `30d` for a rolling realized-P&L leaderboard:
 
 ```bash
-curl "https://api.polynode.dev/v3/leaderboard?category=crypto&sort=total&limit=20" \
-  -H "x-api-key: $POLYNODE_API_KEY"
-
-curl "https://api.polynode.dev/v3/leaderboard?tag_slug=us-election&sort=volume&limit=20" \
+curl "https://api.polynode.dev/v3/leaderboard?period=7d&limit=100" \
   -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
-Supported dimensions include `category`, `tags`/`tag_slug`, `market`/`market_slug`, `event_slug`, and `condition_id`.
+Rolling views always use `sort=realized_pnl&order=desc`. They return realized metrics plus position, event, and market counts. Historical unrealized P&L and volume are not part of rolling rows.
+
+Scope a rolling leaderboard to one category or one tag:
+
+```bash
+curl "https://api.polynode.dev/v3/leaderboard?period=30d&category=sports&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+
+curl "https://api.polynode.dev/v3/leaderboard?period=30d&tag_slug=us-election&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Rolling pages contain up to 100 rows and expose the first 1,000 ranks. All-time global pages also contain up to 100 rows and expose the first 10,000 ranks.
+
+Market, event, condition, multiple-tag, and combined category-and-tag filters are not supported in rolling mode. Market, event, and condition filters remain available where documented for all-time queries. Leaderboards do not accept `after` or `before`; use `period` for a dated ranking.
