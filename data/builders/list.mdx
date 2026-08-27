@@ -122,4 +122,6 @@ curl "https://api.polynode.dev/v3/builders?sort=volume&limit=1"
 | Endpoint | Description |
 |----------|-------------|
 | `GET /v3/builders/{code}` | Stats for a single builder |
+| `GET /v3/builders/activity/daily` | Compare daily activity for selected builders plus exact Other |
+| `GET /v3/builders/{code}/activity/daily` | Daily activity for one builder |
 | `GET /v3/builders/{code}/trades` | Trades attributed to a builder, with market and profile enrichment |

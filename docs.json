@@ -377,6 +377,8 @@
             "pages": [
               "data/builders/list",
               "data/builders/detail",
+              "data/builders/activity-daily",
+              "data/builders/activity-daily-by-builder",
               "data/builders/trades"
             ]
           },

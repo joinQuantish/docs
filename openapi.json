@@ -4760,6 +4760,110 @@
         ]
       }
     },
+    "/v3/builders/activity/daily": {
+      "get": {
+        "tags": ["V3 Builders"],
+        "summary": "Compare builder daily activity",
+        "description": "Return selected builders in request order followed by an exact Other series covering every non-selected builder.",
+        "operationId": "v3_builders_daily_activity",
+        "parameters": [
+          {
+            "name": "builders",
+            "in": "query",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "One to 20 comma-separated, 0x-prefixed 32-byte builder codes. builder_codes is an accepted alias."
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"},
+            "description": "Inclusive first day. Omit both dates for the most recent 30 calendar days."
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"},
+            "description": "Inclusive last day. Ranges may contain at most 366 days and cannot end in the future."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Selected builder series followed by exact Other. top_markets and top_categories are empty on this bounded comparison route.",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/V3BuilderDailyActivityResponse"}
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid builder, date, or range",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3ProductError"}}}
+          },
+          "401": {"description": "Unauthorized"},
+          "503": {
+            "description": "Builder activity is temporarily unavailable",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3ProductError"}}}
+          }
+        },
+        "security": [{"api_key": []}]
+      }
+    },
+    "/v3/builders/{code}/activity/daily": {
+      "get": {
+        "tags": ["V3 Builders"],
+        "summary": "Read one builder's daily activity",
+        "description": "Return one builder's calendar-day activity and ranked market and category breakdowns. This route does not add an Other series.",
+        "operationId": "v3_builder_daily_activity",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string", "pattern": "^0x[0-9a-fA-F]{64}$"},
+            "description": "0x-prefixed, 32-byte builder code."
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"},
+            "description": "Inclusive first day. Omit both dates for the most recent 30 calendar days."
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "schema": {"type": "string", "format": "date"},
+            "description": "Inclusive last day. Ranges may contain at most 366 days and cannot end in the future."
+          },
+          {
+            "name": "top_limit",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "maximum": 20, "default": 10},
+            "description": "Ranked markets and categories returned for this builder."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One selected builder series without Other",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/V3BuilderDailyActivityResponse"}
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid builder, date, range, or top limit",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3ProductError"}}}
+          },
+          "401": {"description": "Unauthorized"},
+          "503": {
+            "description": "Builder activity is temporarily unavailable",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3ProductError"}}}
+          }
+        },
+        "security": [{"api_key": []}]
+      }
+    },
     "/v3/leaderboard": {
       "get": {
         "tags": [
@@ -11041,6 +11145,128 @@
           "error": {
             "type": "string"
           }
+        }
+      },
+      "V3ProductError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "message"],
+        "properties": {
+          "error": {"type": "string"},
+          "message": {"type": "string"}
+        }
+      },
+      "V3BuilderDailyActivityDay": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date", "volume_e6", "volume", "trades", "active_traders",
+          "trader_paid_fees_e6", "trader_paid_fees", "buy_volume_e6",
+          "buy_volume", "sell_volume_e6", "sell_volume"
+        ],
+        "properties": {
+          "date": {"type": "string", "format": "date"},
+          "volume_e6": {"type": "string"},
+          "volume": {"type": "string"},
+          "trades": {"type": "integer", "minimum": 0},
+          "active_traders": {"type": "integer", "minimum": 0},
+          "trader_paid_fees_e6": {"type": "string"},
+          "trader_paid_fees": {"type": "string"},
+          "buy_volume_e6": {"type": "string"},
+          "buy_volume": {"type": "string"},
+          "sell_volume_e6": {"type": "string"},
+          "sell_volume": {"type": "string"}
+        }
+      },
+      "V3BuilderActivityTopMarket": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank", "condition_id", "title", "slug", "image", "category",
+          "volume_e6", "volume", "trades", "trader_paid_fees_e6",
+          "trader_paid_fees", "buy_volume_e6", "buy_volume",
+          "sell_volume_e6", "sell_volume"
+        ],
+        "properties": {
+          "rank": {"type": "integer", "minimum": 1},
+          "condition_id": {"type": ["string", "null"]},
+          "title": {"type": ["string", "null"]},
+          "slug": {"type": ["string", "null"]},
+          "image": {"type": ["string", "null"]},
+          "category": {"type": ["string", "null"]},
+          "volume_e6": {"type": "string"},
+          "volume": {"type": "string"},
+          "trades": {"type": "integer", "minimum": 0},
+          "trader_paid_fees_e6": {"type": "string"},
+          "trader_paid_fees": {"type": "string"},
+          "buy_volume_e6": {"type": "string"},
+          "buy_volume": {"type": "string"},
+          "sell_volume_e6": {"type": "string"},
+          "sell_volume": {"type": "string"}
+        }
+      },
+      "V3BuilderActivityTopCategory": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank", "category", "volume_e6", "volume", "trades",
+          "trader_paid_fees_e6", "trader_paid_fees", "buy_volume_e6",
+          "buy_volume", "sell_volume_e6", "sell_volume"
+        ],
+        "properties": {
+          "rank": {"type": "integer", "minimum": 1},
+          "category": {"type": "string"},
+          "volume_e6": {"type": "string"},
+          "volume": {"type": "string"},
+          "trades": {"type": "integer", "minimum": 0},
+          "trader_paid_fees_e6": {"type": "string"},
+          "trader_paid_fees": {"type": "string"},
+          "buy_volume_e6": {"type": "string"},
+          "buy_volume": {"type": "string"},
+          "sell_volume_e6": {"type": "string"},
+          "sell_volume": {"type": "string"}
+        }
+      },
+      "V3BuilderActivitySeries": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "builder_code", "builder_name", "builder_logo", "builder_verified",
+          "is_other", "days", "top_markets", "top_categories"
+        ],
+        "properties": {
+          "builder_code": {"type": ["string", "null"]},
+          "builder_name": {"type": ["string", "null"]},
+          "builder_logo": {"type": ["string", "null"]},
+          "builder_verified": {"type": ["boolean", "null"]},
+          "is_other": {"type": "boolean"},
+          "days": {"type": "array", "items": {"$ref": "#/components/schemas/V3BuilderDailyActivityDay"}},
+          "top_markets": {
+            "type": "array",
+            "description": "Ranked range aggregates on the per-builder route. Empty on the bulk comparison route.",
+            "items": {"$ref": "#/components/schemas/V3BuilderActivityTopMarket"}
+          },
+          "top_categories": {
+            "type": "array",
+            "description": "Ranked range aggregates on the per-builder route. Empty on the bulk comparison route.",
+            "items": {"$ref": "#/components/schemas/V3BuilderActivityTopCategory"}
+          }
+        }
+      },
+      "V3BuilderDailyActivityResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "start_date", "end_date", "volume_scope", "volume_semantics",
+          "fee_semantics", "series"
+        ],
+        "properties": {
+          "start_date": {"type": "string", "format": "date"},
+          "end_date": {"type": "string", "format": "date"},
+          "volume_scope": {"type": "string", "const": "clob_v2_onchain"},
+          "volume_semantics": {"type": "string", "const": "outcome_share_par_notional"},
+          "fee_semantics": {"type": "string"},
+          "series": {"type": "array", "items": {"$ref": "#/components/schemas/V3BuilderActivitySeries"}}
         }
       },
       "V3CatalogStatus": {
