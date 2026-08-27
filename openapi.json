@@ -4904,6 +4904,93 @@
         ]
       }
     },
+    "/v3/leaderboard/scopes": {
+      "get": {
+        "tags": [
+          "V3 Leaderboard"
+        ],
+        "summary": "Discover rolling leaderboard scopes",
+        "description": "List or search categories and tags available to 1-day, 7-day, and 30-day realized-P&L leaderboards.",
+        "operationId": "v3_leaderboard_scopes",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["1d", "7d", "30d"]
+            },
+            "description": "Rolling ranking window. Aliases day, week, and month are accepted."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["category", "tag"]
+            },
+            "description": "Scope type. Plural aliases are accepted."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "description": "Optional case-insensitive literal substring search."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Available categories or tags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3LeaderboardScopesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid period, scope, search text, or offset"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "503": {
+            "description": "Leaderboard scopes are temporarily unavailable"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v3/tags/{slug}/leaderboard": {
       "get": {
         "tags": [
@@ -5734,6 +5821,260 @@
         ]
       }
     },
+    "/v3/markets": {
+      "get": {
+        "tags": [
+          "V3 Markets"
+        ],
+        "summary": "Complete market catalog",
+        "description": "Walk the complete market catalog using opaque cursor pagination.",
+        "operationId": "v3_market_catalog",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 300,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque next_cursor from the preceding page."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["open", "closed", "inactive", "all"],
+              "default": "all"
+            }
+          },
+          {
+            "name": "event_slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exact parent event slug."
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["updated"],
+              "default": "updated"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["desc"],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cursor-paginated markets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3MarketCatalogResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or cursor"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "410": {
+            "description": "The cursor can no longer be continued"
+          },
+          "503": {
+            "description": "Markets and events are temporarily unavailable"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v3/markets/stats": {
+      "get": {
+        "tags": [
+          "V3 Markets"
+        ],
+        "summary": "Market catalog stats",
+        "description": "Return complete market, linked-market, event, and status counts.",
+        "operationId": "v3_market_catalog_stats",
+        "responses": {
+          "200": {
+            "description": "Complete market counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3MarketCatalogStats"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "503": {
+            "description": "Markets and events are temporarily unavailable"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v3/events": {
+      "get": {
+        "tags": [
+          "V3 Events"
+        ],
+        "summary": "Complete event catalog",
+        "description": "Walk the complete event catalog using opaque cursor pagination.",
+        "operationId": "v3_event_catalog",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 300,
+              "default": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque next_cursor from the preceding page."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["open", "closed", "inactive", "all"],
+              "default": "all"
+            }
+          },
+          {
+            "name": "event_slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Exact event slug."
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["updated"],
+              "default": "updated"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["desc"],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cursor-paginated events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3EventCatalogResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or cursor"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "410": {
+            "description": "The cursor can no longer be continued"
+          },
+          "503": {
+            "description": "Markets and events are temporarily unavailable"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
+    "/v3/events/stats": {
+      "get": {
+        "tags": [
+          "V3 Events"
+        ],
+        "summary": "Event catalog stats",
+        "description": "Return complete event, member-market, market, and status counts.",
+        "operationId": "v3_event_catalog_stats",
+        "responses": {
+          "200": {
+            "description": "Complete event counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3EventCatalogStats"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "503": {
+            "description": "Markets and events are temporarily unavailable"
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v3/rewards/markets": {
       "get": {
         "tags": [
@@ -5763,13 +6104,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Reward-market configurations"
+            "description": "Reward-market configurations with nullable market context",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3RewardMarketsResponse"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized"
           },
           "502": {
             "description": "Temporary rewards data provider failure"
+          },
+          "503": {
+            "description": "Reward-market metadata is temporarily unavailable"
           }
         },
         "security": [
@@ -5817,7 +6168,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Reward-market configuration"
+            "description": "Reward-market configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3RewardMarketDetailResponse"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid condition ID"
@@ -10579,6 +10937,329 @@
         "properties": {
           "error": {
             "type": "string"
+          }
+        }
+      },
+      "V3CatalogStatus": {
+        "type": "string",
+        "enum": ["open", "closed", "inactive"]
+      },
+      "V3CatalogStatusCounts": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["open", "closed", "inactive"],
+        "properties": {
+          "open": {"type": "integer", "minimum": 0},
+          "closed": {"type": "integer", "minimum": 0},
+          "inactive": {"type": "integer", "minimum": 0}
+        }
+      },
+      "V3CatalogFilters": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "event_slug"],
+        "properties": {
+          "status": {
+            "oneOf": [
+              {"$ref": "#/components/schemas/V3CatalogStatus"},
+              {"type": "null"}
+            ]
+          },
+          "event_slug": {"type": ["string", "null"]}
+        }
+      },
+      "V3MarketCatalogRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "condition_id",
+          "status",
+          "tag_slugs",
+          "volume_all_time",
+          "liquidity",
+          "outcome_prices"
+        ],
+        "properties": {
+          "condition_id": {"type": "string"},
+          "question": {"type": "string"},
+          "slug": {"type": "string"},
+          "outcomes": {"type": "array", "items": {"type": "string"}},
+          "end_date": {"type": "string"},
+          "active": {"type": "boolean"},
+          "closed": {"type": "boolean"},
+          "archived": {"type": "boolean"},
+          "status": {"$ref": "#/components/schemas/V3CatalogStatus"},
+          "enable_order_book": {"type": "boolean"},
+          "closed_time": {"type": "string"},
+          "neg_risk": {"type": "boolean"},
+          "neg_risk_market_id": {"type": "string"},
+          "image": {"type": "string"},
+          "icon": {"type": "string"},
+          "event_slug": {"type": "string"},
+          "event_title": {"type": "string"},
+          "group_item_title": {"type": "string"},
+          "winning_outcome_index": {"type": "integer"},
+          "tag_slugs": {"type": "array", "items": {"type": "string"}},
+          "category": {"type": "string"},
+          "updated_at": {"type": "string"},
+          "pm_created_at": {"type": "string"},
+          "pm_updated_at": {"type": "string"},
+          "volume_all_time": {"type": "null"},
+          "liquidity": {"type": "null"},
+          "outcome_prices": {"type": "null"}
+        }
+      },
+      "V3EventRepresentativeMarket": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["condition_id", "slug", "question", "end_date", "tag_slugs"],
+        "properties": {
+          "condition_id": {"type": "string"},
+          "slug": {"type": ["string", "null"]},
+          "question": {"type": ["string", "null"]},
+          "end_date": {"type": ["string", "null"]},
+          "tag_slugs": {"type": "array", "items": {"type": "string"}}
+        }
+      },
+      "V3EventCatalogRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_slug",
+          "status",
+          "active",
+          "closed",
+          "market_count",
+          "status_counts",
+          "title_variant_count",
+          "image_variant_count",
+          "icon_variant_count",
+          "representative_market",
+          "volume_all_time",
+          "liquidity"
+        ],
+        "properties": {
+          "event_slug": {"type": "string"},
+          "title": {"type": "string"},
+          "status": {"$ref": "#/components/schemas/V3CatalogStatus"},
+          "active": {"type": "boolean"},
+          "closed": {"type": "boolean"},
+          "market_count": {"type": "integer", "minimum": 1},
+          "status_counts": {"$ref": "#/components/schemas/V3CatalogStatusCounts"},
+          "latest_market_updated_at": {"type": "string"},
+          "title_variant_count": {"type": "integer", "minimum": 0},
+          "image_variant_count": {"type": "integer", "minimum": 0},
+          "icon_variant_count": {"type": "integer", "minimum": 0},
+          "image": {"type": "string"},
+          "icon": {"type": "string"},
+          "representative_market": {"$ref": "#/components/schemas/V3EventRepresentativeMarket"},
+          "volume_all_time": {"type": "null"},
+          "liquidity": {"type": "null"}
+        }
+      },
+      "V3MarketCatalogResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["markets", "rows_returned", "has_more", "limit", "next_cursor", "sort", "order", "filters"],
+        "properties": {
+          "markets": {"type": "array", "items": {"$ref": "#/components/schemas/V3MarketCatalogRow"}},
+          "rows_returned": {"type": "integer", "minimum": 0},
+          "has_more": {"type": "boolean"},
+          "limit": {"type": "integer", "minimum": 1, "maximum": 300},
+          "next_cursor": {"type": ["string", "null"]},
+          "sort": {"type": "string", "const": "updated"},
+          "order": {"type": "string", "const": "desc"},
+          "filters": {"$ref": "#/components/schemas/V3CatalogFilters"}
+        }
+      },
+      "V3EventCatalogResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["events", "rows_returned", "has_more", "limit", "next_cursor", "sort", "order", "filters"],
+        "properties": {
+          "events": {"type": "array", "items": {"$ref": "#/components/schemas/V3EventCatalogRow"}},
+          "rows_returned": {"type": "integer", "minimum": 0},
+          "has_more": {"type": "boolean"},
+          "limit": {"type": "integer", "minimum": 1, "maximum": 300},
+          "next_cursor": {"type": ["string", "null"]},
+          "sort": {"type": "string", "const": "updated"},
+          "order": {"type": "string", "const": "desc"},
+          "filters": {"$ref": "#/components/schemas/V3CatalogFilters"}
+        }
+      },
+      "V3MarketCatalogStats": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["market_count", "event_linked_market_count", "event_count", "status_counts"],
+        "properties": {
+          "market_count": {"type": "integer", "minimum": 0},
+          "event_linked_market_count": {"type": "integer", "minimum": 0},
+          "event_count": {"type": "integer", "minimum": 0},
+          "status_counts": {"$ref": "#/components/schemas/V3CatalogStatusCounts"}
+        }
+      },
+      "V3EventCatalogStats": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["event_count", "member_market_count", "catalog_market_count", "status_counts"],
+        "properties": {
+          "event_count": {"type": "integer", "minimum": 0},
+          "member_market_count": {"type": "integer", "minimum": 0},
+          "catalog_market_count": {"type": "integer", "minimum": 0},
+          "status_counts": {"$ref": "#/components/schemas/V3CatalogStatusCounts"}
+        }
+      },
+      "V3LeaderboardScopeRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["value", "wallet_count", "ranked_count"],
+        "properties": {
+          "value": {"type": "string"},
+          "wallet_count": {"type": "integer", "minimum": 0},
+          "ranked_count": {"type": "integer", "minimum": 0, "maximum": 1000}
+        }
+      },
+      "V3LeaderboardScopesResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scopes", "count", "total_count", "limit", "offset", "has_more", "period", "scope", "query"],
+        "properties": {
+          "scopes": {"type": "array", "items": {"$ref": "#/components/schemas/V3LeaderboardScopeRow"}},
+          "count": {"type": "integer", "minimum": 0},
+          "total_count": {"type": "integer", "minimum": 0},
+          "limit": {"type": "integer", "minimum": 1, "maximum": 200},
+          "offset": {"type": "integer", "minimum": 0, "maximum": 10000},
+          "has_more": {"type": "boolean"},
+          "period": {"type": "string", "enum": ["1d", "7d", "30d"]},
+          "scope": {"type": "string", "enum": ["category", "tag"]},
+          "query": {"type": ["string", "null"]}
+        }
+      },
+      "V3RewardConfig": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["asset_address", "start_date", "end_date", "rate_per_day"],
+        "properties": {
+          "asset_address": {"type": "string"},
+          "start_date": {"type": "string"},
+          "end_date": {"type": "string"},
+          "rate_per_day": {"type": "number"},
+          "id": {"type": "integer"},
+          "total_days": {"type": "integer", "minimum": 0},
+          "total_rewards": {"type": "number"}
+        }
+      },
+      "V3RewardMarketConfiguration": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["condition_id"],
+        "properties": {
+          "condition_id": {"type": "string"},
+          "native_daily_rate": {"type": "number"},
+          "total_daily_rate": {"type": "number"},
+          "rewards_max_spread": {"type": "number"},
+          "rewards_min_size": {"type": "number"},
+          "rewards_config": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardConfig"}}
+        }
+      },
+      "V3RewardMarket": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["condition_id", "title", "slug", "image", "event_slug", "event_title", "category", "tag_slugs"],
+        "properties": {
+          "condition_id": {"type": "string"},
+          "native_daily_rate": {"type": "number"},
+          "total_daily_rate": {"type": "number"},
+          "rewards_max_spread": {"type": "number"},
+          "rewards_min_size": {"type": "number"},
+          "rewards_config": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardConfig"}},
+          "title": {"type": ["string", "null"]},
+          "slug": {"type": ["string", "null"]},
+          "image": {"type": ["string", "null"]},
+          "event_slug": {"type": ["string", "null"]},
+          "event_title": {"type": ["string", "null"]},
+          "category": {"type": ["string", "null"]},
+          "tag_slugs": {
+            "oneOf": [
+              {"type": "array", "items": {"type": "string"}},
+              {"type": "null"}
+            ]
+          }
+        }
+      },
+      "V3RewardMarketsResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reward_semantics", "data"],
+        "properties": {
+          "reward_semantics": {"type": "string"},
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["count", "data"],
+            "properties": {
+              "count": {"type": "integer", "minimum": 0},
+              "data": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardMarket"}},
+              "limit": {"type": "integer", "minimum": 1},
+              "next_cursor": {"type": ["string", "null"]}
+            }
+          }
+        }
+      },
+      "V3RewardMarketToken": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["outcome", "price", "token_id"],
+        "properties": {
+          "outcome": {"type": "string"},
+          "price": {"type": "number"},
+          "token_id": {"type": "string"}
+        }
+      },
+      "V3RewardMarketDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "condition_id",
+          "event_slug",
+          "image",
+          "market_competitiveness",
+          "market_slug",
+          "question",
+          "rewards_config",
+          "rewards_max_spread",
+          "rewards_min_size",
+          "tokens"
+        ],
+        "properties": {
+          "condition_id": {"type": "string"},
+          "event_slug": {"type": "string"},
+          "image": {"type": "string"},
+          "market_competitiveness": {"type": "number"},
+          "market_slug": {"type": "string"},
+          "question": {"type": "string"},
+          "rewards_config": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardConfig"}},
+          "rewards_max_spread": {"type": "number"},
+          "rewards_min_size": {"type": "number"},
+          "tokens": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardMarketToken"}}
+        }
+      },
+      "V3RewardMarketDetailResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reward_semantics", "data"],
+        "properties": {
+          "reward_semantics": {"type": "string"},
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["count", "data"],
+            "properties": {
+              "count": {"type": "integer", "minimum": 0},
+              "data": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardMarketDetail"}},
+              "limit": {"type": "integer", "minimum": 1},
+              "next_cursor": {"type": ["string", "null"]}
+            }
           }
         }
       },

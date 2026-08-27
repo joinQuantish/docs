@@ -1,0 +1,136 @@
+---
+title: "Market Catalog"
+openapi: "GET /v3/markets"
+description: "Walk the complete Polymarket market catalog with stable cursor pagination and optional status or event filters."
+---
+
+`GET /v3/markets` is the exhaustive market-listing route. Use it when every
+market matters. Use [Search Markets](/data/markets/search) when relevance
+search is more useful than a complete cursor walk.
+
+Rows are ordered by `updated_at` descending, with rows that have no update
+timestamp placed last.
+
+## Request
+
+```text
+GET /v3/markets
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | integer | 100 | Rows per page. Values below 1 use 1; values above 300 use 300. |
+| `cursor` | string | none | Opaque `next_cursor` returned by the preceding page. |
+| `status` | string | all | `open`, `closed`, `inactive`, or `all`. Matching is case-insensitive. |
+| `event_slug` | string | none | Exact parent event slug. |
+| `sort` | string | `updated` | Only `updated` is available. |
+| `order` | string | `desc` | Only `desc` is available. |
+
+Offset pagination is not supported on this route.
+
+## First page
+
+```bash
+curl "https://api.polynode.dev/v3/markets?status=open&limit=2" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```json
+{
+  "markets": [
+    {
+      "condition_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
+      "question": "Will the example market resolve Yes?",
+      "slug": "will-the-example-market-resolve-yes",
+      "outcomes": ["Yes", "No"],
+      "active": true,
+      "closed": false,
+      "status": "open",
+      "event_slug": "example-event",
+      "event_title": "Example event",
+      "tag_slugs": ["example"],
+      "category": "examples",
+      "image": "https://example.com/market.png",
+      "updated_at": "2026-08-27T20:00:00Z",
+      "volume_all_time": null,
+      "liquidity": null,
+      "outcome_prices": null
+    }
+  ],
+  "rows_returned": 1,
+  "has_more": true,
+  "limit": 2,
+  "next_cursor": "mec1.example-cursor",
+  "sort": "updated",
+  "order": "desc",
+  "filters": {
+    "status": "open",
+    "event_slug": null
+  }
+}
+```
+
+The example cursor is shortened for display. Treat a real cursor as opaque.
+
+## Continue pagination
+
+Pass `next_cursor` unchanged and keep the same `status` and `event_slug`
+filters:
+
+```bash
+curl "https://api.polynode.dev/v3/markets?status=open&limit=2&cursor=$NEXT_CURSOR" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Stop when `has_more` is `false`. The last page returns `next_cursor: null`.
+Cursors expire, so complete a page walk promptly rather than storing a cursor
+as a permanent market ID.
+
+## Response envelope
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `markets` | array | Market rows in this page. |
+| `rows_returned` | integer | Number of rows returned. |
+| `has_more` | boolean | Whether another page exists. |
+| `limit` | integer | Effective page size. |
+| `next_cursor` | string or null | Cursor for the next page, or `null` on the last page. |
+| `sort` | string | Always `updated`. |
+| `order` | string | Always `desc`. |
+| `filters.status` | string or null | Canonical status filter, or `null` for all statuses. |
+| `filters.event_slug` | string or null | Event filter, or `null`. |
+
+## Market fields
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `condition_id` | string | no | Market condition ID. |
+| `question` | string | yes | Market question. |
+| `slug` | string | yes | Market slug. |
+| `outcomes` | array&lt;string&gt; | yes | Outcome labels. |
+| `status` | string | no | `open`, `closed`, or `inactive`. |
+| `active`, `closed`, `archived` | boolean | yes | Market state flags when available. |
+| `enable_order_book` | boolean | yes | Whether orderbook trading is enabled. |
+| `end_date`, `closed_time` | string | yes | Market timestamps when available. |
+| `neg_risk` | boolean | yes | Whether the market uses neg-risk settlement. |
+| `neg_risk_market_id` | string | yes | Neg-risk market ID when available. |
+| `event_slug`, `event_title` | string | yes | Parent event identity. |
+| `group_item_title` | string | yes | Group label for a market inside an event. |
+| `image`, `icon` | string | yes | Image URLs when available. |
+| `tag_slugs` | array&lt;string&gt; | no | Market tags. An untagged market returns an empty array. |
+| `category` | string | yes | Market category when available. |
+| `winning_outcome_index` | integer | yes | Winning outcome index after resolution. |
+| `updated_at`, `pm_created_at`, `pm_updated_at` | string | yes | Market timestamps when available. |
+| `volume_all_time`, `liquidity`, `outcome_prices` | null | yes | Reserved financial fields. This catalog currently returns `null`; do not treat them as zero. |
+
+## Errors
+
+| Status | Error | When it occurs |
+|--------|-------|----------------|
+| `400` | `invalid_request` | Invalid status, event slug, sort, order, or use of `offset`. |
+| `400` | `invalid_cursor` | A cursor is malformed, expired, or used with different filters. |
+| `401` | authentication error | The API key is missing or invalid. |
+| `410` | `invalid_cursor` | The page walk referenced by the cursor is no longer available. Start again without a cursor. |
+| `503` | `temporarily_unavailable` | Markets and events are temporarily unavailable. |

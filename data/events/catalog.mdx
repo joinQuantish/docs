@@ -1,0 +1,118 @@
+---
+title: "Event Catalog"
+openapi: "GET /v3/events"
+description: "Walk the complete Polymarket event catalog with member-market counts and stable cursor pagination."
+---
+
+`GET /v3/events` groups markets by parent event slug and returns one event row
+with status and member-market counts. Events are ordered by the latest update
+among their member markets.
+
+## Request
+
+```text
+GET /v3/events
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | integer | 100 | Rows per page. Values below 1 use 1; values above 300 use 300. |
+| `cursor` | string | none | Opaque `next_cursor` returned by the preceding page. |
+| `status` | string | all | `open`, `closed`, `inactive`, or `all`. Matching is case-insensitive. |
+| `event_slug` | string | none | Exact event slug. |
+| `sort` | string | `updated` | Only `updated` is available. |
+| `order` | string | `desc` | Only `desc` is available. |
+
+Offset pagination is not supported on this route.
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/events?event_slug=example-event&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```json
+{
+  "events": [
+    {
+      "event_slug": "example-event",
+      "title": "Example event",
+      "status": "open",
+      "active": true,
+      "closed": false,
+      "market_count": 2,
+      "status_counts": {
+        "open": 1,
+        "closed": 1,
+        "inactive": 0
+      },
+      "latest_market_updated_at": "2026-08-27T20:00:00Z",
+      "title_variant_count": 1,
+      "image_variant_count": 1,
+      "icon_variant_count": 1,
+      "image": "https://example.com/event.png",
+      "representative_market": {
+        "condition_id": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "slug": "will-the-example-market-resolve-yes",
+        "question": "Will the example market resolve Yes?",
+        "end_date": null,
+        "tag_slugs": ["example"]
+      },
+      "volume_all_time": null,
+      "liquidity": null
+    }
+  ],
+  "rows_returned": 1,
+  "has_more": false,
+  "limit": 1,
+  "next_cursor": null,
+  "sort": "updated",
+  "order": "desc",
+  "filters": {
+    "status": null,
+    "event_slug": "example-event"
+  }
+}
+```
+
+## Event status
+
+An event is `open` while any member market is open. It is `closed` when every
+member market is closed. Otherwise it is `inactive`.
+
+## Response envelope
+
+The envelope has the same cursor fields as the
+[market catalog](/data/markets/catalog), with the page rows in `events`.
+Pass `next_cursor` unchanged and keep the same filters. Stop when `has_more` is
+`false`.
+
+## Event fields
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `event_slug` | string | no | Event slug. |
+| `title` | string | yes | Representative event title. |
+| `status` | string | no | `open`, `closed`, or `inactive`. |
+| `active`, `closed` | boolean | no | Status convenience flags. |
+| `market_count` | integer | no | Member markets. |
+| `status_counts` | object | no | Open, closed, and inactive member-market counts. |
+| `latest_market_updated_at` | string | yes | Latest available update among member markets. |
+| `title_variant_count` | integer | no | Distinct non-empty event titles among member markets. |
+| `image_variant_count`, `icon_variant_count` | integer | no | Distinct non-empty image and icon URLs among member markets. |
+| `image`, `icon` | string | yes | Representative image URLs. |
+| `representative_market` | object | no | One member market with `condition_id`, `slug`, `question`, `end_date`, and `tag_slugs`. |
+| `volume_all_time`, `liquidity` | null | yes | Reserved financial fields. This catalog currently returns `null`; do not treat them as zero. |
+
+## Errors
+
+| Status | Error | When it occurs |
+|--------|-------|----------------|
+| `400` | `invalid_request` | Invalid status, event slug, sort, order, or use of `offset`. |
+| `400` | `invalid_cursor` | A cursor is malformed, expired, belongs to the market route, or is used with different filters. |
+| `401` | authentication error | The API key is missing or invalid. |
+| `410` | `invalid_cursor` | The page walk referenced by the cursor is no longer available. Start again without a cursor. |
+| `503` | `temporarily_unavailable` | Markets and events are temporarily unavailable. |

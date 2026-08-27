@@ -4,7 +4,9 @@ openapi: "GET /v3/rewards/markets"
 description: "List public Polymarket reward market configurations."
 ---
 
-Returns Polymarket's public reward-market configuration feed. This describes markets with active reward programs; it is not per-wallet earned LP rewards.
+Returns Polymarket's public reward-market configuration feed with nullable
+market and event context. This describes markets with active reward programs;
+it is not per-wallet earned LP rewards.
 
 ## Request
 
@@ -22,18 +24,26 @@ GET /v3/rewards/markets
 ## Example
 
 ```bash
-curl "https://api.polynode.dev/v3/rewards/markets"
+curl "https://api.polynode.dev/v3/rewards/markets" \
+  -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
 ```json
 {
-  "source": "reward_market_config",
   "reward_semantics": "public Polymarket reward market configuration; this is not per-wallet earned LP rewards",
   "data": {
-    "count": 500,
+    "count": 1,
+    "limit": 500,
     "data": [
       {
         "condition_id": "0x0001cb8c0b39aeb614ab9a43867595317f06ede9c011661513065c638fbbefda",
+        "title": "Will the example market resolve Yes?",
+        "slug": "will-the-example-market-resolve-yes",
+        "image": "https://example.com/market.png",
+        "event_slug": "example-event",
+        "event_title": "Example event",
+        "category": "examples",
+        "tag_slugs": ["example"],
         "native_daily_rate": 1,
         "rewards_config": [
           {
@@ -50,9 +60,8 @@ curl "https://api.polynode.dev/v3/rewards/markets"
         "total_daily_rate": 1
       }
     ],
-    "next_cursor": "..."
-  },
-  "elapsed_ms": 447
+    "next_cursor": null
+  }
 }
 ```
 
@@ -60,14 +69,34 @@ curl "https://api.polynode.dev/v3/rewards/markets"
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `source` | string | Dataset label |
 | `reward_semantics` | string | Meaning note |
 | `data` | object | Reward-market configuration response |
-| `elapsed_ms` | integer | Server-side request time in milliseconds |
+
+`data.count` is the number of rows in this page, `data.limit` is the page size,
+and `data.next_cursor` continues pagination when it is not `null`.
+
+### Market context fields
+
+Every row in `data.data` includes these additive fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `title` | string or null | Market title, or `null` when unavailable. |
+| `slug` | string or null | Market slug, or `null`. |
+| `image` | string or null | Market image URL, or `null`. |
+| `event_slug` | string or null | Parent event slug, or `null`. |
+| `event_title` | string or null | Parent event title, or `null`. |
+| `category` | string or null | Market category, or `null`. |
+| `tag_slugs` | array&lt;string&gt; or null | Market tags, or `null` when unavailable. |
+
+These fields are nullable. Reward configuration fields such as
+`native_daily_rate`, `total_daily_rate`, `rewards_max_spread`,
+`rewards_min_size`, and `rewards_config` remain unchanged.
 
 ## Errors
 
 | HTTP | When |
 |------|------|
-| `401` | Missing or invalid PolyNode API key |
+| `401` | Missing or invalid polynode API key |
 | `502` | Temporary rewards data provider failure |
+| `503` | Reward-market metadata is temporarily unavailable |

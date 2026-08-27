@@ -3,6 +3,18 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-28 [codex] - Prepared public documentation, OpenAPI schemas,
+  navigation, and a 2026-08-27 changelog entry for the complete V3 market and
+  event catalogs, catalog statistics, rolling leaderboard scope discovery,
+  and the seven nullable reward-market context fields on the list route. Live
+  checks against API source `0565b30` passed for two-page cursor continuity,
+  disjoint market and event pages, status and event filters, exact statistics,
+  scope search, list-only reward enrichment, consumer errors, and omission of
+  non-product fields. Mintlify 4.2.819 strict validation, JSON, schema
+  reference, navigation, local-link, changed-copy, secret, diff, and targeted
+  example checks pass. Documentation merge, publication, and public-page
+  verification remain pending.
+
 - 2026-08-27 [codex] - Completed publication of the rolling realized-P&L
   leaderboard documentation. Reviewed source
   `b9fd37c2a45f4619946cba650ee3be84c066612b` merged through PR #61 as

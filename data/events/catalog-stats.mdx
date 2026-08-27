@@ -1,0 +1,48 @@
+---
+title: "Event Catalog Stats"
+openapi: "GET /v3/events/stats"
+description: "Get complete event, member-market, and event-status counts."
+---
+
+Returns counts for the complete [event catalog](/data/events/catalog),
+independent of any one page.
+
+## Request
+
+```bash
+curl "https://api.polynode.dev/v3/events/stats" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+## Response
+
+```json
+{
+  "event_count": 900634,
+  "member_market_count": 2653204,
+  "catalog_market_count": 2662678,
+  "status_counts": {
+    "open": 99115,
+    "closed": 800390,
+    "inactive": 1129
+  }
+}
+```
+
+Counts change as events and their member markets change.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `event_count` | integer | Events in the complete event catalog. |
+| `member_market_count` | integer | Markets linked to those events. |
+| `catalog_market_count` | integer | Markets in the complete market catalog, including markets without an event slug. |
+| `status_counts.open` | integer | Open events. |
+| `status_counts.closed` | integer | Closed events. |
+| `status_counts.inactive` | integer | Events that are neither open nor closed. |
+
+## Errors
+
+| Status | Error | When it occurs |
+|--------|-------|----------------|
+| `401` | authentication error | The API key is missing or invalid. |
+| `503` | `temporarily_unavailable` | Markets and events are temporarily unavailable. |
