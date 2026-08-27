@@ -1,18 +1,23 @@
 ---
 title: "Leaderboard"
 openapi: "GET /v3/leaderboard"
-description: "Rank all Polymarket wallets by P&L, volume, profit, or win count. Supports one primary market filter dimension per request. All amounts in USD."
+description: "Rank Polymarket wallets globally, by category, or by one tag. Supports all-time rankings and 1-day, 7-day, and 30-day realized-P&L rankings."
 ---
 
-Ranks wallets by realized P&L, total P&L (realized + unrealized), gross profit, volume, or win count. All monetary values are in USD.
+`GET /v3/leaderboard` supports two ranking modes:
+
+* Omit `period`, or use `period=all`, for the all-time leaderboard. All-time views can rank by total P&L, realized P&L, unrealized P&L, profit, loss, volume, wins, or position count.
+* Use `period=1d`, `7d`, or `30d` for a rolling realized-P&L leaderboard. Rolling views rank by `realized_pnl` in descending order and do not include historical unrealized P&L.
+
+All monetary values are in USD.
 
 <Note>
-Leaderboard filters are designed around one primary dimension per request. Use one of `category`, `tags`/`tag_slug`, `market`/`market_slug`, `event_slug`, or `condition_id`. For compound analysis, run separate leaderboard calls or filter client-side.
+  A rolling leaderboard measures realized-state changes recorded inside the selected window. It is not a historical snapshot of each wallet's all-time total P&L. See [Wallet P&L](/data/wallets/pnl) for the matching time-window semantics.
 </Note>
 
 ## Request
 
-```
+```text
 GET /v3/leaderboard
 ```
 
@@ -20,37 +25,38 @@ GET /v3/leaderboard
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `sort` | string | `total` | Sort by: `total`, `total_pnl`, `realized`, `profit`, `loss`, `volume`, `wins`, `positions`, `unrealized` |
-| `category` | string | -- | Filter to one market category, case-insensitive |
-| `tags` | string | -- | Filter to one tag slug. Comma-separated multi-tag filters may be accepted for specific cases, but one tag is the recommended leaderboard shape. |
-| `tag_slug` | string | -- | Alias for a single `tags` value |
-| `market` | string | -- | Filter by condition ID or market slug |
-| `market_slug` | string | -- | Filter by market slug |
-| `event_slug` | string | -- | Filter by parent event slug |
-| `condition_id` | string | -- | Filter by market condition ID |
-| `limit` | integer | 100 | Max 300 |
-| `offset` | integer | 0 | Pagination offset |
+| `period` | string | `all` | `1d`, `7d`, `30d`, or `all`. Aliases `day`, `week`, and `month` are accepted. `all_time` and `all-time` also select all-time mode. |
+| `sort` | string | mode-dependent | All-time: `total_pnl`, `realized_pnl`, `unrealized_pnl`, `gross_profit`, `gross_loss`, `volume`, `wins`, or `position_count`, including the aliases below. Rolling: `realized_pnl` only. |
+| `order` | string | `desc` | All-time: `asc` or `desc`. Rolling: `desc` only. |
+| `category` | string | none | Filter to one market category, case-insensitive. |
+| `tags` | string | none | Filter to a tag. All-time mode also accepts comma-separated tags. Rolling mode accepts exactly one tag. |
+| `tag_slug` | string | none | Alias for a single `tags` value. |
+| `market` | string | none | All-time only. Filter by condition ID or market slug. |
+| `market_slug` | string | none | All-time only. Filter by market slug. |
+| `event_slug` | string | none | All-time only. Filter by parent event slug. |
+| `condition_id` | string | none | All-time only. Filter by market condition ID. |
+| `limit` | integer | 20 | Number of rows. Values below 1 use 1; values above 100 use 100. |
+| `offset` | integer | 0 | Pagination offset. Negative values use 0. |
 
-<Warning>
-For the global leaderboard, `offset + limit` must be at most 10,000. A deeper
-window returns HTTP `400` with `error: "leaderboard_offset_too_deep"` and the
-`max_rank`, `max_offset`, `limit`, and `offset` values. Tag-scoped leaderboards
-retain their existing pagination behavior.
-</Warning>
+All-time sort aliases include `total`, `pnl`, and `net_pnl` for `total_pnl`; `realized` and `net_realized_pnl` for `realized_pnl`; `unrealized` for `unrealized_pnl`; `profit` for `gross_profit`; `loss` for `gross_loss`; `total_volume` for `volume`; and `positions` for `position_count`.
 
-## Example
+### Rolling scope rules
+
+A rolling request can use exactly one of these scopes:
+
+| Scope | Parameters |
+|-------|------------|
+| Global | No `category`, `tags`, or `tag_slug` |
+| Category | One `category` |
+| Tag | One `tags` or `tag_slug` value |
+
+Leaderboard requests do not accept `after` or `before`; use `period` for a dated ranking. Rolling requests also do not accept market, event, condition, multiple-tag, or combined category-and-tag filters.
+
+## All-time example
 
 ```bash
-curl https://api.polynode.dev/v3/leaderboard?limit=2&sort=total
-```
-
-### Filter by one dimension
-
-```bash
-curl "https://api.polynode.dev/v3/leaderboard?category=crypto&limit=20"
-curl "https://api.polynode.dev/v3/leaderboard?tag_slug=us-election&limit=20"
-curl "https://api.polynode.dev/v3/leaderboard?market_slug=will-donald-trump-win-the-popular-vote-in-the-2024-presidential-election&limit=20"
-curl "https://api.polynode.dev/v3/leaderboard?event_slug=presidential-election-popular-vote-winner-2024&limit=20"
+curl "https://api.polynode.dev/v3/leaderboard?sort=total_pnl&order=desc&limit=1" \
+  -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
 ```json
@@ -60,10 +66,11 @@ curl "https://api.polynode.dev/v3/leaderboard?event_slug=presidential-election-p
       "rank": 1,
       "wallet": "0x56687bf447db6ffa42ffe2204a05edaa20f55839",
       "net_realized_pnl": 22053845.825455,
+      "realized_pnl": 22053845.825455,
       "gross_profit": 22057977.181649,
       "gross_loss": -4131.356194,
-      "unrealized_pnl": 0.000688755,
-      "total_pnl": 22053845.826143753,
+      "unrealized_pnl": 0.000689,
+      "total_pnl": 22053845.826144,
       "wins": 18,
       "losses": 4,
       "position_count": 22,
@@ -71,27 +78,141 @@ curl "https://api.polynode.dev/v3/leaderboard?event_slug=presidential-election-p
       "total_volume": 43013258.515682
     }
   ],
-  "rows_returned": 1,
-  "has_more": true,
+  "count": 1,
+  "limit": 1,
   "offset": 0,
-  "limit": 2,
-  "elapsed_ms": 1028
+  "has_more": true,
+  "sort": "total_pnl",
+  "order": "desc"
 }
 ```
 
-## Response fields
+## Rolling examples
+
+### Global 7-day realized P&L
+
+```bash
+curl "https://api.polynode.dev/v3/leaderboard?period=7d&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+### 30-day category and tag rankings
+
+```bash
+curl "https://api.polynode.dev/v3/leaderboard?period=30d&category=sports&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+
+curl "https://api.polynode.dev/v3/leaderboard?period=30d&tag_slug=us-election&limit=20" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+### Rolling response
+
+```json
+{
+  "leaderboard": [
+    {
+      "rank": 1,
+      "wallet": "0x1111111111111111111111111111111111111111",
+      "net_realized_pnl": 125000.5,
+      "realized_pnl": 125000.5,
+      "gross_profit": 140000.5,
+      "gross_loss": -15000,
+      "wins": 42,
+      "losses": 8,
+      "position_count": 50,
+      "event_count": 73,
+      "condition_count": 31
+    }
+  ],
+  "count": 1,
+  "limit": 20,
+  "offset": 0,
+  "has_more": true,
+  "period": "7d",
+  "sort": "realized_pnl",
+  "order": "desc",
+  "category": null,
+  "tags": []
+}
+```
+
+## Response envelope
+
+| Field | Mode | Description |
+|-------|------|-------------|
+| `leaderboard` | both | Ranked rows for the requested page. |
+| `count` | both | Number of rows returned in this response. |
+| `limit` | both | Effective page size after the 100-row cap. |
+| `offset` | both | Effective pagination offset. |
+| `has_more` | both | Whether another page exists inside the selected rank cap. |
+| `sort` | both | Effective sort field. Rolling mode always returns `realized_pnl`. |
+| `order` | both | Effective sort order. Rolling mode always returns `desc`. |
+| `period` | rolling | Canonical period: `1d`, `7d`, or `30d`. |
+| `category` | rolling and filtered all-time | Selected category, or `null`. |
+| `tags` | rolling and filtered all-time | Selected tag values. |
+| `market_slug`, `event_slug`, `condition_id` | filtered all-time | Selected all-time filter values, or `null`. |
+
+## Row fields
+
+### All-time rows
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `rank` | integer | Position in the leaderboard |
-| `wallet` | string | Wallet address |
-| `net_realized_pnl` | number | Net realized P&L (USD) |
-| `gross_profit` | number | Sum of winning positions (USD) |
-| `gross_loss` | number | Sum of losing positions (USD, negative) |
-| `unrealized_pnl` | number | Paper P&L from open positions (USD) |
-| `total_pnl` | number | `net_realized_pnl + unrealized_pnl` (USD) |
-| `wins` | integer | Winning position count |
-| `losses` | integer | Losing position count |
-| `position_count` | integer | Total positions |
-| `open_positions` | integer | Currently held positions |
-| `total_volume` | number | Total volume traded (USD) |
+| `rank` | integer | Position in the selected leaderboard. |
+| `wallet` | string | Wallet address. |
+| `net_realized_pnl` | number | Net realized P&L. Equal to `realized_pnl`. |
+| `realized_pnl` | number | Net realized P&L. |
+| `gross_profit` | number | Sum of profitable positions. |
+| `gross_loss` | number | Sum of losing positions, negative or zero. |
+| `unrealized_pnl` | number | Current P&L from open positions. |
+| `total_pnl` | number | Realized plus unrealized P&L. |
+| `wins` | integer | Winning position count. |
+| `losses` | integer | Losing position count. |
+| `position_count` | integer | Total position count. |
+| `open_positions` | integer | Current open-position count. |
+| `total_volume` | number | Total traded volume. |
+
+### Rolling rows
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `rank` | integer | Position in the rolling leaderboard. |
+| `wallet` | string | Wallet address. |
+| `net_realized_pnl` | number | Net realized P&L in the selected window. Equal to `realized_pnl`. |
+| `realized_pnl` | number | Net realized P&L in the selected window. |
+| `gross_profit` | number | Sum of positive per-position realized changes in the window. |
+| `gross_loss` | number | Sum of negative per-position realized changes in the window. |
+| `wins` | integer | Positions with a positive realized change. |
+| `losses` | integer | Positions with a negative realized change. |
+| `position_count` | integer | Positions with a non-zero realized change in the window. |
+| `event_count` | integer | Realized changes included in the row. |
+| `condition_count` | integer | Distinct markets represented in the row. |
+
+Rolling rows do not contain `unrealized_pnl`, `total_pnl`, `open_positions`, or `total_volume`.
+
+## Pagination and empty results
+
+* Global all-time pagination exposes ranks 1 through 10,000. If `offset + limit` exceeds 10,000, the API returns `400 leaderboard_offset_too_deep`.
+* Rolling pagination is capped at rank 1,000 for every scope. Shorter rankings end at their last returned row. If `offset + limit` exceeds 1,000, the API returns `400 leaderboard_offset_too_deep`.
+* A valid category or tag with no realized results in the selected rolling window returns HTTP `200` with an empty `leaderboard`, `count: 0`, and `has_more: false`.
+
+## Errors
+
+| Status | Error | When it occurs |
+|--------|-------|----------------|
+| `400` | `invalid_period` | `period` is not `1d`, `7d`, `30d`, or an all-time value. |
+| `400` | `invalid_sort` | The selected sort is not available for the requested mode. |
+| `400` | `invalid_order` | Rolling mode uses an order other than `desc`, or all-time mode uses an unsupported order. |
+| `400` | `unsupported_leaderboard_filter` | A rolling request combines scopes or uses an unsupported filter. |
+| `400` | `leaderboard_offset_too_deep` | The requested rank window exceeds the mode's cap. |
+| `401` | authentication error | The API key is missing or invalid. |
+| `503` | `leaderboard_unavailable` | The rolling leaderboard is temporarily unavailable. |
+| `503` | `pnl_unavailable` | A filtered all-time leaderboard is temporarily unavailable. |
+
+```json
+{
+  "error": "leaderboard_unavailable",
+  "message": "This leaderboard is temporarily unavailable."
+}
+```
