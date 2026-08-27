@@ -3,6 +3,18 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-28 [codex] - Completed publication of stable cursor pagination for
+  archived perps trades, position events, likely liquidations, and wallet
+  collateral flows. Source `79599868793471b6d676246a68463e582234c15d`
+  merged through PR #65 as
+  `ada713d633b2fdfc812b3cdd8ba84b52f251aae3`; its Mintlify deployment check
+  succeeded. Cache-busted public HTML returned HTTP 200 with the expected
+  cursor, expiry, stable-total, bounded-CVD, and changelog markers on all five
+  affected reference pages and the changelog. Public `openapi.json` returned
+  HTTP 200 and contained all four paginated route definitions. Strict
+  Mintlify validation, JSON parsing, local link/navigation checks, and targeted
+  example scans passed without exposing credentials.
+
 - 2026-08-28 [codex] - Prepared public documentation, OpenAPI examples, and a
   changelog entry for stable cursor pagination across archived perps trades,
   position events, likely liquidations, and wallet collateral flows. The copy
