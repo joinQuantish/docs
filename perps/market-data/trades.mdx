@@ -5,20 +5,44 @@ openapi: "GET /v3/perps/trades/{instrument}"
 
 ## Live filters
 
-Narrow the live tape server-side (Polymarket offers none of this): `side` (`long` / `short`), `min_qty`, `max_qty`, and `min_notional` — e.g. only trades over $25k. Unknown values return a `400`.
+Narrow the live tape with `side` (`long` or `short`), `min_qty`, `max_qty`,
+and `min_notional`. For example, set `min_notional=25000` to keep only
+trades worth at least $25,000. Unknown parameters return HTTP `400`.
 
 ## Historical windows
 
-Add `after` and/or `before` (Unix seconds or milliseconds) to query historical trades. History covers every execution from July 9, 2026 onward and keeps growing. The same `side`, `min_notional`, and `min_qty` filters apply to the archive too — so "all BTC taker-buys over $50k last week, by time" is one call.
+Add `after` and/or `before` (Unix seconds or milliseconds) to query historical
+trades. History covers every execution from July 9, 2026 onward and keeps
+growing. The same `side`, quantity, and notional filters apply to the archive.
 
-Windowed responses add a `more` flag for pagination.
+```text
+GET /v3/perps/trades/BTC-USD?after=1787875200&before=1787961600&limit=100
+```
+
+Archived responses preserve the existing `more` flag and also return
+`has_more` and an opaque `next_cursor`. When `has_more` is true, send the
+returned cursor with the same instrument and filters:
+
+```text
+GET /v3/perps/trades/BTC-USD?after=1787875200&before=1787961600&limit=100&cursor=<next_cursor>
+```
 
 | Parameter | Description |
 |-----------|-------------|
 | `limit` | Max rows (default 100, up to 1000) |
 | `after` | Only trades after this time |
 | `before` | Only trades before this time |
+| `cursor` | Opaque `next_cursor` from the preceding archived page |
 
-Trades are **newest first** in both live and windowed responses.
+Trades are **newest first** in both live and archived responses. Cursor pages
+belong to one fixed traversal, so new trades do not overlap or displace its
+later pages. Cursors expire after 24 hours.
 
-`side` is the taker's direction: `long` means the taker bought, `short` means the taker sold. Trades carry no account attribution — for position-level tracking use [wallet portfolios](/perps/wallets/portfolio).
+A malformed cursor returns HTTP `400` with `{"error":"invalid cursor"}`. An
+expired cursor returns `{"error":"cursor has expired"}`. Reusing a cursor
+with a different instrument or filter returns HTTP `400` and a clean mismatch
+message. Start again without the cursor in each case.
+
+`side` is the taker's direction: `long` means the taker bought, and `short`
+means the taker sold. Trades carry no account attribution. For position-level
+tracking, use [wallet portfolios](/perps/wallets/portfolio).

@@ -3,4 +3,21 @@ title: "Wallet Flows"
 openapi: "GET /v3/perps/wallets/{address}/flows"
 ---
 
-One wallet's collateral history: total deposited, total withdrawn, net, and the recent deposit/withdrawal events. Accepts any address form — resolved to the signer automatically.
+One wallet's collateral history: total deposited, total withdrawn, net, and
+pages of deposit and withdrawal events. Any supported address form resolves to
+the signer automatically.
+
+Responses include `has_more` and an opaque `next_cursor`. Send that value as
+`cursor` for the same wallet to continue through the fixed traversal:
+
+```text
+GET /v3/perps/wallets/0xabc/flows?limit=100
+GET /v3/perps/wallets/0xabc/flows?limit=100&cursor=<next_cursor>
+```
+
+The deposit and withdrawal totals and counts stay identical on every page in
+one traversal. Cursors expire after 24 hours. A malformed cursor returns HTTP
+`400` with `{"error":"invalid cursor"}`. An expired cursor returns
+`{"error":"cursor has expired"}`. Reusing a cursor for another wallet returns
+HTTP `400` with a clean mismatch message. Start again without the cursor in
+each case.
