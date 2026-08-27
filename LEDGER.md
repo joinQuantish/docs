@@ -3,6 +3,18 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-27 [codex] - Completed publication of the rolling realized-P&L
+  leaderboard documentation. Reviewed source
+  `b9fd37c2a45f4619946cba650ee3be84c066612b` merged through PR #61 as
+  `6475d88df3d6e9d99a96c2ff71c97e5dedf9949a`; Mintlify deployment check
+  `98630940697` succeeded. Cache-busted public HTML returned HTTP 200 for the
+  global leaderboard, tag leaderboard, and changelog pages and contained the
+  rolling-scope, conflicting-tag, and realized-P&L release markers. Their HTML
+  SHA-256 values were
+  `3419d694b65ef6d914893db3bd5c9b0366020ed5cc3ef95f69005bc06507711b`,
+  `6719c062ac2a2700e19055accdb8bb769a9515bbb00fc9dae3b8c338e76f4429`,
+  and `74675842d8cb498565cda6647cbd1367f4d63dfc6ac152d37e6446436c555784`.
+
 - 2026-08-27 [codex] - Prepared the public rolling realized-P&L leaderboard
   reference and changelog. The global and tag pages now define the `1d`, `7d`,
   and `30d` modes, category and single-tag scopes, all-time compatibility,
