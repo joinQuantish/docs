@@ -31,6 +31,6 @@ curl "https://api.polynode.dev/v3/leaderboard?period=30d&tag_slug=us-election&li
   -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
-Rolling pages contain up to 100 rows and expose the first 1,000 ranks. All-time global pages also contain up to 100 rows and expose the first 10,000 ranks.
+Rolling pages contain up to 100 rows and are capped at rank 1,000. All-time global pages also contain up to 100 rows and are capped at rank 10,000. A shorter ranking ends at its last returned row.
 
 Market, event, condition, multiple-tag, and combined category-and-tag filters are not supported in rolling mode. Market, event, and condition filters remain available where documented for all-time queries. Leaderboards do not accept `after` or `before`; use `period` for a dated ranking.

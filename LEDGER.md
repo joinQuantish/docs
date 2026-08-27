@@ -13,8 +13,10 @@ evidence for production documentation changes.
   pass. The four changed example pages contain no runnable JavaScript or
   TypeScript blocks. The full unchanged-repository example census found 61
   runnable blocks: 49 passed, one returned an authentication result, and 11
-  failed in unchanged pages. Publication and live-page verification remain
-  pending.
+  failed in unchanged pages. Live category checks returned ranked `sports`
+  rows for all three periods, an honest empty response for an unknown category,
+  and only documented consumer fields. Publication and live-page verification
+  remain pending.
 
 - 2026-08-23 [codex] — Completed the canonical time-filtered wallet P&L
   documentation rollout. Source `b4177db20dbe087e1d67fc95018f7fb989c6816c`

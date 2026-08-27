@@ -24,4 +24,4 @@ curl "https://api.polynode.dev/v3/tags/ufc/leaderboard?sort=total_pnl&limit=20" 
   -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
-Rolling tag leaderboards support `1d`, `7d`, and `30d`, rank by `realized_pnl` descending, and expose the first 1,000 ranks. A tag with no realized results in the selected window returns HTTP `200` with an empty `leaderboard`.
+Rolling tag leaderboards support `1d`, `7d`, and `30d`, rank by `realized_pnl` descending, and are capped at rank 1,000. A shorter ranking ends at its last returned row. A tag with no realized results in the selected window returns HTTP `200` with an empty `leaderboard`.

@@ -84,7 +84,7 @@ Omitting `period` preserves the all-time response and sort behavior. See [Leader
 
 ## Pagination, empty results, and errors
 
-* Rolling tag leaderboards expose ranks 1 through 1,000, with up to 100 rows per request.
+* Rolling tag leaderboards return up to 100 rows per request and are capped at rank 1,000. Shorter rankings end at their last returned row.
 * All-time tag leaderboards retain their existing offset pagination and do not use the global all-time 10,000-rank cap.
 * A tag with no realized results in a valid rolling window returns HTTP `200` with an empty `leaderboard`.
 * A rolling view that is temporarily unavailable returns `503 leaderboard_unavailable`.

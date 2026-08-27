@@ -194,7 +194,7 @@ Rolling rows do not contain `unrealized_pnl`, `total_pnl`, `open_positions`, or 
 ## Pagination and empty results
 
 * Global all-time pagination exposes ranks 1 through 10,000. If `offset + limit` exceeds 10,000, the API returns `400 leaderboard_offset_too_deep`.
-* Rolling pagination exposes ranks 1 through 1,000 for every scope. If `offset + limit` exceeds 1,000, the API returns `400 leaderboard_offset_too_deep`.
+* Rolling pagination is capped at rank 1,000 for every scope. Shorter rankings end at their last returned row. If `offset + limit` exceeds 1,000, the API returns `400 leaderboard_offset_too_deep`.
 * A valid category or tag with no realized results in the selected rolling window returns HTTP `200` with an empty `leaderboard`, `count: 0`, and `has_more: false`.
 
 ## Errors
