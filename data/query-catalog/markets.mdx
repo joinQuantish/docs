@@ -1,11 +1,20 @@
 ---
 title: "Markets Query Catalog"
-description: "Market recipes for search, condition lookup, slug lookup, token info, prices, tags, and resolutions."
+description: "Market recipes for complete catalog walks, search, condition lookup, slug lookup, token info, prices, tags, and resolutions."
 ---
 
 Use these recipes when building market search, market detail pages, token pages, tag pages, or resolution feeds.
 
 <CardGroup cols={2}>
+  <Card title="Complete Market Catalog" href="/data/markets/catalog">
+    Walk every market with stable cursor pagination.
+  </Card>
+  <Card title="Complete Event Catalog" href="/data/events/catalog">
+    Walk every parent event with member-market counts.
+  </Card>
+  <Card title="Catalog Statistics" href="/data/markets/catalog-stats">
+    Read complete market and status counts independent of a page.
+  </Card>
   <Card title="Search Markets" href="/data/query-catalog/markets/search-markets">
     Full-text market search.
   </Card>

@@ -340,6 +340,10 @@
           {
             "group": "Markets & Search",
             "pages": [
+              "data/markets/catalog",
+              "data/markets/catalog-stats",
+              "data/events/catalog",
+              "data/events/catalog-stats",
               "data/markets/search",
               "data/markets/by-condition",
               "data/markets/condition-positions",
@@ -362,6 +366,7 @@
             "group": "Leaderboard & Tags",
             "pages": [
               "data/leaderboard/global",
+              "data/leaderboard/scopes",
               "data/leaderboard/tags",
               "data/leaderboard/tag-markets",
               "data/leaderboard/tag-leaderboard"

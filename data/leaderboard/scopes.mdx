@@ -1,0 +1,101 @@
+---
+title: "Leaderboard Scopes"
+openapi: "GET /v3/leaderboard/scopes"
+description: "Discover and search the categories or tags available to 1-day, 7-day, and 30-day realized-P&L leaderboards."
+---
+
+Use this endpoint to build category and tag navigation for rolling trader
+leaderboards. It returns only scopes available for the selected period, ordered
+by qualifying wallet count descending and then by name.
+
+## Request
+
+```text
+GET /v3/leaderboard/scopes
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `period` | string | required | `1d`, `7d`, or `30d`. Aliases `day`, `week`, and `month` are accepted. |
+| `scope` | string | required | `category` or `tag`. Plural aliases are accepted. |
+| `q` | string | none | Case-insensitive literal substring search. Up to 80 visible characters. |
+| `limit` | integer | 100 | Number of scopes. Values below 1 use 1; values above 200 use 200. |
+| `offset` | integer | 0 | Pagination offset from 0 through 10,000. |
+
+## Example
+
+```bash
+curl "https://api.polynode.dev/v3/leaderboard/scopes?period=7d&scope=category&limit=3" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```json
+{
+  "scopes": [
+    {
+      "value": "sports",
+      "wallet_count": 7985,
+      "ranked_count": 1000
+    },
+    {
+      "value": "up-or-down",
+      "wallet_count": 7634,
+      "ranked_count": 1000
+    },
+    {
+      "value": "esports",
+      "wallet_count": 5496,
+      "ranked_count": 1000
+    }
+  ],
+  "count": 3,
+  "total_count": 329,
+  "limit": 3,
+  "offset": 0,
+  "has_more": true,
+  "period": "7d",
+  "scope": "category",
+  "query": null
+}
+```
+
+Counts change as new realized results enter the selected window.
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `scopes` | array | Categories or tags in this page. |
+| `count` | integer | Number of scopes returned. |
+| `total_count` | integer | Total scopes matching the selected period, type, and search text. |
+| `limit` | integer | Effective page size. |
+| `offset` | integer | Effective pagination offset. |
+| `has_more` | boolean | Whether another reachable page exists. |
+| `period` | string | Canonical period: `1d`, `7d`, or `30d`. |
+| `scope` | string | Canonical scope type: `category` or `tag`. |
+| `query` | string or null | Normalized search text, or `null` when no search is active. |
+
+### Scope rows
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `value` | string | Category or tag value accepted by the leaderboard. |
+| `wallet_count` | integer | Wallets with qualifying realized results in the selected scope and period. |
+| `ranked_count` | integer | Ranks available through the corresponding rolling leaderboard, capped at 1,000. |
+
+Use a returned `value` as `category` or `tags` on
+[`GET /v3/leaderboard`](/data/leaderboard/global). Tag values also work as the
+path slug on the [tag leaderboard](/data/leaderboard/tag-leaderboard).
+
+## Errors
+
+| Status | Error | When it occurs |
+|--------|-------|----------------|
+| `400` | `invalid_period` | `period` is missing or is not a rolling period. |
+| `400` | `invalid_scope` | `scope` is missing or is not `category` or `tag`. |
+| `400` | `invalid_query` | Search text is too long or contains a control character. |
+| `400` | `scope_offset_too_deep` | `offset` is outside 0 through 10,000. |
+| `401` | authentication error | The API key is missing or invalid. |
+| `503` | `leaderboard_unavailable` | Scope discovery is temporarily unavailable. |

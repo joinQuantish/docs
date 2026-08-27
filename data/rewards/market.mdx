@@ -28,31 +28,53 @@ GET /v3/rewards/markets/{condition_id}
 ## Example
 
 ```bash
-curl "https://api.polynode.dev/v3/rewards/markets/0x0001cb8c0b39aeb614ab9a43867595317f06ede9c011661513065c638fbbefda"
+curl "https://api.polynode.dev/v3/rewards/markets/0x0000c7fe300953933808d82cd4aa35dbc9f291f0b78ca9da43b0604883906c6c" \
+  -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
 ```json
 {
-  "source": "reward_market_config_detail",
   "reward_semantics": "public Polymarket reward market configuration; this is not per-wallet earned LP rewards",
   "data": {
     "count": 1,
+    "limit": 100,
     "data": [
       {
-        "condition_id": "0x0001cb8c0b39aeb614ab9a43867595317f06ede9c011661513065c638fbbefda",
-        "native_daily_rate": 1,
+        "condition_id": "0x0000c7fe300953933808d82cd4aa35dbc9f291f0b78ca9da43b0604883906c6c",
+        "event_slug": "ia-02-house-margin-of-victory-2026",
+        "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-the-republican-party-win-the-popular-vote-in-the-2026-us-house-of-representatives-midterm-elections-by-6-or-more-KZdstWMJdb8e.png",
+        "market_competitiveness": 0,
+        "market_slug": "will-the-republican-party-candidate-win-the-2026-ia-02-house-election-by-6-9",
+        "question": "Will the Republican Party candidate win the 2026 IA-02 House election by 6%-9%?",
         "rewards_config": [
           {
-            "asset_address": "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB",
-            "rate_per_day": 1,
-            "start_date": "2026-02-17",
-            "end_date": "2500-12-31"
+            "asset_address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+            "end_date": "2500-12-31",
+            "id": 1490227,
+            "rate_per_day": 5,
+            "start_date": "2026-08-27",
+            "total_days": 173252,
+            "total_rewards": 0
+          }
+        ],
+        "rewards_max_spread": 5.5,
+        "rewards_min_size": 20,
+        "tokens": [
+          {
+            "outcome": "Yes",
+            "price": 0.29,
+            "token_id": "24473378447612899353575382165317011629536764151843413452585009431556652189881"
+          },
+          {
+            "outcome": "No",
+            "price": 0.71,
+            "token_id": "54647080501201331455477326147811376064824100171608827092711080601004925467479"
           }
         ]
       }
-    ]
-  },
-  "elapsed_ms": 236
+    ],
+    "next_cursor": "LTE="
+  }
 }
 ```
 
@@ -60,15 +82,21 @@ curl "https://api.polynode.dev/v3/rewards/markets/0x0001cb8c0b39aeb614ab9a438675
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `source` | string | Dataset label |
 | `reward_semantics` | string | Meaning note |
 | `data` | object | Reward-market configuration response |
-| `elapsed_ms` | integer | Server-side request time in milliseconds |
+
+Each detail row includes the condition, event and market slugs, question,
+image, competitiveness, reward settings, and outcome token prices.
+
+The seven nullable market-context fields on the
+[reward-market list](/data/rewards/markets) are a list-route enrichment. This
+detail route returns the reward configuration without that additional market
+context.
 
 ## Errors
 
 | HTTP | When |
 |------|------|
 | `400` | Invalid condition ID format |
-| `401` | Missing or invalid PolyNode API key |
+| `401` | Missing or invalid polynode API key |
 | `502` | Temporary rewards data provider failure |

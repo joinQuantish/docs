@@ -5,6 +5,28 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-08-27 - Complete market, event, and leaderboard discovery
+
+New V3 discovery routes make it possible to walk the full market and event
+catalogs and build rolling leaderboard navigation without guessing scope names.
+
+What's new:
+
+* `GET /v3/markets` and `GET /v3/events` provide cursor pagination, open,
+  closed, and inactive status filters, and exact event-slug filtering.
+* `GET /v3/markets/stats` and `GET /v3/events/stats` return complete catalog
+  and status counts independent of any one page.
+* `GET /v3/leaderboard/scopes` lists and searches the categories or tags
+  available for 1-day, 7-day, and 30-day realized-P&L rankings.
+* `GET /v3/rewards/markets` adds nullable title, slug, image, event, category,
+  and tag context to every listed reward market.
+
+Docs: [Market Catalog](/data/markets/catalog),
+[Event Catalog](/data/events/catalog), and
+[Leaderboard Scopes](/data/leaderboard/scopes)
+
+***
+
 ## 2026-08-27 - Rolling realized-P&L leaderboards
 
 Trader leaderboards now support 1-day, 7-day, and 30-day realized-P&L rankings across all markets, one category, or one tag.
