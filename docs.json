@@ -323,6 +323,7 @@
               "data/combos/markets",
               "data/combos/activity",
               "data/combos/daily-activity",
+              "data/combos/leaderboard",
               "data/combos/redemptions",
               "data/combos/wallet-summary",
               "data/combos/wallet-positions",

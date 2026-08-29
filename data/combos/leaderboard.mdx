@@ -1,0 +1,175 @@
+---
+title: "Combo P&L Leaderboard"
+openapi: "GET /v3/combos/leaderboard"
+description: "Rank eligible Combo wallets by realized P&L over fixed or custom windows, or by marked All Time P&L."
+---
+
+`GET /v3/combos/leaderboard` ranks wallets using the dedicated Combo
+cost-basis ledger. It supports realized P&L for 1-day, 7-day, 30-day, and
+custom windows, plus realized, unrealized, and total P&L for All Time.
+
+The route is intentionally global. It does **not** accept tag, category,
+market, or event filters.
+
+## Request
+
+```text
+GET /v3/combos/leaderboard
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `period` | string | `all` | `all`, `1d`, `7d`, `30d`, or `custom` |
+| `after` | integer | none | Inclusive custom lower bound in Unix seconds |
+| `before` | integer | none | Exclusive custom upper bound in Unix seconds |
+| `sort_by` | string | mode-specific | `total_pnl`, `realized_pnl`, or `unrealized_pnl` |
+| `limit` | integer | `100` | Rows per page; maximum `300` |
+| `offset` | integer | `0` | Rank offset; maximum `100000` |
+
+The window rules are strict:
+
+- `period=custom` requires `after`, `before`, or both. When both are present,
+  the realized window is half-open: `[after, before)`.
+- `after` and `before` are forbidden with `all`, `1d`, `7d`, or `30d`.
+- All Time accepts all three sort fields and defaults to `total_pnl`.
+- Fixed and custom windows rank `realized_pnl` only.
+
+## Examples
+
+Rank marked All Time total P&L:
+
+```bash
+curl "https://api.polynode.dev/v3/combos/leaderboard?period=all&sort_by=total_pnl" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Rank realized P&L in one half-open window:
+
+```bash
+curl "https://api.polynode.dev/v3/combos/leaderboard?period=custom&after=1788134400&before=1788220800&sort_by=realized_pnl" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+One-sided custom windows are also valid. Omitting `after` leaves the lower
+side open; omitting `before` leaves the upper side open.
+
+## Response
+
+```json
+{
+  "data": [
+    {
+      "rank": 1,
+      "wallet_address": "0x1111111111111111111111111111111111111111",
+      "realized_pnl": "125.5",
+      "unrealized_pnl": "12.25",
+      "total_pnl": "137.75",
+      "open_combo_count": 2,
+      "closed_combo_count": 4,
+      "position_count": 6,
+      "event_count": 18,
+      "last_activity_at": "2026-08-29T16:00:00Z"
+    }
+  ],
+  "period": "all",
+  "window": {
+    "after": null,
+    "before": null
+  },
+  "pnl_scope": "all_time_marked",
+  "coverage": {
+    "status": "direct_cost_basis_only",
+    "raw_wallet_transfers_included": false,
+    "eligible_wallet_count": 40,
+    "excluded_wallet_count": 3,
+    "transfer_incomplete_wallet_count": 2,
+    "unmarked_wallet_count": 1
+  },
+  "as_of": "2026-08-29T16:01:00Z",
+  "as_of_block": 90123456,
+  "source": "combo_state.combo_cost_basis_event"
+}
+```
+
+### Window and scope
+
+| Field | Meaning |
+|-------|---------|
+| `period` | Normalized requested period |
+| `window.after` | Inclusive resolved lower bound in Unix seconds, or `null` |
+| `window.before` | Exclusive resolved upper bound in Unix seconds, or `null` |
+| `pnl_scope` | `all_time_marked` for All Time; `realized_only` for fixed and custom windows |
+| `as_of` | RFC3339 ledger-snapshot time |
+| `as_of_block` | Indexed block used by the snapshot |
+| `source` | Always `combo_state.combo_cost_basis_event` |
+
+All Time returns two null window bounds. Fixed `1d`, `7d`, and `30d` responses
+return both concrete resolved bounds. A custom response preserves an omitted
+side as `null`.
+
+### Row fields
+
+All USD P&L values are decimal strings. Do not parse them through a binary
+floating-point type when exact arithmetic matters.
+
+| Field | Meaning |
+|-------|---------|
+| `rank` | Rank in the requested ordering |
+| `wallet_address` | Eligible wallet address |
+| `realized_pnl` | Realized Combo P&L in decimal USD |
+| `unrealized_pnl` | Marked unrealized Combo P&L in decimal USD; `null` in realized-only modes |
+| `total_pnl` | Realized plus unrealized P&L in decimal USD; `null` in realized-only modes |
+| `open_combo_count` | Current eligible open Combo positions, not window-scoped |
+| `closed_combo_count` | Current eligible closed Combo positions, not window-scoped |
+| `position_count` | Current eligible Combo position snapshot count, not window-scoped |
+| `event_count` | Eligible direct-basis events in the realized window; All Time counts all eligible direct-basis events |
+| `last_activity_at` | RFC3339 time of the wallet's latest eligible Combo activity, or `null` |
+
+## Cost basis, marks, and exclusions
+
+`coverage.status` is always `direct_cost_basis_only`. The leaderboard uses
+directly attributable Combo cost-basis events and does not invent basis for an
+arbitrary wallet-to-wallet transfer. Every ExchangeV3 `OrderFilled` row is
+attributed once to its signed-order maker; the event's collateral-denominated
+fee increases BUY cost or reduces SELL proceeds. Router and auto-redemptions
+are admitted only when their paired `PositionRedeemed` record proves the
+redeemed size and payout.
+
+Open Combo balances are marked with the latest Combo fill. Terminal Combo
+positions are marked at `1` for a winning payout or `0` for a losing payout.
+The endpoint does not replace a missing open mark with zero.
+
+A wallet is omitted from `data` when any position lacks complete direct cost
+basis, its raw-transfer basis is incomplete, or a required mark is
+unavailable. Omitted wallets are **never zero-filled** and therefore cannot
+silently fall to the bottom of the ranking. Inspect these fields before
+displaying results:
+
+| Coverage field | Meaning |
+|----------------|---------|
+| `eligible_wallet_count` | Wallets eligible for this ranking snapshot |
+| `excluded_wallet_count` | Wallets omitted for incomplete direct/transfer basis or a missing mark |
+| `transfer_incomplete_wallet_count` | Wallets whose arbitrary raw transfer prevents complete direct basis |
+| `unmarked_wallet_count` | Wallets without every mark required by the requested ranking |
+| `raw_wallet_transfers_included` | Always `false`; arbitrary transferred basis is not inferred |
+
+## Errors
+
+| Status | Error | When it occurs |
+|--------|-------|----------------|
+| `400` | `invalid_request` | Invalid period, custom bound combination, sort, limit, or offset |
+| `401` | authentication error | The API key is missing or invalid |
+| `503` | `combo_pnl_unavailable` | The Combo P&L ledger or required mark snapshot is unavailable |
+
+An unavailable response is exact:
+
+```json
+{
+  "error": "combo_pnl_unavailable",
+  "message": "Combo P&L is temporarily unavailable."
+}
+```
+
+The endpoint fails closed instead of returning a partial ranking.

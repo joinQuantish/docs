@@ -20,6 +20,7 @@ https://api.polynode.dev/v3
 | `GET /v3/combos/markets` | List observed combo markets with leg metadata |
 | `GET /v3/combos/activity` | List combo lifecycle activity for a market, condition, position, or wallet |
 | `GET /v3/combos/activity/daily` | Complete UTC-day fills, share volume, lifecycle, transfer, and redemption series |
+| `GET /v3/combos/leaderboard` | Eligible-wallet realized P&L windows and marked All Time P&L with explicit exclusions |
 | `GET /v3/combos/redemptions` | Full redemptions, partial reductions, and exact combo lineage across wallets |
 | `GET /v3/wallets/{address}/combos/positions` | Combo positions for one wallet |
 | `GET /v3/wallets/{address}/combos/trades` | Combo trades for one wallet |
@@ -54,7 +55,12 @@ If a wallet has no combo exposure, `include_combos=true` still returns `200` wit
 
 Combo P&L uses the same high-level model as standard Polymarket positions: weighted-average cost basis, realized P&L from closes/redeems/merges, and unrealized P&L for open balances when a current price is available.
 
-When a combo is redeemed, PolyNode settles the redeemed size against weighted-average entry basis. Fully redeemed winners return `RESOLVED_WIN` with zero open entry cost and realized P&L from the redemption payout; fully redeemed losers return `RESOLVED_LOSS`. Combo redemption activity is normalized to Polymarket's public `PositionRedeemed` shape even when the on-chain path used the router or auto-redeemer.
+The [Combo P&L Leaderboard](/data/combos/leaderboard) is stricter than a
+single-wallet summary: it ranks only wallets with complete direct cost basis
+and every required mark. Wallets with arbitrary transfer-basis gaps or missing
+marks are omitted and disclosed, never presented as zero-P&L rows.
+
+When a combo is redeemed, Polynode settles the redeemed size against weighted-average entry basis. Fully redeemed winners return `RESOLVED_WIN` with zero open entry cost and realized P&L from the redemption payout; fully redeemed losers return `RESOLVED_LOSS`. Combo redemption activity is normalized to Polymarket's public `PositionRedeemed` shape even when the on-chain path used the router or auto-redeemer.
 
 The dedicated redemption endpoints distinguish a terminal redemption, a post-resolution compression into a smaller combo, and a structural extraction. `Compressed` provides the old/new position transition; `Extracted` provides full/reduced/residual condition lineage without falsely claiming a payout. Both can show that a three-leg combo became a two-leg combo and return remaining/removed leg sets. See [Combo Redemptions](/data/combos/redemptions).
 
