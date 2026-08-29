@@ -3,6 +3,19 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-29 [codex] - Prepared the dedicated Combo P&L leaderboard OpenAPI
+  3.1 contract, first-user reference, navigation, Combo overview/catalog, and
+  consumer changelog. The contract covers All Time marked P&L, fixed and
+  half-open custom realized windows, conditional sorting, the 300-row and
+  100,000-offset caps, exact decimal strings, current-snapshot versus
+  window-scoped counts, and source
+  `combo_state.combo_cost_basis_event`. It prominently excludes and discloses
+  arbitrary-transfer-basis-incomplete or unmarked wallets instead of
+  zero-filling them, defines latest-fill and terminal 1/0 marks, and exposes no
+  tag or category filters. JSON parsing, schema-reference and exact-parameter
+  assertions, diff checks, and Mintlify 4.2.819 strict validation pass.
+  Documentation is not pushed or published.
+
 - 2026-08-29 [codex] - Prepared first-user documentation, navigation, and
   OpenAPI 3.1 contracts for complete bounded UTC-day Combo and perps activity.
   The Combo endpoint contract was reconciled to V3 source

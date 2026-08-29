@@ -5596,6 +5596,171 @@
         ]
       }
     },
+    "/v3/combos/leaderboard": {
+      "get": {
+        "tags": [
+          "V3 Combos"
+        ],
+        "summary": "Combo P&L leaderboard",
+        "description": "Rank eligible wallets by Combo realized P&L over 1-day, 7-day, 30-day, or custom half-open windows, or by All Time realized, unrealized, or total P&L. Each signed ExchangeV3 order is attributed once to its maker; maker fees are included, and wrapped redemptions require an exact paired underlying redemption. Wallets with incomplete direct cost basis, incomplete arbitrary raw-transfer basis, or without a required current mark are excluded and disclosed in coverage; they are never returned as zero-P&L rows. This route does not accept category or tag filters.",
+        "operationId": "v3_combo_pnl_leaderboard",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "description": "Ranking window. All Time is the default. Custom requires after, before, or both. Fixed periods and All Time forbid explicit bounds.",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "1d", "7d", "30d", "custom"],
+              "default": "all"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive custom lower bound in Unix seconds. Accepted only with period=custom; at least one custom bound is required.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Exclusive custom upper bound in Unix seconds. Accepted only with period=custom; at least one custom bound is required.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "description": "All Time accepts total_pnl, realized_pnl, or unrealized_pnl and defaults to total_pnl. Fixed and custom windows accept realized_pnl only.",
+            "schema": {
+              "type": "string",
+              "enum": ["total_pnl", "realized_pnl", "unrealized_pnl"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Rows per page.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 300,
+              "default": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Rank offset. The maximum accepted offset is 100,000.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked eligible wallets with the resolved window, P&L scope, and explicit exclusion coverage.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3ComboPnlLeaderboardResponse"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "rank": 1,
+                      "wallet_address": "0x1111111111111111111111111111111111111111",
+                      "realized_pnl": "125.5",
+                      "unrealized_pnl": "12.25",
+                      "total_pnl": "137.75",
+                      "open_combo_count": 2,
+                      "closed_combo_count": 4,
+                      "position_count": 6,
+                      "event_count": 18,
+                      "last_activity_at": "2026-08-29T16:00:00Z"
+                    }
+                  ],
+                  "period": "all",
+                  "window": {
+                    "after": null,
+                    "before": null
+                  },
+                  "pnl_scope": "all_time_marked",
+                  "coverage": {
+                    "status": "direct_cost_basis_only",
+                    "raw_wallet_transfers_included": false,
+                    "eligible_wallet_count": 40,
+                    "excluded_wallet_count": 3,
+                    "transfer_incomplete_wallet_count": 2,
+                    "unmarked_wallet_count": 1
+                  },
+                  "as_of": "2026-08-29T16:01:00Z",
+                  "as_of_block": 90123456,
+                  "source": "combo_state.combo_cost_basis_event"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid period, bound combination, sort, limit, or offset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3ComboPnlInvalidRequest"
+                },
+                "example": {
+                  "error": "invalid_request",
+                  "message": "period=custom requires after, before, or both"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The Combo P&L ledger or required mark snapshot is unavailable; no partial ranking is returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3ComboPnlUnavailable"
+                },
+                "example": {
+                  "error": "combo_pnl_unavailable",
+                  "message": "Combo P&L is temporarily unavailable."
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v3/combos/redemptions": {
       "get": {
         "tags": [
@@ -11298,6 +11463,24 @@
           "message": {"type": "string"}
         }
       },
+      "V3ComboPnlInvalidRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "message"],
+        "properties": {
+          "error": {"type": "string", "enum": ["invalid_request"]},
+          "message": {"type": "string"}
+        }
+      },
+      "V3ComboPnlUnavailable": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "message"],
+        "properties": {
+          "error": {"type": "string", "enum": ["combo_pnl_unavailable"]},
+          "message": {"type": "string", "enum": ["Combo P&L is temporarily unavailable."]}
+        }
+      },
       "V3PerpsUnknownInstrumentError": {
         "type": "object",
         "additionalProperties": false,
@@ -11325,6 +11508,153 @@
         "type": "string",
         "pattern": "^-?[0-9]+(?:[.][0-9]+)?$",
         "description": "An exact signed decimal encoded as a string."
+      },
+      "V3ComboPnlLeaderboardPeriod": {
+        "type": "string",
+        "enum": ["all", "1d", "7d", "30d", "custom"]
+      },
+      "V3ComboPnlLeaderboardWindow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["after", "before"],
+        "properties": {
+          "after": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Inclusive resolved lower bound in Unix seconds. All Time returns null; an omitted custom side remains null."
+          },
+          "before": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Exclusive resolved upper bound in Unix seconds. All Time returns null; an omitted custom side remains null."
+          }
+        }
+      },
+      "V3ComboPnlLeaderboardCoverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "raw_wallet_transfers_included",
+          "eligible_wallet_count",
+          "excluded_wallet_count",
+          "transfer_incomplete_wallet_count",
+          "unmarked_wallet_count"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["direct_cost_basis_only"]
+          },
+          "raw_wallet_transfers_included": {
+            "type": "boolean",
+            "enum": [false],
+            "description": "Arbitrary wallet-to-wallet transfer basis is not inferred or ranked."
+          },
+          "eligible_wallet_count": {"type": "integer", "minimum": 0},
+          "excluded_wallet_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Wallets omitted from data because direct cost basis or a required mark is incomplete."
+          },
+          "transfer_incomplete_wallet_count": {"type": "integer", "minimum": 0},
+          "unmarked_wallet_count": {"type": "integer", "minimum": 0}
+        }
+      },
+      "V3ComboPnlLeaderboardRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank",
+          "wallet_address",
+          "realized_pnl",
+          "unrealized_pnl",
+          "total_pnl",
+          "open_combo_count",
+          "closed_combo_count",
+          "position_count",
+          "event_count",
+          "last_activity_at"
+        ],
+        "properties": {
+          "rank": {"type": "integer", "minimum": 1},
+          "wallet_address": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "realized_pnl": {"$ref": "#/components/schemas/V3SignedDecimalString"},
+          "unrealized_pnl": {
+            "description": "All Time marked P&L, or null for realized-only windows.",
+            "anyOf": [
+              {"$ref": "#/components/schemas/V3SignedDecimalString"},
+              {"type": "null"}
+            ]
+          },
+          "total_pnl": {
+            "description": "All Time realized plus unrealized P&L, or null for realized-only windows.",
+            "anyOf": [
+              {"$ref": "#/components/schemas/V3SignedDecimalString"},
+              {"type": "null"}
+            ]
+          },
+          "open_combo_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Current eligible open Combo positions; not window-scoped."
+          },
+          "closed_combo_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Current eligible closed Combo positions; not window-scoped."
+          },
+          "position_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Current eligible Combo position snapshot count; not window-scoped."
+          },
+          "event_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Eligible direct-basis event count in the realized window, or across all eligible history for All Time."
+          },
+          "last_activity_at": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        }
+      },
+      "V3ComboPnlLeaderboardResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "period",
+          "window",
+          "pnl_scope",
+          "coverage",
+          "as_of",
+          "as_of_block",
+          "source"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/V3ComboPnlLeaderboardRow"}
+          },
+          "period": {"$ref": "#/components/schemas/V3ComboPnlLeaderboardPeriod"},
+          "window": {"$ref": "#/components/schemas/V3ComboPnlLeaderboardWindow"},
+          "pnl_scope": {
+            "type": "string",
+            "enum": ["all_time_marked", "realized_only"]
+          },
+          "coverage": {"$ref": "#/components/schemas/V3ComboPnlLeaderboardCoverage"},
+          "as_of": {"type": "string", "format": "date-time"},
+          "as_of_block": {"type": "integer", "format": "int64", "minimum": 0},
+          "source": {
+            "type": "string",
+            "enum": ["combo_state.combo_cost_basis_event"]
+          }
+        }
       },
       "V3ComboActivityDay": {
         "type": "object",

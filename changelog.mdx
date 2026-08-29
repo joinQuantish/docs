@@ -5,6 +5,29 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-08-29 - Combo P&L leaderboard
+
+A dedicated Combo leaderboard now ranks eligible wallets by realized P&L over
+1-day, 7-day, 30-day, or custom windows and by marked All Time P&L.
+
+What's new:
+
+* `GET /v3/combos/leaderboard` supports All Time realized, unrealized, and total
+  P&L plus realized-only fixed and half-open custom windows.
+* Custom windows accept `after`, `before`, or both as Unix seconds and use
+  `[after, before)` when both bounds are present.
+* Every response discloses eligible, excluded, transfer-incomplete, and
+  unmarked wallet counts. Excluded wallets are omitted, never zero-filled.
+* Open positions use the latest Combo fill mark; terminal positions use `1` or
+  `0`. Arbitrary wallet-to-wallet transfer basis is not inferred.
+* Signed-order maker fills are counted once, and their exchange fees are
+  included in weighted-average cost basis and realized proceeds.
+* The route is global and does not accept tag or category filters.
+
+Docs: [Combo P&L Leaderboard](/data/combos/leaderboard)
+
+***
+
 ## 2026-08-28 - Stable perps activity pagination
 
 Archived perps trades, position events, likely liquidations, and wallet
