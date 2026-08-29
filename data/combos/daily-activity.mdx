@@ -1,0 +1,161 @@
+---
+title: "Combo Daily Activity"
+openapi: "GET /v3/combos/activity/daily"
+description: "Chart complete UTC-day Combo fills, share volume, lifecycle activity, mapped transfers, and exact redemptions."
+---
+
+`GET /v3/combos/activity/daily` returns one zero-filled row for every UTC day
+in a bounded window. Use it to build daily Combo charts without paging and
+joining four separate feeds in your application.
+
+History is complete from `2026-05-29`. The current UTC day is included but has
+`complete: false` because more activity can still arrive.
+
+## Request
+
+```text
+GET /v3/combos/activity/daily
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `period` | string | `30d` | `1d`, `7d`, or `30d`. Do not combine it with explicit dates. |
+| `start_date` | date | none | Inclusive UTC date in `YYYY-MM-DD` format. Requires `end_date`. |
+| `end_date` | date | none | Inclusive UTC date in `YYYY-MM-DD` format. Requires `start_date`. |
+| `interval` | string | `day` | Only `day` is supported. |
+
+An explicit range can contain at most 30 days, including both endpoints. It
+cannot begin before `2026-05-29` or end after the current UTC date.
+
+## Examples
+
+Use a rolling period:
+
+```bash
+curl "https://api.polynode.dev/v3/combos/activity/daily?period=7d" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Use an inclusive date range:
+
+```bash
+curl "https://api.polynode.dev/v3/combos/activity/daily?start_date=2026-08-01&end_date=2026-08-02" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```json
+{
+  "start_date": "2026-08-01",
+  "end_date": "2026-08-02",
+  "interval": "day",
+  "timezone": "UTC",
+  "coverage_start": "2026-05-29",
+  "complete_through": "2026-08-01",
+  "as_of": "2026-08-02T12:04:05Z",
+  "as_of_block": 90000000,
+  "share_volume_unit": "shares",
+  "share_volume_semantics": "sum of indexed combo fill share size, not USD notional",
+  "side_semantics": "BUY and SELL are the signed ExchangeV3 OrderFilled order side, not wallet-direction or platform-net flow",
+  "count_semantics": {
+    "fills": "indexed combo trade rows",
+    "lifecycle": "indexed Prepare, Split, Merge, and Redeem events",
+    "transfers": "indexed combo position transfer rows joined to the canonical position-to-combo mapping",
+    "exact_redemptions": "canonical redemption rows, split into full, partial, and transformation scopes"
+  },
+  "days": [
+    {
+      "date": "2026-08-01",
+      "complete": true,
+      "fill_count": 18,
+      "signed_order_buy_fill_count": 10,
+      "signed_order_sell_fill_count": 8,
+      "share_volume_e6": "42500000",
+      "share_volume": "42.5",
+      "signed_order_buy_share_volume_e6": "25000000",
+      "signed_order_buy_share_volume": "25",
+      "signed_order_sell_share_volume_e6": "17500000",
+      "signed_order_sell_share_volume": "17.5",
+      "lifecycle_count": 9,
+      "prepare_event_count": 2,
+      "prepared_combo_count": 2,
+      "split_count": 3,
+      "merge_count": 2,
+      "redeem_event_count": 2,
+      "mapped_transfer_count": 21,
+      "exact_redemption_count": 3,
+      "full_redemption_count": 1,
+      "partial_redemption_count": 1,
+      "transformation_count": 1
+    },
+    {
+      "date": "2026-08-02",
+      "complete": false,
+      "fill_count": 0,
+      "signed_order_buy_fill_count": 0,
+      "signed_order_sell_fill_count": 0,
+      "share_volume_e6": "0",
+      "share_volume": "0",
+      "signed_order_buy_share_volume_e6": "0",
+      "signed_order_buy_share_volume": "0",
+      "signed_order_sell_share_volume_e6": "0",
+      "signed_order_sell_share_volume": "0",
+      "lifecycle_count": 0,
+      "prepare_event_count": 0,
+      "prepared_combo_count": 0,
+      "split_count": 0,
+      "merge_count": 0,
+      "redeem_event_count": 0,
+      "mapped_transfer_count": 0,
+      "exact_redemption_count": 0,
+      "full_redemption_count": 0,
+      "partial_redemption_count": 0,
+      "transformation_count": 0
+    }
+  ]
+}
+```
+
+## Metric semantics
+
+| Fields | Meaning |
+|--------|---------|
+| `fill_count`, `share_volume*` | Indexed Combo fill rows and their share size. The `_e6` values are exact integer micro-shares; display values are decimal strings. |
+| `signed_order_buy_*`, `signed_order_sell_*` | The signed ExchangeV3 order side on each fill. These are not a wallet's direction. |
+| `prepare_event_count` | Indexed `Prepare` lifecycle events. |
+| `prepared_combo_count` | Distinct Combo condition IDs prepared that day. |
+| `split_count`, `merge_count`, `redeem_event_count` | Indexed lifecycle events with those actions. |
+| `mapped_transfer_count` | Transfer rows whose position ID joins to the canonical position-to-Combo mapping. |
+| `exact_redemption_count` | Canonical redemption rows; the full, partial, and transformation counts partition this family. |
+
+`redeem_event_count` and `exact_redemption_count` come from different canonical
+fact families. Do not assume they are equal on every day.
+
+## Completeness and no-go interpretations
+
+- `complete_through` is the last fully covered UTC date certified by all
+  required checkpoints. A day after it has `complete: false`.
+- Zeroes are emitted only inside the documented coverage window. They mean no
+  matching canonical facts were indexed for that day, not missing pagination.
+- Share volume is **not USD notional**. Do not put a dollar sign on it or add it
+  to USD volume.
+- Signed BUY/SELL is **not wallet direction** and cannot establish wallet buys,
+  wallet sells, or net platform flow.
+- This route does not reconstruct a historical active-Combo count or infer a
+  state snapshot from lifecycle events.
+
+## Errors
+
+| Status | Error | When it occurs |
+|--------|-------|----------------|
+| `400` | `invalid_period` or `invalid_interval` | Unsupported period or an interval other than `day`. |
+| `400` | `conflicting_date_range` | `period` was combined with explicit dates. |
+| `400` | `incomplete_date_range` | Only one explicit date was supplied. |
+| `400` | `invalid_date` or `invalid_date_range` | A date is malformed, reversed, outside coverage, or in the future. |
+| `400` | `date_range_too_large` | The inclusive range exceeds 30 days. |
+| `401` | authentication error | The API key is missing or invalid. |
+| `503` | `temporarily_unavailable` | A required checkpoint or bounded query is unavailable. The response fails closed instead of returning a partial series. |
+
+The `503` body is intentionally generic. Retry the complete request; do not
+treat it as a zero-activity window.

@@ -3,6 +3,28 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-29 [codex] - Prepared first-user documentation, navigation, and
+  OpenAPI 3.1 contracts for complete bounded UTC-day Combo and perps activity.
+  The Combo endpoint contract was reconciled to V3 source
+  `d0088acbec1809452ceea8cdc4c74e4ac0980b8b` and preserves shares rather
+  than USD, signed-order rather than wallet-side semantics, checkpoint-backed
+  completeness, and generic fail-closed 503s. Final owning repository main,
+  including the output-neutral transfer hash-join follow-up, is
+  `675947c7e7e778bf4be369be3fdfbf94afb32d4d`. The perps contract was
+  reconciled to source `d684f3d092a3454c59f66fe6f7e3aa23c42321e2` and
+  preserves pUSD notional, taker-side semantics, instrument-only base units,
+  and the 15-minute current-window freshness gate. Its endpoint source is
+  `d684f3d092a3454c59f66fe6f7e3aa23c42321e2`; final owning repository main,
+  including egress source `9c0ebd9c5066061563c5eedd54c5793fa6d3bf5a`
+  and bounded-rate configuration source
+  `cc004648d258da5ca1a2240e92a2fea73c2bc9ef`, is
+  `70b25ad72a5d12a28445f2d0df7c8b138df263af`.
+  JSON parsing, exact schema assertions, navigation checks, diff checks, and
+  Mintlify 4.2.819 strict validation pass. Targeted public checks passed for
+  both one-day success contracts, Combo invalid-interval handling, and perps
+  unknown-instrument handling without exposing credentials. Documentation
+  publication remains pending.
+
 - 2026-08-28 [codex] - Completed publication of stable cursor pagination for
   archived perps trades, position events, likely liquidations, and wallet
   collateral flows. Source `79599868793471b6d676246a68463e582234c15d`

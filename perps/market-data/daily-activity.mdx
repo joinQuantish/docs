@@ -1,0 +1,155 @@
+---
+title: "Perps Daily Activity"
+openapi: "GET /v3/perps/activity/daily"
+description: "Chart complete UTC-day perps notional and taker flow for the platform and selected instruments."
+---
+
+`GET /v3/perps/activity/daily` returns one UTC-day row for the complete perps
+trade archive, plus matching rows for any instruments you select. One request
+can therefore power a platform-total chart and up to 20 instrument series.
+
+Trade coverage begins on `2026-07-08`. The current UTC day has
+`complete: false` because more trades can still arrive.
+
+## Request
+
+```text
+GET /v3/perps/activity/daily
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `period` | string | `30d` | `1d`, `7d`, or `30d`. Do not combine it with explicit dates. |
+| `start_date` | date | none | Inclusive UTC date in `YYYY-MM-DD` format. Requires `end_date`. |
+| `end_date` | date | none | Inclusive UTC date in `YYYY-MM-DD` format. Requires `start_date`. |
+| `interval` | string | `day` | Only `day` is supported. |
+| `instruments` | CSV | none | Up to 20 instrument IDs, full symbols, or bare assets, for example `6,ETH-USD,sol`. |
+
+An explicit range can contain at most 30 days, including both endpoints. It
+cannot begin before `2026-07-08` or end after the current UTC date.
+
+## Examples
+
+Get the platform total for the last seven UTC days:
+
+```bash
+curl "https://api.polynode.dev/v3/perps/activity/daily?period=7d" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Add selected instrument series:
+
+```bash
+curl "https://api.polynode.dev/v3/perps/activity/daily?period=7d&instruments=BTC-USD,ETH-USD" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```json
+{
+  "interval": "day",
+  "timezone": "UTC",
+  "period": "7d",
+  "start_date": "2026-08-23",
+  "end_date": "2026-08-29",
+  "coverage_start": "2026-07-08",
+  "complete_through": "2026-08-28",
+  "first_returned_date": "2026-08-23",
+  "last_returned_date": "2026-08-29",
+  "latest_trade_at": 1788000000,
+  "notional_unit": "pUSD",
+  "side_semantics": "taker direction; long is taker buy and short is taker sell",
+  "total": {
+    "label": "All perps",
+    "days": [
+      {
+        "date": "2026-08-23",
+        "complete": true,
+        "trade_count": 3812,
+        "taker_buy_trade_count": 2010,
+        "taker_sell_trade_count": 1802,
+        "notional_volume_pusd": "12845000.25",
+        "taker_buy_notional_pusd": "6740000.25",
+        "taker_sell_notional_pusd": "6105000",
+        "net_taker_notional_pusd": "635000.25"
+      }
+    ]
+  },
+  "instruments": [
+    {
+      "instrument_id": 6,
+      "symbol": "BTC-USD",
+      "days": [
+        {
+          "date": "2026-08-23",
+          "complete": true,
+          "trade_count": 1250,
+          "taker_buy_trade_count": 700,
+          "taker_sell_trade_count": 550,
+          "notional_volume_pusd": "5100000.25",
+          "taker_buy_notional_pusd": "2900000.25",
+          "taker_sell_notional_pusd": "2200000",
+          "net_taker_notional_pusd": "700000.25",
+          "base_quantity": "79.25",
+          "taker_buy_base_quantity": "45.75",
+          "taker_sell_base_quantity": "33.5"
+        }
+      ]
+    }
+  ]
+}
+```
+
+With explicit dates, `period` is returned as `custom`. Every requested day is
+present even when its counts and decimal strings are zero.
+
+## Metric semantics
+
+| Fields | Meaning |
+|--------|---------|
+| `trade_count` | Archived executions across all instruments or within the selected instrument. |
+| `notional_volume_pusd` | Sum of price × base quantity, returned as an exact decimal pUSD string. |
+| `taker_buy_*` | Trades where the taker side is `long`. |
+| `taker_sell_*` | Trades where the taker side is `short`. |
+| `net_taker_notional_pusd` | Taker-buy notional minus taker-sell notional. It can be negative. |
+| `base_quantity` and side splits | Base-asset units for one selected instrument only. |
+
+The platform `total` deliberately has no base-quantity fields. BTC, ETH, gold,
+and other base units are not additive, while pUSD notional is.
+
+## Completeness and freshness
+
+- `complete_through` is yesterday in UTC. The current UTC day has
+  `complete: false`.
+- `first_returned_date` and `last_returned_date` describe days with archived
+  trades; they are `null` for an entirely empty range. The `days` arrays still
+  contain the requested zero-filled rectangle.
+- `latest_trade_at` is Unix seconds for the newest archived trade in the
+  response, or `null` for an empty range.
+- When a requested window includes today, the whole request returns `503` if
+  the market trade archive tip is more than 15 minutes old. A stale current
+  window is never presented as complete or as zero activity.
+
+## No-go interpretations
+
+- Taker BUY/SELL is market-side direction, not maker direction and not a
+  wallet-attributed action.
+- The trade archive does not attribute these rows to wallets. Do not derive a
+  trader leaderboard, wallet flow, or wallet P&L from this route.
+- Notional is pUSD, not base quantity. Base quantities can be compared only
+  within the same instrument.
+- This route is trade activity, not open interest, funding, positions, or
+  liquidations.
+
+## Errors
+
+| Status | Error | When it occurs |
+|--------|-------|----------------|
+| `400` | descriptive request error | Unsupported period/interval, conflicting or incomplete dates, a future/reversed/over-30-day range, a date before coverage, empty instrument values, or more than 20 instruments. |
+| `400` | unknown parameter | A query parameter is not in this route's allowlist. |
+| `401` | authentication error | The API key is missing or invalid. |
+| `404` | `unknown instrument` | An instrument ID, symbol, or asset cannot be resolved. |
+| `503` | `warming up` with `missing: "daily activity"` | A current window cannot pass the 15-minute archive-freshness gate, or the archive is unavailable. |
+
+Retry a `503`; do not render it as a zero-activity window.
