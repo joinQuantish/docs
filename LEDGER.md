@@ -15,11 +15,15 @@ evidence for production documentation changes.
   preserves pUSD notional, taker-side semantics, instrument-only base units,
   and the 15-minute current-window freshness gate. Its endpoint source is
   `d684f3d092a3454c59f66fe6f7e3aa23c42321e2`; final owning repository main,
-  including the egress-configuration follow-up, is
-  `70f77db020cf6e1f8e43b581fef0f9a86f5e71bd`. JSON parsing, exact schema
-  assertions, navigation checks, diff checks, and Mintlify 4.2.819 strict
-  validation pass. Publication and live example checks remain pending until
-  both routes are deployed.
+  including egress source `9c0ebd9c5066061563c5eedd54c5793fa6d3bf5a`
+  and bounded-rate configuration source
+  `cc004648d258da5ca1a2240e92a2fea73c2bc9ef`, is
+  `70b25ad72a5d12a28445f2d0df7c8b138df263af`.
+  JSON parsing, exact schema assertions, navigation checks, diff checks, and
+  Mintlify 4.2.819 strict validation pass. Targeted public checks passed for
+  both one-day success contracts, Combo invalid-interval handling, and perps
+  unknown-instrument handling without exposing credentials. Documentation
+  publication remains pending.
 
 - 2026-08-28 [codex] - Completed publication of stable cursor pagination for
   archived perps trades, position events, likely liquidations, and wallet
