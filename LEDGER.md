@@ -5,10 +5,12 @@ evidence for production documentation changes.
 
 - 2026-08-29 [codex] - Prepared first-user documentation, navigation, and
   OpenAPI 3.1 contracts for complete bounded UTC-day Combo and perps activity.
-  The Combo contract was reconciled to V3 source
+  The Combo endpoint contract was reconciled to V3 source
   `d0088acbec1809452ceea8cdc4c74e4ac0980b8b` and preserves shares rather
   than USD, signed-order rather than wallet-side semantics, checkpoint-backed
-  completeness, and generic fail-closed 503s. The perps contract was
+  completeness, and generic fail-closed 503s. Final owning repository main,
+  including the output-neutral transfer hash-join follow-up, is
+  `675947c7e7e778bf4be369be3fdfbf94afb32d4d`. The perps contract was
   reconciled to source `d684f3d092a3454c59f66fe6f7e3aa23c42321e2` and
   preserves pUSD notional, taker-side semantics, instrument-only base units,
   and the 15-minute current-window freshness gate. Its endpoint source is
