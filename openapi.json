@@ -5566,7 +5566,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/V3ComboActivityBadRequest"
                 }
               }
             }
@@ -11275,6 +11275,26 @@
         "required": ["error", "message"],
         "properties": {
           "error": {"type": "string", "enum": ["temporarily_unavailable"]},
+          "message": {"type": "string"}
+        }
+      },
+      "V3ComboActivityBadRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "message"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "invalid_interval",
+              "conflicting_date_range",
+              "incomplete_date_range",
+              "invalid_date",
+              "invalid_period",
+              "invalid_date_range",
+              "date_range_too_large"
+            ]
+          },
           "message": {"type": "string"}
         }
       },
