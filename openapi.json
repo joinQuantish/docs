@@ -5498,6 +5498,104 @@
         ]
       }
     },
+    "/v3/combos/activity/daily": {
+      "get": {
+        "tags": [
+          "V3 Combos"
+        ],
+        "summary": "Combo daily activity",
+        "description": "Complete zero-filled UTC-day Combo fills, share volume, lifecycle activity, mapped transfers, and exact redemptions. Share volume is shares, not USD notional; BUY and SELL are signed ExchangeV3 order sides, not wallet direction.",
+        "operationId": "v3_combo_activity_daily",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "description": "Rolling UTC window. Do not combine with start_date or end_date.",
+            "schema": {
+              "type": "string",
+              "enum": ["1d", "7d", "30d"],
+              "default": "30d"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive UTC start date. Requires end_date; coverage begins 2026-05-29.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive UTC end date. Requires start_date; the range can contain at most 30 days.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "description": "Bucket interval. Only day is supported.",
+            "schema": {
+              "type": "string",
+              "enum": ["day"],
+              "default": "day"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded UTC-day activity rectangle.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3ComboActivityDailyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid period, interval, date combination, coverage bound, or range width.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "503": {
+            "description": "A required checkpoint or bounded query is unavailable; no partial series is returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3ComboActivityUnavailable"
+                },
+                "example": {
+                  "error": "temporarily_unavailable",
+                  "message": "Combo series are temporarily unavailable."
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v3/combos/redemptions": {
       "get": {
         "tags": [
@@ -7924,6 +8022,129 @@
             }
           }
         }
+      }
+    },
+    "/v3/perps/activity/daily": {
+      "get": {
+        "tags": [
+          "Perps"
+        ],
+        "summary": "Perps daily activity",
+        "description": "Complete zero-filled UTC-day pUSD notional and taker-flow series for all perps and up to 20 selected instruments. Base quantities are returned only within instrument series.",
+        "operationId": "perps_activity_daily",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "description": "Rolling UTC window. Do not combine with start_date or end_date.",
+            "schema": {
+              "type": "string",
+              "enum": ["1d", "7d", "30d"],
+              "default": "30d"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive UTC start date. Requires end_date; coverage begins 2026-07-08.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive UTC end date. Requires start_date; the range can contain at most 30 days.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "description": "Bucket interval. Only day is supported.",
+            "schema": {
+              "type": "string",
+              "enum": ["day"],
+              "default": "day"
+            }
+          },
+          {
+            "name": "instruments",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated instrument ids, full symbols, or bare assets. At most 20 values.",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded platform and selected-instrument UTC-day series.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3PerpsActivityDailyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter, period, interval, date combination, coverage bound, range width, or instrument list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "An instrument cannot be resolved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3PerpsUnknownInstrumentError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A current window fails closed when the market archive tip is more than 15 minutes stale, or the archive is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3PerpsActivityUnavailable"
+                },
+                "example": {
+                  "error": "warming up",
+                  "missing": "daily activity"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v3/perps/index/{asset}": {
@@ -11040,6 +11261,281 @@
         "properties": {
           "error": {
             "type": "string"
+          }
+        }
+      },
+      "V3UnsignedIntegerString": {
+        "type": "string",
+        "pattern": "^[0-9]+$",
+        "description": "An exact non-negative integer encoded as a string."
+      },
+      "V3ComboActivityUnavailable": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "message"],
+        "properties": {
+          "error": {"type": "string", "enum": ["temporarily_unavailable"]},
+          "message": {"type": "string"}
+        }
+      },
+      "V3PerpsUnknownInstrumentError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "instrument"],
+        "properties": {
+          "error": {"type": "string", "enum": ["unknown instrument"]},
+          "instrument": {"type": "string"}
+        }
+      },
+      "V3PerpsActivityUnavailable": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "missing"],
+        "properties": {
+          "error": {"type": "string", "enum": ["warming up"]},
+          "missing": {"type": "string", "enum": ["daily activity"]}
+        }
+      },
+      "V3NonNegativeDecimalString": {
+        "type": "string",
+        "pattern": "^[0-9]+(?:[.][0-9]+)?$",
+        "description": "An exact non-negative decimal encoded as a string."
+      },
+      "V3SignedDecimalString": {
+        "type": "string",
+        "pattern": "^-?[0-9]+(?:[.][0-9]+)?$",
+        "description": "An exact signed decimal encoded as a string."
+      },
+      "V3ComboActivityDay": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "complete",
+          "fill_count",
+          "signed_order_buy_fill_count",
+          "signed_order_sell_fill_count",
+          "share_volume_e6",
+          "share_volume",
+          "signed_order_buy_share_volume_e6",
+          "signed_order_buy_share_volume",
+          "signed_order_sell_share_volume_e6",
+          "signed_order_sell_share_volume",
+          "lifecycle_count",
+          "prepare_event_count",
+          "prepared_combo_count",
+          "split_count",
+          "merge_count",
+          "redeem_event_count",
+          "mapped_transfer_count",
+          "exact_redemption_count",
+          "full_redemption_count",
+          "partial_redemption_count",
+          "transformation_count"
+        ],
+        "properties": {
+          "date": {"type": "string", "format": "date"},
+          "complete": {"type": "boolean"},
+          "fill_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "signed_order_buy_fill_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "signed_order_sell_fill_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "share_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
+          "share_volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "signed_order_buy_share_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
+          "signed_order_buy_share_volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "signed_order_sell_share_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
+          "signed_order_sell_share_volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "lifecycle_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "prepare_event_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "prepared_combo_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "split_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "merge_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "redeem_event_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "mapped_transfer_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "exact_redemption_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "full_redemption_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "partial_redemption_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "transformation_count": {"type": "integer", "format": "int64", "minimum": 0}
+        }
+      },
+      "V3ComboActivityCountSemantics": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["fills", "lifecycle", "transfers", "exact_redemptions"],
+        "properties": {
+          "fills": {"type": "string"},
+          "lifecycle": {"type": "string"},
+          "transfers": {"type": "string"},
+          "exact_redemptions": {"type": "string"}
+        }
+      },
+      "V3ComboActivityDailyResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "start_date",
+          "end_date",
+          "interval",
+          "timezone",
+          "coverage_start",
+          "complete_through",
+          "as_of",
+          "as_of_block",
+          "share_volume_unit",
+          "share_volume_semantics",
+          "side_semantics",
+          "count_semantics",
+          "days"
+        ],
+        "properties": {
+          "start_date": {"type": "string", "format": "date"},
+          "end_date": {"type": "string", "format": "date"},
+          "interval": {"type": "string", "enum": ["day"]},
+          "timezone": {"type": "string", "enum": ["UTC"]},
+          "coverage_start": {"type": "string", "format": "date", "enum": ["2026-05-29"]},
+          "complete_through": {"type": "string", "format": "date"},
+          "as_of": {"type": "string", "format": "date-time"},
+          "as_of_block": {"type": "integer", "format": "int64", "minimum": 0},
+          "share_volume_unit": {"type": "string", "enum": ["shares"]},
+          "share_volume_semantics": {"type": "string"},
+          "side_semantics": {"type": "string"},
+          "count_semantics": {"$ref": "#/components/schemas/V3ComboActivityCountSemantics"},
+          "days": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 30,
+            "items": {"$ref": "#/components/schemas/V3ComboActivityDay"}
+          }
+        }
+      },
+      "V3PerpsActivityDay": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "complete",
+          "trade_count",
+          "taker_buy_trade_count",
+          "taker_sell_trade_count",
+          "notional_volume_pusd",
+          "taker_buy_notional_pusd",
+          "taker_sell_notional_pusd",
+          "net_taker_notional_pusd"
+        ],
+        "properties": {
+          "date": {"type": "string", "format": "date"},
+          "complete": {"type": "boolean"},
+          "trade_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "taker_buy_trade_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "taker_sell_trade_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "notional_volume_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "taker_buy_notional_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "taker_sell_notional_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "net_taker_notional_pusd": {"$ref": "#/components/schemas/V3SignedDecimalString"}
+        }
+      },
+      "V3PerpsInstrumentActivityDay": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "complete",
+          "trade_count",
+          "taker_buy_trade_count",
+          "taker_sell_trade_count",
+          "notional_volume_pusd",
+          "taker_buy_notional_pusd",
+          "taker_sell_notional_pusd",
+          "net_taker_notional_pusd",
+          "base_quantity",
+          "taker_buy_base_quantity",
+          "taker_sell_base_quantity"
+        ],
+        "properties": {
+          "date": {"type": "string", "format": "date"},
+          "complete": {"type": "boolean"},
+          "trade_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "taker_buy_trade_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "taker_sell_trade_count": {"type": "integer", "format": "int64", "minimum": 0},
+          "notional_volume_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "taker_buy_notional_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "taker_sell_notional_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "net_taker_notional_pusd": {"$ref": "#/components/schemas/V3SignedDecimalString"},
+          "base_quantity": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "taker_buy_base_quantity": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "taker_sell_base_quantity": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"}
+        }
+      },
+      "V3PerpsInstrumentActivitySeries": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["instrument_id", "symbol", "days"],
+        "properties": {
+          "instrument_id": {"type": "integer", "format": "int32", "minimum": 0},
+          "symbol": {"type": ["string", "null"]},
+          "days": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 30,
+            "items": {"$ref": "#/components/schemas/V3PerpsInstrumentActivityDay"}
+          }
+        }
+      },
+      "V3PerpsActivityTotal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "days"],
+        "properties": {
+          "label": {"type": "string", "enum": ["All perps"]},
+          "days": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 30,
+            "items": {"$ref": "#/components/schemas/V3PerpsActivityDay"}
+          }
+        }
+      },
+      "V3PerpsActivityDailyResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "interval",
+          "timezone",
+          "period",
+          "start_date",
+          "end_date",
+          "coverage_start",
+          "complete_through",
+          "first_returned_date",
+          "last_returned_date",
+          "latest_trade_at",
+          "notional_unit",
+          "side_semantics",
+          "total",
+          "instruments"
+        ],
+        "properties": {
+          "interval": {"type": "string", "enum": ["day"]},
+          "timezone": {"type": "string", "enum": ["UTC"]},
+          "period": {"type": "string", "enum": ["1d", "7d", "30d", "custom"]},
+          "start_date": {"type": "string", "format": "date"},
+          "end_date": {"type": "string", "format": "date"},
+          "coverage_start": {"type": "string", "format": "date", "enum": ["2026-07-08"]},
+          "complete_through": {"type": "string", "format": "date"},
+          "first_returned_date": {"type": ["string", "null"], "format": "date"},
+          "last_returned_date": {"type": ["string", "null"], "format": "date"},
+          "latest_trade_at": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Newest archived trade timestamp in Unix seconds."
+          },
+          "notional_unit": {"type": "string", "enum": ["pUSD"]},
+          "side_semantics": {"type": "string"},
+          "total": {"$ref": "#/components/schemas/V3PerpsActivityTotal"},
+          "instruments": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {"$ref": "#/components/schemas/V3PerpsInstrumentActivitySeries"}
           }
         }
       },
