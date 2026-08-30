@@ -5599,8 +5599,8 @@
     "/v3/builders/{code}/leaderboard": {
       "get": {
         "tags": ["V3 Builders"],
-        "summary": "Builder trader activity leaderboard",
-        "description": "Rank wallets by CLOB V2 maker-order activity attributed to one builder over 1-day, 7-day, 30-day, or complete-history windows. This is activity attribution, not realized or unrealized P&L. The newest UTC date can be a current-day snapshot through as_of.",
+        "summary": "Builder trader P&L leaderboard",
+        "description": "Rank the complete eligible cohort of wallets active through one builder. P&L is first-class: dated windows expose global wallet realized P&L and All Time exposes total, realized, and unrealized P&L. P&L is global Polymarket wallet P&L and is not attributed to the builder. Existing builder-attributed volume, fills, fees, active-day, and recency sorts remain available.",
         "operationId": "v3_builder_trader_leaderboard",
         "parameters": [
           {
@@ -5621,8 +5621,8 @@
             "name": "sort",
             "in": "query",
             "required": false,
-            "description": "Ranking metric. recent maps to last_activity_at.",
-            "schema": {"type": "string", "enum": ["volume", "trades", "fees", "active_days", "recent"], "default": "volume"}
+            "description": "Ranking metric. pnl resolves to realized_pnl for dated periods and total_pnl for All Time. total_pnl and unrealized_pnl are All-Time-only. recent maps to last_activity_at.",
+            "schema": {"type": "string", "enum": ["pnl", "realized_pnl", "total_pnl", "unrealized_pnl", "volume", "trades", "fees", "active_days", "recent"], "default": "pnl"}
           },
           {
             "name": "order",
@@ -5645,7 +5645,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A contiguous builder-attributed trader ranking, current through the returned as_of timestamp.",
+            "description": "A complete P&L or builder-attributed activity ranking, current through the returned as_of and optional pnl_as_of timestamps.",
             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardResponse"}}}
           },
           "400": {
@@ -5669,7 +5669,7 @@
             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
           },
           "503": {
-            "description": "A required builder daily aggregate is incomplete or unavailable; no partial ranking is returned.",
+            "description": "Required builder activity or P&L data is incomplete, stale, or unavailable; no partial ranking is returned.",
             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardUnavailable"}}}
           }
         },
@@ -11570,7 +11570,7 @@
         "required": ["error", "message"],
         "properties": {
           "error": {"type": "string", "enum": ["builder_trader_leaderboard_unavailable"]},
-          "message": {"type": "string", "enum": ["Builder trader activity is temporarily unavailable."]}
+          "message": {"type": "string", "enum": ["The builder trader leaderboard is temporarily unavailable."]}
         }
       },
       "V3BuilderTraderLeaderboardWindow": {
@@ -11606,6 +11606,24 @@
           "rank": {"type": "integer", "minimum": 1, "description": "Rank after the requested metric and direction, with wallet address ascending as the deterministic tie-break."},
           "wallet": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
           "trader_address": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
+          "realized_pnl": {
+            "description": "Global wallet realized P&L. Present for P&L sorts and omitted for activity-only sorts.",
+            "$ref": "#/components/schemas/V3SignedDecimalString"
+          },
+          "unrealized_pnl": {
+            "description": "Global wallet current unrealized P&L for All Time, null for dated P&L, or omitted for activity-only sorts.",
+            "anyOf": [
+              {"$ref": "#/components/schemas/V3SignedDecimalString"},
+              {"type": "null"}
+            ]
+          },
+          "total_pnl": {
+            "description": "Global wallet current total P&L for All Time, null for dated P&L, or omitted for activity-only sorts.",
+            "anyOf": [
+              {"$ref": "#/components/schemas/V3SignedDecimalString"},
+              {"type": "null"}
+            ]
+          },
           "volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
           "volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
           "buy_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
@@ -11635,7 +11653,7 @@
           "builder_logo": {"type": ["string", "null"], "format": "uri"},
           "builder_verified": {"type": ["boolean", "null"]},
           "period": {"type": "string", "enum": ["1d", "7d", "30d", "all"]},
-          "sort": {"type": "string", "enum": ["volume", "trades", "fees", "active_days", "recent"]},
+          "sort": {"type": "string", "enum": ["realized_pnl", "total_pnl", "unrealized_pnl", "volume", "trades", "fees", "active_days", "recent"], "description": "Resolved sort. A request for pnl is returned as realized_pnl or total_pnl."},
           "order": {"type": "string", "enum": ["asc", "desc"]},
           "limit": {"type": "integer", "minimum": 1, "maximum": 100},
           "offset": {"type": "integer", "minimum": 0, "maximum": 100000},
@@ -11643,10 +11661,14 @@
           "window": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardWindow"},
           "coverage": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardCoverage"},
           "as_of": {"type": "string", "format": "date-time", "description": "Completion timestamp of the newest contributing aggregate snapshot."},
+          "cohort_wallet_count": {"type": "integer", "minimum": 0, "maximum": 100000, "description": "Complete distinct builder-active wallet cohort. Present for P&L sorts."},
+          "eligible_wallet_count": {"type": "integer", "minimum": 0, "maximum": 100000, "description": "Wallets eligible for the requested P&L ranking. Present for P&L sorts."},
+          "pnl_as_of": {"type": "string", "format": "date-time", "description": "Canonical P&L snapshot timestamp. Present for P&L sorts."},
           "volume_scope": {"type": "string", "enum": ["clob_v2_onchain"]},
           "volume_semantics": {"type": "string", "enum": ["outcome_share_par_notional"], "description": "One full outcome share represents $1 of par notional."},
           "fee_semantics": {"type": "string", "description": "Trader-paid USDC fees attributed to maker orders; not builder rebates, revenue, or P&L."},
-          "pnl_scope": {"type": "string", "enum": ["not_applicable_builder_attributed_activity_only"]},
+          "pnl_scope": {"type": "string", "enum": ["wallet_global_polymarket_not_builder_attributed", "not_applicable_builder_attributed_activity_only"]},
+          "pnl_semantics": {"type": "string", "description": "Explains that P&L is global wallet P&L and is not attributed to the builder. Present for P&L sorts."},
           "data": {"type": "array", "items": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardRow"}}
         }
       },
