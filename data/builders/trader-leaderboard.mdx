@@ -1,0 +1,137 @@
+---
+title: "Builder Trader Leaderboard"
+openapi: "GET /v3/builders/{code}/leaderboard"
+description: "Rank the traders active through one builder by attributed volume, fills, trader-paid fees, active days, or recency."
+---
+
+This endpoint ranks wallets whose CLOB V2 maker orders were attributed to one builder. It supports 1-day, 7-day, 30-day, and complete-history windows.
+
+This is a **builder-attributed activity leaderboard**, not a P&L leaderboard. A wallet's eventual realized or unrealized P&L cannot be assigned to one builder from order attribution alone. `pnl_scope` is therefore always `not_applicable_builder_attributed_activity_only`.
+
+## Request
+
+```http
+GET /v3/builders/{code}/leaderboard
+```
+
+### Path parameter
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `code` | string | Builder code as `0x` followed by 64 hexadecimal characters |
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `period` | string | `30d` | `1d`, `7d`, `30d`, or `all` |
+| `sort` | string | `volume` | `volume`, `trades`, `fees`, `active_days`, or `recent` |
+| `order` | string | `desc` | `asc` or `desc` |
+| `limit` | integer | `100` | Rows per page, from 1 through 100 |
+| `offset` | integer | `0` | Rank offset, from 0 through 100,000 |
+
+The fixed windows end on the latest complete indexed UTC day. `all` begins at the first complete day in retained builder activity coverage. Results fail closed with HTTP 503 if the required daily rectangle is incomplete or stale.
+
+## Example
+
+```bash
+curl -H "x-api-key: pn_live_YOUR_KEY" \
+  "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/leaderboard?period=30d&sort=volume&limit=2"
+```
+
+```json
+{
+  "builder_code": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
+  "builder_name": "BetMoar",
+  "builder_logo": "https://example.com/builder.png",
+  "builder_verified": true,
+  "period": "30d",
+  "sort": "volume",
+  "order": "desc",
+  "limit": 2,
+  "offset": 0,
+  "has_more": true,
+  "window": {
+    "start_date": "2026-08-01",
+    "end_date": "2026-08-30",
+    "complete_through": "2026-08-30"
+  },
+  "coverage": {
+    "start_date": "2026-04-03",
+    "end_date": "2026-08-30",
+    "complete": true
+  },
+  "as_of": "2026-08-30T04:24:17.000000Z",
+  "volume_scope": "clob_v2_onchain",
+  "volume_semantics": "outcome_share_par_notional",
+  "fee_semantics": "Trader-paid fees on builder-attributed maker orders. These are not builder rebates.",
+  "pnl_scope": "not_applicable_builder_attributed_activity_only",
+  "data": [
+    {
+      "rank": 1,
+      "wallet": "0x1111111111111111111111111111111111111111",
+      "trader_address": "0x1111111111111111111111111111111111111111",
+      "volume_e6": "248501250000",
+      "volume": "248501.25",
+      "buy_volume_e6": "148500000000",
+      "buy_volume": "148500",
+      "sell_volume_e6": "100001250000",
+      "sell_volume": "100001.25",
+      "trades": 821,
+      "trader_paid_fees_e6": "184200000",
+      "trader_paid_fees": "184.2",
+      "active_days": 24,
+      "first_activity_at": 1785542400,
+      "last_activity_at": 1788048000
+    }
+  ]
+}
+```
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `builder_code` | string | Normalized builder code |
+| `builder_name` | string \| null | Public builder name when available |
+| `builder_logo` | string \| null | Public builder logo URL when available |
+| `builder_verified` | boolean \| null | Public verification state when available |
+| `period` | string | Resolved ranking window |
+| `sort` | string | Resolved sort metric |
+| `order` | string | Resolved sort direction |
+| `limit`, `offset`, `has_more` | integer / boolean | Offset-pagination state |
+| `window` | object | Inclusive UTC start and end dates used for the ranking |
+| `coverage` | object | Full retained date extent and completeness state |
+| `as_of` | string | Completion timestamp of the latest contributing daily aggregate |
+| `volume_scope` | string | Always `clob_v2_onchain` |
+| `volume_semantics` | string | Always `outcome_share_par_notional` |
+| `fee_semantics` | string | Explains that fees were paid by traders and are not builder rebates |
+| `pnl_scope` | string | Always `not_applicable_builder_attributed_activity_only` |
+| `data[].rank` | integer | Deterministic rank after the requested sort and wallet-address tie-break |
+| `data[].wallet`, `data[].trader_address` | string | Same normalized trader wallet address |
+| `data[].volume_e6` | string | Exact attributed outcome-share par notional in 6-decimal units |
+| `data[].volume` | string | Decimal attributed outcome-share par notional |
+| `data[].buy_volume_e6`, `data[].sell_volume_e6` | string | Exact signed-order-side attributed volume in 6-decimal units |
+| `data[].buy_volume`, `data[].sell_volume` | string | Decimal signed-order-side attributed volume |
+| `data[].trades` | integer | Attributed maker-order fills in the selected window |
+| `data[].trader_paid_fees_e6` | string | Exact trader-paid fees in 6-decimal units |
+| `data[].trader_paid_fees` | string | Decimal trader-paid fees |
+| `data[].active_days` | integer | UTC days with at least one attributed fill in the selected window |
+| `data[].first_activity_at`, `data[].last_activity_at` | integer | First and last attributed fill times in Unix seconds |
+
+## Errors
+
+| Status | Error | Meaning |
+|--------|-------|---------|
+| `400` | `invalid_builder`, `invalid_period`, `invalid_sort`, `invalid_order`, `invalid_limit`, or `invalid_offset` | A path or query value is invalid |
+| `401` | authentication error | The API key is missing or invalid |
+| `404` | `builder_not_found` | The normalized builder has no metadata or indexed activity |
+| `503` | `builder_trader_leaderboard_unavailable` | Complete, fresh semantics-v3 activity is unavailable; no partial ranking is returned |
+
+## Related endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v3/builders` | Rank builders across all indexed activity |
+| `GET /v3/builders/{code}` | Inspect one builder's profile and totals |
+| `GET /v3/builders/{code}/trades` | Paginate the underlying attributed fills |

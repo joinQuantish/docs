@@ -5596,6 +5596,76 @@
         ]
       }
     },
+    "/v3/builders/{code}/leaderboard": {
+      "get": {
+        "tags": ["V3 Builders"],
+        "summary": "Builder trader activity leaderboard",
+        "description": "Rank wallets by CLOB V2 maker-order activity attributed to one builder over 1-day, 7-day, 30-day, or complete-history windows. This is activity attribution, not realized or unrealized P&L.",
+        "operationId": "v3_builder_trader_leaderboard",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "description": "Builder code as 0x followed by 64 hexadecimal characters.",
+            "schema": {"type": "string", "pattern": "^0x[a-fA-F0-9]{64}$"}
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "enum": ["1d", "7d", "30d", "all"], "default": "30d"}
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "enum": ["volume", "trades", "fees", "active_days", "recent"], "default": "volume"}
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "enum": ["asc", "desc"], "default": "desc"}
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 100}
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "integer", "minimum": 0, "maximum": 100000, "default": 0}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A complete and fresh builder-attributed trader ranking.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardResponse"}}}
+          },
+          "400": {
+            "description": "Invalid builder code or query value.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardBadRequest"}}}
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          },
+          "404": {
+            "description": "The normalized builder has no metadata or indexed activity.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardNotFound"}}}
+          },
+          "503": {
+            "description": "Complete, fresh semantics-v3 activity is unavailable; no partial ranking is returned.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardUnavailable"}}}
+          }
+        },
+        "security": [{"api_key": []}]
+      }
+    },
     "/v3/combos/leaderboard": {
       "get": {
         "tags": [
@@ -11461,6 +11531,113 @@
             ]
           },
           "message": {"type": "string"}
+        }
+      },
+      "V3BuilderTraderLeaderboardBadRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "message"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": ["invalid_builder", "invalid_period", "invalid_sort", "invalid_order", "invalid_limit", "invalid_offset"]
+          },
+          "message": {"type": "string"}
+        }
+      },
+      "V3BuilderTraderLeaderboardNotFound": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "message"],
+        "properties": {
+          "error": {"type": "string", "enum": ["builder_not_found"]},
+          "message": {"type": "string", "enum": ["The requested builder was not found."]}
+        }
+      },
+      "V3BuilderTraderLeaderboardUnavailable": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "message"],
+        "properties": {
+          "error": {"type": "string", "enum": ["builder_trader_leaderboard_unavailable"]},
+          "message": {"type": "string", "enum": ["Builder trader activity is temporarily unavailable."]}
+        }
+      },
+      "V3BuilderTraderLeaderboardWindow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start_date", "end_date", "complete_through"],
+        "properties": {
+          "start_date": {"type": "string", "format": "date"},
+          "end_date": {"type": "string", "format": "date"},
+          "complete_through": {"type": "string", "format": "date"}
+        }
+      },
+      "V3BuilderTraderLeaderboardCoverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start_date", "end_date", "complete"],
+        "properties": {
+          "start_date": {"type": "string", "format": "date"},
+          "end_date": {"type": "string", "format": "date"},
+          "complete": {"type": "boolean"}
+        }
+      },
+      "V3BuilderTraderLeaderboardRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank", "wallet", "trader_address", "volume_e6", "volume",
+          "buy_volume_e6", "buy_volume", "sell_volume_e6", "sell_volume",
+          "trades", "trader_paid_fees_e6", "trader_paid_fees", "active_days",
+          "first_activity_at", "last_activity_at"
+        ],
+        "properties": {
+          "rank": {"type": "integer", "minimum": 1},
+          "wallet": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
+          "trader_address": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
+          "volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
+          "volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "buy_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
+          "buy_volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "sell_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
+          "sell_volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "trades": {"type": "integer", "minimum": 0},
+          "trader_paid_fees_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
+          "trader_paid_fees": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "active_days": {"type": "integer", "minimum": 0},
+          "first_activity_at": {"type": "integer", "format": "int64", "minimum": 0},
+          "last_activity_at": {"type": "integer", "format": "int64", "minimum": 0}
+        }
+      },
+      "V3BuilderTraderLeaderboardResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "builder_code", "builder_name", "builder_logo", "builder_verified",
+          "period", "sort", "order", "limit", "offset", "has_more",
+          "window", "coverage", "as_of", "volume_scope", "volume_semantics",
+          "fee_semantics", "pnl_scope", "data"
+        ],
+        "properties": {
+          "builder_code": {"type": "string", "pattern": "^0x[a-fA-F0-9]{64}$"},
+          "builder_name": {"type": ["string", "null"]},
+          "builder_logo": {"type": ["string", "null"], "format": "uri"},
+          "builder_verified": {"type": ["boolean", "null"]},
+          "period": {"type": "string", "enum": ["1d", "7d", "30d", "all"]},
+          "sort": {"type": "string", "enum": ["volume", "trades", "fees", "active_days", "recent"]},
+          "order": {"type": "string", "enum": ["asc", "desc"]},
+          "limit": {"type": "integer", "minimum": 1, "maximum": 100},
+          "offset": {"type": "integer", "minimum": 0, "maximum": 100000},
+          "has_more": {"type": "boolean"},
+          "window": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardWindow"},
+          "coverage": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardCoverage"},
+          "as_of": {"type": "string", "format": "date-time"},
+          "volume_scope": {"type": "string", "enum": ["clob_v2_onchain"]},
+          "volume_semantics": {"type": "string", "enum": ["outcome_share_par_notional"]},
+          "fee_semantics": {"type": "string"},
+          "pnl_scope": {"type": "string", "enum": ["not_applicable_builder_attributed_activity_only"]},
+          "data": {"type": "array", "items": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardRow"}}
         }
       },
       "V3ComboPnlInvalidRequest": {

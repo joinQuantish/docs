@@ -379,6 +379,7 @@
             "pages": [
               "data/builders/list",
               "data/builders/detail",
+              "data/builders/trader-leaderboard",
               "data/builders/trades"
             ]
           },
