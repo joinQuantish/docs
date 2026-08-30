@@ -3,6 +3,15 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-30 [codex+josh] - Reworked the Builder Trader Leaderboard reference
+  and OpenAPI contract around its canonical P&L-first behavior. The page now
+  leads with dated realized P&L and All-Time total/realized/unrealized P&L,
+  explicitly separates global wallet P&L from builder-attributed activity,
+  retains all five activity sorts, documents complete-cohort pagination and
+  fail-closed freshness, corrects the BetMoar builder code, and includes direct
+  P&L/activity/page-two examples. JSON, diff, and strict Mintlify validation
+  pass; merge and public deployment remain pending.
+
 - 2026-08-30 [codex] - Added the complete public reference, navigation, and
   OpenAPI 3.1 contract for `GET /v3/builders/{code}/leaderboard`. The contract
   documents 1D, 7D, 30D, and All Time builder-attributed activity, all five

@@ -1,14 +1,18 @@
 ---
-title: "Builder Trader Leaderboard"
+title: "Builder Trader P&L Leaderboard"
 openapi: "GET /v3/builders/{code}/leaderboard"
-description: "Rank the traders active through one builder by attributed volume, fills, trader-paid fees, active days, or recency."
+description: "Rank every trader active through one builder by global wallet P&L, attributed volume, fills, trader-paid fees, active days, or recency."
 ---
 
-This endpoint ranks wallets whose CLOB V2 maker orders were attributed to one builder. It supports 1-day, 7-day, 30-day, and complete-history windows.
+This endpoint answers the most common builder leaderboard question first: **which traders active through this builder have the highest P&L?** It ranks the builder's complete eligible trader cohort without intersecting it with a global Top-N list and paginates deterministically through 100 rows at a time.
 
-This is a **builder-attributed activity leaderboard**, not a P&L leaderboard. A wallet's eventual realized or unrealized P&L cannot be assigned to one builder from order attribution alone. `pnl_scope` is therefore always `not_applicable_builder_attributed_activity_only`.
+- `1d`, `7d`, and `30d` rank by **realized P&L**.
+- `all` ranks by **total P&L** by default and also supports realized or unrealized P&L.
+- Existing builder-attributed volume, fills, trader-paid fees, active-day, and recency rankings remain available.
 
-Each full outcome share contributes $1 of par notional to volume. Trader-paid fees are reported in six-decimal USDC units. They are not builder rebates, builder revenue, or P&L.
+<Warning>
+  P&L is the trader wallet's global Polymarket P&L, not P&L attributed to the builder. The builder determines which wallets are in the cohort. Builder attribution is available for the activity columns, but order attribution alone cannot assign a wallet's eventual P&L to one builder.
+</Warning>
 
 ## Request
 
@@ -27,38 +31,44 @@ GET /v3/builders/{code}/leaderboard
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `period` | string | `30d` | `1d`, `7d`, `30d`, or `all` |
-| `sort` | string | `volume` | `volume`, `trades`, `fees`, `active_days`, or `recent`; `recent` sorts by `last_activity_at` |
+| `sort` | string | `pnl` | `pnl`, `realized_pnl`, `total_pnl`, `unrealized_pnl`, `volume`, `trades`, `fees`, `active_days`, or `recent` |
 | `order` | string | `desc` | `asc` or `desc` |
 | `limit` | integer | `100` | Rows per page, from 1 through 100 |
 | `offset` | integer | `0` | Rank offset, from 0 through 100,000 |
 
-The fixed windows end on the latest successfully materialized UTC date. That can be the current UTC date, in which case the final bucket is a partial-day snapshot through `as_of`, not a claim that the calendar day has ended. `all` begins at the first retained builder-activity date.
+`sort=pnl` is the recommended stable default. It resolves to `realized_pnl` for `1d`, `7d`, and `30d`, and to `total_pnl` for `all`. The response reports the resolved sort. Dated windows reject `total_pnl` and `unrealized_pnl`; those marked values are only meaningful for All Time.
 
-`coverage.complete` means that every UTC date in the selected window has a successfully built aggregate row. `window.complete_through` is the latest date included in that contiguous window. The aggregate is normally refreshed about every 30 minutes. The endpoint fails closed with HTTP 503 when a required date is missing or the latest projected date is older than the previous UTC date; clients can use `as_of` when they require a stricter freshness threshold.
+The builder cohort contains every wallet with attributed CLOB V2 maker-order activity in the selected builder window. Fixed builder-activity windows use inclusive UTC dates through `window.complete_through`. Dated P&L is the canonical rolling realized-P&L aggregate through `pnl_as_of`; All Time uses the canonical current total, realized, and unrealized wallet summary.
 
-For a second page of 100 rows, keep the same filters and send `limit=100&offset=100`. Rankings use wallet address ascending as the deterministic tie-break, regardless of the requested metric order.
+`coverage.complete` means every UTC date in the builder cohort window has a successfully built aggregate. P&L data fails closed when its canonical aggregate is incomplete or stale. No partial ranking is returned as authoritative data.
+
+For page two, retain every filter and send `limit=100&offset=100`. Rankings use wallet address ascending as the deterministic tie-break, regardless of metric or direction.
 
 See [Authentication](/authentication) for key creation and [Rate Limits](/guides/rate-limits) for plan availability and current request limits.
 
-## Example
+## P&L-first example
+
+The example uses BetMoar's public builder code.
 
 ```bash
 curl -H "x-api-key: pn_live_YOUR_KEY" \
-  "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/leaderboard?period=30d&sort=volume&limit=1"
+  "https://api.polynode.dev/v3/builders/0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1/leaderboard?period=30d&sort=pnl&limit=1"
 ```
 
 ```json
 {
-  "builder_code": "0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df",
+  "builder_code": "0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1",
   "builder_name": "BetMoar",
   "builder_logo": "https://example.com/builder.png",
   "builder_verified": true,
   "period": "30d",
-  "sort": "volume",
+  "sort": "realized_pnl",
   "order": "desc",
   "limit": 1,
   "offset": 0,
   "has_more": true,
+  "cohort_wallet_count": 2101,
+  "eligible_wallet_count": 2101,
   "window": {
     "start_date": "2026-08-01",
     "end_date": "2026-08-30",
@@ -69,16 +79,21 @@ curl -H "x-api-key: pn_live_YOUR_KEY" \
     "end_date": "2026-08-30",
     "complete": true
   },
-  "as_of": "2026-08-30T04:24:17.000000Z",
+  "as_of": "2026-08-30T08:12:17.000000Z",
+  "pnl_as_of": "2026-08-30T08:00:00.000000Z",
+  "pnl_scope": "wallet_global_polymarket_not_builder_attributed",
+  "pnl_semantics": "Global Polymarket wallet PnL for traders active through this builder in the selected window. PnL is not attributed to the builder.",
   "volume_scope": "clob_v2_onchain",
   "volume_semantics": "outcome_share_par_notional",
   "fee_semantics": "Trader-paid fees on builder-attributed maker orders. These are not builder rebates.",
-  "pnl_scope": "not_applicable_builder_attributed_activity_only",
   "data": [
     {
       "rank": 1,
       "wallet": "0x1111111111111111111111111111111111111111",
       "trader_address": "0x1111111111111111111111111111111111111111",
+      "realized_pnl": "184250.75",
+      "unrealized_pnl": null,
+      "total_pnl": null,
       "volume_e6": "248501250000",
       "volume": "248501.25",
       "buy_volume_e6": "148500000000",
@@ -96,26 +111,35 @@ curl -H "x-api-key: pn_live_YOUR_KEY" \
 }
 ```
 
+For a dated P&L ranking, `realized_pnl` is always a decimal string and `total_pnl` / `unrealized_pnl` are `null`. For All Time, all three P&L fields are decimal strings.
+
 ## Common queries
 
 ```bash
-BUILDER_CODE="0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df"
+BUILDER_CODE="0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1"
 BASE_URL="https://api.polynode.dev/v3/builders/${BUILDER_CODE}/leaderboard"
 
-# Latest 1-day window by volume
-curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=1d&sort=volume&order=desc"
+# Recommended defaults: 30-day realized P&L
+curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}"
 
-# Latest 30-day window by attributed fills
-curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=trades&order=desc"
+# 1-day realized P&L
+curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=1d&sort=pnl"
 
-# Complete retained history by trader-paid fees
-curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=all&sort=fees&order=desc"
+# 7-day realized P&L
+curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=7d&sort=realized_pnl"
 
-# Second 100-row page
-curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&limit=100&offset=100"
+# All-Time total, realized, and unrealized P&L rankings
+curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=all&sort=total_pnl"
+curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=all&sort=realized_pnl"
+curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=all&sort=unrealized_pnl"
 
-# Least active-day counts first
-curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=active_days&order=asc"
+# Existing builder-attributed activity rankings
+curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=volume"
+curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=trades"
+curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=all&sort=fees"
+
+# Second 100-row page of the same ranking
+curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=pnl&limit=100&offset=100"
 ```
 
 ## Response fields
@@ -123,30 +147,33 @@ curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=active_days&o
 | Field | Type | Description |
 |-------|------|-------------|
 | `builder_code` | string | Normalized builder code |
-| `builder_name` | string \| null | Public builder name when available |
-| `builder_logo` | string \| null | Public builder logo URL when available |
-| `builder_verified` | boolean \| null | Public verification state when available |
-| `period` | string | Resolved ranking window |
-| `sort` | string | Resolved sort metric |
+| `builder_name`, `builder_logo`, `builder_verified` | string / boolean / null | Public builder identity when available |
+| `period` | string | Resolved cohort and P&L window |
+| `sort` | string | Resolved sort; `pnl` is returned as `realized_pnl` or `total_pnl` |
 | `order` | string | Resolved sort direction |
-| `limit`, `offset`, `has_more` | integer / boolean | Offset-pagination state |
-| `window` | object | Inclusive UTC start and end dates used for the ranking; `complete_through` is the latest included date |
-| `coverage` | object | Full retained date extent; `complete` means every date in the selected window has an aggregate row |
-| `as_of` | string | Completion timestamp of the latest contributing aggregate; a current-day bucket is a snapshot through this time |
+| `limit`, `offset`, `has_more` | integer / boolean | Deterministic offset-pagination state |
+| `cohort_wallet_count` | integer | Distinct wallets active through this builder in the selected window; returned for P&L sorts |
+| `eligible_wallet_count` | integer | Wallets eligible for the requested P&L ranking; dated realized-P&L cohorts include explicit zeroes, while All Time excludes wallets whose canonical current basis or mark is incomplete |
+| `window` | object | Inclusive UTC dates used to construct the builder-attributed wallet cohort |
+| `coverage` | object | Full retained builder-activity extent and selected-window completeness |
+| `as_of` | string | Completion timestamp of the latest builder-activity aggregate |
+| `pnl_as_of` | string | Canonical P&L snapshot timestamp; returned for P&L sorts |
+| `pnl_scope` | string | `wallet_global_polymarket_not_builder_attributed` for P&L sorts; `not_applicable_builder_attributed_activity_only` for activity sorts |
+| `pnl_semantics` | string | Explicit reminder that P&L is global wallet P&L, not builder-attributed P&L; returned for P&L sorts |
 | `volume_scope` | string | Always `clob_v2_onchain` |
 | `volume_semantics` | string | Always `outcome_share_par_notional`; one full outcome share represents $1 of par notional |
-| `fee_semantics` | string | Explains that fees are six-decimal USDC paid by traders and are not builder rebates |
-| `pnl_scope` | string | Always `not_applicable_builder_attributed_activity_only` |
-| `data[].rank` | integer | Deterministic rank after the requested sort and an ascending wallet-address tie-break |
+| `fee_semantics` | string | Trader-paid fees on attributed maker orders, not builder rebates or revenue |
+| `data[].rank` | integer | Rank after the requested metric and ascending wallet-address tie-break |
 | `data[].wallet`, `data[].trader_address` | string | Same normalized trader wallet address |
-| `data[].volume_e6` | string | Exact attributed outcome-share par notional in 6-decimal units |
-| `data[].volume` | string | Decimal attributed outcome-share par notional |
-| `data[].buy_volume_e6`, `data[].sell_volume_e6` | string | Exact signed-order-side attributed volume in 6-decimal units |
+| `data[].realized_pnl` | string | Global wallet realized P&L for the requested period; returned for P&L sorts |
+| `data[].unrealized_pnl` | string \| null | Global wallet current unrealized P&L for All Time; `null` for dated P&L |
+| `data[].total_pnl` | string \| null | Global wallet current total P&L for All Time; `null` for dated P&L |
+| `data[].volume_e6`, `data[].volume` | string | Builder-attributed outcome-share par notional in raw 6-decimal and decimal units |
+| `data[].buy_volume_e6`, `data[].sell_volume_e6` | string | Raw 6-decimal signed-order-side attributed volume |
 | `data[].buy_volume`, `data[].sell_volume` | string | Decimal signed-order-side attributed volume |
-| `data[].trades` | integer | Attributed maker-order fills in the selected window |
-| `data[].trader_paid_fees_e6` | string | Exact trader-paid fees in raw six-decimal USDC units |
-| `data[].trader_paid_fees` | string | Decimal trader-paid fees in USDC |
-| `data[].active_days` | integer | UTC days with at least one attributed fill in the selected window |
+| `data[].trades` | integer | Builder-attributed maker-order fills in the cohort window |
+| `data[].trader_paid_fees_e6`, `data[].trader_paid_fees` | string | Trader-paid fees in raw six-decimal and decimal USDC units |
+| `data[].active_days` | integer | UTC dates with at least one attributed fill in the cohort window |
 | `data[].first_activity_at`, `data[].last_activity_at` | integer | First and last attributed fill times in Unix seconds |
 
 ## Errors
@@ -158,12 +185,12 @@ curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=active_days&o
 | `402` | payment required | The key's plan does not include paid V3 REST data |
 | `404` | `builder_not_found` | The normalized builder has no metadata or indexed activity |
 | `429` | rate limit exceeded | The account's shared V3 REST request limit was exceeded |
-| `503` | `builder_trader_leaderboard_unavailable` | A required builder daily aggregate is incomplete or unavailable; no partial ranking is returned |
+| `503` | `builder_trader_leaderboard_unavailable` | Required builder activity or P&L data is incomplete, stale, or unavailable; no partial ranking is returned |
 
 ## Related endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| [`GET /v3/builders`](/data/builders/list) | Rank builders across all indexed activity |
+| [`GET /v3/builders`](/data/builders/list) | Rank all builders by attributed activity |
 | [`GET /v3/builders/{code}`](/data/builders/detail) | Inspect one builder's profile and totals |
-| [`GET /v3/builders/{code}/trades`](/data/builders/trades) | Paginate the underlying attributed fills |
+| [`GET /v3/builders/{code}/trades`](/data/builders/trades) | Paginate the underlying builder-attributed fills |
