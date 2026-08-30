@@ -5600,7 +5600,7 @@
       "get": {
         "tags": ["V3 Builders"],
         "summary": "Builder trader activity leaderboard",
-        "description": "Rank wallets by CLOB V2 maker-order activity attributed to one builder over 1-day, 7-day, 30-day, or complete-history windows. This is activity attribution, not realized or unrealized P&L.",
+        "description": "Rank wallets by CLOB V2 maker-order activity attributed to one builder over 1-day, 7-day, 30-day, or complete-history windows. This is activity attribution, not realized or unrealized P&L. The newest UTC date can be a current-day snapshot through as_of.",
         "operationId": "v3_builder_trader_leaderboard",
         "parameters": [
           {
@@ -5614,12 +5614,14 @@
             "name": "period",
             "in": "query",
             "required": false,
+            "description": "Ranking window. Fixed windows end on the latest materialized UTC date; all begins at the first retained date.",
             "schema": {"type": "string", "enum": ["1d", "7d", "30d", "all"], "default": "30d"}
           },
           {
             "name": "sort",
             "in": "query",
             "required": false,
+            "description": "Ranking metric. recent maps to last_activity_at.",
             "schema": {"type": "string", "enum": ["volume", "trades", "fees", "active_days", "recent"], "default": "volume"}
           },
           {
@@ -5643,7 +5645,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A complete and fresh builder-attributed trader ranking.",
+            "description": "A contiguous builder-attributed trader ranking, current through the returned as_of timestamp.",
             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardResponse"}}}
           },
           "400": {
@@ -5654,12 +5656,20 @@
             "description": "Missing or invalid API key",
             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
           },
+          "402": {
+            "description": "The API key's plan does not include paid V3 REST data.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          },
           "404": {
             "description": "The normalized builder has no metadata or indexed activity.",
             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardNotFound"}}}
           },
+          "429": {
+            "description": "The account's shared V3 REST request limit was exceeded.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+          },
           "503": {
-            "description": "Complete, fresh semantics-v3 activity is unavailable; no partial ranking is returned.",
+            "description": "A required builder daily aggregate is incomplete or unavailable; no partial ranking is returned.",
             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardUnavailable"}}}
           }
         },
@@ -11568,9 +11578,9 @@
         "additionalProperties": false,
         "required": ["start_date", "end_date", "complete_through"],
         "properties": {
-          "start_date": {"type": "string", "format": "date"},
-          "end_date": {"type": "string", "format": "date"},
-          "complete_through": {"type": "string", "format": "date"}
+          "start_date": {"type": "string", "format": "date", "description": "First inclusive UTC date in the ranking window."},
+          "end_date": {"type": "string", "format": "date", "description": "Last inclusive UTC date in the ranking window; it can be the current UTC date."},
+          "complete_through": {"type": "string", "format": "date", "description": "Latest contiguous materialized UTC date included in the window. A current-day bucket is a snapshot through as_of."}
         }
       },
       "V3BuilderTraderLeaderboardCoverage": {
@@ -11578,9 +11588,9 @@
         "additionalProperties": false,
         "required": ["start_date", "end_date", "complete"],
         "properties": {
-          "start_date": {"type": "string", "format": "date"},
-          "end_date": {"type": "string", "format": "date"},
-          "complete": {"type": "boolean"}
+          "start_date": {"type": "string", "format": "date", "description": "First retained UTC date."},
+          "end_date": {"type": "string", "format": "date", "description": "Latest retained UTC date."},
+          "complete": {"type": "boolean", "description": "True when every UTC date in the selected window has a successfully materialized aggregate row."}
         }
       },
       "V3BuilderTraderLeaderboardRow": {
@@ -11593,7 +11603,7 @@
           "first_activity_at", "last_activity_at"
         ],
         "properties": {
-          "rank": {"type": "integer", "minimum": 1},
+          "rank": {"type": "integer", "minimum": 1, "description": "Rank after the requested metric and direction, with wallet address ascending as the deterministic tie-break."},
           "wallet": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
           "trader_address": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
           "volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
@@ -11603,11 +11613,11 @@
           "sell_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
           "sell_volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
           "trades": {"type": "integer", "minimum": 0},
-          "trader_paid_fees_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
-          "trader_paid_fees": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
+          "trader_paid_fees_e6": {"allOf": [{"$ref": "#/components/schemas/V3UnsignedIntegerString"}], "description": "Exact trader-paid fees in raw six-decimal USDC units."},
+          "trader_paid_fees": {"allOf": [{"$ref": "#/components/schemas/V3NonNegativeDecimalString"}], "description": "Decimal trader-paid fees in USDC; not builder rebates or revenue."},
           "active_days": {"type": "integer", "minimum": 0},
-          "first_activity_at": {"type": "integer", "format": "int64", "minimum": 0},
-          "last_activity_at": {"type": "integer", "format": "int64", "minimum": 0}
+          "first_activity_at": {"type": "integer", "format": "int64", "minimum": 0, "description": "Exact first attributed fill time in Unix seconds."},
+          "last_activity_at": {"type": "integer", "format": "int64", "minimum": 0, "description": "Exact last attributed fill time in Unix seconds; used by sort=recent."}
         }
       },
       "V3BuilderTraderLeaderboardResponse": {
@@ -11632,10 +11642,10 @@
           "has_more": {"type": "boolean"},
           "window": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardWindow"},
           "coverage": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardCoverage"},
-          "as_of": {"type": "string", "format": "date-time"},
+          "as_of": {"type": "string", "format": "date-time", "description": "Completion timestamp of the newest contributing aggregate snapshot."},
           "volume_scope": {"type": "string", "enum": ["clob_v2_onchain"]},
-          "volume_semantics": {"type": "string", "enum": ["outcome_share_par_notional"]},
-          "fee_semantics": {"type": "string"},
+          "volume_semantics": {"type": "string", "enum": ["outcome_share_par_notional"], "description": "One full outcome share represents $1 of par notional."},
+          "fee_semantics": {"type": "string", "description": "Trader-paid USDC fees attributed to maker orders; not builder rebates, revenue, or P&L."},
           "pnl_scope": {"type": "string", "enum": ["not_applicable_builder_attributed_activity_only"]},
           "data": {"type": "array", "items": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardRow"}}
         }
