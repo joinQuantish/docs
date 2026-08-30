@@ -3,6 +3,14 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-08-30 [codex] - Added the complete public reference, navigation, and
+  OpenAPI 3.1 contract for `GET /v3/builders/{code}/leaderboard`. The contract
+  documents 1D, 7D, 30D, and All Time builder-attributed activity, all five
+  exact sorts, 100-row/100,000-offset pagination, coverage/freshness metadata,
+  share-notional and trader-paid-fee semantics, and the explicit non-P&L
+  scope. JSON/schema checks and Mintlify 4.2.819 strict validation pass.
+  Documentation is not yet published.
+
 - 2026-08-29 [codex] - Prepared the dedicated Combo P&L leaderboard OpenAPI
   3.1 contract, first-user reference, navigation, Combo overview/catalog, and
   consumer changelog. The contract covers All Time marked P&L, fixed and
