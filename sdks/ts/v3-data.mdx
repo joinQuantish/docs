@@ -89,6 +89,8 @@ const leaderboard = await response.json();
 console.log(leaderboard.period, leaderboard.sort, leaderboard.data.length);
 ```
 
+For All-Time P&L, use the [documented signed-cursor loop](/data/builders/trader-leaderboard#walk-five-all-time-pages-without-repeats): start with `pagination=cursor`, then carry `next_cursor`, `as_of`, and `pnl_as_of` while incrementing `offset` by the returned row count. The page cap is 100 and the supported traversal ends at rank 500.
+
 ## Perps REST data
 
 ```typescript

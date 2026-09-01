@@ -5600,7 +5600,7 @@
       "get": {
         "tags": ["V3 Builders"],
         "summary": "Builder trader P&L leaderboard",
-        "description": "Rank eligible wallets active through one Builder inside the supported first-500-rank window. P&L is first-class: dated windows expose global wallet realized P&L and All Time exposes total, realized, and unrealized P&L. P&L is global Polymarket wallet P&L and is not attributed to the Builder. Existing Builder-attributed volume, fills, fees, active-day, and recency sorts remain available.",
+        "description": "Rank eligible wallets active through one Builder inside the supported first-500-rank window. P&L is first-class: dated windows expose global wallet realized P&L and All Time exposes total, realized, and unrealized P&L. P&L is global Polymarket wallet P&L and is not attributed to the Builder. Existing Builder-attributed volume, fills, fees, active-day, and recency sorts remain available. Legacy offset pagination remains the default; opt-in cursor pagination prevents repeated wallet identities during one pinned All-Time P&L traversal.",
         "operationId": "v3_builder_trader_leaderboard",
         "parameters": [
           {
@@ -5644,6 +5644,34 @@
             "required": false,
             "description": "Rank offset. offset + limit must not exceed 500; five full pages use 0, 100, 200, 300, and 400.",
             "schema": {"type": "integer", "minimum": 0, "maximum": 499, "default": 0}
+          },
+          {
+            "name": "pagination",
+            "in": "query",
+            "required": false,
+            "description": "Case-insensitive pagination mode. offset preserves the historical contract. cursor is available for All-Time P&L sorts and prevents a wallet already returned in the same pinned traversal from appearing again.",
+            "schema": {"type": "string", "enum": ["offset", "cursor"], "default": "offset"}
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque next_cursor or previous_cursor from a cursor response. Pass it unchanged with the same Builder, period, sort, order, limit, as_of, and pnl_as_of. Omit it on the first page.",
+            "schema": {"type": "string", "minLength": 1, "maxLength": 8192}
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "description": "Builder-activity snapshot copied from the first page. Required on cursor continuations; a changed snapshot returns HTTP 409.",
+            "schema": {"type": "string", "format": "date-time", "maxLength": 80}
+          },
+          {
+            "name": "pnl_as_of",
+            "in": "query",
+            "required": false,
+            "description": "P&L snapshot copied from the first page. Required on cursor continuations and valid only for P&L sorts; a changed snapshot returns HTTP 409.",
+            "schema": {"type": "string", "format": "date-time", "maxLength": 80}
           }
         ],
         "responses": {
@@ -5717,8 +5745,11 @@
             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardNotFound"}}}
           },
           "409": {
-            "description": "The supplied public name belongs to more than one Builder; use a Builder code.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderNameAmbiguous"}}}
+            "description": "The public name is ambiguous, or a pinned Builder-activity/P&L snapshot advanced. Use a Builder code for the former; restart cursor traversal at offset 0 for the latter.",
+            "content": {"application/json": {"schema": {"oneOf": [
+              {"$ref": "#/components/schemas/V3BuilderNameAmbiguous"},
+              {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardSnapshotChanged"}
+            ]}}}
           },
           "429": {
             "description": "The account's shared V3 REST request limit was exceeded.",
@@ -11606,7 +11637,7 @@
         "properties": {
           "error": {
             "type": "string",
-            "enum": ["invalid_builder", "invalid_period", "invalid_sort", "invalid_order", "invalid_limit", "invalid_offset"]
+            "enum": ["invalid_builder", "invalid_period", "invalid_sort", "invalid_order", "invalid_limit", "invalid_offset", "invalid_pagination", "invalid_cursor", "invalid_as_of", "invalid_pnl_as_of"]
           },
           "message": {"type": "string"}
         }
@@ -11627,6 +11658,15 @@
         "properties": {
           "error": {"type": "string", "enum": ["ambiguous_builder_name"]},
           "message": {"type": "string", "enum": ["More than one builder uses that name. Use the builder code instead."]}
+        }
+      },
+      "V3BuilderTraderLeaderboardSnapshotChanged": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "message"],
+        "properties": {
+          "error": {"type": "string", "enum": ["builder_trader_leaderboard_snapshot_changed"]},
+          "message": {"type": "string", "description": "Restart at offset 0 and use the new as_of, pnl_as_of, and cursor values."}
         }
       },
       "V3BuilderTraderLeaderboardUnavailable": {
@@ -11723,6 +11763,9 @@
           "limit": {"type": "integer", "minimum": 1, "maximum": 100},
           "offset": {"type": "integer", "minimum": 0, "maximum": 499},
           "has_more": {"type": "boolean", "description": "True only when another page exists inside the supported first-500-rank window."},
+          "pagination": {"type": "string", "enum": ["cursor"], "description": "Present only for opt-in cursor responses. Legacy offset responses omit this field."},
+          "previous_cursor": {"type": ["string", "null"], "maxLength": 8192, "description": "Opaque cursor for the preceding page. Null on the first and second pages because offset 0 requires no cursor; omitted from legacy offset responses."},
+          "next_cursor": {"type": ["string", "null"], "maxLength": 8192, "description": "Opaque cursor for the next page, or null at the end of the supported traversal. Omitted from legacy offset responses."},
           "window": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardWindow"},
           "coverage": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardCoverage"},
           "as_of": {"type": "string", "format": "date-time", "description": "Completion timestamp of the newest contributing aggregate snapshot."},

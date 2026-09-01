@@ -27,6 +27,12 @@ What's new:
   case-insensitive and responses use canonical lowercase values.
 * Trader leaderboard pages contain at most 100 rows and cover the first 500
   ranks through offsets `0`, `100`, `200`, `300`, and `400`.
+* All-Time P&L sorts add opt-in `pagination=cursor`. Signed cursors bind the
+  Builder, filters, limit, both returned snapshots, and already-returned
+  identities so one pinned traversal does not repeat a wallet. Historical
+  offset requests and response bodies remain available unchanged.
+* Cursor continuations carry `next_cursor`, `as_of`, and `pnl_as_of`. If either
+  snapshot advances, HTTP `409` tells the caller to restart at offset `0`.
 * P&L remains global Polymarket wallet P&L for the Builder-active cohort. The
   activity columns remain Builder-attributed.
 

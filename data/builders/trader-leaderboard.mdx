@@ -35,16 +35,22 @@ GET /v3/builders/{code}/leaderboard
 | `order` | string | `desc` | `asc` or `desc` |
 | `limit` | integer | `100` | Rows per page, from 1 through 100 |
 | `offset` | integer | `0` | Rank offset. `offset + limit` must not exceed 500. Five full 100-row pages use offsets `0`, `100`, `200`, `300`, and `400`. |
+| `pagination` | string | `offset` | `offset` for the historical contract, or `cursor` for repeat-free All-Time P&L traversal |
+| `cursor` | string | -- | Opaque `next_cursor` or `previous_cursor` from a cursor response. Pass it unchanged. |
+| `as_of` | RFC 3339 timestamp | -- | Builder-activity snapshot copied from the first page; required on cursor continuations |
+| `pnl_as_of` | RFC 3339 timestamp | -- | P&L snapshot copied from the first page; required on cursor continuations |
 
 `sort=pnl` is the recommended stable default. It resolves to `realized_pnl` for `1d`, `7d`, and `30d`, and to `total_pnl` for `all`. The response reports the resolved sort. Dated windows reject `total_pnl` and `unrealized_pnl`; those marked values are only meaningful for All Time.
 
-The canonical wire values are `1d`, `7d`, `30d`, and `all`. Period, sort, and order values are case-insensitive, so `30D`, `ALL`, and `TOTAL_PNL` are accepted and returned in canonical lowercase. `all-time` is not an alias for `all`.
+The canonical wire values are `1d`, `7d`, `30d`, and `all`. Period, sort, order, and pagination values are case-insensitive, so `30D`, `ALL`, `TOTAL_PNL`, and `CURSOR` are accepted and returned in canonical lowercase where a corresponding response field exists. `all-time` is not an alias for `all`. Treat cursor values and timestamps as opaque and pass them unchanged.
 
 The builder cohort contains every wallet with attributed CLOB V2 maker-order activity in the selected builder window. Fixed builder-activity windows use inclusive UTC dates through `window.complete_through`. Dated P&L is the canonical rolling realized-P&L aggregate through `pnl_as_of`; All Time uses the canonical current total, realized, and unrealized wallet summary.
 
 `coverage.complete` means every UTC date in the builder cohort window has a successfully built aggregate. P&L data fails closed when its canonical aggregate is incomplete or stale. No partial ranking is returned as authoritative data.
 
-For each next page, retain every filter and add 100 to `offset`. Stop when `has_more` is `false`; it is always `false` after rank 500. Rankings use wallet address ascending as the deterministic tie-break, regardless of metric or direction.
+Legacy offset pagination remains the default and its response body is unchanged. Retain every filter and add the number of returned rows to `offset`. Stop when `has_more` is `false`; it is always `false` after rank 500. Rankings use wallet address ascending as the tie-break, regardless of metric or direction.
+
+For an All-Time `total_pnl`, `realized_pnl`, or `unrealized_pnl` walk, use `pagination=cursor`. The first request uses `offset=0` without a cursor. Every continuation must keep the same Builder, resolved period, sort, order, and limit; add the number of rows already returned to `offset`; and pass the preceding response's `next_cursor`, `as_of`, and `pnl_as_of`. This pins both snapshots and prevents a wallet already returned in that traversal from appearing again. It does not change any P&L value, ranking formula, or tie-break.
 
 See [Authentication](/authentication) for key creation and [Rate Limits](/guides/rate-limits) for plan availability and current request limits.
 
@@ -115,6 +121,49 @@ curl -H "x-api-key: pn_live_YOUR_KEY" \
 
 For a dated P&L ranking, `realized_pnl` is always a decimal string and `total_pnl` / `unrealized_pnl` are `null`. For All Time, all three P&L fields are decimal strings.
 
+## Walk five All-Time pages without repeats
+
+This loop prints as many as 500 rows in pages of 100. It stops earlier when the Builder has fewer eligible traders. If the API returns HTTP `409` because either snapshot advanced, discard the traversal and restart at offset `0`.
+
+```bash
+BUILDER="BetMoar"
+BASE_URL="https://api.polynode.dev/v3/builders/${BUILDER}/leaderboard"
+offset=0
+cursor=""
+as_of=""
+pnl_as_of=""
+
+while [ "$offset" -lt 500 ]; do
+  args=(
+    --data-urlencode "period=all"
+    --data-urlencode "sort=total_pnl"
+    --data-urlencode "order=desc"
+    --data-urlencode "limit=100"
+    --data-urlencode "offset=${offset}"
+    --data-urlencode "pagination=cursor"
+  )
+  if [ "$offset" -gt 0 ]; then
+    args+=(
+      --data-urlencode "cursor=${cursor}"
+      --data-urlencode "as_of=${as_of}"
+      --data-urlencode "pnl_as_of=${pnl_as_of}"
+    )
+  fi
+
+  page=$(curl -fsS -G -H "x-api-key: $POLYNODE_API_KEY" \
+    "${args[@]}" "$BASE_URL") || exit 1
+  jq -c '.data[]' <<<"$page"
+
+  rows=$(jq -r '.data | length' <<<"$page")
+  [ "$(jq -r '.has_more' <<<"$page")" = "true" ] || break
+  cursor=$(jq -r '.next_cursor // empty' <<<"$page")
+  [ "$rows" -gt 0 ] && [ -n "$cursor" ] || exit 1
+  as_of=$(jq -r '.as_of' <<<"$page")
+  pnl_as_of=$(jq -r '.pnl_as_of' <<<"$page")
+  offset=$((offset + rows))
+done
+```
+
 ## Common queries
 
 ```bash
@@ -160,7 +209,9 @@ curl -H "x-api-key: pn_live_YOUR_KEY" \
 | `period` | string | Resolved cohort and P&L window |
 | `sort` | string | Resolved sort; `pnl` is returned as `realized_pnl` or `total_pnl` |
 | `order` | string | Resolved sort direction |
-| `limit`, `offset`, `has_more` | integer / boolean | Deterministic offset-pagination state inside the supported first 500 ranks |
+| `limit`, `offset`, `has_more` | integer / boolean | Bounded pagination state inside the supported first 500 ranks |
+| `pagination` | string | `cursor` on opt-in cursor responses; omitted from legacy offset responses |
+| `previous_cursor`, `next_cursor` | string \| null | Opaque traversal tokens on cursor responses. The first page has no previous cursor; the last page has no next cursor. |
 | `cohort_wallet_count` | integer | Distinct wallets active through this builder in the selected window; returned for P&L sorts |
 | `eligible_wallet_count` | integer | Wallets eligible for the requested P&L ranking; dated realized-P&L cohorts include explicit zeroes, while All Time excludes wallets whose canonical current basis or mark is incomplete |
 | `window` | object | Inclusive UTC dates used to construct the builder-attributed wallet cohort |
@@ -189,11 +240,11 @@ curl -H "x-api-key: pn_live_YOUR_KEY" \
 
 | Status | Error | Meaning |
 |--------|-------|---------|
-| `400` | `invalid_builder`, `invalid_period`, `invalid_sort`, `invalid_order`, `invalid_limit`, or `invalid_offset` | A path or query value is invalid or the requested page extends beyond rank 500 |
+| `400` | `invalid_builder`, `invalid_period`, `invalid_sort`, `invalid_order`, `invalid_limit`, `invalid_offset`, `invalid_pagination`, `invalid_cursor`, `invalid_as_of`, or `invalid_pnl_as_of` | A path or query value is invalid, a cursor continuation changed its bound inputs, or the requested page extends beyond rank 500 |
 | `401` | authentication error | The API key is missing or invalid |
 | `402` | payment required | The key's plan does not include paid V3 REST data |
 | `404` | `builder_not_found` | The normalized builder has no metadata or indexed activity |
-| `409` | `ambiguous_builder_name` | More than one Builder uses the supplied name; use a code from the Builder directory |
+| `409` | `ambiguous_builder_name` or `builder_trader_leaderboard_snapshot_changed` | Use a code for an ambiguous name, or restart a traversal at offset `0` when a pinned snapshot advances |
 | `429` | rate limit exceeded | The account's shared V3 REST request limit was exceeded |
 | `503` | `builder_trader_leaderboard_unavailable` | Required builder activity or P&L data is incomplete, stale, or unavailable; no partial ranking is returned |
 
