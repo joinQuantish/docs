@@ -12,4 +12,6 @@ curl -H "x-api-key: $POLYNODE_API_KEY" \
 
 Use `period=1d`, `7d`, `30d`, or `all`. Period, sort, and order values are case-insensitive and responses return canonical lowercase values. Each request returns at most 100 rows; the supported rank window ends at 500.
 
+For a repeat-free All-Time P&L walk, start with `pagination=cursor&offset=0`, then pass each response's `next_cursor`, `as_of`, and `pnl_as_of` with the next offset. Keep the same Builder, period, sort, order, and limit. Stop at `has_more=false`; restart at offset `0` after a snapshot-change HTTP `409`.
+
 P&L is global Polymarket wallet P&L for the Builder-active cohort, not P&L attributed exclusively to that Builder. Volume, fills, fees, active days, and recency are Builder-attributed.

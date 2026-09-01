@@ -3,6 +3,18 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-09-01 [codex+josh] - Repo-first, not yet published: documented the
+  opt-in signed cursor contract for All-Time Builder P&L traversal. The
+  canonical guide, query catalog, TypeScript REST guidance, OpenAPI 3.1
+  parameters/schemas/errors, and public changelog now explain the unchanged
+  100-row page and first-500-rank caps; cursor, activity, and P&L snapshot
+  propagation; no-repeat wallet identity guarantee inside one pinned
+  traversal; HTTP 409 restart behavior; and unchanged legacy offset response
+  bodies. Builder names/codes plus period, sort, order, and pagination casing
+  rules remain explicit, and the existing complete Builder-directory print
+  recipe remains canonical. Documentation validation, protected merge,
+  publication, and live example proof remain pending.
+
 - 2026-09-01 [codex+josh] - Repo-first, not yet published: reconciled the
   entire public Builder surface after a blind first-user audit. The Builder
   directory now documents exact case-insensitive name lookup and a complete
