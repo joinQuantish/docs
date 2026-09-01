@@ -3,6 +3,19 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-09-01 [codex+josh] - Production documentation lock-in: source
+  `65f511cd084bf6c0c393f4da8be8d2fbae673b27` merged through PR #74 as exact
+  main `4d72f79ea8451bb79e81283828747a9ecdce1791`. Mintlify 4.2.819 strict build
+  validation and broken-link checks passed; `openapi.json` and `docs.json`
+  parse and the Builder navigation assertions pass. Cache-busted public HTML
+  on both `docs.polynode.dev` and the Mintlify origin returns HTTP 200 with the
+  five-page cursor recipe, `pagination=cursor`, and snapshot-pin guidance.
+  Public OpenAPI returns the merged `pagination`, `cursor`, `as_of`, and
+  `pnl_as_of` parameters; cursor response fields; and cursor/pagination error
+  enums. The docs match the deployed 100-row, first-500-rank, case-insensitive
+  lookup/filter, unchanged legacy offset, and no-repeat pinned traversal
+  contracts.
+
 - 2026-09-01 [codex+josh] - Repo-first, not yet published: documented the
   opt-in signed cursor contract for All-Time Builder P&L traversal. The
   canonical guide, query catalog, TypeScript REST guidance, OpenAPI 3.1
