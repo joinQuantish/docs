@@ -1,10 +1,10 @@
 ---
 title: "Builder Detail"
 openapi: "GET /v3/builders/{code}"
-description: "Get stats and public profile metadata for a single builder by hex code."
+description: "Get stats and public profile metadata for a single Builder by code or exact public name."
 ---
 
-Returns fill count, Polymarket-compatible V2 share-notional volume, fees, buy/sell volume, raw maker/taker totals, and public profile metadata for a specific builder.
+Returns fill count, Polymarket-compatible V2 share-notional volume, fees, buy/sell volume, raw maker/taker totals, and public profile metadata for a specific Builder.
 
 ## Request
 
@@ -16,12 +16,13 @@ GET /v3/builders/{code}
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `code` | string | Builder hex code (with or without 0x prefix) |
+| `code` | string | Builder code (with or without `0x`) or exact public Builder name. Hex digits, the prefix, and names are case-insensitive; names must be URL-encoded. |
 
 ## Example
 
 ```bash
-curl https://api.polynode.dev/v3/builders/0xd1d9dd6983c40006b0dc8eab84a41ac9a4f27643296178479ffbebbc01ab7bde
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/0xd1d9dd6983c40006b0dc8eab84a41ac9a4f27643296178479ffbebbc01ab7bde"
 ```
 
 ```json
@@ -62,6 +63,13 @@ curl https://api.polynode.dev/v3/builders/0xd1d9dd6983c40006b0dc8eab84a41ac9a4f2
   "volume_scope": "clob_v2_onchain",
   "volume_semantics": "outcome_share_par_notional"
 }
+```
+
+You may also use the exact public name. A shared name returns HTTP `409`; use the code from the [Builder directory](/data/builders/list) to disambiguate.
+
+```bash
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/BetMoar"
 ```
 
 ## Response fields
@@ -106,10 +114,18 @@ Same fields as the [Builder Leaderboard](/data/builders/list) response, without 
 | `fee_semantics` | string | Reminder that builder fees are trader-paid fees attributed to builder order flow, not a builder rebate payout |
 | `elapsed_ms` | integer | Server-side query time in milliseconds |
 
+## Name-resolution errors
+
+| Status | Error | Meaning |
+|--------|-------|---------|
+| `404` | `builder_not_found` or `builder not found` | No Builder matches the supplied name or code |
+| `409` | `ambiguous_builder_name` | More than one Builder uses the supplied name; use a code from the Builder directory |
+
 ## Related endpoints
 
 | Endpoint | Description |
 |----------|-------------|
 | `GET /v3/builders` | Builder leaderboard |
 | `GET /v3/builders/{code}/leaderboard` | Rank every eligible trader active through this builder by global wallet P&L first, or by attributed activity |
+| `GET /v3/builders/{code}/activity/daily` | Daily activity and recent top-market/category composition |
 | `GET /v3/builders/{code}/trades` | Trades attributed to this builder |

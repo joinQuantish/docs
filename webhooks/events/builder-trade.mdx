@@ -9,7 +9,7 @@ description: "Fires when a trade is routed through a specific builder. Monitor b
 
 | Filter | Type | Required | Description |
 |---|---|---|---|
-| `builder_codes` | `string[]` | **Yes** | Builder addresses to watch. |
+| `builder_codes` | `string[]` | Yes | Builder codes to watch. These attribution tags are not wallet addresses. |
 | `min_amount_usd` | `number` | No | Minimum trade size in USD. |
 
 ## Payload
@@ -20,4 +20,4 @@ Same schema as [`trade`](/webhooks/events/trade), with `"type": "builder_trade"`
 
 - Builders monitoring their own attributed trade volume
 - Builder competition analysis
-- Fee revenue tracking per builder
+- Trader-paid fee-flow analysis per Builder

@@ -3,6 +3,26 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-09-01 [codex+josh] - Repo-first, not yet published: reconciled the
+  entire public Builder surface after a blind first-user audit. The Builder
+  directory now documents exact case-insensitive name lookup and a complete
+  paginated name/code export. New canonical references and query recipes cover
+  individual and up-to-20-Builder daily activity. Detail, trades, activity,
+  and trader ranking document code-or-name paths with explicit ambiguity.
+  Trader periods, sorts, and order are case-insensitive and return canonical
+  lowercase values; the unchanged 100-row page cap now sits inside an honest,
+  enforced first-500-rank window after live evidence disproved deep-offset
+  identity consistency. Stale maker/taker claims, unauthenticated examples,
+  generic 300-row guidance, generated OpenAPI defaults, SDK-registry scope,
+  Builder webhook terminology, navigation, and the public changelog are
+  aligned. Both JSON files parse, every `docs.json` page resolves, the changed
+  tree passes `git diff --check`, and the actual published TypeScript 0.14.2
+  package exposes the documented 120-operation registry. The legacy global
+  docs-example runner still reports unrelated pre-existing WebSocket and SDK
+  example failures outside this Builder scope. CI, merge, publication,
+  Builder-example execution against the released API, and live public
+  re-audit remain pending.
+
 - 2026-08-30 [codex+josh] - Reworked the Builder Trader Leaderboard reference
   and OpenAPI contract around its canonical P&L-first behavior. The page now
   leads with dated realized P&L and All-Time total/realized/unrealized P&L,

@@ -223,6 +223,9 @@
               "data/query-catalog/builders",
               "data/query-catalog/builders/leaderboard",
               "data/query-catalog/builders/detail",
+              "data/query-catalog/builders/trader-leaderboard",
+              "data/query-catalog/builders/daily-activity",
+              "data/query-catalog/builders/activity-comparison",
               "data/query-catalog/builders/trades",
               "data/query-catalog/builders/trades-by-market",
               "data/query-catalog/builders/trades-by-tag-category",
@@ -380,6 +383,8 @@
               "data/builders/list",
               "data/builders/detail",
               "data/builders/trader-leaderboard",
+              "data/builders/daily-activity",
+              "data/builders/activity-comparison",
               "data/builders/trades"
             ]
           },

@@ -1,0 +1,13 @@
+---
+title: "Compare Builder Daily Activity"
+description: "Fetch aligned daily series for up to 20 selected Builder codes in one request."
+---
+
+Canonical reference: [Compare Builder Daily Activity](/data/builders/activity-comparison)
+
+```bash
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/activity/daily?builders=$BUILDER_CODES&start_date=2026-08-01&end_date=2026-08-30&include_other=false"
+```
+
+Set `BUILDER_CODES` to a comma-separated list of one to 20 canonical codes. Use `include_other=true` to append one residual series for all unselected Builders.

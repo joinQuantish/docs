@@ -4,7 +4,7 @@ openapi: "GET /v3/builders"
 description: "Rank Polymarket builders by V2-attributed share notional, fill count, fees, and enriched builder profile metadata."
 ---
 
-Polymarket V2 trades include a `builder` field identifying which order routing service executed the trade. This endpoint ranks builders by attributed fills and includes profile metadata when a builder has a public builder profile.
+Polymarket V2 trades include a `builder` field identifying which order routing service executed the trade. This endpoint is both the Builder ranking and the canonical public Builder directory. It returns each Builder's display name and code, and it can resolve an exact display name case-insensitively.
 
 Builder profile metadata is synced from Polymarket's public builder metadata. Local fill, fee, and volume stats come from Polynode's indexed `OrderFilled` events. Builders can appear with metadata before their local stats row is refreshed; in that case `stats_pending` is `true` and local volume fields are `null`.
 
@@ -23,11 +23,15 @@ GET /v3/builders
 | `sort` | string | `fills` | Sort by: `fills`, `volume`, `fees` |
 | `limit` | integer | 100 | Max 300 |
 | `offset` | integer | 0 | Pagination offset |
+| `name` | string | -- | Exact public Builder name, matched case-insensitively. All matches are returned when a display name is shared. |
+
+`sort` and `name` are case-insensitive. Responses retain canonical Builder names and codes.
 
 ## Example
 
 ```bash
-curl "https://api.polynode.dev/v3/builders?sort=volume&limit=1"
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders?sort=volume&limit=1"
 ```
 
 ```json
@@ -117,10 +121,36 @@ curl "https://api.polynode.dev/v3/builders?sort=volume&limit=1"
 
 `builder_name`, `builder_logo`, `builder_verified`, and the local-volume fields are nullable. `external_volume` is separate public profile context and is never substituted into `volume`. Buy and sell volume use the same share-notional basis and add to total builder volume. Use `external_active_users` for the current public builder user-count signal.
 
+## Find a Builder by name
+
+Names are matched exactly after trimming whitespace and without case sensitivity. Because display names are not guaranteed to be unique, retain the returned `builder_code` as the stable identifier.
+
+```bash
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders?name=BetMoar"
+```
+
+## Print every Builder name and code
+
+The directory supports 300 rows per request. This loop follows `has_more` and prints a tab-separated directory without assuming how many Builders currently exist.
+
+```bash
+offset=0
+while :; do
+  page=$(curl -fsS -H "x-api-key: $POLYNODE_API_KEY" \
+    "https://api.polynode.dev/v3/builders?sort=volume&limit=300&offset=${offset}")
+  jq -r '.builders[] | [(.builder_name // ""), .builder_code] | @tsv' <<<"$page"
+  [ "$(jq -r '.has_more' <<<"$page")" = "true" ] || break
+  offset=$((offset + 300))
+done
+```
+
 ## Related endpoints
 
 | Endpoint | Description |
 |----------|-------------|
 | `GET /v3/builders/{code}` | Stats for a single builder |
 | `GET /v3/builders/{code}/leaderboard` | Rank every eligible trader active through one builder by P&L first, or by attributed activity, over 1D, 7D, 30D, or All Time |
+| `GET /v3/builders/{code}/activity/daily` | Daily activity and recent top-market/category composition for one Builder |
+| `GET /v3/builders/activity/daily` | Compare daily activity for up to 20 Builder codes |
 | `GET /v3/builders/{code}/trades` | Trades attributed to a builder, with market and profile enrichment |

@@ -1,0 +1,52 @@
+---
+title: "Compare Builder Daily Activity"
+description: "Return aligned daily activity for up to 20 Builder codes, with an optional residual series."
+---
+
+This endpoint returns an aligned daily rectangle for multiple Builders. Use it for comparison charts and selected-only bulk reads without issuing one request per Builder.
+
+## Request
+
+```http
+GET /v3/builders/activity/daily
+```
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `builders` | string | required | One to 20 comma-separated Builder codes. `builder_codes` is an accepted alias. |
+| `start_date` | date | 29 UTC days before today | First inclusive UTC date in `YYYY-MM-DD` format |
+| `end_date` | date | Today in UTC | Last inclusive UTC date in `YYYY-MM-DD` format |
+| `include_other` | boolean | `true` | Include one `is_other=true` series containing activity from every unselected Builder |
+
+The inclusive range may contain at most 366 days. Codes are normalized and duplicates are removed while preserving first-seen order. Use `include_other=false` when only the selected Builder series are needed.
+
+## Example
+
+```bash
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/activity/daily?builders=0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1,0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df&start_date=2026-08-01&end_date=2026-08-30&include_other=false"
+```
+
+The response uses the same envelope and `series[].days[]` fields as [Builder Daily Activity](/data/builders/daily-activity). Bulk responses intentionally return empty `top_markets` and `top_categories` arrays so query cost stays bounded as the selected set or date range grows.
+
+When `include_other=true`, the final series has `builder_code: null`, `builder_name: "Other"`, and `is_other: true`. Its daily active-trader count deduplicates wallets across all unselected Builders for that day.
+
+## Errors
+
+| Status | Error | Meaning |
+|--------|-------|---------|
+| `400` | `builders_required`, `invalid_builder`, `too_many_builders`, `invalid_date`, `invalid_date_range`, or `date_range_too_large` | A query value is invalid |
+| `401` | authentication error | The API key is missing or invalid |
+| `402` | payment required | The key's plan does not include paid V3 REST data |
+| `429` | rate limit exceeded | The account's shared V3 REST request limit was exceeded |
+| `503` | `temporarily_unavailable` | Coverage is incomplete or a required bounded query is unavailable; no partial series is returned |
+
+## Related endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| [`GET /v3/builders`](/data/builders/list) | Print or search the public Builder directory |
+| [`GET /v3/builders/{code}/activity/daily`](/data/builders/daily-activity) | Add recent top-market and category composition for one Builder |
+| [`GET /v3/builders/{code}/leaderboard`](/data/builders/trader-leaderboard) | Rank traders active through one Builder |

@@ -1,11 +1,11 @@
 ---
 title: "Complete V3 API"
 sidebarTitle: "V3 API"
-description: "Call every current V3 route from TypeScript, Python, or Rust through the shared 120-operation registry."
+description: "Call the shared 120-operation V3 SDK registry and use authenticated REST for newer routes awaiting a registry release."
 icon: "database"
 ---
 
-Every SDK ships the same V3 operation registry. In TypeScript 0.14.2, Python 0.14.1, and Rust 0.17.1 it contains 120 operations, so new and less-common routes do not have to wait for a language-specific helper.
+Every SDK ships the same V3 operation registry. In TypeScript 0.14.2, Python 0.14.1, and Rust 0.17.1 it contains 120 operations.
 
 Use a named helper when one exists and improves readability. Use the registered executor for complete coverage.
 
@@ -26,6 +26,8 @@ Use a named helper when one exists and improves readability. Use the registered 
 | Perps | 44 | instruments, market data, wallets, analytics, collateral flows, exchange metadata |
 
 The registry is the SDK contract for route availability. Endpoint reference pages remain the source for request fields and response shapes.
+
+The Builder trader leaderboard and the two Builder daily-activity routes are newer authenticated REST endpoints and are not part of the 120-operation registry in those versions. Call them over HTTPS using the examples in [Builder Trader P&L Leaderboard](/data/builders/trader-leaderboard), [Builder Daily Activity](/data/builders/daily-activity), and [Compare Builder Daily Activity](/data/builders/activity-comparison) until a later SDK release explicitly adds them.
 
 ## Discover operations
 

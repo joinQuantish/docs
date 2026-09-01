@@ -61,6 +61,34 @@ const globalTrades = await pn.v3.execute('GET /v3/trades', {
 });
 ```
 
+## Newer Builder analytics routes
+
+The Builder trader leaderboard and daily-activity routes postdate the 120-operation registry in TypeScript 0.14.2. Use the same API key with a direct authenticated `fetch` until a later SDK release explicitly registers them.
+
+```typescript
+const apiKey = process.env.POLYNODE_API_KEY;
+if (!apiKey) throw new Error('Set POLYNODE_API_KEY');
+
+const builder = 'BetMoar';
+const url = new URL(
+  `https://api.polynode.dev/v3/builders/${encodeURIComponent(builder)}/leaderboard`,
+);
+url.search = new URLSearchParams({
+  period: '30D', // query enums are case-insensitive
+  sort: 'PNL',
+  order: 'DESC',
+  limit: '100',
+  offset: '0',
+}).toString();
+
+const response = await fetch(url, {
+  headers: { 'x-api-key': apiKey },
+});
+if (!response.ok) throw new Error(`Builder leaderboard failed: ${response.status}`);
+const leaderboard = await response.json();
+console.log(leaderboard.period, leaderboard.sort, leaderboard.data.length);
+```
+
 ## Perps REST data
 
 ```typescript

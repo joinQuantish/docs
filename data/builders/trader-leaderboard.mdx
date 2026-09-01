@@ -4,7 +4,7 @@ openapi: "GET /v3/builders/{code}/leaderboard"
 description: "Rank every trader active through one builder by global wallet P&L, attributed volume, fills, trader-paid fees, active days, or recency."
 ---
 
-This endpoint answers the most common builder leaderboard question first: **which traders active through this builder have the highest P&L?** It ranks the builder's complete eligible trader cohort without intersecting it with a global Top-N list and paginates deterministically through 100 rows at a time.
+This endpoint answers the most common Builder leaderboard question first: **which traders active through this Builder have the highest P&L?** It ranks the Builder's eligible trader cohort without intersecting it with a global Top-N list. Each request returns at most 100 rows, and the supported ranking window is the first 500 ranks.
 
 - `1d`, `7d`, and `30d` rank by **realized P&L**.
 - `all` ranks by **total P&L** by default and also supports realized or unrealized P&L.
@@ -24,7 +24,7 @@ GET /v3/builders/{code}/leaderboard
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `code` | string | Builder code as `0x` followed by 64 hexadecimal characters |
+| `code` | string | Builder code (with or without `0x`) or exact public Builder name. Hex digits, the prefix, and names are case-insensitive; names must be URL-encoded. |
 
 ### Query parameters
 
@@ -34,15 +34,17 @@ GET /v3/builders/{code}/leaderboard
 | `sort` | string | `pnl` | `pnl`, `realized_pnl`, `total_pnl`, `unrealized_pnl`, `volume`, `trades`, `fees`, `active_days`, or `recent` |
 | `order` | string | `desc` | `asc` or `desc` |
 | `limit` | integer | `100` | Rows per page, from 1 through 100 |
-| `offset` | integer | `0` | Rank offset, from 0 through 100,000 |
+| `offset` | integer | `0` | Rank offset. `offset + limit` must not exceed 500. Five full 100-row pages use offsets `0`, `100`, `200`, `300`, and `400`. |
 
 `sort=pnl` is the recommended stable default. It resolves to `realized_pnl` for `1d`, `7d`, and `30d`, and to `total_pnl` for `all`. The response reports the resolved sort. Dated windows reject `total_pnl` and `unrealized_pnl`; those marked values are only meaningful for All Time.
+
+The canonical wire values are `1d`, `7d`, `30d`, and `all`. Period, sort, and order values are case-insensitive, so `30D`, `ALL`, and `TOTAL_PNL` are accepted and returned in canonical lowercase. `all-time` is not an alias for `all`.
 
 The builder cohort contains every wallet with attributed CLOB V2 maker-order activity in the selected builder window. Fixed builder-activity windows use inclusive UTC dates through `window.complete_through`. Dated P&L is the canonical rolling realized-P&L aggregate through `pnl_as_of`; All Time uses the canonical current total, realized, and unrealized wallet summary.
 
 `coverage.complete` means every UTC date in the builder cohort window has a successfully built aggregate. P&L data fails closed when its canonical aggregate is incomplete or stale. No partial ranking is returned as authoritative data.
 
-For page two, retain every filter and send `limit=100&offset=100`. Rankings use wallet address ascending as the deterministic tie-break, regardless of metric or direction.
+For each next page, retain every filter and add 100 to `offset`. Stop when `has_more` is `false`; it is always `false` after rank 500. Rankings use wallet address ascending as the deterministic tie-break, regardless of metric or direction.
 
 See [Authentication](/authentication) for key creation and [Rate Limits](/guides/rate-limits) for plan availability and current request limits.
 
@@ -140,6 +142,13 @@ curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=all&sort=fees"
 
 # Second 100-row page of the same ranking
 curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=pnl&limit=100&offset=100"
+
+# Fifth and final supported 100-row page
+curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=pnl&limit=100&offset=400"
+
+# An exact public name also resolves directly
+curl -H "x-api-key: pn_live_YOUR_KEY" \
+  "https://api.polynode.dev/v3/builders/BetMoar/leaderboard?period=30d&sort=pnl&limit=100"
 ```
 
 ## Response fields
@@ -151,7 +160,7 @@ curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=pnl&limit=100
 | `period` | string | Resolved cohort and P&L window |
 | `sort` | string | Resolved sort; `pnl` is returned as `realized_pnl` or `total_pnl` |
 | `order` | string | Resolved sort direction |
-| `limit`, `offset`, `has_more` | integer / boolean | Deterministic offset-pagination state |
+| `limit`, `offset`, `has_more` | integer / boolean | Deterministic offset-pagination state inside the supported first 500 ranks |
 | `cohort_wallet_count` | integer | Distinct wallets active through this builder in the selected window; returned for P&L sorts |
 | `eligible_wallet_count` | integer | Wallets eligible for the requested P&L ranking; dated realized-P&L cohorts include explicit zeroes, while All Time excludes wallets whose canonical current basis or mark is incomplete |
 | `window` | object | Inclusive UTC dates used to construct the builder-attributed wallet cohort |
@@ -180,10 +189,11 @@ curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=pnl&limit=100
 
 | Status | Error | Meaning |
 |--------|-------|---------|
-| `400` | `invalid_builder`, `invalid_period`, `invalid_sort`, `invalid_order`, `invalid_limit`, or `invalid_offset` | A path or query value is invalid |
+| `400` | `invalid_builder`, `invalid_period`, `invalid_sort`, `invalid_order`, `invalid_limit`, or `invalid_offset` | A path or query value is invalid or the requested page extends beyond rank 500 |
 | `401` | authentication error | The API key is missing or invalid |
 | `402` | payment required | The key's plan does not include paid V3 REST data |
 | `404` | `builder_not_found` | The normalized builder has no metadata or indexed activity |
+| `409` | `ambiguous_builder_name` | More than one Builder uses the supplied name; use a code from the Builder directory |
 | `429` | rate limit exceeded | The account's shared V3 REST request limit was exceeded |
 | `503` | `builder_trader_leaderboard_unavailable` | Required builder activity or P&L data is incomplete, stale, or unavailable; no partial ranking is returned |
 
@@ -193,4 +203,5 @@ curl -H "x-api-key: pn_live_YOUR_KEY" "${BASE_URL}?period=30d&sort=pnl&limit=100
 |----------|-------------|
 | [`GET /v3/builders`](/data/builders/list) | Rank all builders by attributed activity |
 | [`GET /v3/builders/{code}`](/data/builders/detail) | Inspect one builder's profile and totals |
+| [`GET /v3/builders/{code}/activity/daily`](/data/builders/daily-activity) | Inspect daily activity and recent composition for this Builder |
 | [`GET /v3/builders/{code}/trades`](/data/builders/trades) | Paginate the underlying builder-attributed fills |
