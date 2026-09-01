@@ -1,0 +1,15 @@
+---
+title: "Builder Trader Leaderboard"
+description: "Rank one Builder's active trader cohort across rolling and All Time P&L or attributed activity."
+---
+
+Canonical reference: [Builder Trader P&L Leaderboard](/data/builders/trader-leaderboard)
+
+```bash
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/BetMoar/leaderboard?period=30d&sort=pnl&limit=100&offset=0"
+```
+
+Use `period=1d`, `7d`, `30d`, or `all`. Period, sort, and order values are case-insensitive and responses return canonical lowercase values. Each request returns at most 100 rows; the supported rank window ends at 500.
+
+P&L is global Polymarket wallet P&L for the Builder-active cohort, not P&L attributed exclusively to that Builder. Volume, fills, fees, active days, and recency are Builder-attributed.

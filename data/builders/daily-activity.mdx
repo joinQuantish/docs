@@ -1,0 +1,101 @@
+---
+title: "Builder Daily Activity"
+description: "Return an inclusive daily time series plus recent market and category composition for one Builder."
+---
+
+Use this endpoint for one Builder's daily attributed volume, fills, active traders, trader-paid fees, and buy/sell mix. Recent windows also include the top markets and categories by attributed volume.
+
+## Request
+
+```http
+GET /v3/builders/{code}/activity/daily
+```
+
+### Path parameter
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `code` | string | Builder code (with or without `0x`) or exact public Builder name. Hex digits, the prefix, and names are case-insensitive; names must be URL-encoded. |
+
+### Query parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `start_date` | date | 29 UTC days before today | First inclusive UTC date in `YYYY-MM-DD` format |
+| `end_date` | date | Today in UTC | Last inclusive UTC date in `YYYY-MM-DD` format |
+| `top_limit` | integer | `10` | Top markets and categories to return, from 1 through 20 |
+
+The inclusive range may contain at most 366 days and may begin no earlier than `2020-01-01`. When a request reaches today but the newest completed daily bucket is one or two days behind, the service shifts both dates backward by the same amount. Always treat the returned `start_date` and `end_date` as authoritative.
+
+Top-market and top-category composition is included only for windows of 31 days or fewer. Longer history requests preserve the same response shape and return empty `top_markets` and `top_categories` arrays.
+
+## Example
+
+```bash
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/BetMoar/activity/daily?start_date=2026-08-01&end_date=2026-08-30&top_limit=5"
+```
+
+## Response shape
+
+```json
+{
+  "start_date": "2026-08-01",
+  "end_date": "2026-08-30",
+  "coverage_start_date": "2026-04-03",
+  "coverage_end_date": "2026-08-30",
+  "volume_scope": "clob_v2_onchain",
+  "volume_semantics": "outcome_share_par_notional",
+  "fee_semantics": "Trader-paid fees attributed to fills. These are not builder rebates.",
+  "series": [
+    {
+      "builder_code": "0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1",
+      "builder_name": "BetMoar",
+      "builder_logo": "https://example.com/builder.png",
+      "builder_verified": true,
+      "is_other": false,
+      "days": [
+        {
+          "date": "2026-08-01",
+          "volume_e6": "248501250000",
+          "volume": "248501.25",
+          "trades": 821,
+          "active_traders": 194,
+          "trader_paid_fees_e6": "184200000",
+          "trader_paid_fees": "184.2",
+          "buy_volume_e6": "148500000000",
+          "buy_volume": "148500",
+          "sell_volume_e6": "100001250000",
+          "sell_volume": "100001.25"
+        }
+      ],
+      "top_markets": [],
+      "top_categories": []
+    }
+  ]
+}
+```
+
+`days` contains one row for every requested UTC date, including explicit zero-valued days. Buy and sell volume use the same outcome-share par-notional basis and add to total volume. `active_traders` is the distinct attributed trader count for that Builder and day.
+
+Each `top_markets` and `top_categories` row includes `rank`, volume, fills, trader-paid fees, and buy/sell volume. Market rows also include nullable `condition_id`, title, slug, image, and category.
+
+## Errors
+
+| Status | Error | Meaning |
+|--------|-------|---------|
+| `400` | `invalid_builder`, `invalid_date`, `invalid_date_range`, `date_range_too_large`, or `invalid_top_limit` | A path or query value is invalid |
+| `401` | authentication error | The API key is missing or invalid |
+| `402` | payment required | The key's plan does not include paid V3 REST data |
+| `404` | `builder_not_found` | No Builder matches a supplied public name |
+| `409` | `ambiguous_builder_name` | More than one Builder uses the supplied name; use a code from the Builder directory |
+| `429` | rate limit exceeded | The account's shared V3 REST request limit was exceeded |
+| `503` | `temporarily_unavailable` | Coverage is incomplete or a required bounded query is unavailable; no partial series is returned |
+
+## Related endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| [`GET /v3/builders/activity/daily`](/data/builders/activity-comparison) | Compare selected Builder daily series |
+| [`GET /v3/builders/{code}/leaderboard`](/data/builders/trader-leaderboard) | Rank the Builder's active trader cohort |
+| [`GET /v3/builders/{code}/trades`](/data/builders/trades) | Paginate the underlying attributed fills |

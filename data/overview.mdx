@@ -129,11 +129,11 @@ See [Rate Limits](/guides/rate-limits) for the full tier table and heavy-endpoin
 
 ## Pagination
 
-All list endpoints support:
-- `?limit=N` — results per page (default 100, max 300)
+Most list endpoints support:
+- `?limit=N` — results per page (usually default 100 and max 300)
 - `?offset=N` — skip N results
 
-Ungrouped responses include the actual `limit` used, plus `has_more: true/false` to indicate if more pages exist. Grouped trade requests still accept `limit` and `offset`, but their responses omit those fields and `has_more`; track the requested values and stop after an empty `trades` array. For deep trade-history walks, prefer `after` and `before` time windows instead of very large offsets.
+The Builder trader leaderboard is an explicit exception: it returns at most 100 rows per request and supports the first 500 ranks. Ungrouped responses include the actual `limit` used, plus `has_more: true/false` to indicate if more pages exist. Grouped trade requests still accept `limit` and `offset`, but their responses omit those fields and `has_more`; track the requested values and stop after an empty `trades` array. For deep trade-history walks, prefer `after` and `before` time windows instead of very large offsets.
 
 ## Response format
 
@@ -159,7 +159,7 @@ Every response includes `elapsed_ms` showing server-side query time in milliseco
 | [Combos](/data/combos/overview) | 8 | Combo markets, P&L rankings, wallet combo positions, combo trades, lifecycle activity, and additive wallet summaries |
 | [Markets](/data/markets/search) | 8 | Search, lookup by condition/token/slug, trades, positions, prices, candles |
 | [Leaderboard](/data/leaderboard/global) | 3 | Global P&L rankings, tag discovery, tag leaderboards |
-| [Builders](/data/builders/list) | 3 | Builder rankings, stats, attributed trades |
+| [Builders](/data/builders/list) | 6 | Directory and name lookup, profile stats, daily activity and comparison, trader leaderboard, attributed trades |
 | [Global](/data/global/stats) | 5 | Platform stats, trade feed, fees, resolutions, conditions |
 | [Tokens](/data/tokens/info) | 1 | Token price and market metadata |
 

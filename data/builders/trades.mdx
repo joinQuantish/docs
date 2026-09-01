@@ -16,7 +16,7 @@ GET /v3/builders/{code}/trades
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `code` | string | Builder hex code (with or without 0x prefix) |
+| `code` | string | Builder code (with or without `0x`) or exact public Builder name. Hex digits, the prefix, and names are case-insensitive; names must be URL-encoded. |
 
 ### Query parameters
 
@@ -129,27 +129,33 @@ Each trade contains the same enriched fields as [Wallet Trades](/data/wallets/tr
 ### Trades for a specific token
 
 ```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?token_id=21578184864194020862792310253337084708609281967112790860038966988826118995357&limit=10"
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?token_id=21578184864194020862792310253337084708609281967112790860038966988826118995357&limit=10"
 ```
 
 ### Trades for a specific market
 
 ```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&limit=10"
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&limit=10"
 ```
 
 ### Maker-side buys or sells
 
 ```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?side=buy&limit=10"
-curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?side=sell&limit=10"
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?side=buy&limit=10"
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?side=sell&limit=10"
 ```
 
 ### Combine tag/category with a narrow market filter
 
 ```bash
-curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&tag_slug=sports&limit=10"
-curl "https://api.polynode.dev/v3/builders/0x4898df15.../trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&category=Sports&limit=10"
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&tag_slug=sports&limit=10"
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/0x4898df15ec6590495dc6c0fedf951ade3e64001d47f9caf44a64e86fc11959df/trades?market_slug=dota2-tundra-xtreme-2026-05-22-game1&category=Sports&limit=10"
 ```
 
 Builder categories are derived from the first market tag. Broad `category` and `tag_slug` filters can be too large to run directly; add `market_slug`, `condition_id`, or `token_id` to use the indexed intersection path.
@@ -160,9 +166,18 @@ Builder categories are derived from the first market tag. Broad `category` and `
 }
 ```
 
+## Name-resolution errors
+
+| Status | Error | Meaning |
+|--------|-------|---------|
+| `404` | `builder_not_found` | No Builder matches a supplied public name |
+| `409` | `ambiguous_builder_name` | More than one Builder uses the supplied name; use a code from the Builder directory |
+
 ## Related endpoints
 
 | Endpoint | Description |
 |----------|-------------|
 | `GET /v3/builders` | Builder leaderboard |
 | `GET /v3/builders/{code}` | Stats and profile metadata for this builder |
+| `GET /v3/builders/{code}/leaderboard` | Rank this Builder's active trader cohort |
+| `GET /v3/builders/{code}/activity/daily` | Daily attributed activity for this Builder |

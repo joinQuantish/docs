@@ -1,0 +1,13 @@
+---
+title: "Builder Daily Activity"
+description: "Chart one Builder's daily volume, fills, traders, fees, and buy/sell mix."
+---
+
+Canonical reference: [Builder Daily Activity](/data/builders/daily-activity)
+
+```bash
+curl -H "x-api-key: $POLYNODE_API_KEY" \
+  "https://api.polynode.dev/v3/builders/BetMoar/activity/daily?start_date=2026-08-01&end_date=2026-08-30&top_limit=5"
+```
+
+Windows of 31 days or fewer include recent top-market and category composition. Longer windows keep the daily series and return empty composition arrays.

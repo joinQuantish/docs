@@ -5,6 +5,37 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-09-01 - Builder profiles and trader analytics
+
+Builder profiles now expose daily activity, buy/sell composition, attributed
+trades, and a dedicated trader leaderboard from one public surface.
+
+What's new:
+
+* `GET /v3/builders` is the canonical Builder directory and accepts an exact,
+  case-insensitive `name` filter. A documented loop prints every public name
+  and stable Builder code.
+* Builder detail, trades, daily activity, and trader leaderboard paths accept a
+  code or exact public name. Names, hexadecimal digits, and the optional code
+  prefix are case-insensitive. Shared display names return HTTP `409` and
+  require a code to disambiguate.
+* `GET /v3/builders/{code}/activity/daily` returns daily volume, fills, active
+  traders, trader-paid fees, buy/sell mix, and bounded recent market/category
+  composition. `GET /v3/builders/activity/daily` compares up to 20 codes.
+* `GET /v3/builders/{code}/leaderboard` supports `1d`, `7d`, `30d`, and `all`,
+  plus P&L and Builder-attributed activity sorts. Period, sort, and order are
+  case-insensitive and responses use canonical lowercase values.
+* Trader leaderboard pages contain at most 100 rows and cover the first 500
+  ranks through offsets `0`, `100`, `200`, `300`, and `400`.
+* P&L remains global Polymarket wallet P&L for the Builder-active cohort. The
+  activity columns remain Builder-attributed.
+
+Docs: [Builder directory](/data/builders/list),
+[Builder daily activity](/data/builders/daily-activity), and
+[Builder trader leaderboard](/data/builders/trader-leaderboard)
+
+***
+
 ## 2026-08-29 - Combo P&L leaderboard
 
 A dedicated Combo leaderboard now ranks eligible wallets by realized P&L over

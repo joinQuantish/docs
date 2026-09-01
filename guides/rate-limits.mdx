@@ -218,6 +218,8 @@ When the heavy bucket is exceeded, you'll receive a `429` response with:
 
 Most V3 list endpoints default to `limit=100` and clamp `limit` to a maximum of `300` rows per page. If you request more than the page cap, Polynode normalizes `limit` to the maximum allowed value. Responses include the actual `limit`, `offset`, `rows_returned`, and `has_more` values.
 
+`GET /v3/builders/{code}/leaderboard` is stricter: `limit` must be from 1 through 100, and `offset + limit` must stay within the first 500 ranks. Five full pages therefore use offsets `0`, `100`, `200`, `300`, and `400`.
+
 No V3 endpoint returns more than `1000` rows or buckets in one page. Cursors and offsets select where the next page starts; they do not increase its size.
 
 `/v3/markets/condition/{condition_id}/positions` supports tiered page sizes for holder lists: Starter keys can request up to `300` rows, while Growth and Enterprise keys can request up to `1000`.

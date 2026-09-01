@@ -5600,34 +5600,36 @@
       "get": {
         "tags": ["V3 Builders"],
         "summary": "Builder trader P&L leaderboard",
-        "description": "Rank the complete eligible cohort of wallets active through one builder. P&L is first-class: dated windows expose global wallet realized P&L and All Time exposes total, realized, and unrealized P&L. P&L is global Polymarket wallet P&L and is not attributed to the builder. Existing builder-attributed volume, fills, fees, active-day, and recency sorts remain available.",
+        "description": "Rank eligible wallets active through one Builder inside the supported first-500-rank window. P&L is first-class: dated windows expose global wallet realized P&L and All Time exposes total, realized, and unrealized P&L. P&L is global Polymarket wallet P&L and is not attributed to the Builder. Existing Builder-attributed volume, fills, fees, active-day, and recency sorts remain available.",
         "operationId": "v3_builder_trader_leaderboard",
         "parameters": [
           {
             "name": "code",
             "in": "path",
             "required": true,
-            "description": "Builder code as 0x followed by 64 hexadecimal characters.",
-            "schema": {"type": "string", "pattern": "^0x[a-fA-F0-9]{64}$"}
+            "description": "Builder code with or without 0x, or an exact public Builder name. Hex digits, the optional prefix, and names are case-insensitive; names must be URL-encoded.",
+            "schema": {"type": "string", "minLength": 1, "maxLength": 180},
+            "example": "0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1"
           },
           {
             "name": "period",
             "in": "query",
             "required": false,
-            "description": "Ranking window. Fixed windows end on the latest materialized UTC date; all begins at the first retained date.",
+            "description": "Case-insensitive ranking window. Fixed windows end on the latest materialized UTC date; all begins at the first retained date. Responses use canonical lowercase.",
             "schema": {"type": "string", "enum": ["1d", "7d", "30d", "all"], "default": "30d"}
           },
           {
             "name": "sort",
             "in": "query",
             "required": false,
-            "description": "Ranking metric. pnl resolves to realized_pnl for dated periods and total_pnl for All Time. total_pnl and unrealized_pnl are All-Time-only. recent maps to last_activity_at.",
+            "description": "Case-insensitive ranking metric. pnl resolves to realized_pnl for dated periods and total_pnl for All Time. total_pnl and unrealized_pnl are All-Time-only. recent maps to last_activity_at.",
             "schema": {"type": "string", "enum": ["pnl", "realized_pnl", "total_pnl", "unrealized_pnl", "volume", "trades", "fees", "active_days", "recent"], "default": "pnl"}
           },
           {
             "name": "order",
             "in": "query",
             "required": false,
+            "description": "Case-insensitive sort direction. Responses use canonical lowercase.",
             "schema": {"type": "string", "enum": ["asc", "desc"], "default": "desc"}
           },
           {
@@ -5640,13 +5642,63 @@
             "name": "offset",
             "in": "query",
             "required": false,
-            "schema": {"type": "integer", "minimum": 0, "maximum": 100000, "default": 0}
+            "description": "Rank offset. offset + limit must not exceed 500; five full pages use 0, 100, 200, 300, and 400.",
+            "schema": {"type": "integer", "minimum": 0, "maximum": 499, "default": 0}
           }
         ],
         "responses": {
           "200": {
             "description": "A complete P&L or builder-attributed activity ranking, current through the returned as_of and optional pnl_as_of timestamps.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardResponse"}}}
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardResponse"},
+                "example": {
+                  "builder_code": "0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1",
+                  "builder_name": "BetMoar",
+                  "builder_logo": null,
+                  "builder_verified": true,
+                  "period": "30d",
+                  "sort": "realized_pnl",
+                  "order": "desc",
+                  "limit": 100,
+                  "offset": 0,
+                  "has_more": true,
+                  "cohort_wallet_count": 803,
+                  "eligible_wallet_count": 803,
+                  "window": {"start_date": "2026-08-02", "end_date": "2026-08-31", "complete_through": "2026-08-31"},
+                  "coverage": {"start_date": "2026-04-03", "end_date": "2026-08-31", "complete": true},
+                  "as_of": "2026-09-01T02:10:00Z",
+                  "pnl_as_of": "2026-09-01T02:00:00Z",
+                  "pnl_scope": "wallet_global_polymarket_not_builder_attributed",
+                  "pnl_semantics": "Global Polymarket wallet PnL for traders active through this builder in the selected window. PnL is not attributed to the builder.",
+                  "volume_scope": "clob_v2_onchain",
+                  "volume_semantics": "outcome_share_par_notional",
+                  "fee_semantics": "Trader-paid fees on builder-attributed maker orders. These are not builder rebates.",
+                  "data": [
+                    {
+                      "rank": 1,
+                      "wallet": "0x1111111111111111111111111111111111111111",
+                      "trader_address": "0x1111111111111111111111111111111111111111",
+                      "realized_pnl": "184250.75",
+                      "unrealized_pnl": null,
+                      "total_pnl": null,
+                      "volume_e6": "248501250000",
+                      "volume": "248501.25",
+                      "buy_volume_e6": "148500000000",
+                      "buy_volume": "148500",
+                      "sell_volume_e6": "100001250000",
+                      "sell_volume": "100001.25",
+                      "trades": 821,
+                      "trader_paid_fees_e6": "184200000",
+                      "trader_paid_fees": "184.2",
+                      "active_days": 24,
+                      "first_activity_at": 1785579462,
+                      "last_activity_at": 1788043265
+                    }
+                  ]
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid builder code or query value.",
@@ -5663,6 +5715,10 @@
           "404": {
             "description": "The normalized builder has no metadata or indexed activity.",
             "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardNotFound"}}}
+          },
+          "409": {
+            "description": "The supplied public name belongs to more than one Builder; use a Builder code.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderNameAmbiguous"}}}
           },
           "429": {
             "description": "The account's shared V3 REST request limit was exceeded.",
@@ -11564,13 +11620,22 @@
           "message": {"type": "string", "enum": ["The requested builder was not found."]}
         }
       },
+      "V3BuilderNameAmbiguous": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "message"],
+        "properties": {
+          "error": {"type": "string", "enum": ["ambiguous_builder_name"]},
+          "message": {"type": "string", "enum": ["More than one builder uses that name. Use the builder code instead."]}
+        }
+      },
       "V3BuilderTraderLeaderboardUnavailable": {
         "type": "object",
         "additionalProperties": false,
         "required": ["error", "message"],
         "properties": {
-          "error": {"type": "string", "enum": ["builder_trader_leaderboard_unavailable"]},
-          "message": {"type": "string", "enum": ["The builder trader leaderboard is temporarily unavailable."]}
+          "error": {"type": "string", "enum": ["builder_trader_leaderboard_unavailable", "builder_lookup_unavailable"]},
+          "message": {"type": "string"}
         }
       },
       "V3BuilderTraderLeaderboardWindow": {
@@ -11603,7 +11668,7 @@
           "first_activity_at", "last_activity_at"
         ],
         "properties": {
-          "rank": {"type": "integer", "minimum": 1, "description": "Rank after the requested metric and direction, with wallet address ascending as the deterministic tie-break."},
+          "rank": {"type": "integer", "minimum": 1, "maximum": 500, "description": "Rank after the requested metric and direction, with wallet address ascending as the deterministic tie-break."},
           "wallet": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
           "trader_address": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
           "realized_pnl": {
@@ -11656,8 +11721,8 @@
           "sort": {"type": "string", "enum": ["realized_pnl", "total_pnl", "unrealized_pnl", "volume", "trades", "fees", "active_days", "recent"], "description": "Resolved sort. A request for pnl is returned as realized_pnl or total_pnl."},
           "order": {"type": "string", "enum": ["asc", "desc"]},
           "limit": {"type": "integer", "minimum": 1, "maximum": 100},
-          "offset": {"type": "integer", "minimum": 0, "maximum": 100000},
-          "has_more": {"type": "boolean"},
+          "offset": {"type": "integer", "minimum": 0, "maximum": 499},
+          "has_more": {"type": "boolean", "description": "True only when another page exists inside the supported first-500-rank window."},
           "window": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardWindow"},
           "coverage": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardCoverage"},
           "as_of": {"type": "string", "format": "date-time", "description": "Completion timestamp of the newest contributing aggregate snapshot."},
