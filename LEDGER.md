@@ -3,6 +3,23 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-09-02 [codex+josh] - Production fill-replay documentation lock-in:
+  the WebSocket guides now document the acknowledgement-before-snapshot order
+  for `fills`; the identical flat live and replay envelope; flat-event
+  `snapshot_count` semantics; consistent wallet, token, side, and size filters;
+  explicit empty completion; `since` precedence and tier lookback windows; and
+  the required seconds-to-milliseconds conversion when reconnecting. The
+  consumer changelog records the same public contract.
+
+  `docs.json` parses, `git diff --check` passes, the changelog remains 12,909
+  bytes, links and anchors resolve, and hostile review found no forbidden brand
+  spelling or em dashes in added public copy. All seven runnable JavaScript
+  examples on the two changed WebSocket
+  pages pass with zero failures, authorization errors, or timeouts. Public
+  publication completed successfully at `2026-09-02T01:59:27Z`.
+  `/websocket/subscribing`, `/websocket/overview`, and `/changelog` each return
+  HTTP 200 publicly and contain their exact release markers.
+
 - 2026-09-01 [codex+josh] - Production documentation lock-in: source
   `65f511cd084bf6c0c393f4da8be8d2fbae673b27` merged through PR #74 as exact
   main `4d72f79ea8451bb79e81283828747a9ecdce1791`. Mintlify 4.2.819 strict build
