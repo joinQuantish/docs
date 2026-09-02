@@ -108,7 +108,7 @@ The `type` field selects a preset of event types. If you also set `filters.event
   The initial snapshot uses the same flat fill envelope as live delivery:
   `{"type":"snapshot","count":N,"events":[{"type":"event","data":{...}}]}`.
   For `fills`, `count` is the number of flat fills, not the number of settlement
-  transactions. If no fill matches, the server still completes replay explicitly
+  transactions. If no fill matches, replay still completes explicitly
   with `{"type":"snapshot","count":0,"events":[]}`.
 
   **Example event:**

@@ -5,6 +5,29 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-09-02 - Initial replay for fill subscriptions
+
+`fills` subscriptions now return recent matching fills immediately after the
+subscription acknowledgement, using the same flat event shape as live fills.
+
+What's new:
+
+* `snapshot_count` returns up to the requested number of flat fill events,
+  subject to the account tier limit.
+* `since` returns matching fills after a Unix-millisecond timestamp within the
+  account tier's lookback window and takes precedence over `snapshot_count`.
+* Wallet, token, side, and size filters apply consistently to replayed and live
+  fills.
+* A replay with no matching fills completes explicitly with
+  `{"type":"snapshot","count":0,"events":[]}`.
+* Existing live fill messages remain unchanged. Each replay item uses the same
+  `{"type":"event","data":{...}}` envelope.
+
+Docs: [Subscriptions and filters](/websocket/subscribing) and
+[WebSocket reconnection](/websocket/overview#reconnection)
+
+***
+
 ## 2026-09-01 - Builder profiles and trader analytics
 
 Builder profiles now expose daily activity, buy/sell composition, attributed
