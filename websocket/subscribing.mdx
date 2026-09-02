@@ -518,12 +518,12 @@ ws.send(JSON.stringify({
 // Both subscriptions are active — events for either wallet are delivered
 ```
 
-## Subscribe response
+## Acknowledgement and initial replay
 
 Snapshot-capable event subscriptions acknowledge first, then send replay.
 For `fills`, you receive these two messages in this order:
 
-**1. Confirmation** — your subscription ID and any warnings:
+**1. Confirmation:** your subscription ID and any warnings:
 ```json
 {
   "type": "subscribed",
@@ -534,7 +534,7 @@ For `fills`, you receive these two messages in this order:
 }
 ```
 
-**2. Snapshot** — recent flat fills matching your filters:
+**2. Snapshot:** recent flat fills matching your filters:
 ```json
 {
   "type": "snapshot",
