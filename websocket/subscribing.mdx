@@ -89,19 +89,27 @@ The `type` field selects a preset of event types. If you also set `filters.event
 
   ws.on("message", (raw) => {
     const msg = JSON.parse(raw);
-    if (msg.type !== "event") return;
+    for (const event of msg.events ?? [msg]) {
+      if (event.type !== "event") continue;
 
-    const fill = msg.data;
-    console.log({
-      outcome: fill.token_label,
-      side: fill.side,
-      price: fill.price,
-      shares: fill.shares_normalized,
-      user: fill.user,
-      market: fill.title
-    });
+      const fill = event.data;
+      console.log({
+        outcome: fill.token_label,
+        side: fill.side,
+        price: fill.price,
+        shares: fill.shares_normalized,
+        user: fill.user,
+        market: fill.title
+      });
+    }
   });
   ```
+
+  The initial snapshot uses the same flat fill envelope as live delivery:
+  `{"type":"snapshot","count":N,"events":[{"type":"event","data":{...}}]}`.
+  For `fills`, `count` is the number of flat fills, not the number of settlement
+  transactions. If no fill matches, the server still completes replay explicitly
+  with `{"type":"snapshot","count":0,"events":[]}`.
 
   **Example event:**
 
@@ -447,6 +455,10 @@ still expressed from that signed order maker's perspective.
 
 <ParamField body="snapshot_count" type="number" default="20">
   Number of recent matching events to receive immediately after subscribing. Max varies by tier (free: 20, starter: 100, growth: 200, enterprise: 500).
+
+  For a `fills` subscription, this counts flat fill events. For example,
+  `snapshot_count: 20` returns at most 20 items in `events[]`, each in the exact
+  same `{"type":"event","data":{...}}` shape as a live fill.
 </ParamField>
 
 <ParamField body="since" type="number">
@@ -508,25 +520,28 @@ ws.send(JSON.stringify({
 
 ## Subscribe response
 
-After subscribing, you receive two messages:
+Snapshot-capable event subscriptions acknowledge first, then send replay.
+For `fills`, you receive these two messages in this order:
 
-**1. Snapshot** — recent events matching your filters:
-```json
-{
-  "type": "snapshot",
-  "count": 20,
-  "events": [...]
-}
-```
-
-**2. Confirmation** — your subscription ID and any warnings:
+**1. Confirmation** — your subscription ID and any warnings:
 ```json
 {
   "type": "subscribed",
   "subscriber_id": "550e8400-e29b-41d4-a716-446655440000",
   "subscription_id": "550e8400-e29b-41d4-a716-446655440000:1",
-  "subscription_type": "settlements",
+  "subscription_type": "fills",
   "warnings": []
+}
+```
+
+**2. Snapshot** — recent flat fills matching your filters:
+```json
+{
+  "type": "snapshot",
+  "count": 20,
+  "events": [
+    { "type": "event", "data": { "timestamp": 1775731431 } }
+  ]
 }
 ```
 
