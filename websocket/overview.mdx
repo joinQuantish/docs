@@ -318,6 +318,8 @@ Send → {"action": "subscribe", "type": "fills"}
     ↓
 Receive ← {"type": "subscribed", "subscriber_id": "...", "subscription_id": "...:1"}
     ↓
+Receive ← {"type": "snapshot", "count": 20, "events": [...]} (recent flat fills)
+    ↓
 Send → {"action": "subscribe", ...}        (additional subscriptions stack)
 Receive ← {"type": "subscribed", "subscription_id": "...:2"}
     ↓
@@ -354,11 +356,16 @@ Invalid messages return structured errors:
 
 ## Reconnection
 
-PolyNode does not send a close frame before disconnecting. Implement reconnection with exponential backoff and use the `since` filter to fill any gaps:
+Polynode does not send a close frame before disconnecting. Implement reconnection with exponential backoff and use the `since` filter to fill any gaps:
 
 ```javascript
 let delay = 1000;
 let lastEventTs = null;
+
+function fillTimestampMs(event) {
+  // Fill envelopes keep their timestamp in data, in UNIX seconds.
+  return Number.isFinite(event.data?.timestamp) ? event.data.timestamp * 1000 : null;
+}
 
 function connect() {
   const ws = new WebSocket("wss://ws.polynode.dev/ws?key=pn_live_...");
@@ -369,12 +376,13 @@ function connect() {
   };
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data);
-    if (msg.timestamp) lastEventTs = msg.timestamp;
-    if (msg.type === "snapshot") {
-      // Process snapshot events (gap-fill from last disconnect)
-      for (const e of msg.events) {
-        if (e.timestamp) lastEventTs = Math.max(lastEventTs || 0, e.timestamp);
-      }
+
+    // Snapshot items and live fills use the same envelope.
+    const fills = msg.type === "snapshot" ? msg.events : msg.type === "event" ? [msg] : [];
+    for (const fill of fills) {
+      const timestampMs = fillTimestampMs(fill);
+      if (timestampMs) lastEventTs = Math.max(lastEventTs || 0, timestampMs);
+      // Process fill.data here. Deduplicate by tx_hash + order_hash if needed.
     }
   };
   ws.onclose = () => setTimeout(connect, Math.min(delay *= 2, 30000));
