@@ -3,6 +3,13 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-09-03 [codex+josh] - Removed only the stale V1 settlement REST helper
+  examples from the SDK overview and language guides. Every non-settlement V1
+  and V2 page, navigation entry, and OpenAPI operation remains unchanged; the
+  live API, edge routing, and SDK source are also unchanged. `git diff --check`,
+  JSON parsing, Mintlify 4.2.819 validation, and broken-link checks pass.
+  Publication remains pending.
+
 - 2026-09-02 [codex+josh] - Production fill-replay documentation lock-in:
   the WebSocket guides now document the acknowledgement-before-snapshot order
   for `fills`; the identical flat live and replay envelope; flat-event

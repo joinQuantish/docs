@@ -51,11 +51,6 @@ await pn.search('ethereum', { limit: 5 });
 await pn.candles(tokenId, { resolution: '1h', limit: 100 });
 await pn.stats(tokenId);
 
-// Settlements
-await pn.recentSettlements({ count: 20 });
-await pn.tokenSettlements(tokenId, { count: 10 });
-await pn.walletSettlements(address, { count: 10 });
-
 // Wallets
 await pn.wallet(address);
 

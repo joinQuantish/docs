@@ -26,9 +26,7 @@ The main client also keeps top-level convenience methods for older V1 and V2 end
 
     const markets = await pn.markets({ count: 10 });
     const results = await pn.search('bitcoin', { limit: 10 });
-    const recent = await pn.recentSettlements({ count: 25 });
-
-    console.log(markets.count, results.results.length, recent.count);
+    console.log(markets.count, results.results.length);
     ```
   </Tab>
   <Tab title="Python">
@@ -39,8 +37,7 @@ The main client also keeps top-level convenience methods for older V1 and V2 end
     with PolyNode(api_key=os.environ["POLYNODE_API_KEY"]) as pn:
         markets = pn.markets(count=10)
         results = pn.search("bitcoin", limit=10)
-        recent = pn.recent_settlements(count=25)
-        print(markets.count, len(results.results), recent.count)
+        print(markets.count, len(results.results))
     ```
   </Tab>
   <Tab title="Rust">
@@ -53,8 +50,7 @@ The main client also keeps top-level convenience methods for older V1 and V2 end
             std::env::var("POLYNODE_API_KEY").expect("Set POLYNODE_API_KEY")
         )?;
         let markets = client.markets(Some(10)).await?;
-        let recent = client.recent_settlements(Some(25)).await?;
-        println!("{} markets, {} settlements", markets.count, recent.count);
+        println!("{} markets", markets.count);
         Ok(())
     }
     ```
@@ -66,7 +62,7 @@ The main client also keeps top-level convenience methods for older V1 and V2 end
 | Need | Use |
 | --- | --- |
 | New wallet, trade, position, combo, fee, builder, webhook, credit, identity, profile, or perps integration | [V3 client](/sdks/v3-api) |
-| Existing code already using `market()`, `search()`, `recentSettlements()`, or the equivalent language method | Keep the top-level method |
+| Existing code already using `market()`, `search()`, or the equivalent language method | Keep the top-level method |
 | Exact endpoint request and response fields | [V3 Data API reference](/data/overview) or [Perps reference](/perps/overview) |
 
 Top-level and V3 methods can be used from the same client. Migrating one request at a time does not change the behavior of the remaining compatibility calls.
