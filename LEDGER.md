@@ -8,7 +8,10 @@ evidence for production documentation changes.
   and V2 page, navigation entry, and OpenAPI operation remains unchanged; the
   live API, edge routing, and SDK source are also unchanged. `git diff --check`,
   JSON parsing, Mintlify 4.2.819 validation, and broken-link checks pass.
-  Publication remains pending.
+  Source `a90d6a397b63389dfdfac3e1411f4d95424ad531` merged through PR #78 as
+  `106daa267a1788b696680a5be524436c994e673a`. Cache-busted public SDK,
+  Rust SDK, and REST-client pages returned HTTP 200 without the retired
+  top-level settlement helper examples.
 
 - 2026-09-02 [codex+josh] - Production fill-replay documentation lock-in:
   the WebSocket guides now document the acknowledgement-before-snapshot order
