@@ -161,25 +161,6 @@ let stats = client.stats(token_id).await?;
 # }
 ```
 
-### Settlements
-
-```rust,no_run
-# async fn example(client: &polynode::PolyNodeClient) -> polynode::Result<()> {
-// Most recent settlements across all markets
-let recent = client.recent_settlements(Some(20)).await?;
-for s in &recent.settlements {
-    println!("{}: {} ${} on {}", s.status, s.taker_side, s.taker_size, s.market_title);
-}
-
-// Settlements for a specific token
-let token_settlements = client.token_settlements("21742633...", Some(10)).await?;
-
-// Settlements for a specific wallet
-let wallet_settlements = client.wallet_settlements("0xabc...", Some(10)).await?;
-# Ok(())
-# }
-```
-
 ### Wallets
 
 ```rust,no_run
