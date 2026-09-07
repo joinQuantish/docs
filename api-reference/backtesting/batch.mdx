@@ -1,8 +1,13 @@
 ---
-title: "Backtest Copy PnL — Batch"
+title: "Deprecated: Backtest Copy PnL — Batch"
 openapi: "POST /v2/copy-pnl/batch"
 description: "Score multiple wallets in one call. Same math as the single-wallet endpoint."
 ---
+
+<Warning>
+This V2 on-demand endpoint is deprecated. Use the [V3 Copy PnL batch endpoint](/data/wallets/copy-pnl-batch). V3 uses up to 50,000 recent fills per wallet and normal V3 account limits. It has a different response shape and does not support V2 date windows or weighted-average position metrics. See the [migration notes](/data/wallets/copy-pnl#migrating-from-v2).
+</Warning>
+
 
 ```http
 POST https://api.polynode.dev/v2/copy-pnl/batch

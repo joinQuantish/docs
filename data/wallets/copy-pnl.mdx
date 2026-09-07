@@ -1,0 +1,108 @@
+---
+title: "Copy PnL"
+openapi: "GET /v3/wallets/{address}/copy-pnl"
+description: "Estimate copying slippage over up to 50,000 of a wallet's most recent order fills."
+---
+
+Calculate a wallet's gross trading cash flow and the cash flow of a simulated copier using Polynode's indexed fills and settlement events. This replaces the deprecated [V2 on-demand endpoint](/api-reference/backtesting/copy-pnl).
+
+## Request
+
+```bash
+curl -H "x-api-key: pn_live_YOUR_KEY" \
+  "https://api.polynode.dev/v3/wallets/0xab03f377164c3726d498e56f7a9398cd8eb74494/copy-pnl"
+```
+
+| Parameter | Location | Default | Description |
+|---|---|---|---|
+| `address` | Path | Required | `0x` followed by 40 hexadecimal characters. Normalized to lowercase. |
+| `max_trades` | Query | `50000` | Integer from `1` to `50000`. Maximum number of recent wallet-owned order fills to include. |
+
+The cap counts **fills**, not positions, tokens, transactions, or distinct orders. The calculation selects the wallet's own signed-order fill records, including its taker-order execution record. It avoids counting that wallet again as the counterparty to other matched orders. This attribution is different from requesting both address roles on the raw trades endpoint.
+
+There is no fixed 90-day window. Active wallets can reach 50,000 fills quickly; quieter wallets can cover years. A wallet with fewer fills returns all of its indexed fills. `coverage.history_truncated` tells you whether older fills were excluded. The endpoint never silently lowers your requested cap to produce a result.
+
+## Calculation
+
+- Buy: the copier pays `min(price × 1.02, 1.00) × shares`.
+- Sell: the copier receives `price × 0.98 × shares`.
+- Splits consume collateral; merges and redemptions release collateral. Neg-risk conversions include released collateral according to their selected outcomes. These settlement flows receive no simulated slippage.
+
+```text
+actual_pnl_usdc = sells - buys + settlement_in - settlement_out
+backtest_copy_pnl_usdc = actual_pnl_usdc - slippage_amount_usdc
+slippage_cost_rate_pct = slippage_amount_usdc / abs(actual_pnl_usdc) × 100
+toxic_for_copying = slippage_cost_rate_pct > 15
+```
+
+The 2% assumption is relative to each execution price. It is a fixed screening model, not a measured execution cost or a forecast. When the absolute gross cash flow is below 1 USDC, both the percentage and `toxic_for_copying` are `null`.
+
+<Warning>
+`pnl_definition` is `cashflow`. Fees are excluded, opening inventory is not valued, and open positions are not marked to market. Sales or redemptions of inventory acquired before the selected window can therefore make this differ substantially from realized or total portfolio PnL. Deposits, withdrawals, and token transfers are outside this calculation. It covers spot order fills, not combo or perpetual trading.
+</Warning>
+
+If older fills are excluded, settlement inclusion begins at the exact block and log of the first included fill, inclusive. Otherwise, all indexed settlement history is eligible, including events before the first fill. A wallet with settlement activity and no fills can still return a cash-flow result. The upper bound is the database snapshot used for that wallet's calculation.
+
+## Response
+
+The following is an illustrative two-fill calculation: a buy costing 5 USDC followed by a sale returning 8 USDC, with no settlement flows.
+
+```json
+{
+  "data": {
+    "wallet": "0x1111111111111111111111111111111111111111",
+    "actual_pnl_usdc": "3.000000",
+    "backtest_copy_pnl_usdc": "2.740000",
+    "slippage_amount_usdc": "0.260000",
+    "slippage_cost_rate_pct": "8.666667",
+    "toxic_for_copying": false,
+    "trade_count": 2,
+    "pnl_definition": "cashflow",
+    "fees_included": false,
+    "opening_inventory_valued": false,
+    "open_positions_marked_to_market": false,
+    "slippage_bps": {"buy": 200, "sell": 200, "buy_price_capped_at": "1.000000"},
+    "cashflows": {
+      "buy_cost_usdc": "5.000000",
+      "sell_revenue_usdc": "8.000000",
+      "settlement_in_usdc": "0.000000",
+      "settlement_out_usdc": "0.000000"
+    },
+    "event_counts": {"buys": 1, "sells": 1, "splits": 0, "merges": 0, "redemptions": 0, "neg_risk_conversions": 0},
+    "coverage": {
+      "selection": "latest_wallet_order_fills",
+      "max_trades": 50000,
+      "history_truncated": false,
+      "window_start": {"type": "beginning_of_indexed_history"},
+      "first_included_event_timestamp": 1788652800,
+      "last_included_event_timestamp": 1788739200,
+      "snapshot_at": "2026-09-07T01:00:00.000Z"
+    },
+    "query_ms": 800
+  },
+  "cache": {"status": "miss", "age_ms": 800},
+  "elapsed_ms": 805
+}
+```
+
+Money and percentages are decimal strings with six fractional digits. Event timestamps are Unix seconds. `snapshot_at` is a UTC timestamp. For a truncated history, `window_start` instead contains `type: "inclusive_trade_cursor"`, `block_number` and `log_index` as strings, and `timestamp` in Unix seconds. An empty wallet has zero amounts and `null` first/last event timestamps.
+
+Results may be cached for 30 seconds after calculation. `cache.status` is `miss`, `hit`, or `coalesced` (shared in-progress work). `cache.age_ms` measures time since the calculation's snapshot; `data.query_ms` describes that calculation, while `elapsed_ms` describes the current request. Each wallet has its own snapshot, including in a batch.
+
+## Access and errors
+
+Available on paid V3 plans under the account's normal [REST limits](/guides/rate-limits) and monthly usage policy. The V2-specific one-request-per-five-seconds limit does **not** apply. Each HTTP request counts as one API request, including a batch. Cache hits still count as requests. Database capacity is bounded; account request limits are not a guarantee of uncached calculation throughput.
+
+| HTTP status | Error code | Meaning |
+|---|---|---|
+| `400` | `invalid_wallet`, `invalid_max_trades`, `unknown_parameter` | Invalid input. Legacy date filters and trade-detail flags are unsupported. |
+| `422` | `activity_limit_exceeded` | More than 100,000 settlement events fall in the selected window. No partial financial total is returned. |
+| `422` | `unsupported_accounting_data`, `query_work_limit` | Unsupported accounting inputs or calculation work limit reached. No partial total is returned. |
+| `503` | `server_busy`, `database_unavailable` | Capacity or data access is temporarily unavailable. |
+| `504` | `query_timeout` | The calculation or queue deadline was exceeded. |
+
+Authentication, plan access, monthly usage, and account rate-limit failures use the normal V3 edge responses. Do not treat an error as zero PnL.
+
+## Migrating from V2
+
+Use `GET /v3/wallets/{address}/copy-pnl` or [V3 Copy PnL Batch](/data/wallets/copy-pnl-batch). Read the summary from `data`. Remove `period`, `from`, `to`, and `include_trades`; V3 rejects them. V3 does not return V2's per-position weighted-average metrics or individual trade arrays. V2's BYOB tracked-wallet pool, snapshot, and leaderboard are not migrated by these endpoints.

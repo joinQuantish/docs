@@ -4919,7 +4919,11 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": ["1d", "7d", "30d"]
+              "enum": [
+                "1d",
+                "7d",
+                "30d"
+              ]
             },
             "description": "Rolling ranking window. Aliases day, week, and month are accepted."
           },
@@ -4929,7 +4933,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": ["category", "tag"]
+              "enum": [
+                "category",
+                "tag"
+              ]
             },
             "description": "Scope type. Plural aliases are accepted."
           },
@@ -5514,7 +5521,11 @@
             "description": "Rolling UTC window. Do not combine with start_date or end_date.",
             "schema": {
               "type": "string",
-              "enum": ["1d", "7d", "30d"],
+              "enum": [
+                "1d",
+                "7d",
+                "30d"
+              ],
               "default": "30d"
             }
           },
@@ -5545,7 +5556,9 @@
             "description": "Bucket interval. Only day is supported.",
             "schema": {
               "type": "string",
-              "enum": ["day"],
+              "enum": [
+                "day"
+              ],
               "default": "day"
             }
           }
@@ -5598,7 +5611,9 @@
     },
     "/v3/builders/{code}/leaderboard": {
       "get": {
-        "tags": ["V3 Builders"],
+        "tags": [
+          "V3 Builders"
+        ],
         "summary": "Builder trader P&L leaderboard",
         "description": "Rank eligible wallets active through one Builder inside the supported first-500-rank window. P&L is first-class: dated windows expose global wallet realized P&L and All Time exposes total, realized, and unrealized P&L. P&L is global Polymarket wallet P&L and is not attributed to the Builder. Existing Builder-attributed volume, fills, fees, active-day, and recency sorts remain available. Legacy offset pagination remains the default; opt-in cursor pagination prevents repeated wallet identities during one pinned All-Time P&L traversal.",
         "operationId": "v3_builder_trader_leaderboard",
@@ -5608,7 +5623,11 @@
             "in": "path",
             "required": true,
             "description": "Builder code with or without 0x, or an exact public Builder name. Hex digits, the optional prefix, and names are case-insensitive; names must be URL-encoded.",
-            "schema": {"type": "string", "minLength": 1, "maxLength": 180},
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 180
+            },
             "example": "0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1"
           },
           {
@@ -5616,62 +5635,121 @@
             "in": "query",
             "required": false,
             "description": "Case-insensitive ranking window. Fixed windows end on the latest materialized UTC date; all begins at the first retained date. Responses use canonical lowercase.",
-            "schema": {"type": "string", "enum": ["1d", "7d", "30d", "all"], "default": "30d"}
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1d",
+                "7d",
+                "30d",
+                "all"
+              ],
+              "default": "30d"
+            }
           },
           {
             "name": "sort",
             "in": "query",
             "required": false,
             "description": "Case-insensitive ranking metric. pnl resolves to realized_pnl for dated periods and total_pnl for All Time. total_pnl and unrealized_pnl are All-Time-only. recent maps to last_activity_at.",
-            "schema": {"type": "string", "enum": ["pnl", "realized_pnl", "total_pnl", "unrealized_pnl", "volume", "trades", "fees", "active_days", "recent"], "default": "pnl"}
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pnl",
+                "realized_pnl",
+                "total_pnl",
+                "unrealized_pnl",
+                "volume",
+                "trades",
+                "fees",
+                "active_days",
+                "recent"
+              ],
+              "default": "pnl"
+            }
           },
           {
             "name": "order",
             "in": "query",
             "required": false,
             "description": "Case-insensitive sort direction. Responses use canonical lowercase.",
-            "schema": {"type": "string", "enum": ["asc", "desc"], "default": "desc"}
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
           },
           {
             "name": "limit",
             "in": "query",
             "required": false,
-            "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 100}
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 100
+            }
           },
           {
             "name": "offset",
             "in": "query",
             "required": false,
             "description": "Rank offset. offset + limit must not exceed 500; five full pages use 0, 100, 200, 300, and 400.",
-            "schema": {"type": "integer", "minimum": 0, "maximum": 499, "default": 0}
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 499,
+              "default": 0
+            }
           },
           {
             "name": "pagination",
             "in": "query",
             "required": false,
             "description": "Case-insensitive pagination mode. offset preserves the historical contract. cursor is available for All-Time P&L sorts and prevents a wallet already returned in the same pinned traversal from appearing again.",
-            "schema": {"type": "string", "enum": ["offset", "cursor"], "default": "offset"}
+            "schema": {
+              "type": "string",
+              "enum": [
+                "offset",
+                "cursor"
+              ],
+              "default": "offset"
+            }
           },
           {
             "name": "cursor",
             "in": "query",
             "required": false,
             "description": "Opaque next_cursor or previous_cursor from a cursor response. Pass it unchanged with the same Builder, period, sort, order, limit, as_of, and pnl_as_of. Omit it on the first page.",
-            "schema": {"type": "string", "minLength": 1, "maxLength": 8192}
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8192
+            }
           },
           {
             "name": "as_of",
             "in": "query",
             "required": false,
             "description": "Builder-activity snapshot copied from the first page. Required on cursor continuations; a changed snapshot returns HTTP 409.",
-            "schema": {"type": "string", "format": "date-time", "maxLength": 80}
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "maxLength": 80
+            }
           },
           {
             "name": "pnl_as_of",
             "in": "query",
             "required": false,
             "description": "P&L snapshot copied from the first page. Required on cursor continuations and valid only for P&L sorts; a changed snapshot returns HTTP 409.",
-            "schema": {"type": "string", "format": "date-time", "maxLength": 80}
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "maxLength": 80
+            }
           }
         ],
         "responses": {
@@ -5679,7 +5757,9 @@
             "description": "A complete P&L or builder-attributed activity ranking, current through the returned as_of and optional pnl_as_of timestamps.",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardResponse"},
+                "schema": {
+                  "$ref": "#/components/schemas/V3BuilderTraderLeaderboardResponse"
+                },
                 "example": {
                   "builder_code": "0xceebf77a833b30520287ddd9478ff51abbdffa30aa90a8d655dba0e8a79ce0c1",
                   "builder_name": "BetMoar",
@@ -5693,8 +5773,16 @@
                   "has_more": true,
                   "cohort_wallet_count": 803,
                   "eligible_wallet_count": 803,
-                  "window": {"start_date": "2026-08-02", "end_date": "2026-08-31", "complete_through": "2026-08-31"},
-                  "coverage": {"start_date": "2026-04-03", "end_date": "2026-08-31", "complete": true},
+                  "window": {
+                    "start_date": "2026-08-02",
+                    "end_date": "2026-08-31",
+                    "complete_through": "2026-08-31"
+                  },
+                  "coverage": {
+                    "start_date": "2026-04-03",
+                    "end_date": "2026-08-31",
+                    "complete": true
+                  },
                   "as_of": "2026-09-01T02:10:00Z",
                   "pnl_as_of": "2026-09-01T02:00:00Z",
                   "pnl_scope": "wallet_global_polymarket_not_builder_attributed",
@@ -5730,37 +5818,87 @@
           },
           "400": {
             "description": "Invalid builder code or query value.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardBadRequest"}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3BuilderTraderLeaderboardBadRequest"
+                }
+              }
+            }
           },
           "401": {
             "description": "Missing or invalid API key",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "402": {
             "description": "The API key's plan does not include paid V3 REST data.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "404": {
             "description": "The normalized builder has no metadata or indexed activity.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardNotFound"}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3BuilderTraderLeaderboardNotFound"
+                }
+              }
+            }
           },
           "409": {
             "description": "The public name is ambiguous, or a pinned Builder-activity/P&L snapshot advanced. Use a Builder code for the former; restart cursor traversal at offset 0 for the latter.",
-            "content": {"application/json": {"schema": {"oneOf": [
-              {"$ref": "#/components/schemas/V3BuilderNameAmbiguous"},
-              {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardSnapshotChanged"}
-            ]}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/V3BuilderNameAmbiguous"
+                    },
+                    {
+                      "$ref": "#/components/schemas/V3BuilderTraderLeaderboardSnapshotChanged"
+                    }
+                  ]
+                }
+              }
+            }
           },
           "429": {
             "description": "The account's shared V3 REST request limit was exceeded.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorResponse"}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "503": {
             "description": "Required builder activity or P&L data is incomplete, stale, or unavailable; no partial ranking is returned.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardUnavailable"}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3BuilderTraderLeaderboardUnavailable"
+                }
+              }
+            }
           }
         },
-        "security": [{"api_key": []}]
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
       }
     },
     "/v3/combos/leaderboard": {
@@ -5779,7 +5917,13 @@
             "description": "Ranking window. All Time is the default. Custom requires after, before, or both. Fixed periods and All Time forbid explicit bounds.",
             "schema": {
               "type": "string",
-              "enum": ["all", "1d", "7d", "30d", "custom"],
+              "enum": [
+                "all",
+                "1d",
+                "7d",
+                "30d",
+                "custom"
+              ],
               "default": "all"
             }
           },
@@ -5810,7 +5954,11 @@
             "description": "All Time accepts total_pnl, realized_pnl, or unrealized_pnl and defaults to total_pnl. Fixed and custom windows accept realized_pnl only.",
             "schema": {
               "type": "string",
-              "enum": ["total_pnl", "realized_pnl", "unrealized_pnl"]
+              "enum": [
+                "total_pnl",
+                "realized_pnl",
+                "unrealized_pnl"
+              ]
             }
           },
           {
@@ -6000,7 +6148,12 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["full", "partial", "transformation", "all"],
+              "enum": [
+                "full",
+                "partial",
+                "transformation",
+                "all"
+              ],
               "default": "all"
             },
             "description": "full = terminal redemption; partial = non-terminal post-resolution compression; transformation = non-redemption lifecycle lineage"
@@ -6010,7 +6163,12 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["FULL_COMBO", "PARTIAL_COMBO", "COMBO_TRANSFORMATION", "all"],
+              "enum": [
+                "FULL_COMBO",
+                "PARTIAL_COMBO",
+                "COMBO_TRANSFORMATION",
+                "all"
+              ],
               "default": "all"
             }
           },
@@ -6077,20 +6235,40 @@
                         "$ref": "#/components/schemas/ComboRedemption"
                       }
                     },
-                    "rows_returned": {"type": "integer"},
-                    "has_more": {"type": "boolean"},
-                    "offset": {"type": "integer"},
-                    "limit": {"type": "integer"},
-                    "position_type": {"type": "string", "const": "combo"},
-                    "source": {"type": "string", "const": "v3.combos.redemptions"}
+                    "rows_returned": {
+                      "type": "integer"
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "position_type": {
+                      "type": "string",
+                      "const": "combo"
+                    },
+                    "source": {
+                      "type": "string",
+                      "const": "v3.combos.redemptions"
+                    }
                   }
                 }
               }
             }
           },
-          "400": {"description": "Invalid filter"},
-          "401": {"description": "Unauthorized"},
-          "503": {"description": "Combo read model unavailable"}
+          "400": {
+            "description": "Invalid filter"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "503": {
+            "description": "Combo read model unavailable"
+          }
         },
         "security": [
           {
@@ -6121,7 +6299,9 @@
           {
             "name": "market_id",
             "in": "query",
-            "schema": {"type": "string"},
+            "schema": {
+              "type": "string"
+            },
             "description": "One or more comma-separated combo condition IDs. Matches any condition in the lineage."
           },
           {
@@ -6170,7 +6350,12 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["full", "partial", "transformation", "all"],
+              "enum": [
+                "full",
+                "partial",
+                "transformation",
+                "all"
+              ],
               "default": "all"
             },
             "description": "full = terminal redemption; partial = non-terminal post-resolution compression; transformation = non-redemption lifecycle lineage"
@@ -6180,7 +6365,12 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["FULL_COMBO", "PARTIAL_COMBO", "COMBO_TRANSFORMATION", "all"],
+              "enum": [
+                "FULL_COMBO",
+                "PARTIAL_COMBO",
+                "COMBO_TRANSFORMATION",
+                "all"
+              ],
               "default": "all"
             }
           },
@@ -6196,24 +6386,41 @@
           {
             "name": "after",
             "in": "query",
-            "schema": {"type": "integer", "format": "int64", "minimum": 0},
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
             "description": "Inclusive Unix timestamp in seconds"
           },
           {
             "name": "before",
             "in": "query",
-            "schema": {"type": "integer", "format": "int64", "minimum": 0},
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
             "description": "Inclusive Unix timestamp in seconds"
           },
           {
             "name": "limit",
             "in": "query",
-            "schema": {"type": "integer", "default": 100, "minimum": 1, "maximum": 300}
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 1,
+              "maximum": 300
+            }
           },
           {
             "name": "offset",
             "in": "query",
-            "schema": {"type": "integer", "default": 0, "minimum": 0}
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            }
           }
         ],
         "responses": {
@@ -6224,25 +6431,49 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "address": {"type": "string"},
+                    "address": {
+                      "type": "string"
+                    },
                     "redemptions": {
                       "type": "array",
-                      "items": {"$ref": "#/components/schemas/ComboRedemption"}
+                      "items": {
+                        "$ref": "#/components/schemas/ComboRedemption"
+                      }
                     },
-                    "rows_returned": {"type": "integer"},
-                    "has_more": {"type": "boolean"},
-                    "offset": {"type": "integer"},
-                    "limit": {"type": "integer"},
-                    "position_type": {"type": "string", "const": "combo"},
-                    "source": {"type": "string", "const": "v3.wallet_combos.redemptions"}
+                    "rows_returned": {
+                      "type": "integer"
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "position_type": {
+                      "type": "string",
+                      "const": "combo"
+                    },
+                    "source": {
+                      "type": "string",
+                      "const": "v3.wallet_combos.redemptions"
+                    }
                   }
                 }
               }
             }
           },
-          "400": {"description": "Invalid wallet address or filter"},
-          "401": {"description": "Unauthorized"},
-          "503": {"description": "Combo read model unavailable"}
+          "400": {
+            "description": "Invalid wallet address or filter"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "503": {
+            "description": "Combo read model unavailable"
+          }
         },
         "security": [
           {
@@ -6283,7 +6514,12 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["open", "closed", "inactive", "all"],
+              "enum": [
+                "open",
+                "closed",
+                "inactive",
+                "all"
+              ],
               "default": "all"
             }
           },
@@ -6300,7 +6536,9 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["updated"],
+              "enum": [
+                "updated"
+              ],
               "default": "updated"
             }
           },
@@ -6309,7 +6547,9 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["desc"],
+              "enum": [
+                "desc"
+              ],
               "default": "desc"
             }
           }
@@ -6410,7 +6650,12 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["open", "closed", "inactive", "all"],
+              "enum": [
+                "open",
+                "closed",
+                "inactive",
+                "all"
+              ],
               "default": "all"
             }
           },
@@ -6427,7 +6672,9 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["updated"],
+              "enum": [
+                "updated"
+              ],
               "default": "updated"
             }
           },
@@ -6436,7 +6683,9 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": ["desc"],
+              "enum": [
+                "desc"
+              ],
               "default": "desc"
             }
           }
@@ -8372,7 +8621,11 @@
             "description": "Rolling UTC window. Do not combine with start_date or end_date.",
             "schema": {
               "type": "string",
-              "enum": ["1d", "7d", "30d"],
+              "enum": [
+                "1d",
+                "7d",
+                "30d"
+              ],
               "default": "30d"
             }
           },
@@ -8403,7 +8656,9 @@
             "description": "Bucket interval. Only day is supported.",
             "schema": {
               "type": "string",
-              "enum": ["day"],
+              "enum": [
+                "day"
+              ],
               "default": "day"
             }
           },
@@ -11345,6 +11600,336 @@
           }
         }
       }
+    },
+    "/v3/wallets/{address}/copy-pnl": {
+      "get": {
+        "summary": "Copy PnL",
+        "operationId": "getV3CopyPnl",
+        "tags": [
+          "V3 Copy PnL"
+        ],
+        "description": "Gross spot trading cash flow and fixed 2% copying-slippage simulation over up to 50000 recent wallet-owned order fills. Excludes fees, opening inventory valuation, and mark-to-market. Normal paid V3 limits apply.",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            }
+          },
+          {
+            "name": "max_trades",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50000,
+              "default": 50000
+            },
+            "description": "Maximum recent fills, per wallet. No date filters."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded wallet calculation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "cache",
+                    "elapsed_ms"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CopyPnlSummary"
+                    },
+                    "cache": {
+                      "$ref": "#/components/schemas/CopyPnlCache"
+                    },
+                    "elapsed_ms": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "wallet": "0x1111111111111111111111111111111111111111",
+                    "actual_pnl_usdc": "3.000000",
+                    "backtest_copy_pnl_usdc": "2.740000",
+                    "slippage_amount_usdc": "0.260000",
+                    "slippage_cost_rate_pct": "8.666667",
+                    "toxic_for_copying": false,
+                    "trade_count": 2,
+                    "pnl_definition": "cashflow",
+                    "fees_included": false,
+                    "opening_inventory_valued": false,
+                    "open_positions_marked_to_market": false,
+                    "slippage_bps": {
+                      "buy": 200,
+                      "sell": 200,
+                      "buy_price_capped_at": "1.000000"
+                    },
+                    "cashflows": {
+                      "buy_cost_usdc": "5.000000",
+                      "sell_revenue_usdc": "8.000000",
+                      "settlement_in_usdc": "0.000000",
+                      "settlement_out_usdc": "0.000000"
+                    },
+                    "event_counts": {
+                      "buys": 1,
+                      "sells": 1,
+                      "splits": 0,
+                      "merges": 0,
+                      "redemptions": 0,
+                      "neg_risk_conversions": 0
+                    },
+                    "coverage": {
+                      "selection": "latest_wallet_order_fills",
+                      "max_trades": 50000,
+                      "history_truncated": false,
+                      "window_start": {
+                        "type": "beginning_of_indexed_history"
+                      },
+                      "first_included_event_timestamp": 1788652800,
+                      "last_included_event_timestamp": 1788739200,
+                      "snapshot_at": "2026-09-07T01:00:00.000Z"
+                    },
+                    "query_ms": 800
+                  },
+                  "cache": {
+                    "status": "miss",
+                    "age_ms": 800
+                  },
+                  "elapsed_ms": 805
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/CopyPnlError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Accounting or work limit; no partial total",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/CopyPnlError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Temporarily unavailable or busy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/CopyPnlError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Calculation or queue deadline exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/CopyPnlError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v3/copy-pnl/batch": {
+      "post": {
+        "summary": "Copy PnL Batch",
+        "operationId": "postV3CopyPnlBatch",
+        "tags": [
+          "V3 Copy PnL"
+        ],
+        "description": "Up to 100 input wallets, ordered per-wallet results and errors, 50000 fills maximum per wallet. HTTP 200 can contain failed rows. 25-second batch deadline; large uncached batches may not complete every wallet. One metered HTTP request.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "wallets"
+                ],
+                "properties": {
+                  "wallets": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Invalid addresses produce per-row errors."
+                  },
+                  "max_trades": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50000,
+                    "default": 50000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ordered results; inspect status on every row",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "results",
+                    "requested",
+                    "succeeded",
+                    "failed",
+                    "max_trades",
+                    "elapsed_ms"
+                  ],
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "wallet",
+                              "status",
+                              "data",
+                              "cache"
+                            ],
+                            "properties": {
+                              "wallet": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "const": "ok"
+                              },
+                              "data": {
+                                "$ref": "#/components/schemas/CopyPnlSummary"
+                              },
+                              "cache": {
+                                "$ref": "#/components/schemas/CopyPnlCache"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "wallet",
+                              "status",
+                              "error",
+                              "status_code"
+                            ],
+                            "properties": {
+                              "wallet": {},
+                              "status": {
+                                "const": "error"
+                              },
+                              "error": {
+                                "$ref": "#/components/schemas/CopyPnlError"
+                              },
+                              "status_code": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "requested": {
+                      "type": "integer"
+                    },
+                    "succeeded": {
+                      "type": "integer"
+                    },
+                    "failed": {
+                      "type": "integer"
+                    },
+                    "max_trades": {
+                      "type": "integer"
+                    },
+                    "elapsed_ms": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/CopyPnlError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -11604,16 +12189,29 @@
       "V3ComboActivityUnavailable": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error", "message"],
+        "required": [
+          "error",
+          "message"
+        ],
         "properties": {
-          "error": {"type": "string", "enum": ["temporarily_unavailable"]},
-          "message": {"type": "string"}
+          "error": {
+            "type": "string",
+            "enum": [
+              "temporarily_unavailable"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
         }
       },
       "V3ComboActivityBadRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error", "message"],
+        "required": [
+          "error",
+          "message"
+        ],
         "properties": {
           "error": {
             "type": "string",
@@ -11627,90 +12225,209 @@
               "date_range_too_large"
             ]
           },
-          "message": {"type": "string"}
+          "message": {
+            "type": "string"
+          }
         }
       },
       "V3BuilderTraderLeaderboardBadRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error", "message"],
+        "required": [
+          "error",
+          "message"
+        ],
         "properties": {
           "error": {
             "type": "string",
-            "enum": ["invalid_builder", "invalid_period", "invalid_sort", "invalid_order", "invalid_limit", "invalid_offset", "invalid_pagination", "invalid_cursor", "invalid_as_of", "invalid_pnl_as_of"]
+            "enum": [
+              "invalid_builder",
+              "invalid_period",
+              "invalid_sort",
+              "invalid_order",
+              "invalid_limit",
+              "invalid_offset",
+              "invalid_pagination",
+              "invalid_cursor",
+              "invalid_as_of",
+              "invalid_pnl_as_of"
+            ]
           },
-          "message": {"type": "string"}
+          "message": {
+            "type": "string"
+          }
         }
       },
       "V3BuilderTraderLeaderboardNotFound": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error", "message"],
+        "required": [
+          "error",
+          "message"
+        ],
         "properties": {
-          "error": {"type": "string", "enum": ["builder_not_found"]},
-          "message": {"type": "string", "enum": ["The requested builder was not found."]}
+          "error": {
+            "type": "string",
+            "enum": [
+              "builder_not_found"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "enum": [
+              "The requested builder was not found."
+            ]
+          }
         }
       },
       "V3BuilderNameAmbiguous": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error", "message"],
+        "required": [
+          "error",
+          "message"
+        ],
         "properties": {
-          "error": {"type": "string", "enum": ["ambiguous_builder_name"]},
-          "message": {"type": "string", "enum": ["More than one builder uses that name. Use the builder code instead."]}
+          "error": {
+            "type": "string",
+            "enum": [
+              "ambiguous_builder_name"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "enum": [
+              "More than one builder uses that name. Use the builder code instead."
+            ]
+          }
         }
       },
       "V3BuilderTraderLeaderboardSnapshotChanged": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error", "message"],
+        "required": [
+          "error",
+          "message"
+        ],
         "properties": {
-          "error": {"type": "string", "enum": ["builder_trader_leaderboard_snapshot_changed"]},
-          "message": {"type": "string", "description": "Restart at offset 0 and use the new as_of, pnl_as_of, and cursor values."}
+          "error": {
+            "type": "string",
+            "enum": [
+              "builder_trader_leaderboard_snapshot_changed"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Restart at offset 0 and use the new as_of, pnl_as_of, and cursor values."
+          }
         }
       },
       "V3BuilderTraderLeaderboardUnavailable": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error", "message"],
+        "required": [
+          "error",
+          "message"
+        ],
         "properties": {
-          "error": {"type": "string", "enum": ["builder_trader_leaderboard_unavailable", "builder_lookup_unavailable"]},
-          "message": {"type": "string"}
+          "error": {
+            "type": "string",
+            "enum": [
+              "builder_trader_leaderboard_unavailable",
+              "builder_lookup_unavailable"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
         }
       },
       "V3BuilderTraderLeaderboardWindow": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["start_date", "end_date", "complete_through"],
+        "required": [
+          "start_date",
+          "end_date",
+          "complete_through"
+        ],
         "properties": {
-          "start_date": {"type": "string", "format": "date", "description": "First inclusive UTC date in the ranking window."},
-          "end_date": {"type": "string", "format": "date", "description": "Last inclusive UTC date in the ranking window; it can be the current UTC date."},
-          "complete_through": {"type": "string", "format": "date", "description": "Latest contiguous materialized UTC date included in the window. A current-day bucket is a snapshot through as_of."}
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "First inclusive UTC date in the ranking window."
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Last inclusive UTC date in the ranking window; it can be the current UTC date."
+          },
+          "complete_through": {
+            "type": "string",
+            "format": "date",
+            "description": "Latest contiguous materialized UTC date included in the window. A current-day bucket is a snapshot through as_of."
+          }
         }
       },
       "V3BuilderTraderLeaderboardCoverage": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["start_date", "end_date", "complete"],
+        "required": [
+          "start_date",
+          "end_date",
+          "complete"
+        ],
         "properties": {
-          "start_date": {"type": "string", "format": "date", "description": "First retained UTC date."},
-          "end_date": {"type": "string", "format": "date", "description": "Latest retained UTC date."},
-          "complete": {"type": "boolean", "description": "True when every UTC date in the selected window has a successfully materialized aggregate row."}
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "First retained UTC date."
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Latest retained UTC date."
+          },
+          "complete": {
+            "type": "boolean",
+            "description": "True when every UTC date in the selected window has a successfully materialized aggregate row."
+          }
         }
       },
       "V3BuilderTraderLeaderboardRow": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "rank", "wallet", "trader_address", "volume_e6", "volume",
-          "buy_volume_e6", "buy_volume", "sell_volume_e6", "sell_volume",
-          "trades", "trader_paid_fees_e6", "trader_paid_fees", "active_days",
-          "first_activity_at", "last_activity_at"
+          "rank",
+          "wallet",
+          "trader_address",
+          "volume_e6",
+          "volume",
+          "buy_volume_e6",
+          "buy_volume",
+          "sell_volume_e6",
+          "sell_volume",
+          "trades",
+          "trader_paid_fees_e6",
+          "trader_paid_fees",
+          "active_days",
+          "first_activity_at",
+          "last_activity_at"
         ],
         "properties": {
-          "rank": {"type": "integer", "minimum": 1, "maximum": 500, "description": "Rank after the requested metric and direction, with wallet address ascending as the deterministic tie-break."},
-          "wallet": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
-          "trader_address": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
+          "rank": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Rank after the requested metric and direction, with wallet address ascending as the deterministic tie-break."
+          },
+          "wallet": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
+          "trader_address": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{40}$"
+          },
           "realized_pnl": {
             "description": "Global wallet realized P&L. Present for P&L sorts and omitted for activity-only sorts.",
             "$ref": "#/components/schemas/V3SignedDecimalString"
@@ -11718,102 +12435,339 @@
           "unrealized_pnl": {
             "description": "Global wallet current unrealized P&L for All Time, null for dated P&L, or omitted for activity-only sorts.",
             "anyOf": [
-              {"$ref": "#/components/schemas/V3SignedDecimalString"},
-              {"type": "null"}
+              {
+                "$ref": "#/components/schemas/V3SignedDecimalString"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "total_pnl": {
             "description": "Global wallet current total P&L for All Time, null for dated P&L, or omitted for activity-only sorts.",
             "anyOf": [
-              {"$ref": "#/components/schemas/V3SignedDecimalString"},
-              {"type": "null"}
+              {
+                "$ref": "#/components/schemas/V3SignedDecimalString"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
-          "volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
-          "volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "buy_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
-          "buy_volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "sell_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
-          "sell_volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "trades": {"type": "integer", "minimum": 0},
-          "trader_paid_fees_e6": {"allOf": [{"$ref": "#/components/schemas/V3UnsignedIntegerString"}], "description": "Exact trader-paid fees in raw six-decimal USDC units."},
-          "trader_paid_fees": {"allOf": [{"$ref": "#/components/schemas/V3NonNegativeDecimalString"}], "description": "Decimal trader-paid fees in USDC; not builder rebates or revenue."},
-          "active_days": {"type": "integer", "minimum": 0},
-          "first_activity_at": {"type": "integer", "format": "int64", "minimum": 0, "description": "Exact first attributed fill time in Unix seconds."},
-          "last_activity_at": {"type": "integer", "format": "int64", "minimum": 0, "description": "Exact last attributed fill time in Unix seconds; used by sort=recent."}
+          "volume_e6": {
+            "$ref": "#/components/schemas/V3UnsignedIntegerString"
+          },
+          "volume": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "buy_volume_e6": {
+            "$ref": "#/components/schemas/V3UnsignedIntegerString"
+          },
+          "buy_volume": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "sell_volume_e6": {
+            "$ref": "#/components/schemas/V3UnsignedIntegerString"
+          },
+          "sell_volume": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "trades": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "trader_paid_fees_e6": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/V3UnsignedIntegerString"
+              }
+            ],
+            "description": "Exact trader-paid fees in raw six-decimal USDC units."
+          },
+          "trader_paid_fees": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+              }
+            ],
+            "description": "Decimal trader-paid fees in USDC; not builder rebates or revenue."
+          },
+          "active_days": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "first_activity_at": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "Exact first attributed fill time in Unix seconds."
+          },
+          "last_activity_at": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "Exact last attributed fill time in Unix seconds; used by sort=recent."
+          }
         }
       },
       "V3BuilderTraderLeaderboardResponse": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "builder_code", "builder_name", "builder_logo", "builder_verified",
-          "period", "sort", "order", "limit", "offset", "has_more",
-          "window", "coverage", "as_of", "volume_scope", "volume_semantics",
-          "fee_semantics", "pnl_scope", "data"
+          "builder_code",
+          "builder_name",
+          "builder_logo",
+          "builder_verified",
+          "period",
+          "sort",
+          "order",
+          "limit",
+          "offset",
+          "has_more",
+          "window",
+          "coverage",
+          "as_of",
+          "volume_scope",
+          "volume_semantics",
+          "fee_semantics",
+          "pnl_scope",
+          "data"
         ],
         "properties": {
-          "builder_code": {"type": "string", "pattern": "^0x[a-fA-F0-9]{64}$"},
-          "builder_name": {"type": ["string", "null"]},
-          "builder_logo": {"type": ["string", "null"], "format": "uri"},
-          "builder_verified": {"type": ["boolean", "null"]},
-          "period": {"type": "string", "enum": ["1d", "7d", "30d", "all"]},
-          "sort": {"type": "string", "enum": ["realized_pnl", "total_pnl", "unrealized_pnl", "volume", "trades", "fees", "active_days", "recent"], "description": "Resolved sort. A request for pnl is returned as realized_pnl or total_pnl."},
-          "order": {"type": "string", "enum": ["asc", "desc"]},
-          "limit": {"type": "integer", "minimum": 1, "maximum": 100},
-          "offset": {"type": "integer", "minimum": 0, "maximum": 499},
-          "has_more": {"type": "boolean", "description": "True only when another page exists inside the supported first-500-rank window."},
-          "pagination": {"type": "string", "enum": ["cursor"], "description": "Present only for opt-in cursor responses. Legacy offset responses omit this field."},
-          "previous_cursor": {"type": ["string", "null"], "maxLength": 8192, "description": "Opaque cursor for the preceding page. Null on the first and second pages because offset 0 requires no cursor; omitted from legacy offset responses."},
-          "next_cursor": {"type": ["string", "null"], "maxLength": 8192, "description": "Opaque cursor for the next page, or null at the end of the supported traversal. Omitted from legacy offset responses."},
-          "window": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardWindow"},
-          "coverage": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardCoverage"},
-          "as_of": {"type": "string", "format": "date-time", "description": "Completion timestamp of the newest contributing aggregate snapshot."},
-          "cohort_wallet_count": {"type": "integer", "minimum": 0, "maximum": 100000, "description": "Complete distinct builder-active wallet cohort. Present for P&L sorts."},
-          "eligible_wallet_count": {"type": "integer", "minimum": 0, "maximum": 100000, "description": "Wallets eligible for the requested P&L ranking. Present for P&L sorts."},
-          "pnl_as_of": {"type": "string", "format": "date-time", "description": "Canonical P&L snapshot timestamp. Present for P&L sorts."},
-          "volume_scope": {"type": "string", "enum": ["clob_v2_onchain"]},
-          "volume_semantics": {"type": "string", "enum": ["outcome_share_par_notional"], "description": "One full outcome share represents $1 of par notional."},
-          "fee_semantics": {"type": "string", "description": "Trader-paid USDC fees attributed to maker orders; not builder rebates, revenue, or P&L."},
-          "pnl_scope": {"type": "string", "enum": ["wallet_global_polymarket_not_builder_attributed", "not_applicable_builder_attributed_activity_only"]},
-          "pnl_semantics": {"type": "string", "description": "Explains that P&L is global wallet P&L and is not attributed to the builder. Present for P&L sorts."},
-          "data": {"type": "array", "items": {"$ref": "#/components/schemas/V3BuilderTraderLeaderboardRow"}}
+          "builder_code": {
+            "type": "string",
+            "pattern": "^0x[a-fA-F0-9]{64}$"
+          },
+          "builder_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "builder_logo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "builder_verified": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "1d",
+              "7d",
+              "30d",
+              "all"
+            ]
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "realized_pnl",
+              "total_pnl",
+              "unrealized_pnl",
+              "volume",
+              "trades",
+              "fees",
+              "active_days",
+              "recent"
+            ],
+            "description": "Resolved sort. A request for pnl is returned as realized_pnl or total_pnl."
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 499
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True only when another page exists inside the supported first-500-rank window."
+          },
+          "pagination": {
+            "type": "string",
+            "enum": [
+              "cursor"
+            ],
+            "description": "Present only for opt-in cursor responses. Legacy offset responses omit this field."
+          },
+          "previous_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 8192,
+            "description": "Opaque cursor for the preceding page. Null on the first and second pages because offset 0 requires no cursor; omitted from legacy offset responses."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 8192,
+            "description": "Opaque cursor for the next page, or null at the end of the supported traversal. Omitted from legacy offset responses."
+          },
+          "window": {
+            "$ref": "#/components/schemas/V3BuilderTraderLeaderboardWindow"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/V3BuilderTraderLeaderboardCoverage"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Completion timestamp of the newest contributing aggregate snapshot."
+          },
+          "cohort_wallet_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "Complete distinct builder-active wallet cohort. Present for P&L sorts."
+          },
+          "eligible_wallet_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "Wallets eligible for the requested P&L ranking. Present for P&L sorts."
+          },
+          "pnl_as_of": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Canonical P&L snapshot timestamp. Present for P&L sorts."
+          },
+          "volume_scope": {
+            "type": "string",
+            "enum": [
+              "clob_v2_onchain"
+            ]
+          },
+          "volume_semantics": {
+            "type": "string",
+            "enum": [
+              "outcome_share_par_notional"
+            ],
+            "description": "One full outcome share represents $1 of par notional."
+          },
+          "fee_semantics": {
+            "type": "string",
+            "description": "Trader-paid USDC fees attributed to maker orders; not builder rebates, revenue, or P&L."
+          },
+          "pnl_scope": {
+            "type": "string",
+            "enum": [
+              "wallet_global_polymarket_not_builder_attributed",
+              "not_applicable_builder_attributed_activity_only"
+            ]
+          },
+          "pnl_semantics": {
+            "type": "string",
+            "description": "Explains that P&L is global wallet P&L and is not attributed to the builder. Present for P&L sorts."
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V3BuilderTraderLeaderboardRow"
+            }
+          }
         }
       },
       "V3ComboPnlInvalidRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error", "message"],
+        "required": [
+          "error",
+          "message"
+        ],
         "properties": {
-          "error": {"type": "string", "enum": ["invalid_request"]},
-          "message": {"type": "string"}
+          "error": {
+            "type": "string",
+            "enum": [
+              "invalid_request"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
         }
       },
       "V3ComboPnlUnavailable": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error", "message"],
+        "required": [
+          "error",
+          "message"
+        ],
         "properties": {
-          "error": {"type": "string", "enum": ["combo_pnl_unavailable"]},
-          "message": {"type": "string", "enum": ["Combo P&L is temporarily unavailable."]}
+          "error": {
+            "type": "string",
+            "enum": [
+              "combo_pnl_unavailable"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "enum": [
+              "Combo P&L is temporarily unavailable."
+            ]
+          }
         }
       },
       "V3PerpsUnknownInstrumentError": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error", "instrument"],
+        "required": [
+          "error",
+          "instrument"
+        ],
         "properties": {
-          "error": {"type": "string", "enum": ["unknown instrument"]},
-          "instrument": {"type": "string"}
+          "error": {
+            "type": "string",
+            "enum": [
+              "unknown instrument"
+            ]
+          },
+          "instrument": {
+            "type": "string"
+          }
         }
       },
       "V3PerpsActivityUnavailable": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error", "missing"],
+        "required": [
+          "error",
+          "missing"
+        ],
         "properties": {
-          "error": {"type": "string", "enum": ["warming up"]},
-          "missing": {"type": "string", "enum": ["daily activity"]}
+          "error": {
+            "type": "string",
+            "enum": [
+              "warming up"
+            ]
+          },
+          "missing": {
+            "type": "string",
+            "enum": [
+              "daily activity"
+            ]
+          }
         }
       },
       "V3NonNegativeDecimalString": {
@@ -11828,20 +12782,35 @@
       },
       "V3ComboPnlLeaderboardPeriod": {
         "type": "string",
-        "enum": ["all", "1d", "7d", "30d", "custom"]
+        "enum": [
+          "all",
+          "1d",
+          "7d",
+          "30d",
+          "custom"
+        ]
       },
       "V3ComboPnlLeaderboardWindow": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["after", "before"],
+        "required": [
+          "after",
+          "before"
+        ],
         "properties": {
           "after": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "description": "Inclusive resolved lower bound in Unix seconds. All Time returns null; an omitted custom side remains null."
           },
           "before": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "description": "Exclusive resolved upper bound in Unix seconds. All Time returns null; an omitted custom side remains null."
           }
@@ -11861,21 +12830,34 @@
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["direct_cost_basis_only"]
+            "enum": [
+              "direct_cost_basis_only"
+            ]
           },
           "raw_wallet_transfers_included": {
             "type": "boolean",
-            "enum": [false],
+            "enum": [
+              false
+            ],
             "description": "Arbitrary wallet-to-wallet transfer basis is not inferred or ranked."
           },
-          "eligible_wallet_count": {"type": "integer", "minimum": 0},
+          "eligible_wallet_count": {
+            "type": "integer",
+            "minimum": 0
+          },
           "excluded_wallet_count": {
             "type": "integer",
             "minimum": 0,
             "description": "Wallets omitted from data because direct cost basis or a required mark is incomplete."
           },
-          "transfer_incomplete_wallet_count": {"type": "integer", "minimum": 0},
-          "unmarked_wallet_count": {"type": "integer", "minimum": 0}
+          "transfer_incomplete_wallet_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unmarked_wallet_count": {
+            "type": "integer",
+            "minimum": 0
+          }
         }
       },
       "V3ComboPnlLeaderboardRow": {
@@ -11894,24 +12876,37 @@
           "last_activity_at"
         ],
         "properties": {
-          "rank": {"type": "integer", "minimum": 1},
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
           "wallet_address": {
             "type": "string",
             "pattern": "^0x[a-fA-F0-9]{40}$"
           },
-          "realized_pnl": {"$ref": "#/components/schemas/V3SignedDecimalString"},
+          "realized_pnl": {
+            "$ref": "#/components/schemas/V3SignedDecimalString"
+          },
           "unrealized_pnl": {
             "description": "All Time marked P&L, or null for realized-only windows.",
             "anyOf": [
-              {"$ref": "#/components/schemas/V3SignedDecimalString"},
-              {"type": "null"}
+              {
+                "$ref": "#/components/schemas/V3SignedDecimalString"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "total_pnl": {
             "description": "All Time realized plus unrealized P&L, or null for realized-only windows.",
             "anyOf": [
-              {"$ref": "#/components/schemas/V3SignedDecimalString"},
-              {"type": "null"}
+              {
+                "$ref": "#/components/schemas/V3SignedDecimalString"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "open_combo_count": {
@@ -11935,7 +12930,10 @@
             "description": "Eligible direct-basis event count in the realized window, or across all eligible history for All Time."
           },
           "last_activity_at": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           }
         }
@@ -11956,20 +12954,40 @@
         "properties": {
           "data": {
             "type": "array",
-            "items": {"$ref": "#/components/schemas/V3ComboPnlLeaderboardRow"}
+            "items": {
+              "$ref": "#/components/schemas/V3ComboPnlLeaderboardRow"
+            }
           },
-          "period": {"$ref": "#/components/schemas/V3ComboPnlLeaderboardPeriod"},
-          "window": {"$ref": "#/components/schemas/V3ComboPnlLeaderboardWindow"},
+          "period": {
+            "$ref": "#/components/schemas/V3ComboPnlLeaderboardPeriod"
+          },
+          "window": {
+            "$ref": "#/components/schemas/V3ComboPnlLeaderboardWindow"
+          },
           "pnl_scope": {
             "type": "string",
-            "enum": ["all_time_marked", "realized_only"]
+            "enum": [
+              "all_time_marked",
+              "realized_only"
+            ]
           },
-          "coverage": {"$ref": "#/components/schemas/V3ComboPnlLeaderboardCoverage"},
-          "as_of": {"type": "string", "format": "date-time"},
-          "as_of_block": {"type": "integer", "format": "int64", "minimum": 0},
+          "coverage": {
+            "$ref": "#/components/schemas/V3ComboPnlLeaderboardCoverage"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "as_of_block": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
           "source": {
             "type": "string",
-            "enum": ["combo_state.combo_cost_basis_event"]
+            "enum": [
+              "combo_state.combo_cost_basis_event"
+            ]
           }
         }
       },
@@ -12001,39 +13019,125 @@
           "transformation_count"
         ],
         "properties": {
-          "date": {"type": "string", "format": "date"},
-          "complete": {"type": "boolean"},
-          "fill_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "signed_order_buy_fill_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "signed_order_sell_fill_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "share_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
-          "share_volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "signed_order_buy_share_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
-          "signed_order_buy_share_volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "signed_order_sell_share_volume_e6": {"$ref": "#/components/schemas/V3UnsignedIntegerString"},
-          "signed_order_sell_share_volume": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "lifecycle_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "prepare_event_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "prepared_combo_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "split_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "merge_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "redeem_event_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "mapped_transfer_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "exact_redemption_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "full_redemption_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "partial_redemption_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "transformation_count": {"type": "integer", "format": "int64", "minimum": 0}
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "fill_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "signed_order_buy_fill_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "signed_order_sell_fill_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "share_volume_e6": {
+            "$ref": "#/components/schemas/V3UnsignedIntegerString"
+          },
+          "share_volume": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "signed_order_buy_share_volume_e6": {
+            "$ref": "#/components/schemas/V3UnsignedIntegerString"
+          },
+          "signed_order_buy_share_volume": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "signed_order_sell_share_volume_e6": {
+            "$ref": "#/components/schemas/V3UnsignedIntegerString"
+          },
+          "signed_order_sell_share_volume": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "lifecycle_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "prepare_event_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "prepared_combo_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "split_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "merge_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "redeem_event_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "mapped_transfer_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "exact_redemption_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "full_redemption_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "partial_redemption_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "transformation_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
         }
       },
       "V3ComboActivityCountSemantics": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["fills", "lifecycle", "transfers", "exact_redemptions"],
+        "required": [
+          "fills",
+          "lifecycle",
+          "transfers",
+          "exact_redemptions"
+        ],
         "properties": {
-          "fills": {"type": "string"},
-          "lifecycle": {"type": "string"},
-          "transfers": {"type": "string"},
-          "exact_redemptions": {"type": "string"}
+          "fills": {
+            "type": "string"
+          },
+          "lifecycle": {
+            "type": "string"
+          },
+          "transfers": {
+            "type": "string"
+          },
+          "exact_redemptions": {
+            "type": "string"
+          }
         }
       },
       "V3ComboActivityDailyResponse": {
@@ -12055,23 +13159,68 @@
           "days"
         ],
         "properties": {
-          "start_date": {"type": "string", "format": "date"},
-          "end_date": {"type": "string", "format": "date"},
-          "interval": {"type": "string", "enum": ["day"]},
-          "timezone": {"type": "string", "enum": ["UTC"]},
-          "coverage_start": {"type": "string", "format": "date", "enum": ["2026-05-29"]},
-          "complete_through": {"type": "string", "format": "date"},
-          "as_of": {"type": "string", "format": "date-time"},
-          "as_of_block": {"type": "integer", "format": "int64", "minimum": 0},
-          "share_volume_unit": {"type": "string", "enum": ["shares"]},
-          "share_volume_semantics": {"type": "string"},
-          "side_semantics": {"type": "string"},
-          "count_semantics": {"$ref": "#/components/schemas/V3ComboActivityCountSemantics"},
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "day"
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "enum": [
+              "UTC"
+            ]
+          },
+          "coverage_start": {
+            "type": "string",
+            "format": "date",
+            "enum": [
+              "2026-05-29"
+            ]
+          },
+          "complete_through": {
+            "type": "string",
+            "format": "date"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "as_of_block": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "share_volume_unit": {
+            "type": "string",
+            "enum": [
+              "shares"
+            ]
+          },
+          "share_volume_semantics": {
+            "type": "string"
+          },
+          "side_semantics": {
+            "type": "string"
+          },
+          "count_semantics": {
+            "$ref": "#/components/schemas/V3ComboActivityCountSemantics"
+          },
           "days": {
             "type": "array",
             "minItems": 1,
             "maxItems": 30,
-            "items": {"$ref": "#/components/schemas/V3ComboActivityDay"}
+            "items": {
+              "$ref": "#/components/schemas/V3ComboActivityDay"
+            }
           }
         }
       },
@@ -12090,15 +13239,40 @@
           "net_taker_notional_pusd"
         ],
         "properties": {
-          "date": {"type": "string", "format": "date"},
-          "complete": {"type": "boolean"},
-          "trade_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "taker_buy_trade_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "taker_sell_trade_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "notional_volume_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "taker_buy_notional_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "taker_sell_notional_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "net_taker_notional_pusd": {"$ref": "#/components/schemas/V3SignedDecimalString"}
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "trade_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "taker_buy_trade_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "taker_sell_trade_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "notional_volume_pusd": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "taker_buy_notional_pusd": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "taker_sell_notional_pusd": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "net_taker_notional_pusd": {
+            "$ref": "#/components/schemas/V3SignedDecimalString"
+          }
         }
       },
       "V3PerpsInstrumentActivityDay": {
@@ -12119,46 +13293,102 @@
           "taker_sell_base_quantity"
         ],
         "properties": {
-          "date": {"type": "string", "format": "date"},
-          "complete": {"type": "boolean"},
-          "trade_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "taker_buy_trade_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "taker_sell_trade_count": {"type": "integer", "format": "int64", "minimum": 0},
-          "notional_volume_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "taker_buy_notional_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "taker_sell_notional_pusd": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "net_taker_notional_pusd": {"$ref": "#/components/schemas/V3SignedDecimalString"},
-          "base_quantity": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "taker_buy_base_quantity": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"},
-          "taker_sell_base_quantity": {"$ref": "#/components/schemas/V3NonNegativeDecimalString"}
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "trade_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "taker_buy_trade_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "taker_sell_trade_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "notional_volume_pusd": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "taker_buy_notional_pusd": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "taker_sell_notional_pusd": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "net_taker_notional_pusd": {
+            "$ref": "#/components/schemas/V3SignedDecimalString"
+          },
+          "base_quantity": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "taker_buy_base_quantity": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          },
+          "taker_sell_base_quantity": {
+            "$ref": "#/components/schemas/V3NonNegativeDecimalString"
+          }
         }
       },
       "V3PerpsInstrumentActivitySeries": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["instrument_id", "symbol", "days"],
+        "required": [
+          "instrument_id",
+          "symbol",
+          "days"
+        ],
         "properties": {
-          "instrument_id": {"type": "integer", "format": "int32", "minimum": 0},
-          "symbol": {"type": ["string", "null"]},
+          "instrument_id": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "symbol": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "days": {
             "type": "array",
             "minItems": 1,
             "maxItems": 30,
-            "items": {"$ref": "#/components/schemas/V3PerpsInstrumentActivityDay"}
+            "items": {
+              "$ref": "#/components/schemas/V3PerpsInstrumentActivityDay"
+            }
           }
         }
       },
       "V3PerpsActivityTotal": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["label", "days"],
+        "required": [
+          "label",
+          "days"
+        ],
         "properties": {
-          "label": {"type": "string", "enum": ["All perps"]},
+          "label": {
+            "type": "string",
+            "enum": [
+              "All perps"
+            ]
+          },
           "days": {
             "type": "array",
             "minItems": 1,
             "maxItems": 30,
-            "items": {"$ref": "#/components/schemas/V3PerpsActivityDay"}
+            "items": {
+              "$ref": "#/components/schemas/V3PerpsActivityDay"
+            }
           }
         }
       },
@@ -12182,56 +13412,144 @@
           "instruments"
         ],
         "properties": {
-          "interval": {"type": "string", "enum": ["day"]},
-          "timezone": {"type": "string", "enum": ["UTC"]},
-          "period": {"type": "string", "enum": ["1d", "7d", "30d", "custom"]},
-          "start_date": {"type": "string", "format": "date"},
-          "end_date": {"type": "string", "format": "date"},
-          "coverage_start": {"type": "string", "format": "date", "enum": ["2026-07-08"]},
-          "complete_through": {"type": "string", "format": "date"},
-          "first_returned_date": {"type": ["string", "null"], "format": "date"},
-          "last_returned_date": {"type": ["string", "null"], "format": "date"},
+          "interval": {
+            "type": "string",
+            "enum": [
+              "day"
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "enum": [
+              "UTC"
+            ]
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "1d",
+              "7d",
+              "30d",
+              "custom"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "coverage_start": {
+            "type": "string",
+            "format": "date",
+            "enum": [
+              "2026-07-08"
+            ]
+          },
+          "complete_through": {
+            "type": "string",
+            "format": "date"
+          },
+          "first_returned_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "last_returned_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
           "latest_trade_at": {
-            "type": ["integer", "null"],
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
             "description": "Newest archived trade timestamp in Unix seconds."
           },
-          "notional_unit": {"type": "string", "enum": ["pUSD"]},
-          "side_semantics": {"type": "string"},
-          "total": {"$ref": "#/components/schemas/V3PerpsActivityTotal"},
+          "notional_unit": {
+            "type": "string",
+            "enum": [
+              "pUSD"
+            ]
+          },
+          "side_semantics": {
+            "type": "string"
+          },
+          "total": {
+            "$ref": "#/components/schemas/V3PerpsActivityTotal"
+          },
           "instruments": {
             "type": "array",
             "maxItems": 20,
-            "items": {"$ref": "#/components/schemas/V3PerpsInstrumentActivitySeries"}
+            "items": {
+              "$ref": "#/components/schemas/V3PerpsInstrumentActivitySeries"
+            }
           }
         }
       },
       "V3CatalogStatus": {
         "type": "string",
-        "enum": ["open", "closed", "inactive"]
+        "enum": [
+          "open",
+          "closed",
+          "inactive"
+        ]
       },
       "V3CatalogStatusCounts": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["open", "closed", "inactive"],
+        "required": [
+          "open",
+          "closed",
+          "inactive"
+        ],
         "properties": {
-          "open": {"type": "integer", "minimum": 0},
-          "closed": {"type": "integer", "minimum": 0},
-          "inactive": {"type": "integer", "minimum": 0}
+          "open": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "closed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "inactive": {
+            "type": "integer",
+            "minimum": 0
+          }
         }
       },
       "V3CatalogFilters": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["status", "event_slug"],
+        "required": [
+          "status",
+          "event_slug"
+        ],
         "properties": {
           "status": {
             "oneOf": [
-              {"$ref": "#/components/schemas/V3CatalogStatus"},
-              {"type": "null"}
+              {
+                "$ref": "#/components/schemas/V3CatalogStatus"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
-          "event_slug": {"type": ["string", "null"]}
+          "event_slug": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       },
       "V3MarketCatalogRow": {
@@ -12246,45 +13564,133 @@
           "outcome_prices"
         ],
         "properties": {
-          "condition_id": {"type": "string"},
-          "question": {"type": "string"},
-          "slug": {"type": "string"},
-          "outcomes": {"type": "array", "items": {"type": "string"}},
-          "end_date": {"type": "string"},
-          "active": {"type": "boolean"},
-          "closed": {"type": "boolean"},
-          "archived": {"type": "boolean"},
-          "status": {"$ref": "#/components/schemas/V3CatalogStatus"},
-          "enable_order_book": {"type": "boolean"},
-          "closed_time": {"type": "string"},
-          "neg_risk": {"type": "boolean"},
-          "neg_risk_market_id": {"type": "string"},
-          "image": {"type": "string"},
-          "icon": {"type": "string"},
-          "event_slug": {"type": "string"},
-          "event_title": {"type": "string"},
-          "group_item_title": {"type": "string"},
-          "winning_outcome_index": {"type": "integer"},
-          "tag_slugs": {"type": "array", "items": {"type": "string"}},
-          "category": {"type": "string"},
-          "updated_at": {"type": "string"},
-          "pm_created_at": {"type": "string"},
-          "pm_updated_at": {"type": "string"},
-          "volume_all_time": {"type": "null"},
-          "liquidity": {"type": "null"},
-          "outcome_prices": {"type": "null"}
+          "condition_id": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "outcomes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "end_date": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "closed": {
+            "type": "boolean"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/V3CatalogStatus"
+          },
+          "enable_order_book": {
+            "type": "boolean"
+          },
+          "closed_time": {
+            "type": "string"
+          },
+          "neg_risk": {
+            "type": "boolean"
+          },
+          "neg_risk_market_id": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "event_slug": {
+            "type": "string"
+          },
+          "event_title": {
+            "type": "string"
+          },
+          "group_item_title": {
+            "type": "string"
+          },
+          "winning_outcome_index": {
+            "type": "integer"
+          },
+          "tag_slugs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "category": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "pm_created_at": {
+            "type": "string"
+          },
+          "pm_updated_at": {
+            "type": "string"
+          },
+          "volume_all_time": {
+            "type": "null"
+          },
+          "liquidity": {
+            "type": "null"
+          },
+          "outcome_prices": {
+            "type": "null"
+          }
         }
       },
       "V3EventRepresentativeMarket": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["condition_id", "slug", "question", "end_date", "tag_slugs"],
+        "required": [
+          "condition_id",
+          "slug",
+          "question",
+          "end_date",
+          "tag_slugs"
+        ],
         "properties": {
-          "condition_id": {"type": "string"},
-          "slug": {"type": ["string", "null"]},
-          "question": {"type": ["string", "null"]},
-          "end_date": {"type": ["string", "null"]},
-          "tag_slugs": {"type": "array", "items": {"type": "string"}}
+          "condition_id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "question": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tag_slugs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       },
       "V3EventCatalogRow": {
@@ -12305,150 +13711,450 @@
           "liquidity"
         ],
         "properties": {
-          "event_slug": {"type": "string"},
-          "title": {"type": "string"},
-          "status": {"$ref": "#/components/schemas/V3CatalogStatus"},
-          "active": {"type": "boolean"},
-          "closed": {"type": "boolean"},
-          "market_count": {"type": "integer", "minimum": 1},
-          "status_counts": {"$ref": "#/components/schemas/V3CatalogStatusCounts"},
-          "latest_market_updated_at": {"type": "string"},
-          "title_variant_count": {"type": "integer", "minimum": 0},
-          "image_variant_count": {"type": "integer", "minimum": 0},
-          "icon_variant_count": {"type": "integer", "minimum": 0},
-          "image": {"type": "string"},
-          "icon": {"type": "string"},
-          "representative_market": {"$ref": "#/components/schemas/V3EventRepresentativeMarket"},
-          "volume_all_time": {"type": "null"},
-          "liquidity": {"type": "null"}
+          "event_slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/V3CatalogStatus"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "closed": {
+            "type": "boolean"
+          },
+          "market_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status_counts": {
+            "$ref": "#/components/schemas/V3CatalogStatusCounts"
+          },
+          "latest_market_updated_at": {
+            "type": "string"
+          },
+          "title_variant_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "image_variant_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "icon_variant_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "image": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "representative_market": {
+            "$ref": "#/components/schemas/V3EventRepresentativeMarket"
+          },
+          "volume_all_time": {
+            "type": "null"
+          },
+          "liquidity": {
+            "type": "null"
+          }
         }
       },
       "V3MarketCatalogResponse": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["markets", "rows_returned", "has_more", "limit", "next_cursor", "sort", "order", "filters"],
+        "required": [
+          "markets",
+          "rows_returned",
+          "has_more",
+          "limit",
+          "next_cursor",
+          "sort",
+          "order",
+          "filters"
+        ],
         "properties": {
-          "markets": {"type": "array", "items": {"$ref": "#/components/schemas/V3MarketCatalogRow"}},
-          "rows_returned": {"type": "integer", "minimum": 0},
-          "has_more": {"type": "boolean"},
-          "limit": {"type": "integer", "minimum": 1, "maximum": 300},
-          "next_cursor": {"type": ["string", "null"]},
-          "sort": {"type": "string", "const": "updated"},
-          "order": {"type": "string", "const": "desc"},
-          "filters": {"$ref": "#/components/schemas/V3CatalogFilters"}
+          "markets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V3MarketCatalogRow"
+            }
+          },
+          "rows_returned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 300
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sort": {
+            "type": "string",
+            "const": "updated"
+          },
+          "order": {
+            "type": "string",
+            "const": "desc"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/V3CatalogFilters"
+          }
         }
       },
       "V3EventCatalogResponse": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["events", "rows_returned", "has_more", "limit", "next_cursor", "sort", "order", "filters"],
+        "required": [
+          "events",
+          "rows_returned",
+          "has_more",
+          "limit",
+          "next_cursor",
+          "sort",
+          "order",
+          "filters"
+        ],
         "properties": {
-          "events": {"type": "array", "items": {"$ref": "#/components/schemas/V3EventCatalogRow"}},
-          "rows_returned": {"type": "integer", "minimum": 0},
-          "has_more": {"type": "boolean"},
-          "limit": {"type": "integer", "minimum": 1, "maximum": 300},
-          "next_cursor": {"type": ["string", "null"]},
-          "sort": {"type": "string", "const": "updated"},
-          "order": {"type": "string", "const": "desc"},
-          "filters": {"$ref": "#/components/schemas/V3CatalogFilters"}
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V3EventCatalogRow"
+            }
+          },
+          "rows_returned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 300
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sort": {
+            "type": "string",
+            "const": "updated"
+          },
+          "order": {
+            "type": "string",
+            "const": "desc"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/V3CatalogFilters"
+          }
         }
       },
       "V3MarketCatalogStats": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["market_count", "event_linked_market_count", "event_count", "status_counts"],
+        "required": [
+          "market_count",
+          "event_linked_market_count",
+          "event_count",
+          "status_counts"
+        ],
         "properties": {
-          "market_count": {"type": "integer", "minimum": 0},
-          "event_linked_market_count": {"type": "integer", "minimum": 0},
-          "event_count": {"type": "integer", "minimum": 0},
-          "status_counts": {"$ref": "#/components/schemas/V3CatalogStatusCounts"}
+          "market_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "event_linked_market_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "event_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status_counts": {
+            "$ref": "#/components/schemas/V3CatalogStatusCounts"
+          }
         }
       },
       "V3EventCatalogStats": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["event_count", "member_market_count", "catalog_market_count", "status_counts"],
+        "required": [
+          "event_count",
+          "member_market_count",
+          "catalog_market_count",
+          "status_counts"
+        ],
         "properties": {
-          "event_count": {"type": "integer", "minimum": 0},
-          "member_market_count": {"type": "integer", "minimum": 0},
-          "catalog_market_count": {"type": "integer", "minimum": 0},
-          "status_counts": {"$ref": "#/components/schemas/V3CatalogStatusCounts"}
+          "event_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "member_market_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "catalog_market_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status_counts": {
+            "$ref": "#/components/schemas/V3CatalogStatusCounts"
+          }
         }
       },
       "V3LeaderboardScopeRow": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["value", "wallet_count", "ranked_count"],
+        "required": [
+          "value",
+          "wallet_count",
+          "ranked_count"
+        ],
         "properties": {
-          "value": {"type": "string"},
-          "wallet_count": {"type": "integer", "minimum": 0},
-          "ranked_count": {"type": "integer", "minimum": 0, "maximum": 1000}
+          "value": {
+            "type": "string"
+          },
+          "wallet_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ranked_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          }
         }
       },
       "V3LeaderboardScopesResponse": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["scopes", "count", "total_count", "limit", "offset", "has_more", "period", "scope", "query"],
+        "required": [
+          "scopes",
+          "count",
+          "total_count",
+          "limit",
+          "offset",
+          "has_more",
+          "period",
+          "scope",
+          "query"
+        ],
         "properties": {
-          "scopes": {"type": "array", "items": {"$ref": "#/components/schemas/V3LeaderboardScopeRow"}},
-          "count": {"type": "integer", "minimum": 0},
-          "total_count": {"type": "integer", "minimum": 0},
-          "limit": {"type": "integer", "minimum": 1, "maximum": 200},
-          "offset": {"type": "integer", "minimum": 0, "maximum": 10000},
-          "has_more": {"type": "boolean"},
-          "period": {"type": "string", "enum": ["1d", "7d", "30d"]},
-          "scope": {"type": "string", "enum": ["category", "tag"]},
-          "query": {"type": ["string", "null"]}
+          "scopes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V3LeaderboardScopeRow"
+            }
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "1d",
+              "7d",
+              "30d"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "category",
+              "tag"
+            ]
+          },
+          "query": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       },
       "V3RewardConfig": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["asset_address", "start_date", "end_date", "rate_per_day"],
+        "required": [
+          "asset_address",
+          "start_date",
+          "end_date",
+          "rate_per_day"
+        ],
         "properties": {
-          "asset_address": {"type": "string"},
-          "start_date": {"type": "string"},
-          "end_date": {"type": "string"},
-          "rate_per_day": {"type": "number"},
-          "id": {"type": "integer"},
-          "total_days": {"type": "integer", "minimum": 0},
-          "total_rewards": {"type": "number"}
+          "asset_address": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string"
+          },
+          "rate_per_day": {
+            "type": "number"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "total_days": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_rewards": {
+            "type": "number"
+          }
         }
       },
       "V3RewardMarketConfiguration": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["condition_id"],
+        "required": [
+          "condition_id"
+        ],
         "properties": {
-          "condition_id": {"type": "string"},
-          "native_daily_rate": {"type": "number"},
-          "total_daily_rate": {"type": "number"},
-          "rewards_max_spread": {"type": "number"},
-          "rewards_min_size": {"type": "number"},
-          "rewards_config": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardConfig"}}
+          "condition_id": {
+            "type": "string"
+          },
+          "native_daily_rate": {
+            "type": "number"
+          },
+          "total_daily_rate": {
+            "type": "number"
+          },
+          "rewards_max_spread": {
+            "type": "number"
+          },
+          "rewards_min_size": {
+            "type": "number"
+          },
+          "rewards_config": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V3RewardConfig"
+            }
+          }
         }
       },
       "V3RewardMarket": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["condition_id", "title", "slug", "image", "event_slug", "event_title", "category", "tag_slugs"],
+        "required": [
+          "condition_id",
+          "title",
+          "slug",
+          "image",
+          "event_slug",
+          "event_title",
+          "category",
+          "tag_slugs"
+        ],
         "properties": {
-          "condition_id": {"type": "string"},
-          "native_daily_rate": {"type": "number"},
-          "total_daily_rate": {"type": "number"},
-          "rewards_max_spread": {"type": "number"},
-          "rewards_min_size": {"type": "number"},
-          "rewards_config": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardConfig"}},
-          "title": {"type": ["string", "null"]},
-          "slug": {"type": ["string", "null"]},
-          "image": {"type": ["string", "null"]},
-          "event_slug": {"type": ["string", "null"]},
-          "event_title": {"type": ["string", "null"]},
-          "category": {"type": ["string", "null"]},
+          "condition_id": {
+            "type": "string"
+          },
+          "native_daily_rate": {
+            "type": "number"
+          },
+          "total_daily_rate": {
+            "type": "number"
+          },
+          "rewards_max_spread": {
+            "type": "number"
+          },
+          "rewards_min_size": {
+            "type": "number"
+          },
+          "rewards_config": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V3RewardConfig"
+            }
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "slug": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "image": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "event_slug": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "event_title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "tag_slugs": {
             "oneOf": [
-              {"type": "array", "items": {"type": "string"}},
-              {"type": "null"}
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         }
@@ -12456,18 +14162,42 @@
       "V3RewardMarketsResponse": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["reward_semantics", "data"],
+        "required": [
+          "reward_semantics",
+          "data"
+        ],
         "properties": {
-          "reward_semantics": {"type": "string"},
+          "reward_semantics": {
+            "type": "string"
+          },
           "data": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["count", "data"],
+            "required": [
+              "count",
+              "data"
+            ],
             "properties": {
-              "count": {"type": "integer", "minimum": 0},
-              "data": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardMarket"}},
-              "limit": {"type": "integer", "minimum": 1},
-              "next_cursor": {"type": ["string", "null"]}
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/V3RewardMarket"
+                }
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "next_cursor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             }
           }
         }
@@ -12475,11 +14205,21 @@
       "V3RewardMarketToken": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["outcome", "price", "token_id"],
+        "required": [
+          "outcome",
+          "price",
+          "token_id"
+        ],
         "properties": {
-          "outcome": {"type": "string"},
-          "price": {"type": "number"},
-          "token_id": {"type": "string"}
+          "outcome": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "token_id": {
+            "type": "string"
+          }
         }
       },
       "V3RewardMarketDetail": {
@@ -12498,33 +14238,83 @@
           "tokens"
         ],
         "properties": {
-          "condition_id": {"type": "string"},
-          "event_slug": {"type": "string"},
-          "image": {"type": "string"},
-          "market_competitiveness": {"type": "number"},
-          "market_slug": {"type": "string"},
-          "question": {"type": "string"},
-          "rewards_config": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardConfig"}},
-          "rewards_max_spread": {"type": "number"},
-          "rewards_min_size": {"type": "number"},
-          "tokens": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardMarketToken"}}
+          "condition_id": {
+            "type": "string"
+          },
+          "event_slug": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "market_competitiveness": {
+            "type": "number"
+          },
+          "market_slug": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "rewards_config": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V3RewardConfig"
+            }
+          },
+          "rewards_max_spread": {
+            "type": "number"
+          },
+          "rewards_min_size": {
+            "type": "number"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/V3RewardMarketToken"
+            }
+          }
         }
       },
       "V3RewardMarketDetailResponse": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["reward_semantics", "data"],
+        "required": [
+          "reward_semantics",
+          "data"
+        ],
         "properties": {
-          "reward_semantics": {"type": "string"},
+          "reward_semantics": {
+            "type": "string"
+          },
           "data": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["count", "data"],
+            "required": [
+              "count",
+              "data"
+            ],
             "properties": {
-              "count": {"type": "integer", "minimum": 0},
-              "data": {"type": "array", "items": {"$ref": "#/components/schemas/V3RewardMarketDetail"}},
-              "limit": {"type": "integer", "minimum": 1},
-              "next_cursor": {"type": ["string", "null"]}
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/V3RewardMarketDetail"
+                }
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "next_cursor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             }
           }
         }
@@ -13982,53 +15772,111 @@
         "type": "object",
         "description": "Public Polymarket event metadata associated with a combo leg.",
         "properties": {
-          "event_id": {"type": "string"},
-          "event_slug": {"type": "string"},
-          "event_title": {"type": "string"},
-          "event_image": {"type": "string"}
+          "event_id": {
+            "type": "string"
+          },
+          "event_slug": {
+            "type": "string"
+          },
+          "event_title": {
+            "type": "string"
+          },
+          "event_image": {
+            "type": "string"
+          }
         }
       },
       "ComboRedemptionLegMarket": {
         "type": "object",
         "description": "Public Polymarket market metadata and current resolution state for a combo leg.",
         "properties": {
-          "market_id": {"type": "string"},
-          "slug": {"type": "string"},
-          "title": {"type": "string"},
-          "outcome": {"type": "string"},
-          "image_url": {"type": "string"},
-          "icon_url": {"type": "string"},
-          "category": {"type": "string"},
-          "subcategory": {"type": "string"},
+          "market_id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "icon_url": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "subcategory": {
+            "type": "string"
+          },
           "tags": {
             "type": "array",
             "items": {}
           },
-          "end_date": {"type": "string", "format": "date-time"},
-          "active": {"type": "boolean"},
-          "closed": {"type": "boolean"},
-          "accepting_orders": {"type": "boolean"},
-          "resolved": {"type": "boolean"},
-          "winning_outcome_index": {"type": "integer", "minimum": 0},
-          "event": {"$ref": "#/components/schemas/ComboRedemptionLegEvent"}
+          "end_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "closed": {
+            "type": "boolean"
+          },
+          "accepting_orders": {
+            "type": "boolean"
+          },
+          "resolved": {
+            "type": "boolean"
+          },
+          "winning_outcome_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "event": {
+            "$ref": "#/components/schemas/ComboRedemptionLegEvent"
+          }
         }
       },
       "ComboRedemptionLeg": {
         "type": "object",
         "description": "One selected standard-market outcome represented inside a combo redemption.",
-        "required": ["leg_index"],
+        "required": [
+          "leg_index"
+        ],
         "properties": {
-          "leg_index": {"type": "integer", "minimum": 0},
+          "leg_index": {
+            "type": "integer",
+            "minimum": 0
+          },
           "leg_position_id": {
             "type": "string",
             "pattern": "^[0-9]+$",
             "description": "Combo-contract position identifier for this leg. This is distinct from market_token_id."
           },
-          "leg_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{64}$"},
-          "leg_outcome_index": {"type": "integer", "minimum": 0},
-          "leg_outcome_label": {"type": "string"},
-          "leg_status": {"type": "string"},
-          "leg_resolved_at": {"type": "string", "format": "date-time"},
+          "leg_condition_id": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{64}$"
+          },
+          "leg_outcome_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "leg_outcome_label": {
+            "type": "string"
+          },
+          "leg_status": {
+            "type": "string"
+          },
+          "leg_resolved_at": {
+            "type": "string",
+            "format": "date-time"
+          },
           "market_token_id": {
             "type": "string",
             "pattern": "^[0-9]+$",
@@ -14036,7 +15884,12 @@
           },
           "leg_result": {
             "type": "string",
-            "enum": ["won", "lost", "resolved", "pending"]
+            "enum": [
+              "won",
+              "lost",
+              "resolved",
+              "pending"
+            ]
           },
           "leg_current_price": {
             "type": "string",
@@ -14045,18 +15898,34 @@
           },
           "leg_price_source": {
             "type": "string",
-            "enum": ["settlement", "clob_mid", "last_fill", "polymarket_market"]
+            "enum": [
+              "settlement",
+              "clob_mid",
+              "last_fill",
+              "polymarket_market"
+            ]
           },
-          "market": {"$ref": "#/components/schemas/ComboRedemptionLegMarket"}
+          "market": {
+            "$ref": "#/components/schemas/ComboRedemptionLegMarket"
+          }
         }
       },
       "ComboRedemptionRemainingCombo": {
         "type": "object",
         "description": "Compact destination-combo holding created by a partial redemption. This is not a positions, cost-basis, or P&L record.",
-        "required": ["combo_condition_id", "combo_position_id"],
+        "required": [
+          "combo_condition_id",
+          "combo_position_id"
+        ],
         "properties": {
-          "combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
-          "combo_position_id": {"type": "string", "pattern": "^[0-9]+$"},
+          "combo_condition_id": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{62}$"
+          },
+          "combo_position_id": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
           "shares_created": {
             "type": "string",
             "pattern": "^[0-9]+\\.[0-9]{6}$"
@@ -14065,8 +15934,16 @@
             "type": "string",
             "pattern": "^[0-9]+\\.[0-9]{6}$"
           },
-          "still_held": {"type": "boolean"},
-          "status": {"type": "string", "enum": ["OPEN", "CLOSED"]}
+          "still_held": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CLOSED"
+            ]
+          }
         }
       },
       "ComboRedemption": {
@@ -14108,10 +15985,22 @@
           "parity_status"
         ],
         "properties": {
-          "position_type": {"type": "string", "const": "combo"},
-          "is_combo": {"type": "boolean", "const": true},
-          "id": {"type": "string", "description": "Stable public log identifier."},
-          "type": {"type": "string", "description": "Polymarket-compatible activity type."},
+          "position_type": {
+            "type": "string",
+            "const": "combo"
+          },
+          "is_combo": {
+            "type": "boolean",
+            "const": true
+          },
+          "id": {
+            "type": "string",
+            "description": "Stable public log identifier."
+          },
+          "type": {
+            "type": "string",
+            "description": "Polymarket-compatible activity type."
+          },
           "event_kind": {
             "type": "string",
             "enum": [
@@ -14130,31 +16019,85 @@
               "Wrapped"
             ]
           },
-          "side": {"type": "string"},
-          "module_kind": {"type": "string", "const": "Combinatorial"},
-          "user_address": {"type": "string", "pattern": "^0x[a-f0-9]{40}$"},
-          "wallet_address": {"type": "string", "pattern": "^0x[a-f0-9]{40}$"},
-          "combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
-          "combo_position_id": {"type": "string", "pattern": "^[0-9]+$"},
-          "combo_outcome_index": {"type": "integer", "minimum": 0, "maximum": 255},
-          "module_id": {"type": "integer", "const": 3},
-          "amount_usdc": {"type": "string"},
-          "payout_usdc": {"type": "string"},
-          "position_amount_usdc": {"type": "string"},
-          "collateral_out_usdc": {"type": "string"},
-          "timestamp": {"type": "integer", "format": "int64"},
-          "tx_dttm": {"type": "string", "format": "date-time"},
-          "tx_hash": {"type": "string", "pattern": "^0x[a-f0-9]{64}$"},
-          "log_index": {"type": "integer"},
-          "block_number": {"type": "integer", "format": "int64"},
+          "side": {
+            "type": "string"
+          },
+          "module_kind": {
+            "type": "string",
+            "const": "Combinatorial"
+          },
+          "user_address": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{40}$"
+          },
+          "wallet_address": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{40}$"
+          },
+          "combo_condition_id": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{62}$"
+          },
+          "combo_position_id": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "combo_outcome_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "module_id": {
+            "type": "integer",
+            "const": 3
+          },
+          "amount_usdc": {
+            "type": "string"
+          },
+          "payout_usdc": {
+            "type": "string"
+          },
+          "position_amount_usdc": {
+            "type": "string"
+          },
+          "collateral_out_usdc": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tx_dttm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tx_hash": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{64}$"
+          },
+          "log_index": {
+            "type": "integer"
+          },
+          "block_number": {
+            "type": "integer",
+            "format": "int64"
+          },
           "redemption_scope": {
             "type": "string",
-            "enum": ["full", "partial", "transformation"],
+            "enum": [
+              "full",
+              "partial",
+              "transformation"
+            ],
             "description": "Terminal redemption, non-terminal post-resolution compression, or non-redemption lifecycle transformation."
           },
           "redemption_type": {
             "type": "string",
-            "enum": ["FULL_COMBO", "PARTIAL_COMBO", "COMBO_TRANSFORMATION"]
+            "enum": [
+              "FULL_COMBO",
+              "PARTIAL_COMBO",
+              "COMBO_TRANSFORMATION"
+            ]
           },
           "redemption_evidence": {
             "type": "string",
@@ -14167,28 +16110,85 @@
               "lifecycle_transformation"
             ]
           },
-          "is_full_combo_redemption": {"type": "boolean"},
-          "is_partial_combo_redemption": {"type": "boolean"},
-          "is_terminal_redemption": {"type": "boolean"},
-          "is_partial_combo_reduction": {"type": "boolean"},
-          "has_collateral_payout": {"type": "boolean"},
-          "source_event_kind": {"type": "string"},
-          "full_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$", "description": "Pre-transition full/source combo for this event; not a guessed earliest ancestor."},
-          "parent_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
-          "source_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
-          "reduced_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
-          "residual_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
-          "child_yes_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
-          "child_no_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
-          "destination_combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
-          "source_position_id": {"type": "string", "pattern": "^[0-9]+$"},
-          "destination_position_id": {"type": "string", "pattern": "^[0-9]+$"},
-          "underlying_position_id": {"type": "string", "pattern": "^[0-9]+$"},
-          "event_id": {"type": "string"},
-          "condition_index": {"type": "integer"},
-          "lineage_event_id": {"type": "string"},
-          "lineage_status": {"type": "string"},
-          "lineage": {"type": "object", "additionalProperties": true},
+          "is_full_combo_redemption": {
+            "type": "boolean"
+          },
+          "is_partial_combo_redemption": {
+            "type": "boolean"
+          },
+          "is_terminal_redemption": {
+            "type": "boolean"
+          },
+          "is_partial_combo_reduction": {
+            "type": "boolean"
+          },
+          "has_collateral_payout": {
+            "type": "boolean"
+          },
+          "source_event_kind": {
+            "type": "string"
+          },
+          "full_combo_condition_id": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{62}$",
+            "description": "Pre-transition full/source combo for this event; not a guessed earliest ancestor."
+          },
+          "parent_combo_condition_id": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{62}$"
+          },
+          "source_combo_condition_id": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{62}$"
+          },
+          "reduced_combo_condition_id": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{62}$"
+          },
+          "residual_combo_condition_id": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{62}$"
+          },
+          "child_yes_combo_condition_id": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{62}$"
+          },
+          "child_no_combo_condition_id": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{62}$"
+          },
+          "destination_combo_condition_id": {
+            "type": "string",
+            "pattern": "^0x[a-f0-9]{62}$"
+          },
+          "source_position_id": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "destination_position_id": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "underlying_position_id": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "condition_index": {
+            "type": "integer"
+          },
+          "lineage_event_id": {
+            "type": "string"
+          },
+          "lineage_status": {
+            "type": "string"
+          },
+          "lineage": {
+            "type": "object",
+            "additionalProperties": true
+          },
           "source_leg_count": {
             "type": "integer",
             "minimum": 0,
@@ -14209,18 +16209,56 @@
             "pattern": "^[0-9]+_to_[0-9]+$",
             "description": "Compact before-to-after leg count, for example 3_to_2 or 3_to_0."
           },
-          "legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
-          "full_legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
-          "source_legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
-          "remaining_legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
-          "removed_legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
-          "residual_legs": {"type": "array", "items": {"$ref": "#/components/schemas/ComboRedemptionLeg"}},
-          "remaining_combo": {"$ref": "#/components/schemas/ComboRedemptionRemainingCombo"},
+          "legs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComboRedemptionLeg"
+            }
+          },
+          "full_legs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComboRedemptionLeg"
+            }
+          },
+          "source_legs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComboRedemptionLeg"
+            }
+          },
+          "remaining_legs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComboRedemptionLeg"
+            }
+          },
+          "removed_legs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComboRedemptionLeg"
+            }
+          },
+          "residual_legs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComboRedemptionLeg"
+            }
+          },
+          "remaining_combo": {
+            "$ref": "#/components/schemas/ComboRedemptionRemainingCombo"
+          },
           "metadata_coverage": {
             "type": "string",
-            "enum": ["complete", "missing_source_legs", "missing_reduced_legs"]
+            "enum": [
+              "complete",
+              "missing_source_legs",
+              "missing_reduced_legs"
+            ]
           },
-          "parity_status": {"type": "string"}
+          "parity_status": {
+            "type": "string"
+          }
         }
       },
       "WalletActivity": {
@@ -14267,6 +16305,261 @@
             "format": "int64",
             "description": "Number of token transfers.",
             "minimum": 0
+          }
+        }
+      },
+      "CopyPnlSummary": {
+        "type": "object",
+        "properties": {
+          "wallet": {
+            "type": "string"
+          },
+          "actual_pnl_usdc": {
+            "type": "string"
+          },
+          "backtest_copy_pnl_usdc": {
+            "type": "string"
+          },
+          "slippage_amount_usdc": {
+            "type": "string"
+          },
+          "slippage_cost_rate_pct": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "toxic_for_copying": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "trade_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50000
+          },
+          "pnl_definition": {
+            "type": "string"
+          },
+          "fees_included": {
+            "type": "boolean"
+          },
+          "opening_inventory_valued": {
+            "type": "boolean"
+          },
+          "open_positions_marked_to_market": {
+            "type": "boolean"
+          },
+          "slippage_bps": {
+            "type": "object",
+            "properties": {
+              "buy": {
+                "type": "integer"
+              },
+              "sell": {
+                "type": "integer"
+              },
+              "buy_price_capped_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "buy",
+              "sell",
+              "buy_price_capped_at"
+            ]
+          },
+          "cashflows": {
+            "type": "object",
+            "properties": {
+              "buy_cost_usdc": {
+                "type": "string"
+              },
+              "sell_revenue_usdc": {
+                "type": "string"
+              },
+              "settlement_in_usdc": {
+                "type": "string"
+              },
+              "settlement_out_usdc": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "buy_cost_usdc",
+              "sell_revenue_usdc",
+              "settlement_in_usdc",
+              "settlement_out_usdc"
+            ]
+          },
+          "event_counts": {
+            "type": "object",
+            "properties": {
+              "buys": {
+                "type": "integer"
+              },
+              "sells": {
+                "type": "integer"
+              },
+              "splits": {
+                "type": "integer"
+              },
+              "merges": {
+                "type": "integer"
+              },
+              "redemptions": {
+                "type": "integer"
+              },
+              "neg_risk_conversions": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "buys",
+              "sells",
+              "splits",
+              "merges",
+              "redemptions",
+              "neg_risk_conversions"
+            ]
+          },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "selection": {
+                "type": "string"
+              },
+              "max_trades": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 50000
+              },
+              "history_truncated": {
+                "type": "boolean"
+              },
+              "window_start": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "beginning_of_indexed_history"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "inclusive_trade_cursor"
+                      },
+                      "block_number": {
+                        "type": "string"
+                      },
+                      "log_index": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "block_number",
+                      "log_index",
+                      "timestamp"
+                    ]
+                  }
+                ]
+              },
+              "first_included_event_timestamp": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "last_included_event_timestamp": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "snapshot_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "selection",
+              "max_trades",
+              "history_truncated",
+              "window_start",
+              "first_included_event_timestamp",
+              "last_included_event_timestamp",
+              "snapshot_at"
+            ]
+          },
+          "query_ms": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "wallet",
+          "actual_pnl_usdc",
+          "backtest_copy_pnl_usdc",
+          "slippage_amount_usdc",
+          "slippage_cost_rate_pct",
+          "toxic_for_copying",
+          "trade_count",
+          "pnl_definition",
+          "fees_included",
+          "opening_inventory_valued",
+          "open_positions_marked_to_market",
+          "slippage_bps",
+          "cashflows",
+          "event_counts",
+          "coverage",
+          "query_ms"
+        ]
+      },
+      "CopyPnlCache": {
+        "type": "object",
+        "required": [
+          "status",
+          "age_ms"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "hit",
+              "miss",
+              "coalesced"
+            ]
+          },
+          "age_ms": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "CopyPnlError": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
           }
         }
       }

@@ -1,142 +1,21 @@
 ---
 title: "Backtesting Overview"
-description: "Score any wallet for copy-trading quality. Walks every fill in a window, applies realistic slippage, returns a single rate that flags toxic-to-copy wallets."
+description: "Estimate copying slippage from recent wallet fills with V3 Copy PnL."
 ---
 
-The backtesting endpoint answers one question for any Polymarket wallet:
+Use V3 Copy PnL to compare gross trading cash flow with a fixed copying-slippage simulation over up to 50,000 of a wallet's most recent order fills. Polynode computes the result from its indexed data.
 
-> "If I had copied every trade this wallet made, how much would slippage friction have eaten?"
-
-You pass a wallet and a time window. We walk every fill in that window, apply a realistic 2% slippage on each buy and sell (capped at $1.00 per share for buys), settle redemptions / merges / splits at face value, and return both the wallet's actual cashflow PnL and the simulated copier's PnL. The dollar gap between them — divided by the trader's actual PnL — is the **slippage cost rate**.
-
-A wallet with a high slippage rate (>15%) profits primarily from execution speed and tight spreads. A copier following them with normal latency and slippage won't replicate the returns. We flag those as `toxic_for_copying`.
-
-## How the math works
-
-For each fill in the window:
-- **BUY**: copier pays `price × 1.02 × shares`, capped at `1.00 × shares`
-- **SELL**: copier receives `price × 0.98 × shares`
-
-For each settlement event (redemption, merge, split, neg_risk_conversion):
-- Processed at face value, no slippage applied to either side
-
-```
-actual_pnl    = -sum(buy_usd) + sum(sell_usd) + settlements_in - settlements_out
-backtest_pnl  = -sum(buy_usd × slippage_mult) + sum(sell_usd × 0.98) + settlements_in - settlements_out
-slippage_amount = actual_pnl - backtest_pnl
-slippage_cost_rate_pct = slippage_amount / abs(actual_pnl) × 100
-toxic_for_copying = slippage_cost_rate_pct > 15
-```
-
-When `abs(actual_pnl) < $1`, the rate denominator is unstable and we return `null` for the rate.
-
-## What "PnL" means here
-
-`actual_pnl_usdc` is **cashflow PnL** over the requested window: the real dollars that moved through this wallet's Safe. It does **not** mark open positions to current price the way Polymarket's website does. The response includes a `pnl_definition: "cashflow"` field to make this explicit.
-
-This is the right number for copy-trading quality scoring because a copier eventually realizes their open positions too — what matters is the friction-adjusted dollars actually banked, not paper marks that can evaporate.
-
-If you want PM-website style realized + unrealized PnL, use the [Trader PnL Series](/api-reference/enriched/trader-pnl) endpoint.
-
-### Per-position metrics: parity with Polymarket
-
-The `avg_entry_prob_weighted` and `positions_closed` fields are computed via per-position weighted-average cost basis matching across every fill, split, merge, redemption, and neg-risk conversion in the requested window — the same method used to match Polymarket's own data-api.
-
-Validation against `data-api.polymarket.com/positions` `realizedPnl` across 30 positions on diverse wallets (standard CTF + neg-risk markets):
-
-| Threshold | Match rate |
+| Endpoint | Purpose |
 |---|---|
-| sub-penny | 97 % |
-| sub-$1 | **100 %** |
-| sub-$10 | **100 %** |
+| [GET /v3/wallets/{address}/copy-pnl](/data/wallets/copy-pnl) | Calculate one wallet. |
+| [POST /v3/copy-pnl/batch](/data/wallets/copy-pnl-batch) | Calculate up to 100 input wallets, with individual results and errors. |
 
-If your wallet has positions on Polymarket's positions page, the per-position basis our matcher tracks is the same one Polymarket displays. Any drift larger than $1 indicates a data-fetching issue (e.g. very old activity outside our event-fetch window), not an algorithm difference.
+The copier pays 2% more on buys, capped at 1 USDC per share, and receives 2% less on sells. Settlement cash flows receive no simulated slippage. Read the [calculation and coverage details](/data/wallets/copy-pnl#calculation) before interpreting the result: fees and opening inventory value are excluded, and open positions are not marked to market.
 
-## Endpoints
+The fill cap is per wallet, not a fixed date window. V3 uses normal account REST limits without V2's five-second throttle. Results can be cached for 30 seconds, and large uncached batches can return individual deadline errors.
 
-**Score on demand:**
+## Legacy V2
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/v2/copy-pnl/{wallet}` | Score one wallet over a time window |
-| `POST` | `/v2/copy-pnl/batch` | Score up to 100 wallets in one call |
+The [V2 single-wallet](/api-reference/backtesting/copy-pnl) and [V2 batch](/api-reference/backtesting/batch) on-demand endpoints are deprecated. Follow the [V3 migration notes](/data/wallets/copy-pnl#migrating-from-v2); the response and selection window differ.
 
-**BYOB — Bring Your Own Backtest** (precomputed leaderboard):
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/v2/copy-pnl/wallets` | Add wallets to your private tracked-pool |
-| `DELETE` | `/v2/copy-pnl/wallets` | Remove wallets from your pool |
-| `GET` | `/v2/copy-pnl/wallets` | List wallets in your pool |
-| `GET` | `/v2/copy-pnl/leaderboard` | Sorted, filtered, paginated leaderboard over your pool |
-
-## BYOB — when to use it
-
-The on-demand endpoints (`GET /v2/copy-pnl/{wallet}` and `POST /v2/copy-pnl/batch`) are **synchronous** — you wait while we walk the wallet's history, which can take up to 30 seconds per wallet. Great for one-off lookups.
-
-**BYOB inverts that.** You hand us a list of wallets you care about; we precompute their copy-pnl scores in the background across multiple time windows; you query the resulting leaderboard with sub-second latency. Best for:
-
-- Picking leader wallets to surface in your UI from a candidate pool
-- Daily-refreshed dashboards
-- Anywhere you need "top N by backtest_copy_pnl_usdc, excluding toxic, with min trade count" answered fast
-
-**How it works:**
-
-1. POST your wallet list to `/v2/copy-pnl/wallets` (max 1000 wallets per API key)
-2. Newly-added wallets get scored immediately (on-add freshening — usually within ~30s of the add)
-3. The full pool also refreshes daily in the background
-4. Query `/v2/copy-pnl/leaderboard` to read sorted/filtered results — all from cache, sub-second
-5. Each result row includes `computed_at` so you can show freshness in your UI
-
-**Tenant isolation:** each API key has its own private pool. Pools are keyed on the SHA256 of your API key — your wallets are never visible to other customers.
-
-## Time-window options
-
-- **Default**: last 30 days (when no `from`, `to`, or `period` is provided)
-- **Preset**: `?period=7d|14d|30d|60d|90d|180d`
-- **Explicit**: `?from=YYYY-MM-DD` and/or `?to=YYYY-MM-DD` (also accepts unix seconds)
-- **Precedence**: explicit `from`/`to` beats `period` beats default
-
-For BYOB, scores are precomputed for **all six period presets** (7/14/30/60/90/180 days) so the leaderboard query just picks one.
-
-## Time-window options
-
-- **Default**: last 30 days (when no `from`, `to`, or `period` is provided)
-- **Preset**: `?period=7d|14d|30d|60d|90d|180d`
-- **Explicit**: `?from=YYYY-MM-DD` and/or `?to=YYYY-MM-DD` (also accepts unix seconds)
-- **Precedence**: explicit `from`/`to` beats `period` beats default
-
-## Limits and behavior
-
-**On-demand endpoints (`{wallet}` + `batch`):**
-- **Paid tier required** — free tier returns 403
-- **Rate limit**: 1 request per 5 seconds per API key (backtest is compute-heavy)
-- **Server budget**: 30 second hard cap on the underlying walk. Extreme high-frequency wallets (1M+ fills in the window) may return `partial: true` — pass a tighter window to fit in budget
-- **Maximum window**: `180d` (6 months). Past that, even normal wallets exceed budget
-- **Batch**: max 100 wallets per call
-
-**BYOB:**
-- **Pool size**: 1000 wallets per API key max
-- **Refresh cadence**: 24 hour periodic cycle, processed in chunks of 50 wallets spread across the day. Plus on-add freshening (new wallets scored immediately, usually within seconds).
-- **Per-wallet budget on background refresh**: 180 seconds (3 minutes) — longer than the on-demand 30s cap because the customer isn't waiting on the response
-- **Leaderboard query latency**: sub-second (all reads from cache)
-- **Freshness signal**: every result row includes `computed_at` (unix ts of when that score was last computed); top-level response includes `last_refresh` (last full-cycle complete)
-
-## FAQ: Why do two traders on the same market get different rates?
-
-The math (2% friction per fill) is identical for every wallet. What changes between traders is **how many fills they need** to extract their PnL, and how big that PnL is. The rate is `slippage / |actual_pnl|` — same numerator math, different denominators and trade counts.
-
-The cleanest rule of thumb: **the more trades it takes to extract a given dollar of PnL, the less of that PnL survives reproduction.**
-
-| Wallet | Strategy | Actual PnL | Trades | Slip $ | Rate | Copyable? |
-|---|---|---|---:|---:|---:|---|
-| `0x4924…3782` | Concentrated whale: few large positions held to resolution | $20.0M | 8K | $786K | **3.9 %** | Yes — copier captures ~$19.2M |
-| `0x37c1…74a6` | Profitable scalper: tight spreads, fast execution | +$755K | 93K | $925K | **122 %** (toxic) | No — copier ends up at -$170K |
-| `0xee61…fc18` | High-frequency loser: many fills for tiny per-trade margin | -$132K | 303K | $929K | **705 %** (toxic) | No — copier loses 7x what they did |
-
-All three traded across the same broad set of Polymarket markets in the same 30-day window. The rate does not measure "is this trader good?" — it measures **"how much of their edge survives reproduction by a copier with realistic friction?"**
-
-- **Strategic edge** (market reads, conviction, timing of large positions) → low rate, reproducible
-- **Execution edge** (HFT, queue priority, spread capture) → high rate, not reproducible
-
-A wallet can be massively profitable AND uncopyable. The rate tells you which kind they are before you wire money to copy them.
+The older BYOB tracked-wallet pool, snapshot, and leaderboard are separate legacy features. V3 Copy PnL does not replace or refresh them. Their historical references remain available in the Backtesting navigation.

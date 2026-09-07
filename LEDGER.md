@@ -3,6 +3,16 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-09-07 [codex+josh] - Document V3 Copy PnL single and batch contracts,
+  their 50,000-fill per-wallet cap, cash-flow/slippage formulas, exact coverage,
+  decimal response fields, fee/inventory exclusions, bounded batch behavior,
+  normal V3 account limits, and migration differences. Mark the two V2
+  on-demand references deprecated and link to V3. Add both V3 operations and
+  response schemas to OpenAPI and the Wallet navigation. JSON parsing,
+  Mintlify build validation, broken-link checks and whitespace checks passed.
+  API release PR #147 is awaiting green CI and deployment; docs publication
+  will follow successful public endpoint proof.
+
 - 2026-09-03 [codex+josh] - Removed only the stale V1 settlement REST helper
   examples from the SDK overview and language guides. Every non-settlement V1
   and V2 page, navigation entry, and OpenAPI operation remains unchanged; the
