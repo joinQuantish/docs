@@ -3,6 +3,24 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-09-07 [codex+josh] — COPY PNL EXPANSION DOCUMENTATION LIVE. Source
+  `5aef0989aba95ef07783ce6802b2cbca6a15a17b`, PR #82, merged as
+  `d0635873542b7bd148eb3911b8830f6d922fcab6`. Mintlify publication passed at
+  04:10:20 UTC. Both V3 references and both V2 migration references return
+  HTTP 200 with the new scope/history guidance. Public OpenAPI exactly matches
+  merged source for both V3 operations and the expanded CopyPnlSummary schema.
+  MDX/OpenAPI JSON examples and real API responses validate against that schema;
+  Mintlify build, link and whitespace gates passed.
+
+  The associated API is live from Polynode-Dev/v3-api PR #150, merge
+  `7681919bdfff0fe254b742d9acc4220c47485159`, green main CI `34081431988`,
+  artifact SHA256 `88197595fb8c1f4405e510b3052a7f2042dc0b0889566dec96ac7902fbc7c26e`.
+  Eighteen public checks passed, including 81,596 complete fills, dated full
+  windows, explicit automatic fallback, ordered duplicate/mixed batches,
+  cache, validation and neighboring routes. The five-input automatic batch
+  with three distinct valid wallets returned in 2,263ms. Realized context
+  remains explicitly lifetime-scoped and is not rewound by date filters.
+
 - 2026-09-07 [codex+josh] — Document V3 Copy PnL date filters, recent/automatic/
   strict-full history modes, bounded explicit fallback and separately scoped
   lifetime realized-PnL context. Update single/batch examples, OpenAPI parameter
