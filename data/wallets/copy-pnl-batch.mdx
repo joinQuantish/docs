@@ -1,0 +1,56 @@
+---
+title: "Copy PnL Batch"
+openapi: "POST /v3/copy-pnl/batch"
+description: "Calculate copying-slippage cash flow for up to 100 wallets in one request."
+---
+
+Uses the same [Copy PnL calculation, coverage, and response fields](/data/wallets/copy-pnl) for each wallet. This replaces the deprecated [V2 on-demand batch](/api-reference/backtesting/batch).
+
+## Request
+
+```bash
+curl -X POST "https://api.polynode.dev/v3/copy-pnl/batch" \
+  -H "x-api-key: pn_live_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  --data '{"wallets":["0xab03f377164c3726d498e56f7a9398cd8eb74494","0x3708cef9f92678df15a0473e36c45d68a16cdaf9"],"max_trades":50000}'
+```
+
+| Body field | Required | Description |
+|---|---|---|
+| `wallets` | Yes | Array of 1–100 wallet addresses. |
+| `max_trades` | No | Integer from 1 to 50,000, applied **per wallet**. Default 50,000. |
+
+Send parameters in a JSON object, with a body no larger than 16 KiB. Unknown fields, legacy date parameters, and invalid batch sizes return `400`. An invalid wallet within an otherwise valid batch produces an error for that row.
+
+Results preserve input order and duplicate entries. Duplicate normalized wallets with the same cap share calculation work. Wallets may span different dates and use different snapshots. The whole HTTP batch counts as one API request under normal V3 account limits; the old V2 five-second throttle does not apply.
+
+## Response and partial failures
+
+The envelope contains `results`, `requested`, `succeeded`, `failed`, `max_trades`, and `elapsed_ms`.
+
+| Result field | Successful row | Failed row |
+|---|---|---|
+| `wallet` | Normalized wallet address | Original input |
+| `status` | `ok` | `error` |
+| `data` | Full single-wallet summary | Absent |
+| `cache` | `status` and `age_ms` | Absent |
+| `error` | Absent | Object with `code` and `message` |
+| `status_code` | Absent | Per-wallet HTTP-equivalent status, such as `400`, `422`, `503`, or `504` |
+
+A valid batch returns HTTP `200` even if some or all wallets fail. Always inspect `status` on every result. For example, an invalid wallet row is:
+
+```json
+{
+  "wallet": "invalid-address",
+  "status": "error",
+  "error": {
+    "code": "invalid_wallet",
+    "message": "Wallet must be a 0x-prefixed, 40-digit hexadecimal address."
+  },
+  "status_code": 400
+}
+```
+
+Work is scheduled with bounded concurrency. Each calculation has a ten-second database budget, and the batch has a 25-second queue/result deadline inside the public request timeout. A maximum-size batch is accepted, but 100 uncached heavy wallets are not guaranteed to finish in that deadline. Start with batches of 5–10 for interactive use. Keep successful results and retry only transient failures in smaller batches; changing `max_trades` changes the analysis window.
+
+No wallet receives a silently reduced fill cap or a partial financial total. The endpoint does not create a background job or update V2 BYOB wallets.

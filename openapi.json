@@ -19,6 +19,336 @@
     }
   ],
   "paths": {
+    "/v3/wallets/{address}/copy-pnl": {
+      "get": {
+        "summary": "Copy PnL",
+        "operationId": "getV3CopyPnl",
+        "tags": [
+          "V3 Copy PnL"
+        ],
+        "description": "Gross spot trading cash flow and fixed 2% copying-slippage simulation over up to 50000 recent wallet-owned order fills. Excludes fees, opening inventory valuation, and mark-to-market. Normal paid V3 limits apply.",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{40}$"
+            }
+          },
+          {
+            "name": "max_trades",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50000,
+              "default": 50000
+            },
+            "description": "Maximum recent fills, per wallet. No date filters."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete bounded wallet calculation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "cache",
+                    "elapsed_ms"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CopyPnlSummary"
+                    },
+                    "cache": {
+                      "$ref": "#/components/schemas/CopyPnlCache"
+                    },
+                    "elapsed_ms": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "wallet": "0x1111111111111111111111111111111111111111",
+                    "actual_pnl_usdc": "3.000000",
+                    "backtest_copy_pnl_usdc": "2.740000",
+                    "slippage_amount_usdc": "0.260000",
+                    "slippage_cost_rate_pct": "8.666667",
+                    "toxic_for_copying": false,
+                    "trade_count": 2,
+                    "pnl_definition": "cashflow",
+                    "fees_included": false,
+                    "opening_inventory_valued": false,
+                    "open_positions_marked_to_market": false,
+                    "slippage_bps": {
+                      "buy": 200,
+                      "sell": 200,
+                      "buy_price_capped_at": "1.000000"
+                    },
+                    "cashflows": {
+                      "buy_cost_usdc": "5.000000",
+                      "sell_revenue_usdc": "8.000000",
+                      "settlement_in_usdc": "0.000000",
+                      "settlement_out_usdc": "0.000000"
+                    },
+                    "event_counts": {
+                      "buys": 1,
+                      "sells": 1,
+                      "splits": 0,
+                      "merges": 0,
+                      "redemptions": 0,
+                      "neg_risk_conversions": 0
+                    },
+                    "coverage": {
+                      "selection": "latest_wallet_order_fills",
+                      "max_trades": 50000,
+                      "history_truncated": false,
+                      "window_start": {
+                        "type": "beginning_of_indexed_history"
+                      },
+                      "first_included_event_timestamp": 1788652800,
+                      "last_included_event_timestamp": 1788739200,
+                      "snapshot_at": "2026-09-07T01:00:00.000Z"
+                    },
+                    "query_ms": 800
+                  },
+                  "cache": {
+                    "status": "miss",
+                    "age_ms": 800
+                  },
+                  "elapsed_ms": 805
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/CopyPnlError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Accounting or work limit; no partial total",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/CopyPnlError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Temporarily unavailable or busy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/CopyPnlError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Calculation or queue deadline exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/CopyPnlError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v3/copy-pnl/batch": {
+      "post": {
+        "summary": "Copy PnL Batch",
+        "operationId": "postV3CopyPnlBatch",
+        "tags": [
+          "V3 Copy PnL"
+        ],
+        "description": "Up to 100 input wallets, ordered per-wallet results and errors, 50000 fills maximum per wallet. HTTP 200 can contain failed rows. 25-second batch deadline; large uncached batches may not complete every wallet. One metered HTTP request.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "wallets"
+                ],
+                "properties": {
+                  "wallets": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Invalid addresses produce per-row errors."
+                  },
+                  "max_trades": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50000,
+                    "default": 50000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ordered results; inspect status on every row",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "results",
+                    "requested",
+                    "succeeded",
+                    "failed",
+                    "max_trades",
+                    "elapsed_ms"
+                  ],
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "wallet",
+                              "status",
+                              "data",
+                              "cache"
+                            ],
+                            "properties": {
+                              "wallet": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "const": "ok"
+                              },
+                              "data": {
+                                "$ref": "#/components/schemas/CopyPnlSummary"
+                              },
+                              "cache": {
+                                "$ref": "#/components/schemas/CopyPnlCache"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "wallet",
+                              "status",
+                              "error",
+                              "status_code"
+                            ],
+                            "properties": {
+                              "wallet": {},
+                              "status": {
+                                "const": "error"
+                              },
+                              "error": {
+                                "$ref": "#/components/schemas/CopyPnlError"
+                              },
+                              "status_code": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "requested": {
+                      "type": "integer"
+                    },
+                    "succeeded": {
+                      "type": "integer"
+                    },
+                    "failed": {
+                      "type": "integer"
+                    },
+                    "max_trades": {
+                      "type": "integer"
+                    },
+                    "elapsed_ms": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "$ref": "#/components/schemas/CopyPnlError"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "tags": [
@@ -11349,6 +11679,261 @@
   },
   "components": {
     "schemas": {
+      "CopyPnlSummary": {
+        "type": "object",
+        "properties": {
+          "wallet": {
+            "type": "string"
+          },
+          "actual_pnl_usdc": {
+            "type": "string"
+          },
+          "backtest_copy_pnl_usdc": {
+            "type": "string"
+          },
+          "slippage_amount_usdc": {
+            "type": "string"
+          },
+          "slippage_cost_rate_pct": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "toxic_for_copying": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "trade_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50000
+          },
+          "pnl_definition": {
+            "type": "string"
+          },
+          "fees_included": {
+            "type": "boolean"
+          },
+          "opening_inventory_valued": {
+            "type": "boolean"
+          },
+          "open_positions_marked_to_market": {
+            "type": "boolean"
+          },
+          "slippage_bps": {
+            "type": "object",
+            "properties": {
+              "buy": {
+                "type": "integer"
+              },
+              "sell": {
+                "type": "integer"
+              },
+              "buy_price_capped_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "buy",
+              "sell",
+              "buy_price_capped_at"
+            ]
+          },
+          "cashflows": {
+            "type": "object",
+            "properties": {
+              "buy_cost_usdc": {
+                "type": "string"
+              },
+              "sell_revenue_usdc": {
+                "type": "string"
+              },
+              "settlement_in_usdc": {
+                "type": "string"
+              },
+              "settlement_out_usdc": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "buy_cost_usdc",
+              "sell_revenue_usdc",
+              "settlement_in_usdc",
+              "settlement_out_usdc"
+            ]
+          },
+          "event_counts": {
+            "type": "object",
+            "properties": {
+              "buys": {
+                "type": "integer"
+              },
+              "sells": {
+                "type": "integer"
+              },
+              "splits": {
+                "type": "integer"
+              },
+              "merges": {
+                "type": "integer"
+              },
+              "redemptions": {
+                "type": "integer"
+              },
+              "neg_risk_conversions": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "buys",
+              "sells",
+              "splits",
+              "merges",
+              "redemptions",
+              "neg_risk_conversions"
+            ]
+          },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "selection": {
+                "type": "string"
+              },
+              "max_trades": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 50000
+              },
+              "history_truncated": {
+                "type": "boolean"
+              },
+              "window_start": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "beginning_of_indexed_history"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "inclusive_trade_cursor"
+                      },
+                      "block_number": {
+                        "type": "string"
+                      },
+                      "log_index": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "block_number",
+                      "log_index",
+                      "timestamp"
+                    ]
+                  }
+                ]
+              },
+              "first_included_event_timestamp": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "last_included_event_timestamp": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "snapshot_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "selection",
+              "max_trades",
+              "history_truncated",
+              "window_start",
+              "first_included_event_timestamp",
+              "last_included_event_timestamp",
+              "snapshot_at"
+            ]
+          },
+          "query_ms": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "wallet",
+          "actual_pnl_usdc",
+          "backtest_copy_pnl_usdc",
+          "slippage_amount_usdc",
+          "slippage_cost_rate_pct",
+          "toxic_for_copying",
+          "trade_count",
+          "pnl_definition",
+          "fees_included",
+          "opening_inventory_valued",
+          "open_positions_marked_to_market",
+          "slippage_bps",
+          "cashflows",
+          "event_counts",
+          "coverage",
+          "query_ms"
+        ]
+      },
+      "CopyPnlCache": {
+        "type": "object",
+        "required": [
+          "status",
+          "age_ms"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "hit",
+              "miss",
+              "coalesced"
+            ]
+          },
+          "age_ms": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "CopyPnlError": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "ApiKeyResponse": {
         "type": "object",
         "required": [
