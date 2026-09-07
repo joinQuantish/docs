@@ -1,7 +1,7 @@
 ---
 title: "Copy PnL"
 openapi: "GET /v3/wallets/{address}/copy-pnl"
-description: "Estimate copying slippage over up to 50,000 of a wallet's most recent order fills."
+description: "Estimate copying slippage with date filters, optional full history, and lifetime realized-PnL context."
 ---
 
 Calculate a wallet's gross trading cash flow and the cash flow of a simulated copier using Polynode's indexed fills and settlement events. This replaces the deprecated [V2 on-demand endpoint](/api-reference/backtesting/copy-pnl).
@@ -17,10 +17,26 @@ curl -H "x-api-key: pn_live_YOUR_KEY" \
 |---|---|---|---|
 | `address` | Path | Required | `0x` followed by 40 hexadecimal characters. Normalized to lowercase. |
 | `max_trades` | Query | `50000` | Integer from `1` to `50000`. Maximum number of recent wallet-owned order fills to include. |
+| `history` | Query | `recent` | `recent`, `auto`, or `full`. In `auto`, `max_trades` is the fallback cap; in `full`, it is the initial scan size, not a limit on the returned fill count. |
+| `period` | Query | None | `7d`, `14d`, `30d`, `60d`, `90d`, or `180d`, ending at `to` or the calculation snapshot. |
+| `from` | Query | None | Inclusive start, as Unix seconds or `YYYY-MM-DD` at UTC midnight. Overrides `period`. |
+| `to` | Query | Snapshot | Exclusive end, in the same formats. `from` must be earlier than `to`. |
 
 The cap counts **fills**, not positions, tokens, transactions, or distinct orders. The calculation selects the wallet's own signed-order fill records, including its taker-order execution record. It avoids counting that wallet again as the counterparty to other matched orders. This attribution is different from requesting both address roles on the raw trades endpoint.
 
-There is no fixed 90-day window. Active wallets can reach 50,000 fills quickly; quieter wallets can cover years. A wallet with fewer fills returns all of its indexed fills. `coverage.history_truncated` tells you whether older fills were excluded. The endpoint never silently lowers your requested cap to produce a result.
+There is no default date window. With `history=recent`, active wallets can reach 50,000 fills quickly; quieter wallets can cover years. Date filters apply before the fill cap, including to settlement events. A wallet with fewer matching fills returns all matching indexed fills. `coverage.history_truncated` tells you whether older fills **inside the requested date window** were excluded by the fill selection.
+
+## History modes
+
+- `recent`: return up to `max_trades` recent fills. This preserves the original V3 default.
+- `auto`: first complete the recent calculation, then spend up to two additional seconds extending toward all matching history, within the overall calculation deadline. Return full history if it completes; otherwise return the original completed recent calculation with an explicit fallback reason.
+- `full`: require all matching indexed history. If the work or time limit is reached, return an error instead of a recent-window fallback.
+
+Full-history work is bounded at 500,000 fills and 100,000 settlement events per wallet. Both `auto` and `full` can return more than 50,000 fills. `max_trades` remains limited to 50,000 and controls the initial recent calculation. A successful `full` result contains all matching history, never the first 500,000 fills of a larger history.
+
+For example, request a complete historical month with `?history=full&from=2026-08-01&to=2026-09-01`, or use `?history=auto&period=90d` to allow an explicit recent-window fallback.
+
+Read `coverage.requested_history`, `served_history` (`full` or `recent`), and `fallback_reason` on every result. `served_history=full` means the requested date window is complete; `lifetime_history_included` is true only when no date filters or fill truncation restrict the indexed history. Automatic fallback reasons are `query_timeout`, `query_work_limit`, `activity_limit_exceeded`, or `history_limit_exceeded`. If the initial recent calculation fails, there is no valid fallback and the request returns an error.
 
 ## Calculation
 
@@ -41,7 +57,15 @@ The 2% assumption is relative to each execution price. It is a fixed screening m
 `pnl_definition` is `cashflow`. Fees are excluded, opening inventory is not valued, and open positions are not marked to market. Sales or redemptions of inventory acquired before the selected window can therefore make this differ substantially from realized or total portfolio PnL. Deposits, withdrawals, and token transfers are outside this calculation. It covers spot order fills, not combo or perpetual trading.
 </Warning>
 
-If older fills are excluded, settlement inclusion begins at the exact block and log of the first included fill, inclusive. Otherwise, all indexed settlement history is eligible, including events before the first fill. A wallet with settlement activity and no fills can still return a cash-flow result. The upper bound is the database snapshot used for that wallet's calculation.
+If older matching fills are excluded, settlement inclusion begins at the exact block and log of the first included fill, inclusive. Otherwise, all indexed settlement history within the requested dates is eligible, including events before the first fill. A wallet with settlement activity and no fills can still return a cash-flow result. Explicit timestamps are checked exactly; the database snapshot bounds which events are visible.
+
+## Realized-PnL context
+
+`realized_pnl_context` provides the wallet's stored lifetime realized profit and position counts alongside the cash-flow simulation. Its `total_realized_pnl_usdc` is actual realized profit from the wallet summary; it is not the copier's simulated realized profit and is not used in the slippage or copying flag formulas.
+
+This context always has `scope: "lifetime_wallet"` and `date_filters_applied: false`. It is **not rewound by `from` or `to`** and is not a realized-profit result for a historical backtest window. Read `updated_at`, `updated_block`, and `refresh_age_seconds` to see the summary's last update. `latest_indexed_fill_block` supports the `freshness` indicator: `behind_indexed_fills`, `no_newer_indexed_fills`, `unknown`, or `unavailable`. No newer fills does not prove all settlement or valuation inputs are current.
+
+If no summary is available, `available` is false and its profit/count/update fields are null, rather than zero. `position_count` and `open_positions` describe the stored lifetime summary. They do not reproduce V2's count of positions with nonzero realized PnL.
 
 ## Response
 
@@ -73,10 +97,31 @@ The following is an illustrative two-fill calculation: a buy costing 5 USDC foll
       "selection": "latest_wallet_order_fills",
       "max_trades": 50000,
       "history_truncated": false,
+      "requested_history": "recent",
+      "served_history": "full",
+      "fallback_reason": null,
+      "lifetime_history_included": true,
       "window_start": {"type": "beginning_of_indexed_history"},
+      "window_end": {"type": "database_snapshot", "snapshot_at": "2026-09-07T01:00:00.000Z"},
       "first_included_event_timestamp": 1788652800,
       "last_included_event_timestamp": 1788739200,
       "snapshot_at": "2026-09-07T01:00:00.000Z"
+    },
+    "applied_filters": {"period": null, "from": null, "to": 1788742800},
+    "realized_pnl_context": {
+      "available": true,
+      "scope": "lifetime_wallet",
+      "date_filters_applied": false,
+      "source": "api.wallet_pnl_current",
+      "pnl_definition": "realized",
+      "total_realized_pnl_usdc": "3.000000",
+      "position_count": 1,
+      "open_positions": 0,
+      "updated_block": "93350000",
+      "updated_at": "2026-09-07T00:59:00Z",
+      "refresh_age_seconds": 60,
+      "latest_indexed_fill_block": "93350000",
+      "freshness": "no_newer_indexed_fills"
     },
     "query_ms": 800
   },
@@ -85,9 +130,9 @@ The following is an illustrative two-fill calculation: a buy costing 5 USDC foll
 }
 ```
 
-Money and percentages are decimal strings with six fractional digits. Event timestamps are Unix seconds. `snapshot_at` is a UTC timestamp. For a truncated history, `window_start` instead contains `type: "inclusive_trade_cursor"`, `block_number` and `log_index` as strings, and `timestamp` in Unix seconds. An empty wallet has zero amounts and `null` first/last event timestamps.
+Money and percentages are decimal strings with six fractional digits. Event timestamps are Unix seconds. `snapshot_at` is a UTC timestamp. For a truncated history, `window_start` contains `type: "inclusive_trade_cursor"`, `block_number` and `log_index` as strings, and `timestamp` in Unix seconds. A complete window with a start date uses `type: "inclusive_timestamp"` and `timestamp`. `window_end` is either an `exclusive_timestamp` or a `database_snapshot`. `applied_filters` reports the resolved date bounds; without explicit dates, its `to` records the snapshot time in whole seconds. An empty wallet has zero cash-flow amounts and `null` first/last event timestamps.
 
-Results may be cached for 30 seconds after calculation. `cache.status` is `miss`, `hit`, or `coalesced` (shared in-progress work). `cache.age_ms` measures time since the calculation's snapshot; `data.query_ms` describes that calculation, while `elapsed_ms` describes the current request. Each wallet has its own snapshot, including in a batch.
+Results may be cached for 30 seconds after calculation, separately for each wallet and set of options. `cache.status` is `miss`, `hit`, or `coalesced` (shared in-progress work). `cache.age_ms` measures time since the calculation's snapshot; `data.query_ms` describes that calculation, including any attempted history expansion, while `elapsed_ms` describes the current request. Each wallet has its own snapshot, including in a batch. Relative periods are anchored to that calculation; supply explicit `from` and `to` to fix the same date window across wallets.
 
 ## Access and errors
 
@@ -95,9 +140,10 @@ Available on paid V3 plans under the account's normal [REST limits](/guides/rate
 
 | HTTP status | Error code | Meaning |
 |---|---|---|
-| `400` | `invalid_wallet`, `invalid_max_trades`, `unknown_parameter` | Invalid input. Legacy date filters and trade-detail flags are unsupported. |
+| `400` | `invalid_wallet`, `invalid_max_trades`, `invalid_history`, `invalid_period`, `invalid_timestamp`, `invalid_window`, `duplicate_parameter`, `unknown_parameter` | Invalid input. Trade-detail flags remain unsupported. |
 | `422` | `activity_limit_exceeded` | More than 100,000 settlement events fall in the selected window. No partial financial total is returned. |
 | `422` | `unsupported_accounting_data`, `query_work_limit` | Unsupported accounting inputs or calculation work limit reached. No partial total is returned. |
+| `422` | `history_limit_exceeded` | More than 500,000 fills are required for full history. No partial total is returned. |
 | `503` | `server_busy`, `database_unavailable` | Capacity or data access is temporarily unavailable. |
 | `504` | `query_timeout` | The calculation or queue deadline was exceeded. |
 
@@ -105,4 +151,6 @@ Authentication, plan access, monthly usage, and account rate-limit failures use 
 
 ## Migrating from V2
 
-Use `GET /v3/wallets/{address}/copy-pnl` or [V3 Copy PnL Batch](/data/wallets/copy-pnl-batch). Read the summary from `data`. Remove `period`, `from`, `to`, and `include_trades`; V3 rejects them. V3 does not return V2's per-position weighted-average metrics or individual trade arrays. V2's BYOB tracked-wallet pool, snapshot, and leaderboard are not migrated by these endpoints.
+Use `GET /v3/wallets/{address}/copy-pnl` or [V3 Copy PnL Batch](/data/wallets/copy-pnl-batch). Read the summary from `data`; batch input uses `wallets` instead of `addresses`. `period`, `from`, and `to` are supported. V2 defaulted to 30 days; send `period=30d` explicitly to request that window in V3. Use `history=full` when the whole requested window is required, or `auto` when an explicit recent-window fallback is acceptable.
+
+Read actual lifetime realized PnL from `realized_pnl_context.total_realized_pnl_usdc`, with the scope and freshness limitations above. This does not restore V2's window-specific weighted-average position metrics. `include_trades`, individual trade arrays, weighted entry/holding metrics, and V2's BYOB tracked-wallet pool, snapshot, and leaderboard remain outside these endpoints.

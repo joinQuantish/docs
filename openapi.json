@@ -26,7 +26,7 @@
         "tags": [
           "V3 Copy PnL"
         ],
-        "description": "Gross spot trading cash flow and fixed 2% copying-slippage simulation over up to 50000 recent wallet-owned order fills. Excludes fees, opening inventory valuation, and mark-to-market. Normal paid V3 limits apply.",
+        "description": "Gross spot trading cash flow and fixed 2% copying-slippage simulation, with exact date filters, recent/automatic/strict full-history modes, and separately scoped lifetime realized-PnL context. Default recent cap 50000; full-history work limit 500000 fills. Normal paid V3 limits apply. Fees and inventory valuation are excluded from the cash-flow simulation.",
         "parameters": [
           {
             "name": "address",
@@ -46,7 +46,73 @@
               "maximum": 50000,
               "default": 50000
             },
-            "description": "Maximum recent fills, per wallet. No date filters."
+            "description": "Recent/fallback fill cap per wallet; initial scan size in full mode. Auto/full may return more fills, up to the 500000-fill work limit."
+          },
+          {
+            "name": "history",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recent",
+                "auto",
+                "full"
+              ],
+              "default": "recent"
+            },
+            "description": "recent keeps the cap; auto attempts full history with an explicit recent fallback; full requires complete matching history or returns an error."
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "14d",
+                "30d",
+                "60d",
+                "90d",
+                "180d"
+              ]
+            },
+            "description": "Optional window ending at to or the calculation snapshot. No default period. Explicit from overrides period."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 253402300799
+                },
+                {
+                  "type": "string",
+                  "pattern": "^(\\d+|\\d{4}-\\d{2}-\\d{2})$"
+                }
+              ]
+            },
+            "description": "Inclusive start: Unix seconds or YYYY-MM-DD at UTC midnight. Applies to fills and settlement events, not lifetime realized-PnL context."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 253402300799
+                },
+                {
+                  "type": "string",
+                  "pattern": "^(\\d+|\\d{4}-\\d{2}-\\d{2})$"
+                }
+              ]
+            },
+            "description": "Exclusive end: Unix seconds or YYYY-MM-DD at UTC midnight. Defaults to the calculation snapshot."
           }
         ],
         "responses": {
@@ -109,12 +175,40 @@
                       "selection": "latest_wallet_order_fills",
                       "max_trades": 50000,
                       "history_truncated": false,
+                      "requested_history": "recent",
+                      "served_history": "full",
+                      "fallback_reason": null,
+                      "lifetime_history_included": true,
                       "window_start": {
                         "type": "beginning_of_indexed_history"
+                      },
+                      "window_end": {
+                        "type": "database_snapshot",
+                        "snapshot_at": "2026-09-07T01:00:00.000Z"
                       },
                       "first_included_event_timestamp": 1788652800,
                       "last_included_event_timestamp": 1788739200,
                       "snapshot_at": "2026-09-07T01:00:00.000Z"
+                    },
+                    "applied_filters": {
+                      "period": null,
+                      "from": null,
+                      "to": 1788742800
+                    },
+                    "realized_pnl_context": {
+                      "available": true,
+                      "scope": "lifetime_wallet",
+                      "date_filters_applied": false,
+                      "source": "api.wallet_pnl_current",
+                      "pnl_definition": "realized",
+                      "total_realized_pnl_usdc": "3.000000",
+                      "position_count": 1,
+                      "open_positions": 0,
+                      "updated_block": "93350000",
+                      "updated_at": "2026-09-07T00:59:00Z",
+                      "refresh_age_seconds": 60,
+                      "latest_indexed_fill_block": "93350000",
+                      "freshness": "no_newer_indexed_fills"
                     },
                     "query_ms": 800
                   },
@@ -209,7 +303,7 @@
         "tags": [
           "V3 Copy PnL"
         ],
-        "description": "Up to 100 input wallets, ordered per-wallet results and errors, 50000 fills maximum per wallet. HTTP 200 can contain failed rows. 25-second batch deadline; large uncached batches may not complete every wallet. One metered HTTP request.",
+        "description": "Up to 100 input wallets with shared history/date options, ordered per-wallet results, lifetime realized-PnL context, and explicit per-wallet full/recent coverage. HTTP 200 can contain failed rows. 25-second batch deadline; 10-second calculation budget. Auto expansion has at most two additional seconds within that budget. Default recent cap 50000 fills; full-history work limit 500000. One metered HTTP request.",
         "requestBody": {
           "required": true,
           "content": {
@@ -234,7 +328,58 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 50000,
-                    "default": 50000
+                    "default": 50000,
+                    "description": "Recent/fallback fill cap per wallet; initial scan size in full mode. Auto/full may return more fills, up to the 500000-fill work limit."
+                  },
+                  "history": {
+                    "type": "string",
+                    "enum": [
+                      "recent",
+                      "auto",
+                      "full"
+                    ],
+                    "default": "recent",
+                    "description": "recent keeps the cap; auto attempts full history with an explicit recent fallback; full requires complete matching history or returns an error."
+                  },
+                  "period": {
+                    "type": "string",
+                    "enum": [
+                      "7d",
+                      "14d",
+                      "30d",
+                      "60d",
+                      "90d",
+                      "180d"
+                    ],
+                    "description": "Optional window ending at to or the calculation snapshot. No default period. Explicit from overrides period."
+                  },
+                  "from": {
+                    "oneOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 253402300799
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^(\\d+|\\d{4}-\\d{2}-\\d{2})$"
+                      }
+                    ],
+                    "description": "Inclusive start: Unix seconds or YYYY-MM-DD at UTC midnight. Applies to fills and settlement events, not lifetime realized-PnL context."
+                  },
+                  "to": {
+                    "oneOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 253402300799
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^(\\d+|\\d{4}-\\d{2}-\\d{2})$"
+                      }
+                    ],
+                    "description": "Exclusive end: Unix seconds or YYYY-MM-DD at UTC midnight. Defaults to the calculation snapshot."
                   }
                 }
               }
@@ -11709,7 +11854,7 @@
           "trade_count": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 50000
+            "maximum": 500000
           },
           "pnl_definition": {
             "type": "string"
@@ -11845,6 +11990,21 @@
                       "log_index",
                       "timestamp"
                     ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "inclusive_timestamp"
+                      },
+                      "timestamp": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "timestamp"
+                    ]
                   }
                 ]
               },
@@ -11863,6 +12023,73 @@
               "snapshot_at": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "requested_history": {
+                "type": "string",
+                "enum": [
+                  "recent",
+                  "auto",
+                  "full"
+                ]
+              },
+              "served_history": {
+                "type": "string",
+                "enum": [
+                  "recent",
+                  "full"
+                ],
+                "description": "Full means all indexed events matching the requested dates, not necessarily lifetime history."
+              },
+              "fallback_reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  null,
+                  "query_timeout",
+                  "query_work_limit",
+                  "activity_limit_exceeded",
+                  "history_limit_exceeded"
+                ]
+              },
+              "lifetime_history_included": {
+                "type": "boolean"
+              },
+              "window_end": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "exclusive_timestamp"
+                      },
+                      "timestamp": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "timestamp"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "database_snapshot"
+                      },
+                      "snapshot_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "snapshot_at"
+                    ]
+                  }
+                ]
               }
             },
             "required": [
@@ -11872,11 +12099,131 @@
               "window_start",
               "first_included_event_timestamp",
               "last_included_event_timestamp",
-              "snapshot_at"
+              "snapshot_at",
+              "requested_history",
+              "served_history",
+              "fallback_reason",
+              "lifetime_history_included",
+              "window_end"
             ]
           },
           "query_ms": {
             "type": "integer"
+          },
+          "realized_pnl_context": {
+            "type": "object",
+            "properties": {
+              "available": {
+                "type": "boolean"
+              },
+              "scope": {
+                "const": "lifetime_wallet"
+              },
+              "date_filters_applied": {
+                "const": false
+              },
+              "source": {
+                "const": "api.wallet_pnl_current"
+              },
+              "pnl_definition": {
+                "const": "realized"
+              },
+              "total_realized_pnl_usdc": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Actual lifetime realized profit as stored at the recorded update; not filtered by from/to and not used in the slippage score."
+              },
+              "position_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "open_positions": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "updated_block": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "updated_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "refresh_age_seconds": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "latest_indexed_fill_block": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "freshness": {
+                "type": "string",
+                "enum": [
+                  "behind_indexed_fills",
+                  "no_newer_indexed_fills",
+                  "unknown",
+                  "unavailable"
+                ],
+                "description": "Compares summary update block with latest indexed fill. Does not certify settlement/valuation freshness."
+              }
+            },
+            "required": [
+              "available",
+              "scope",
+              "date_filters_applied",
+              "source",
+              "pnl_definition",
+              "total_realized_pnl_usdc",
+              "position_count",
+              "open_positions",
+              "updated_block",
+              "updated_at",
+              "refresh_age_seconds",
+              "latest_indexed_fill_block",
+              "freshness"
+            ]
+          },
+          "applied_filters": {
+            "type": "object",
+            "properties": {
+              "period": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "from": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "to": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "period",
+              "from",
+              "to"
+            ]
           }
         },
         "required": [
@@ -11895,7 +12242,9 @@
           "cashflows",
           "event_counts",
           "coverage",
-          "query_ms"
+          "query_ms",
+          "realized_pnl_context",
+          "applied_filters"
         ]
       },
       "CopyPnlCache": {
