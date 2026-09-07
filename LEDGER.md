@@ -3,6 +3,21 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-09-07 [codex+josh] - COPY PNL DOCUMENTATION LIVE. Source
+  `f9f3c10c4a24fa90f044df2d27466bfe78bb172d` merged through PR #80 as
+  `9bbfabdca7f2a7dcd773cfd088632039ff3da096`. Mintlify publication completed
+  successfully at 01:51:54 UTC. Both new V3 references and both V2 on-demand
+  references return HTTP 200 with their expected contract/deprecation links.
+  Public OpenAPI exactly matches merged main for both V3 operations and all
+  three new response schemas. Navigation includes both V3 wallet pages.
+  JSON parsing, Mintlify build validation, and broken-link checks pass.
+  The deployed API comes from Polynode-Dev/v3-api PR #147, merge
+  `6cea86ac31f72ebaad7ef021370bfc4dc6c478ea`, green main CI `34074006876`.
+  Public tests confirmed 50,000 fills per wallet, six uncached wallets in a
+  4.9-second batch, a separate uncached wallet in 1.2 seconds, and the
+  documented cache, validation, duplicate/mixed batch, and authentication
+  behavior. These measured samples are not a latency or throughput SLA.
+
 - 2026-09-07 [codex+josh] - Document V3 Copy PnL single and batch contracts,
   their 50,000-fill per-wallet cap, cash-flow/slippage formulas, exact coverage,
   decimal response fields, fee/inventory exclusions, bounded batch behavior,
