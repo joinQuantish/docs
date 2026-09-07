@@ -3,6 +3,16 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-09-07 [codex+josh] — Document V3 Copy PnL date filters, recent/automatic/
+  strict-full history modes, bounded explicit fallback and separately scoped
+  lifetime realized-PnL context. Update single/batch examples, OpenAPI parameter
+  and response schemas, and V2 migration links. State the 50,000 recent/fallback
+  cap, 500,000 full-history work limit, settlement/time limits and per-wallet
+  batch coverage. Explain that realized context is not rewound by historical
+  date filters and can lag indexed fills. JSON/schema examples, Mintlify build
+  validation, broken-link checks and whitespace checks passed. Publication
+  follows the associated API's green CI, merge and live verification.
+
 - 2026-09-07 [codex+josh] - COPY PNL DOCUMENTATION LIVE. Source
   `f9f3c10c4a24fa90f044df2d27466bfe78bb172d` merged through PR #80 as
   `9bbfabdca7f2a7dcd773cfd088632039ff3da096`. Mintlify publication completed

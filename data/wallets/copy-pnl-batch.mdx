@@ -18,11 +18,16 @@ curl -X POST "https://api.polynode.dev/v3/copy-pnl/batch" \
 | Body field | Required | Description |
 |---|---|---|
 | `wallets` | Yes | Array of 1–100 wallet addresses. |
-| `max_trades` | No | Integer from 1 to 50,000, applied **per wallet**. Default 50,000. |
+| `max_trades` | No | Integer from 1 to 50,000, applied **per wallet**. Default 50,000. Recent/fallback cap; initial scan size in full mode. |
+| `history` | No | `recent` (default), `auto`, or `full`, applied independently to each wallet. |
+| `period` | No | `7d`, `14d`, `30d`, `60d`, `90d`, or `180d`. No default date window. |
+| `from`, `to` | No | Inclusive start and exclusive end. Unix seconds or UTC `YYYY-MM-DD` dates. `from` overrides `period`. |
 
-Send parameters in a JSON object, with a body no larger than 16 KiB. Unknown fields, legacy date parameters, and invalid batch sizes return `400`. An invalid wallet within an otherwise valid batch produces an error for that row.
+Send parameters in a JSON object, with a body no larger than 16 KiB. Unknown fields, invalid options, and invalid batch sizes return `400`. An invalid wallet within an otherwise valid batch produces an error for that row.
 
-Results preserve input order and duplicate entries. Duplicate normalized wallets with the same cap share calculation work. Wallets may span different dates and use different snapshots. The whole HTTP batch counts as one API request under normal V3 account limits; the old V2 five-second throttle does not apply.
+Results preserve input order and duplicate entries. Duplicate normalized wallets with the same options share calculation work. Wallets use different snapshots; relative periods are anchored to each calculation, so use explicit `from` and `to` to fix the same dates across the batch. The whole HTTP batch counts as one API request under normal V3 account limits; the old V2 five-second throttle does not apply.
+
+Every successful row includes separately scoped lifetime `realized_pnl_context`. Date filters apply to the copying simulation, not to that stored lifetime context. In `auto`, some wallets may return full history and others the completed recent-window fallback. Inspect `data.coverage.served_history`, `history_truncated`, and `fallback_reason` for every row. In `full`, incomplete histories become individual errors. See [history modes and work limits](/data/wallets/copy-pnl#history-modes).
 
 ## Response and partial failures
 
@@ -53,4 +58,4 @@ A valid batch returns HTTP `200` even if some or all wallets fail. Always inspec
 
 Work is scheduled with bounded concurrency. Each calculation has a ten-second database budget, and the batch has a 25-second queue/result deadline inside the public request timeout. A maximum-size batch is accepted, but 100 uncached heavy wallets are not guaranteed to finish in that deadline. Start with batches of 5–10 for interactive use. Keep successful results and retry only transient failures in smaller batches; changing `max_trades` changes the analysis window.
 
-No wallet receives a silently reduced fill cap or a partial financial total. The endpoint does not create a background job or update V2 BYOB wallets.
+Automatic expansion has up to two additional seconds per wallet within the existing ten-second calculation budget. It never silently lowers the requested fallback cap or returns a partly calculated financial total. The endpoint does not create a background job or update V2 BYOB wallets.

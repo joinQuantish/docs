@@ -3,7 +3,7 @@ title: "Backtesting Overview"
 description: "Estimate copying slippage from recent wallet fills with V3 Copy PnL."
 ---
 
-Use V3 Copy PnL to compare gross trading cash flow with a fixed copying-slippage simulation over up to 50,000 of a wallet's most recent order fills. Polynode computes the result from its indexed data.
+Use V3 Copy PnL to compare gross trading cash flow with a fixed copying-slippage simulation over recent fills or an explicitly selected date window, with optional full-history calculation. Polynode computes the result from its indexed data.
 
 | Endpoint | Purpose |
 |---|---|
@@ -12,7 +12,7 @@ Use V3 Copy PnL to compare gross trading cash flow with a fixed copying-slippage
 
 The copier pays 2% more on buys, capped at 1 USDC per share, and receives 2% less on sells. Settlement cash flows receive no simulated slippage. Read the [calculation and coverage details](/data/wallets/copy-pnl#calculation) before interpreting the result: fees and opening inventory value are excluded, and open positions are not marked to market.
 
-The fill cap is per wallet, not a fixed date window. V3 uses normal account REST limits without V2's five-second throttle. Results can be cached for 30 seconds, and large uncached batches can return individual deadline errors.
+The default recent cap is 50,000 fills per wallet. Date filters, automatic history expansion with an explicit fallback, and strict full-history mode are available. Each response also includes separately scoped lifetime realized-PnL context with update metadata. V3 uses normal account REST limits without V2's five-second throttle. Results can be cached for 30 seconds, and large uncached batches can return individual deadline errors.
 
 ## Legacy V2
 
