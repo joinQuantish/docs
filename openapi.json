@@ -5569,7 +5569,7 @@
           "V3 Wallets"
         ],
         "summary": "Wallet P&L",
-        "description": "Get wallet profit and loss. Default/all-time mode returns current portfolio P&L. Time-windowed mode returns weighted-average-cost realized state at the inclusive end boundary minus realized state immediately before the inclusive start boundary; it is not a historical all-time-portfolio snapshot.",
+        "description": "Get wallet profit and loss. Default/all-time mode returns current portfolio P&L. Time-windowed mode returns weighted-average-cost realized state at the inclusive end boundary minus realized state immediately before the inclusive start boundary; it is not a historical all-time-portfolio snapshot. For standard spot market positions, P&L excludes separately reported trader-paid fees, rebates, and rewards; net_realized_pnl means combined realized gains and losses, not an after-fee return. Optional Combo P&L includes its own recorded exchange fill fee; this does not change the standard spot component.",
         "operationId": "v3_wallet_pnl",
         "parameters": [
           {
@@ -5648,7 +5648,7 @@
           "V3 Wallets"
         ],
         "summary": "Wallet P&L time series",
-        "description": "Get wallet P&L buckets. Default/all-time mode returns a single current all-time bucket. Explicit time filters sum recorded weighted-average-cost realized-P&L event deltas; this event series is distinct from the boundary-state calculation used by time-filtered Wallet P&L and is not a historical all-time-portfolio snapshot.",
+        "description": "Get wallet P&L buckets. Default/all-time mode returns a single current all-time bucket. Explicit time filters sum recorded weighted-average-cost realized-P&L event deltas; this event series is distinct from the boundary-state calculation used by time-filtered Wallet P&L and is not a historical all-time-portfolio snapshot. For standard spot market positions, P&L excludes separately reported trader-paid fees, rebates, and rewards; net_realized_pnl means combined realized gains and losses, not an after-fee return.",
         "operationId": "v3_wallet_pnl_events",
         "parameters": [
           {
@@ -6244,7 +6244,7 @@
           "V3 Combos"
         ],
         "summary": "Combo P&L leaderboard",
-        "description": "Rank eligible wallets by Combo realized P&L over 1-day, 7-day, 30-day, or custom half-open windows, or by All Time realized, unrealized, or total P&L. Each signed ExchangeV3 order is attributed once to its maker; maker fees are included, and wrapped redemptions require an exact paired underlying redemption. Wallets with incomplete direct cost basis, incomplete arbitrary raw-transfer basis, or without a required current mark are excluded and disclosed in coverage; they are never returned as zero-P&L rows. This route does not accept category or tag filters.",
+        "description": "Rank eligible wallets by Combo realized P&L over 1-day, 7-day, 30-day, or custom half-open windows, or by All Time realized, unrealized, or total P&L. Each signed ExchangeV3 order is attributed once to its maker; the collateral-denominated exchange fee recorded in OrderFilled.fee increases BUY cost or reduces SELL proceeds, and wrapped redemptions require an exact paired underlying redemption. Wallets with incomplete direct cost basis, incomplete arbitrary raw-transfer basis, or without a required current mark are excluded and disclosed in coverage; they are never returned as zero-P&L rows. This route does not accept category or tag filters. The signed-order maker is the order owner, not necessarily the liquidity supplier. The fill fee has no component breakdown; gas, separate application or escrow charges, and rebates or rewards outside that field are excluded. This Combo fee treatment does not apply to standard spot or perps P&L.",
         "operationId": "v3_combo_pnl_leaderboard",
         "parameters": [
           {

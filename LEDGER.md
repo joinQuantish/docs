@@ -3,6 +3,19 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-09-09 [codex+josh] — Clarify PnL fee scope in Wallet P&L, Wallet
+  Summary, P&L Time Series, Combo Leaderboard, and the existing related
+  OpenAPI operations. Standard spot PnL excludes separately reported fees,
+  rebates, and rewards; net does not mean after fees. Optional accounting
+  fields do not change that calculation. Combo includes only the recorded
+  exchange fill fee in BUY cost or SELL proceeds, with no claim that gas or
+  separate charges/credits are included. Preserve distinct Combo and perps
+  scope. The Combo rule was checked against deployed accounting and a matching
+  onchain collateral transfer; standard scope follows the product contract
+  and owner clarification. Mintlify build, broken-link, JSON, and whitespace
+  checks pass. No API accounting behavior changed.
+
+
 - 2026-09-07 [codex+josh] — COPY PNL EXPANSION DOCUMENTATION LIVE. Source
   `5aef0989aba95ef07783ce6802b2cbca6a15a17b`, PR #82, merged as
   `d0635873542b7bd148eb3911b8830f6d922fcab6`. Mintlify publication passed at

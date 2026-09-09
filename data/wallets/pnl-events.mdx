@@ -6,6 +6,11 @@ description: "Realized P&L bucketed by hour, day, week, or month — chart-ready
 
 Returns wallet P&L buckets for charting. With `period`, `after`, or `before`, each row is a fixed time window (hour, day, week, or month). A running `cumulative_pnl` is included so the response can be plotted directly.
 
+These standard spot P&L buckets exclude separately reported trader-paid
+fees, rebates, and rewards. `cumulative_pnl` accumulates the returned P&L;
+it is not an after-fee account return. See [Wallet P&L accounting scope](/data/wallets/pnl)
+and [Fees Paid](/data/wallets/fees-paid) for the separate fee data.
+
 Event-series mode is separate from the boundary-state calculation used by time-filtered [`GET /v3/wallets/{address}/pnl`](/data/wallets/pnl). Each bucket sums recorded weighted-average-cost realized-P&L event deltas. It is not a historical all-time-portfolio snapshot: holdings that are only bought and held can contribute `0`, even when a resolved holding contributes profit to the current all-time P&L. Baseline corrections without an event timestamp are not placed into a bucket.
 
 Without an explicit time filter, the endpoint returns a single all-time summary bucket that matches [`GET /v3/wallets/{address}/pnl`](/data/wallets/pnl).

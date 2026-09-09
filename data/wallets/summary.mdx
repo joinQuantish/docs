@@ -6,6 +6,17 @@ description: "Get a complete P&L summary for any Polymarket wallet in USD. Reali
 
 Returns a full profile for a single wallet in USD. Includes realized P&L, unrealized P&L from open positions, gross profit and loss, win/loss record, and total trading volume.
 
+<Note>
+For standard spot market positions, P&L excludes separately reported
+trader-paid fees, rebates, and rewards. `net_realized_pnl` combines realized
+gains and losses; "net" does not mean after fees. Setting
+`include_accounting_summary=true` adds separate accounting fields without
+deducting them from P&L. With `include_combos=true`, the added
+[Combo component](/data/combos/leaderboard) already includes its recorded
+exchange fill fee. Keep component and time scopes aligned when combining
+accounting amounts, and do not deduct that Combo fee twice.
+</Note>
+
 ## Request
 
 ```
