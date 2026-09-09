@@ -13,6 +13,23 @@ time-window realized P&L = realized state at or before `before`
 
 Both boundaries are inclusive. A state change timestamped exactly at `after` or `before` is included.
 
+## Fees and accounting scope
+
+For **standard spot market positions**, realized and unrealized P&L exclude
+separately reported trader-paid fees, rebates, and rewards. `net_realized_pnl`
+means the combined realized gains and losses, not an after-fee return.
+Use [Fees Paid](/data/wallets/fees-paid), [Rebates](/data/wallets/rebates), and
+the optional [Wallet Summary accounting fields](/data/wallets/summary) when
+you need those separate amounts.
+
+`include_combos=true` adds a component with different fee treatment:
+[Combo P&L](/data/combos/leaderboard) includes each signed order's recorded
+exchange fill fee in its cost basis or sale proceeds. That does not make the
+standard spot component fee-inclusive. Perps has its own endpoint accounting
+model; do not infer its fee or funding treatment from either component.
+
+## Time-window behavior
+
 The two modes have different counting semantics: all-time `wins` and `losses` are current position counts; time-windowed `wins`, `losses`, and the legacy `events` field count positions whose realized state changed. Time-windowed responses declare `count_type: "positions_changed"`. Do not compare the counts directly.
 
 <Warning>

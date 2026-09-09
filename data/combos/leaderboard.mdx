@@ -137,6 +137,23 @@ fee increases BUY cost or reduces SELL proceeds. Router and auto-redemptions
 are admitted only when their paired `PositionRedeemed` record proves the
 redeemed size and payout.
 
+### Which fees are included?
+
+The included fee is specifically the collateral-denominated exchange fee
+recorded in each signed order's `OrderFilled.fee`. It increases BUY cost or
+reduces SELL proceeds, so do not deduct that fee again from Combo P&L.
+"Maker" here identifies the signed-order owner; it does not by itself
+establish who supplied liquidity.
+
+This field does not provide a breakdown of fee components. Gas, separately
+collected application or escrow charges, and rebates or rewards outside
+this recorded fill fee are not included by this calculation. Do not describe
+Combo P&L as including every cost or credit.
+
+Standard spot [Wallet P&L](/data/wallets/pnl) excludes separately reported
+fees, rebates, and rewards. Perps uses a separate accounting model. The Combo
+rule must not be applied to either product's P&L.
+
 Open Combo balances are marked with the latest Combo fill. Terminal Combo
 positions are marked at `1` for a winning payout or `0` for a losing payout.
 The endpoint does not replace a missing open mark with zero.
