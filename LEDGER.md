@@ -3,6 +3,21 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-09-09 [codex+josh] — PNL FEE CLARIFICATIONS LIVE. Source
+  `b180538ebec07ff4bee1a4113d0f6810b576eb11` merged through PR #84 as
+  `6b95c1dafda5b868f34262dcdcd3ebf13b1ee4e5`. Mintlify publication passed
+  at 00:11:47 UTC after local build, link, JSON, and whitespace gates passed.
+  Wallet P&L, Wallet Summary, P&L Time Series, and Combo Leaderboard return
+  HTTP 200 with the scoped fee guidance. The three changed public OpenAPI
+  operations are structurally identical to merged source. The deployed GTM
+  documentation proxy read the current standard and Combo pages successfully.
+  A non-Slack test under the real worker configuration cited those pages and
+  correctly distinguished standard fee exclusions from Combo's recorded fill
+  fee, without asserting unverified perps semantics. The associated GTM
+  source is merged and live from PR #27,
+  `d3abd4df6be4b7238ffbf2eb242c9d780a0b9ad3`. No API accounting changed.
+
+
 - 2026-09-09 [codex+josh] — Clarify PnL fee scope in Wallet P&L, Wallet
   Summary, P&L Time Series, Combo Leaderboard, and the existing related
   OpenAPI operations. Standard spot PnL excludes separately reported fees,
