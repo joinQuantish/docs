@@ -43,6 +43,10 @@ polynode's WebSocket is the fastest way to get Polymarket trade data. Every fill
   **Save ~60% bandwidth with compression.** Add `&compress=zlib` to your connection URL and decompress binary frames with standard `inflateRaw`. Zero latency impact, recommended for production. [See compression docs →](/websocket/compression)
 </Tip>
 
+<Note>
+**Polymarket Protocol V2 markets** arrive on the same streams as the same event types, with a few optional fields. No subscription changes are needed. See [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
+</Note>
+
 ## Quick start
 
 <Steps>
