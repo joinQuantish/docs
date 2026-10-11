@@ -126,14 +126,14 @@ Older SDK versions keep working on current markets. Polymarket rejects their ord
 
 ### Approvals
 
-Protocol V2 markets use new approval targets. The first order on a Protocol V2 market sets up what it needs, once. This is gasless for Safe and deposit wallets; an EOA pays a small amount of POL gas. To set them up ahead of time in TypeScript, call `ensureReady({ protocolV2: true })`. Existing approvals are not changed or revoked.
+Protocol V2 markets use new approval targets. The first order on a Protocol V2 market sets up what it needs, once. This is gasless for Safe and deposit wallets; an EOA pays a small amount of POL gas. To set them up ahead of time, call `trader.ensureReady(signer, { protocolV2: true })` (TypeScript), `trader.ensure_ready(signer, protocol_v2=True)` (Python) or `trader.ensure_protocol_v2_ready()` (Rust). Existing approvals are not changed or revoked.
 
 | Approval | What it allows |
 | --- | --- |
 | pUSD allowance for ExchangeV3 | Buying: the exchange takes pUSD when your order fills |
 | PositionManager approval for ExchangeV3 | Selling: the exchange moves your shares when your order fills |
 | pUSD allowance and PositionManager approval for the Router | Split, merge and redeem |
-| PositionManager approval for AutoRedeemer | Automatic redemption by Polymarket. Only granted if you turn it on with `enableAutoRedeem()` |
+| PositionManager approval for AutoRedeemer | Automatic redemption by Polymarket. Only granted if you turn it on with `enableAutoRedeem()` (`enable_auto_redeem()` in Python and Rust) |
 
 ### Split, merge and redeem
 

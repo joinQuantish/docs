@@ -196,7 +196,7 @@ For deposit wallet users, V2 orders use `signatureType: 3` (POLY_1271). The sign
 
 The final wrapped signature is 317 bytes (634 hex chars + "0x" prefix = 636 total).
 
-Orders on [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2) use the same `signatureType: 3` wrapping. Only the inner order domain differs: version `"3"` with ExchangeV3 (`0xe3333700cA9d93003F00f0F71f8515005F6c00Aa`) as the verifying contract. The SDK handles this from TypeScript 0.15.0, Python 0.15.0 and Rust 0.18.0.
+Orders on [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2) use the same `signatureType: 3` wrapping. Only the exchange domain differs: version `"3"` with ExchangeV3 (`0xe3333700cA9d93003F00f0F71f8515005F6c00Aa`) as the verifying contract, so `appDomainSeparator` is ExchangeV3's. The SDK handles this from TypeScript 0.15.0, Python 0.15.0 and Rust 0.18.0.
 
 The `TypedDataSign` struct includes the deposit wallet's identity:
 - `name`: `"DepositWallet"`
