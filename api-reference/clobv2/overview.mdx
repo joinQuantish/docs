@@ -3,6 +3,10 @@ title: "CLOB v2 API"
 description: "Paid REST endpoints for Polymarket CLOB v2 data — fills, positions, candles, builder leaderboard, neg-risk events. Enriched with market metadata."
 ---
 
+import ProtocolV2AprilNote from '/snippets/protocol-v2-april-note.mdx';
+
+<ProtocolV2AprilNote />
+
 REST endpoints for Polymarket CLOB v2 data. Every endpoint returns JSON enriched with market metadata (question, slug, outcome label, image, condition_id) baked in — you never need to look up a market name separately.
 
 This is the **v2-only** surface. The existing [`/v2/onchain/*`](/api-reference/onchain/trades) endpoints cover v1 Polymarket. Use `/clobv2/*` for anything that needs v2 fills, positions, builder attribution, or neg-risk events.
