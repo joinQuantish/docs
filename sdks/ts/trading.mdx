@@ -11,7 +11,7 @@ wallet/user-owned flow needs only:
 For optional zero-builder attribution backed by the signing wallet, see [User-owned execution](/sdks/user-owned-execution). For an injected-wallet application, follow [Connect Wallet to order](/sdks/user-owned-web-app).
 
 ```bash
-npm install polynode-sdk@^0.14.2 viem
+npm install polynode-sdk@^0.15.0 viem
 ```
 
 For a server-signer trader, add the CLOB client and SQLite only when that
@@ -35,6 +35,10 @@ does not bundle that dependency tree: its only direct runtime dependency is
 `viem`. Pin the relayer client to the SDK's declared peer version, keep relayer
 destinations fixed, and review upstream updates before changing that pin.
 </Warning>
+
+<Note>
+This version also trades Polymarket Protocol V2 markets, a separate and newer change from the V2 exchange default below, with the same calls and no config change. See [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
+</Note>
 
 Polymarket V2 is the default. You do not need to set `exchangeVersion`, but setting it explicitly can make a migration easier to review:
 

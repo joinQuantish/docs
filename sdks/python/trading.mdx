@@ -10,8 +10,12 @@ Install the optional trading dependencies. Quote the extra so shells such as zsh
 For optional zero-builder attribution backed by the signing wallet, see [User-owned execution](/sdks/user-owned-execution). For an injected-wallet application, follow [Connect Wallet to order](/sdks/user-owned-web-app).
 
 ```bash
-python -m pip install "polynode[trading]>=0.14.1,<0.15"
+python -m pip install "polynode[trading]>=0.15.0,<0.16"
 ```
+
+<Note>
+This version also trades Polymarket Protocol V2 markets, a separate and newer change from the V2 exchange default below, with the same calls and no config change. See [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
+</Note>
 
 Polymarket V2 is the default:
 
