@@ -19,7 +19,7 @@ Starting **August 7, 2026 at 00:00 UTC**, affected Polymarket short-form markets
 `30` and `60` are lookback windows, not publication intervals. Read [Polymarket's August 7 announcement](https://x.com/polymarketdevs/status/2082813706996772881), the [PolyNode transition guide](/crypto/twap), and [Polymarket's Chainlink TWAP guide](https://docs.polymarket.com/market-data/chainlink-twap) for the schedule and underlying price semantics.
 
 <Info>
-  Use TypeScript `0.12.0+`, Python `0.12.0+`, or Rust `0.15.0+`. Earlier versions do not implement the complete interval-to-TWAP mapping and rotation behavior documented here.
+  Use TypeScript `0.12.0+`, Python `0.12.0+`, or Rust `0.15.0+`. Earlier versions do not implement the complete interval-to-TWAP mapping and rotation behavior documented here. Markets that open on [Polymarket Protocol V2](/guides/polymarket-protocol-v2) need TypeScript `0.15.0+`, Python `0.15.0+`, or Rust `0.18.0+`, which select the right outcome ids for them.
 </Info>
 
 ## Managed stream

@@ -1,0 +1,170 @@
+---
+title: "Polymarket Protocol V2 Markets"
+sidebarTitle: "Protocol V2 Markets"
+description: "What Polymarket Protocol V2 is, when new markets move to it, and what it means for your polynode integration. For most integrations, nothing changes."
+icon: "cubes"
+---
+
+<Info>
+**Two different "V2"s.** Polymarket has used the name "V2" for two separate upgrades. This page is about the second one.
+
+| | April 2026 exchange upgrade | Polymarket Protocol V2 |
+| --- | --- | --- |
+| What changed | The exchange contracts, the order format and the collateral (pUSD) | Where positions live, the exchange every market type trades on, and the ids of new markets |
+| Which markets | All markets | Newly created markets |
+| When | Live since April 28, 2026 | Test markets since October 5, 2026. New markets from around November 2, 2026 (tentative, per Polymarket) |
+| How polynode marks it | `exchange_version: "v2"` on WebSocket trades | `protocol_version: "v2"` on REST rows and WebSocket events |
+| Guide | [V2 Migration](/guides/v2-migration) | This page |
+
+In these docs, Polymarket Protocol V2 is always written out in full.
+</Info>
+
+## What it is
+
+Polymarket Protocol V2 is Polymarket's new on-chain system for markets. Polymarket introduced it to run every market type (yes/no, multi-outcome and combos) on one position system and one exchange:
+
+- positions live in a new position ledger, **PositionManager**, instead of Conditional Tokens;
+- every market type trades on one exchange, **ExchangeV3**;
+- split, merge and redeem go through Polymarket's **Router**;
+- each market and outcome gets a new id, and results are reported as shares of 1,000,000.
+
+Polymarket's combos already run on these contracts, and polynode's [combo stream](/websocket/combos) and combo routes keep working as documented.
+
+**Why the name repeats.** Polymarket's market data labels markets on the original position system (Conditional Tokens) as version `v1` and markets on the new system as version `v2`, hence Protocol V2. The April 2026 upgrade was also called "V2" because it replaced the original exchange contracts. They are different layers: April changed the exchange and kept every market and token id, while Protocol V2 changes the position system for new markets.
+
+**What does not change.** Markets that exist today stay on the current system and keep their ids. Existing holdings are not converted. Collateral is still pUSD.
+
+Polymarket's own description is in its guide [Migrate to Polymarket Protocol V2](https://docs.polymarket.com/migrate/polymarket-v2/overview). This page covers what it means for polynode.
+
+## Dates
+
+These are Polymarket's dates.
+
+| Date | What happens |
+| --- | --- |
+| October 5, 2026 | Polymarket's Protocol V2 test markets start trading |
+| October 30, 2026 | The test market period ends |
+| Around November 2, 2026 (tentative) | Newly created markets move to Polymarket Protocol V2 |
+
+polynode handles Protocol V2 markets whenever they appear, so if Polymarket moves a date, there is nothing extra for you to do.
+
+## Do I need to do anything?
+
+| You use | What to do |
+| --- | --- |
+| REST API | Nothing. Same endpoints, same response shapes. |
+| WebSocket | Nothing. Same subscriptions, same event types. |
+| SDK, reading REST or WebSocket data only | Nothing. Upgrading is optional. |
+| SDK short-form market discovery or redemption watcher | Upgrade before November 2, 2026, so these helpers handle Protocol V2 markets. |
+| SDK trading: orders, split, merge or redeem | Upgrade before November 2, 2026. |
+| Browser or user-owned trading | Upgrade the SDK in both your browser and your server code. |
+| Your own database | Store outcome ids as strings (up to 78 digits). |
+
+SDK versions with Polymarket Protocol V2 support:
+
+| SDK | Version |
+| --- | --- |
+| TypeScript | `polynode-sdk` 0.15.0 (npm) |
+| Rust | `polynode` 0.18.0 (crates.io) |
+| Python | `polynode` 0.15.1 (PyPI) |
+
+## How to recognise a Protocol V2 market
+
+REST rows and WebSocket events for a Protocol V2 market carry two extra fields. They are absent on every other market.
+
+| Field | Value |
+| --- | --- |
+| `protocol_version` | `"v2"` |
+| `module` | `"binary"` for yes/no markets, `"neg_risk"` for multi-outcome markets |
+
+Use these fields, not the shape or length of an id, to tell markets apart. The SDKs also provide `getMarketProtocol(id)` (TypeScript) and `get_market_protocol(id)` (Python, Rust), which return `"v1"` or `"v2"`.
+
+### Ids
+
+- **Outcome ids** (`token_id` and similar fields) are decimal strings, as today. Protocol V2 ids are usually larger numbers, up to 78 digits. Never parse them as JavaScript numbers or floats.
+- **Condition ids** are 66 characters (`0x` plus 64 hex characters), as today. Polymarket's contracts and some Polymarket APIs show a Protocol V2 condition id in a shorter 31-byte form (`0x` plus 62 hex characters); the 66-character form is the same value followed by `00`. polynode routes and WebSocket filters that take a condition id accept either form.
+- The combo stream and combo routes keep their existing 31-byte combo condition ids.
+
+## REST API
+
+Protocol V2 markets appear in the same routes as every other market, with the same fields and units. Rows for a Protocol V2 market add:
+
+| Field | Value |
+| --- | --- |
+| `protocol_version` | `"v2"` |
+| `module` | `"binary"` or `"neg_risk"` |
+| `structural_condition_id` | The market's Protocol V2 condition id (66 characters) |
+| `neg_risk_event_id` | Multi-outcome markets only: the Protocol V2 event id (60 characters, so it cannot be mistaken for a condition id) |
+| `payouts_ppm` | Resolved markets only: the exact result as shares of 1,000,000, for example `[1000000, 0]` |
+
+`condition_id` equals `structural_condition_id`, with one exception. Polymarket lets a holder move a position from a current market into Protocol V2. Such a position keeps the current market's `condition_id`, so its old and new rows group under one market, and `structural_condition_id` shows its Protocol V2 id.
+
+Results keep today's form in `payout_numerators` and `payout_denominator`. For example, `[1, 0]` with `1` means the first outcome won, and `[1, 1]` with `2` is a 50/50 result. `payouts_ppm` carries the same result exactly.
+
+While Polymarket's test markets run, they appear in wallet, trade and market-id routes, but not in market listings or search. Their slugs start with `polyv2`.
+
+## WebSocket
+
+Protocol V2 markets arrive on the same streams as the same event types. Events for a Protocol V2 market add:
+
+| Field | On | Value |
+| --- | --- | --- |
+| `protocol_version` | Every event for a Protocol V2 market | `"v2"` |
+| `module` | Every event for a Protocol V2 market | `"binary"` or `"neg_risk"` |
+| `exchange_version` | [`trade`](/websocket/events/trade) events and [`settlement`](/websocket/events/settlement) `trades[]` | `"v3"`: settled on ExchangeV3. `"v2"` keeps meaning the April 2026 exchange. |
+| `payouts_ppm` | [`oracle`](/websocket/events/oracle) results | The exact result as shares of 1,000,000, for example `[1000000, 0]` |
+| `derived` | [`oracle`](/websocket/events/oracle) results | `true` when a multi-outcome result follows from the rest of its event, not from its own report |
+
+`exchange` keeps its two existing values (`ctf_exchange` for yes/no markets and `neg_risk_ctf_exchange` for multi-outcome markets), so typed decoders, including older SDK versions, keep working.
+
+Protocol V2 results arrive as `oracle` events with `oracle_type: "condition_resolution"`. `payouts` uses today's form (`[1, 0]`, `[0, 1]`, or `[1, 1]` for a 50/50 result). On these events `question_id` carries the condition id and `adapter_address` the market's Polymarket module contract.
+
+The order book stream keeps its message format and adds Protocol V2 markets as Polymarket lists them.
+
+## Trading with the SDK
+
+After upgrading, place orders with the same calls as before. The SDK checks each market's protocol (once, then cached) and signs Protocol V2 orders for ExchangeV3 with EIP-712 domain version `"3"`. The order fields are unchanged. If the SDK cannot tell which protocol a market uses, it refuses to sign and returns a retryable error, so no order is sent.
+
+Older SDK versions keep working on current markets. Polymarket rejects their orders on Protocol V2 markets, and no funds move.
+
+### Approvals
+
+Protocol V2 markets use new approval targets. The first order on a Protocol V2 market sets up what it needs, once. This is gasless for Safe and deposit wallets; an EOA pays a small amount of POL gas. To set them up ahead of time, call `trader.ensureReady(signer, { protocolV2: true })` (TypeScript), `trader.ensure_ready(signer, protocol_v2=True)` (Python) or `trader.ensure_protocol_v2_ready()` (Rust). Existing approvals are not changed or revoked.
+
+| Approval | What it allows |
+| --- | --- |
+| pUSD allowance for ExchangeV3 | Buying: the exchange takes pUSD when your order fills |
+| PositionManager approval for ExchangeV3 | Selling: the exchange moves your shares when your order fills |
+| pUSD allowance and PositionManager approval for the Router | Split, merge and redeem |
+| PositionManager approval for AutoRedeemer | Automatic redemption by Polymarket. Only granted if you turn it on with `enableAutoRedeem()` (`enable_auto_redeem()` in Python and Rust) |
+
+### Split, merge and redeem
+
+On Protocol V2 markets, split, merge and redeem go through Polymarket's Router; the SDK picks the right path for each market. For redeem, outcome index `0` is the first outcome (Yes, or Up) and `1` is the second. Converting negative-risk positions is not available for Protocol V2 markets; the SDK returns a clear error instead. See [Position management](/guides/position-management).
+
+### Contract addresses (Polygon)
+
+| Contract | Address |
+| --- | --- |
+| ExchangeV3 | `0xe3333700cA9d93003F00f0F71f8515005F6c00Aa` |
+| PositionManager | `0x006F54F7f9A22e0000CC2AB60031000000ae9fEF` |
+| Router | `0x12121212006e4CD160D18e3f00711DA5c3372600` |
+| AutoRedeemer | `0xa1200000d0002264C9a1698e001292D00E1b00af` |
+| pUSD (unchanged) | `0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB` |
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Is this the same as the V2 migration in April?">
+    No. April's upgrade replaced the exchange and moved collateral to pUSD for every market. Polymarket Protocol V2 replaces the position system for newly created markets. See the table at the top of this page.
+  </Accordion>
+  <Accordion title="Do my existing positions change?">
+    No. Current markets keep their ids and stay on the current system. If a holder chooses to move a position into Protocol V2, polynode shows it as a Protocol V2 row for the same market (see the REST API section above).
+  </Accordion>
+  <Accordion title="My order on a new market fails with an older SDK">
+    Upgrade to the versions above. Older versions sign for the April exchange, which Protocol V2 markets do not use. Polymarket rejects those orders and no funds move.
+  </Accordion>
+  <Accordion title="Why does a condition id sometimes have 64 characters?">
+    That is the 31-byte form Polymarket's contracts use. polynode returns the 66-character form and accepts both. Combo condition ids keep their existing 31-byte form.
+  </Accordion>
+</AccordionGroup>

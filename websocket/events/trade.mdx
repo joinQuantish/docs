@@ -24,7 +24,7 @@ A `trade` event is one of three ways polynode exposes the same fill data, depend
 </Warning>
 
 <Info>
-**V2 compatible.** Trade events work identically for both V1 and V2 Polymarket exchanges. The `fee` field is decoded the same way for V2 trades. No changes to your subscription or parsing logic are needed.
+**Every Polymarket exchange.** Trade events work the same for the original exchange (V1), Polymarket's April 2026 exchange upgrade (V2) and ExchangeV3, which settles Polymarket Protocol V2 markets. The `fee` field is decoded the same way for all of them. No changes to your subscription or parsing logic are needed; `exchange_version` tells them apart.
 </Info>
 
 ```json
@@ -100,7 +100,7 @@ A `trade` event is one of three ways polynode exposes the same fill data, depend
     </ResponseField>
 
     <ResponseField name="exchange" type="string" required>
-      `"ctf_exchange"` or `"neg_risk_ctf_exchange"`.
+      `"ctf_exchange"` or `"neg_risk_ctf_exchange"`. Polymarket Protocol V2 markets use the same two values: `"ctf_exchange"` for yes/no markets and `"neg_risk_ctf_exchange"` for multi-outcome markets.
     </ResponseField>
 
     <ResponseField name="maker" type="string" required>
@@ -144,7 +144,7 @@ A `trade` event is one of three ways polynode exposes the same fill data, depend
     </ResponseField>
 
     <ResponseField name="exchange_version" type="string">
-      Exchange contract version: `"v2"` for trades on Polymarket's V2 exchange contracts. Absent for V1 trades (current default).
+      Exchange contract version: `"v2"` for trades settled on Polymarket's April 2026 exchange contracts (CTF Exchange V2), `"v3"` for trades settled on ExchangeV3, which settles Polymarket Protocol V2 markets. Absent for trades on the original V1 exchange.
     </ResponseField>
 
     <ResponseField name="market_title" type="string">
@@ -181,6 +181,14 @@ A `trade` event is one of three ways polynode exposes the same fill data, depend
 
     <ResponseField name="condition_id" type="string">
       Market condition ID (CTF contract identifier). Enriched from metadata.
+    </ResponseField>
+
+    <ResponseField name="protocol_version" type="string">
+      `"v2"` on events for Polymarket Protocol V2 markets. Absent on every other market. See [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
+    </ResponseField>
+
+    <ResponseField name="module" type="string">
+      Polymarket Protocol V2 markets only: `"binary"` for yes/no markets, `"neg_risk"` for multi-outcome markets. Absent on every other market.
     </ResponseField>
 
     <ResponseField name="event_slug" type="string">

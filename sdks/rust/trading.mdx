@@ -7,11 +7,15 @@ icon: "arrow-right-arrow-left"
 
 ```toml Cargo.toml
 [dependencies]
-polynode = { version = "0.17.1", features = ["trading"] }
+polynode = { version = "0.18.0", features = ["trading"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
 For optional zero-builder attribution backed by the signing wallet, see [User-owned execution](/sdks/user-owned-execution). For an injected-wallet application, follow [Connect Wallet to order](/sdks/user-owned-web-app).
+
+<Note>
+This version also trades Polymarket Protocol V2 markets, a separate and newer change from the V2 exchange default below, with the same calls and no config change. See [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
+</Note>
 
 Polymarket V2 is the default:
 

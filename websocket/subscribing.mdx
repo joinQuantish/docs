@@ -339,7 +339,7 @@ All filters are optional. Omit the `filters` object entirely to receive all even
 </ParamField>
 
 <ParamField body="condition_ids" type="string[]">
-  Filter by Polymarket condition IDs. Resolved to token IDs at subscribe time.
+  Filter by Polymarket condition IDs. Resolved to token IDs at subscribe time. Polymarket Protocol V2 condition IDs are accepted in the 66-character form or in Polymarket's 31-byte form (`0x` plus 62 hex characters).
   ```json
   "condition_ids": ["0x123abc..."]
   ```

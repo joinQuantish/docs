@@ -10,7 +10,7 @@ The core polynode event. A Polymarket settlement detected before or after on-cha
 **Pending settlements arrive 3–5 seconds before on-chain confirmation (1–2 Polygon blocks).** This is the data that makes polynode unique.
 
 <Info>
-**V2 compatible.** Settlement events work identically for both V1 and V2 Polymarket exchanges. V2 settlements are detected automatically — no subscription changes needed. The event format, trade fields, and enrichment are the same. V2 settlement events may include `condition_id` directly from the V2 matchOrders calldata. See the [V2 Migration Guide](/guides/v2-migration).
+**Every Polymarket exchange.** Settlement events work the same for the original exchange (V1), Polymarket's April 2026 exchange upgrade (V2) and ExchangeV3, which settles Polymarket Protocol V2 markets. No subscription changes are needed: the event format, trade fields and enrichment are the same, and `exchange_version` on each trade tells them apart. V2 settlement events may include `condition_id` directly from the V2 matchOrders calldata. See the [V2 Migration Guide](/guides/v2-migration) and [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
 </Info>
 
 ```json
@@ -168,6 +168,14 @@ The core polynode event. A Polymarket settlement detected before or after on-cha
       Market condition ID (CTF contract identifier). Enriched from metadata.
     </ResponseField>
 
+    <ResponseField name="protocol_version" type="string">
+      `"v2"` on events for Polymarket Protocol V2 markets. Absent on every other market. See [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
+    </ResponseField>
+
+    <ResponseField name="module" type="string">
+      Polymarket Protocol V2 markets only: `"binary"` for yes/no markets, `"neg_risk"` for multi-outcome markets. Absent on every other market.
+    </ResponseField>
+
     <ResponseField name="event_slug" type="string">
       Parent event URL slug (e.g. `"will-mara-corina-machado-enter-venezuela-by-january-31"`). Enriched from metadata.
     </ResponseField>
@@ -221,7 +229,7 @@ The core polynode event. A Polymarket settlement detected before or after on-cha
           EIP-712 order hash for this maker's limit order. Persistent across partial fills. Computed from calldata pre-chain, so this is available on pending settlements before block confirmation.
         </ResponseField>
         <ResponseField name="exchange_version" type="string">
-          Exchange contract version: `"v2"` for trades settled on Polymarket's V2 exchange contracts. Absent for V1 trades (current default). Use this to distinguish which exchange system processed the settlement.
+          Exchange contract version: `"v2"` for trades settled on Polymarket's April 2026 exchange contracts (CTF Exchange V2), `"v3"` for trades settled on ExchangeV3, which settles Polymarket Protocol V2 markets. Absent for trades on the original V1 exchange. Use this to distinguish which exchange system processed the settlement.
         </ResponseField>
       </Expandable>
     </ResponseField>

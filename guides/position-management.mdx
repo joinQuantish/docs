@@ -221,6 +221,10 @@ console.log(market.conditionId);       // for split/merge
 console.log(market.negRiskMarketID);   // for convert
 ```
 
+## Polymarket Protocol V2 markets
+
+Polymarket Protocol V2 is Polymarket's new market system for newly created markets, separate from the V2 exchange upgrade mentioned above. On Protocol V2 markets, split, merge and redeem go through Polymarket's Router (`0x12121212006e4CD160D18e3f00711DA5c3372600`), and TypeScript `polynode-sdk` 0.15.0, Python `polynode` 0.15.0 and Rust `polynode` 0.18.0 or newer pick the right path for each market. Collateral is still pUSD. Redeem takes an outcome index: `0` for the first outcome (Yes, or Up) and `1` for the second. Converting negative-risk positions is not available for Protocol V2 markets; the SDK returns a clear error instead. See [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
+
 ## Neg-risk vs standard markets
 
 | | Standard markets | Neg-risk markets |

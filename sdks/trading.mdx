@@ -17,16 +17,16 @@ Trading methods sign messages and can place orders or submit on-chain transactio
 
 <CodeGroup>
 ```bash TypeScript
-npm install polynode-sdk@^0.14.2 viem
+npm install polynode-sdk@^0.15.0 viem
 ```
 
 ```bash Python
-python -m pip install "polynode[trading]>=0.14.1,<0.15"
+python -m pip install "polynode[trading]>=0.15.0,<0.16"
 ```
 
 ```toml Rust
 [dependencies]
-polynode = { version = "0.17.1", features = ["trading"] }
+polynode = { version = "0.18.0", features = ["trading"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 </CodeGroup>
@@ -70,6 +70,12 @@ The explicit V1 compatibility mode is different: its signed order includes the m
 <Note>
 Do not copy V1 fields into a V2 order. If you do not have a deliberate legacy requirement, keep the V2 default.
 </Note>
+
+## Polymarket Protocol V2 markets
+
+Polymarket Protocol V2 is a separate, newer change from the V2 exchange default above: it is Polymarket's new market system for newly created markets. The versions on this page trade Protocol V2 markets with the same calls and no config change. The SDK checks each market's protocol and signs Protocol V2 orders for ExchangeV3 automatically, and the first order on a Protocol V2 market sets up the approvals it needs. Older versions keep working on current markets, but Polymarket rejects their orders on Protocol V2 markets.
+
+See [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2) for dates, approvals and contract addresses.
 
 ## Set up a wallet
 

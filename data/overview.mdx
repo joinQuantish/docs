@@ -91,6 +91,10 @@ Each endpoint's response-fields table explicitly notes which convention applies.
 
 Polymarket `token_id` and `position_id` values are 78-digit decimal integers (uint256). They are returned as **JSON strings** so they survive standard JSON parsers — IEEE 754 doubles cannot represent them. Treat them as opaque strings; do not parse them as numbers.
 
+## Polymarket Protocol V2 markets
+
+Markets on Polymarket Protocol V2, Polymarket's new market system, appear in the same endpoints with the same fields and units. Their rows add `protocol_version: "v2"`, `module`, `structural_condition_id`, on multi-outcome markets `neg_risk_event_id`, and on resolved markets the exact result as `payouts_ppm`. Endpoints that take a condition id accept the 66-character form and Polymarket's 31-byte form. Elsewhere on this page, "V1" and "V2" refer to Polymarket's exchange before and after the April 2026 exchange upgrade. See [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
+
 ## Nullable fields
 
 Many fields can be `null` in real responses even when the example shows a populated value — typically when a row was created before the metadata pipeline backfilled it, or when a market hasn't resolved yet. Each endpoint's response-fields table has a **Nullable** column. Defensive clients should accept `null` for any field marked nullable, plus for any field whose row predates indexing.

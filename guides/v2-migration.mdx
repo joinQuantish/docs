@@ -5,6 +5,10 @@ description: "polynode is ready for the Polymarket V2 exchange upgrade. Here's w
 icon: "arrows-rotate"
 ---
 
+import ProtocolV2AprilNote from '/snippets/protocol-v2-april-note.mdx';
+
+<ProtocolV2AprilNote />
+
 <Info>
 **V2 cutover: April 28, 2026 at ~11am UTC.** Polymarket announced the cutover date on April 18, 2026 (pushed from April 22 for extra builder testing time). The V2 test environment is open to all now at `clob-v2.polymarket.com`. V2 mainnet contracts have been processing real trades since April 3, 2026. polynode is V2-ready today — set `exchange_version: V2` in your SDK config to start placing V2 orders now, or keep V1 until cutover. After April 28, V1 orders will be rejected with `order_version_mismatch`.
 </Info>
@@ -97,6 +101,8 @@ The key architectural insight: V2 only changes the **exchange layer** (how order
 
 ### Why Token IDs Don't Change
 
+This section applies to the April 2026 exchange upgrade only. Polymarket Protocol V2 markets use a new position system with new ids; see [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
+
 All prediction market positions live inside the [ConditionalTokens](https://polygonscan.com/address/0x4D97DCd97eC945f40cF65F87097ACe5EA0476045) contract. This is a Gnosis protocol contract that has been on Polygon since Polymarket launched. Every token ID is derived from a condition ID and outcome index inside this contract.
 
 V2 does not replace ConditionalTokens. It can't. Doing so would invalidate every open position on the platform. Instead, V2 introduces an **adapter layer** between the new exchange contracts and the existing ConditionalTokens contract:
@@ -150,7 +156,7 @@ The dropped `feeRateBps` field was Polymarket's protocol fee slot inside the V1 
 
 **No More Settlement Routers** — V1 used FeeModule router contracts between operators and the exchange. V2 eliminates routers. Operators call the exchange contracts directly.
 
-**exchange_version Field** — V2 trades include `"exchange_version": "v2"` on each trade object in settlement and trade events. V1 trades omit this field. Use it to distinguish which exchange system processed a settlement.
+**exchange_version Field** — V2 trades include `"exchange_version": "v2"` on each trade object in settlement and trade events. V1 trades omit this field. Use it to distinguish which exchange system processed a settlement. Trades on Polymarket Protocol V2 markets carry `"exchange_version": "v3"` (ExchangeV3).
 
 ### What Didn't Change
 
