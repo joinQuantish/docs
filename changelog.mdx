@@ -31,8 +31,9 @@ What's new:
 * Protocol V2 markets appear in the same REST routes and WebSocket streams.
   Their rows and events add `protocol_version: "v2"` and `module` (`"binary"`
   or `"neg_risk"`). Rows and events without these fields are current markets.
-* REST rows for Protocol V2 markets also carry `structural_condition_id` and,
-  on multi-outcome markets, `neg_risk_event_id`.
+* REST rows for Protocol V2 markets also carry `structural_condition_id`, on
+  multi-outcome markets `neg_risk_event_id`, and on resolved markets the exact
+  `payouts_ppm`.
 * WebSocket trades settled on ExchangeV3 carry `exchange_version: "v3"`. The
   `exchange` field keeps its two existing values, so typed decoders keep
   working.

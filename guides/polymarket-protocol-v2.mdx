@@ -34,6 +34,8 @@ Polymarket's combos already run on these contracts, and polynode's [combo stream
 
 **What does not change.** Markets that exist today stay on the current system and keep their ids. Existing holdings are not converted. Collateral is still pUSD.
 
+Polymarket's own description is in its guide [Migrate to Polymarket Protocol V2](https://docs.polymarket.com/migrate/polymarket-v2/overview). This page covers what it means for polynode.
+
 ## Dates
 
 These are Polymarket's dates.
@@ -93,10 +95,11 @@ Protocol V2 markets appear in the same routes as every other market, with the sa
 | `module` | `"binary"` or `"neg_risk"` |
 | `structural_condition_id` | The market's Protocol V2 condition id (66 characters) |
 | `neg_risk_event_id` | Multi-outcome markets only: the Protocol V2 event id (60 characters, so it cannot be mistaken for a condition id) |
+| `payouts_ppm` | Resolved markets only: the exact result as shares of 1,000,000, for example `[1000000, 0]` |
 
 `condition_id` equals `structural_condition_id`, with one exception. Polymarket lets a holder move a position from a current market into Protocol V2. Such a position keeps the current market's `condition_id`, so its old and new rows group under one market, and `structural_condition_id` shows its Protocol V2 id.
 
-Results keep today's form. For example, `payout_numerators` `[1, 0]` with `payout_denominator` `1` means the first outcome won.
+Results keep today's form in `payout_numerators` and `payout_denominator`. For example, `[1, 0]` with `1` means the first outcome won, and `[1, 1]` with `2` is a 50/50 result. `payouts_ppm` carries the same result exactly.
 
 While Polymarket's test markets run, they appear in wallet, trade and market-id routes, but not in market listings or search. Their slugs start with `polyv2`.
 
@@ -162,6 +165,6 @@ On Protocol V2 markets, split, merge and redeem go through Polymarket's Router; 
     Upgrade to the versions above. Older versions sign for the April exchange, which Protocol V2 markets do not use. Polymarket rejects those orders and no funds move.
   </Accordion>
   <Accordion title="Why does a condition id sometimes have 64 characters?">
-    That is the 31-byte form Polymarket's contracts use. polynode returns the 66-character form and accepts both.
+    That is the 31-byte form Polymarket's contracts use. polynode returns the 66-character form and accepts both. Combo condition ids keep their existing 31-byte form.
   </Accordion>
 </AccordionGroup>

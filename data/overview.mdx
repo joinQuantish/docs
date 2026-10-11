@@ -93,7 +93,7 @@ Polymarket `token_id` and `position_id` values are 78-digit decimal integers (ui
 
 ## Polymarket Protocol V2 markets
 
-Markets on Polymarket Protocol V2, Polymarket's new market system, appear in the same endpoints with the same fields and units. Their rows add `protocol_version: "v2"`, `module`, `structural_condition_id` and, on multi-outcome markets, `neg_risk_event_id`. Endpoints that take a condition id accept the 66-character form and Polymarket's 31-byte form. Elsewhere on this page, "V1" and "V2" refer to Polymarket's exchange before and after the April 2026 exchange upgrade. See [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
+Markets on Polymarket Protocol V2, Polymarket's new market system, appear in the same endpoints with the same fields and units. Their rows add `protocol_version: "v2"`, `module`, `structural_condition_id`, on multi-outcome markets `neg_risk_event_id`, and on resolved markets the exact result as `payouts_ppm`. Endpoints that take a condition id accept the 66-character form and Polymarket's 31-byte form. Elsewhere on this page, "V1" and "V2" refer to Polymarket's exchange before and after the April 2026 exchange upgrade. See [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2).
 
 ## Nullable fields
 
