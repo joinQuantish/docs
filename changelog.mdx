@@ -5,6 +5,51 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-10-11 - Polymarket Protocol V2 markets
+
+Polymarket is moving newly created markets to Polymarket Protocol V2, its new
+market system, from around November 2, 2026 (tentative, per Polymarket). Its
+test markets have traded since October 5, 2026 and run until October 30, 2026.
+Polymarket Protocol V2 is separate from Polymarket's April 2026 exchange
+upgrade, which these docs and the `exchange_version: "v2"` field call "V2".
+Current markets behave exactly as before.
+
+What you need to do:
+
+* REST and WebSocket: nothing. Same endpoints, same subscriptions, same
+  response shapes.
+* Trading, split, merge or redeem with our SDK: upgrade to `polynode-sdk`
+  0.15.0 (npm), `polynode` 0.18.0 (crates.io) or `polynode` 0.15.0 (PyPI)
+  before November 2, 2026. Older versions keep working on current markets, but
+  Polymarket rejects their orders on Protocol V2 markets and no funds move.
+* SDK short-form market discovery and the redemption watcher: upgrade to the
+  same versions.
+* Storing outcome ids yourself: use strings, up to 78 digits.
+
+What's new:
+
+* Protocol V2 markets appear in the same REST routes and WebSocket streams.
+  Their rows and events add `protocol_version: "v2"` and `module` (`"binary"`
+  or `"neg_risk"`). Rows and events without these fields are current markets.
+* REST rows for Protocol V2 markets also carry `structural_condition_id` and,
+  on multi-outcome markets, `neg_risk_event_id`.
+* WebSocket trades settled on ExchangeV3 carry `exchange_version: "v3"`. The
+  `exchange` field keeps its two existing values, so typed decoders keep
+  working.
+* Protocol V2 results arrive as `condition_resolution` oracle events with the
+  usual `payouts`, plus the exact `payouts_ppm` and a `derived` flag.
+* Condition id parameters and filters accept both the 66-character form and
+  Polymarket's 31-byte form.
+* The SDKs sign each order for the right exchange automatically, set up the
+  Protocol V2 approvals on the first Protocol V2 order, support split, merge
+  and redeem on Protocol V2 markets, and add `getMarketProtocol()`.
+* Polymarket's test markets (slugs starting with `polyv2`) appear in wallet,
+  trade and market-id routes and on the streams.
+
+Docs: [Polymarket Protocol V2 markets](/guides/polymarket-protocol-v2)
+
+***
+
 ## 2026-09-02 - Initial replay for fill subscriptions
 
 `fills` subscriptions now return recent matching fills immediately after the

@@ -3,6 +3,19 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-10-11 [claude] - Prepared the Polymarket Protocol V2 documentation:
+  the new guide `guides/polymarket-protocol-v2.mdx` (the two different V2s,
+  Polymarket's dates, who needs to do what, optional fields, SDK trading,
+  approvals, contract addresses and FAQ), shared callouts for the April 2026
+  V2 pages and the introduction and quickstart banners, additive field docs on
+  the trade, settlement and oracle events, Protocol V2 notes on the SDK
+  trading, user-owned, short-form, redemption-watcher, position, deposit-wallet
+  and fee-escrow pages, SDK install pins moved to npm 0.15.0, crates.io 0.18.0
+  and PyPI 0.15.0, and the changelog entry. Local Mintlify strict validation,
+  broken-link, JSON, MDX digit and public-wording checks pass. Publication
+  waits for the three SDK releases; the merge SHA, publish date and live page
+  checks will be recorded at publication.
+
 - 2026-09-09 [codex+josh] — PNL FEE CLARIFICATIONS LIVE. Source
   `b180538ebec07ff4bee1a4113d0f6810b576eb11` merged through PR #84 as
   `6b95c1dafda5b868f34262dcdcd3ebf13b1ee4e5`. Mintlify publication passed
