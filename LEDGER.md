@@ -3,6 +3,15 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-10-11 [claude] - LOCK-IN, Polymarket Protocol V2 documentation published.
+  - Merge: PR #86 `c9953da0759fd0dbd7fc3d5e157a7d43f61aa598`.
+  - Live: new guide `/guides/polymarket-protocol-v2`, callouts on the April CTF Exchange V2 guide,
+    SDK pages (npm `polynode-sdk` 0.15.0, PyPI `polynode` 0.15.1, crates.io `polynode` 0.18.0) and the
+    changelog, deployed by Mintlify from `main`.
+  - Evidence: Mintlify deployment status success for the merge commit; the guide returns 200.
+  - Switches: none.
+  - Rollback: `git revert c9953da0759fd0dbd7fc3d5e157a7d43f61aa598` on `main`; Mintlify redeploys.
+
 - 2026-10-11 [claude] - Prepared the Polymarket Protocol V2 documentation:
   the new guide `guides/polymarket-protocol-v2.mdx` (the two different V2s,
   Polymarket's dates, who needs to do what, optional fields, SDK trading,
