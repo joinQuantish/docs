@@ -4,7 +4,11 @@ openapi: "GET /v3/wallets/{address}/positions"
 description: "Get all positions for a wallet with market context, current prices, unrealized P&L, and settlement status."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns every position a wallet has ever held, enriched with market metadata, live token prices, computed unrealized P&L, settlement status, and redemption data. All amounts are in USD.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -16,7 +20,7 @@ GET /v3/wallets/{address}/positions
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `address` | string | Wallet address (0x-prefixed, case-insensitive) |
+| `address` | string | Wallet address or owner EOA (0x-prefixed, case-insensitive) |
 
 ### Query parameters
 
@@ -204,6 +208,17 @@ When combo rows are present, they are appended with `position_type: "combo"` and
 | `resolved_at` | string | Unix timestamp when the market was resolved |
 | `winning_outcome_index` | integer | Which outcome won (0 or 1), null if unresolved |
 | `won` | boolean | Whether this position's outcome won, null if unresolved |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `positions[].wallet` | string | The wallet this row belongs to |
+
+Positions are never merged across wallets. When two of the owner's wallets hold the same token, each has its own row, so key rows by `wallet` and `token_id`. Combo rows from `include_combos=true` also carry `wallet`.
 
 ## Use cases
 

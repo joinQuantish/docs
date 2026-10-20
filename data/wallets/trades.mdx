@@ -4,7 +4,11 @@ openapi: "GET /v3/wallets/{address}/trades"
 description: "Get all trades for a wallet with market context, computed price, direction, and order hash."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns fills where the wallet participated as maker, taker, or both. Each trade is enriched with market metadata, computed price/size in USD, buy/sell direction, and the order hash.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -218,6 +222,18 @@ Combo trades are returned in `combo_trades` so existing consumers of the standar
 | `condition_id` | string | Market condition ID |
 | `event_slug` | string \| null | Slug of the Polymarket event this market belongs to |
 | `event_id` | integer \| null | Numeric ID of that event. Both are null for old markets no longer in Polymarket's catalog |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `trades[].wallet` | string | The wallet this row belongs to |
+| `combo_trades[].wallet` | string | The wallet this row belongs to |
+
+`role` and `direction` are relative to the row's `wallet`. A fill between two of the owner's wallets appears once for each wallet, with the same `id`. `group_by` and `sort_by=order_hash` group fills within each wallet.
 
 ### Sort fills by order hash
 

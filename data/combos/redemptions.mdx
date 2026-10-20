@@ -4,6 +4,8 @@ openapi: "GET /v3/combos/redemptions"
 description: "Query terminal combo redemptions, partial post-resolution compression, and exact on-chain lineage."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Use this endpoint to answer one question: after a user's combo (parlay) was processed, was the whole position redeemed, or were settled legs removed and a smaller combo left behind?
 
 The response preserves Polymarket's public combo activity fields and adds the explicit before-and-after transition. That includes what the combo contained before the operation, which legs were removed, what remained, and whether the resulting combo is still held.
@@ -11,6 +13,8 @@ The response preserves Polymarket's public combo activity fields and adds the ex
 This endpoint is additive. It does not change standard positions or combo position responses.
 
 Use [`GET /v3/combos/activity`](/data/combos/activity) for ordinary combo acquisition and burn activity such as `PositionsSplit` and `PositionsMerged`. This endpoint is scoped to terminal redemptions, post-resolution compression, and the module-level transformations needed to explain redemption lineage.
+
+<OwnerAddresses />
 
 ## The consumer view
 
@@ -49,7 +53,7 @@ No filter is required. Use the filters below for wallet, market, position, trans
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `wallet` | string | -- | Wallet address |
+| `wallet` | string | -- | Wallet address or owner EOA |
 | `market_id` | string | -- | One or more comma-separated combo condition IDs. Matches any condition in the lineage. |
 | `condition_id` | string | -- | Combo condition ID. Matches the source, full, parent, reduced, residual, child, or destination condition. |
 | `position_id` | string | -- | Decimal ERC-1155 position ID. Matches the primary, source, destination, or underlying position. |
@@ -61,6 +65,15 @@ No filter is required. Use the filters below for wallet, market, position, trans
 | `before` | integer | -- | Inclusive Unix timestamp in seconds |
 | `limit` | integer | 100 | Results per page, max 300 |
 | `offset` | integer | 0 | Pagination offset |
+
+### Owner address fields
+
+Present only when `wallet` is an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `redemptions[].wallet` | string | The wallet this row belongs to |
 
 ## Full redemptions
 

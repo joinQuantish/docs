@@ -4,11 +4,15 @@ openapi: "GET /v3/wallets/{address}/combos/redemptions"
 description: "List full combo redemptions and partial combo reductions for one wallet with exact leg changes."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns the canonical combo redemption and reduction history for one wallet. This is the wallet-scoped form of [`GET /v3/combos/redemptions`](/data/combos/redemptions).
 
 In plain language, each row tells you whether the wallet redeemed its entire combo or removed settled legs and kept a smaller combo. The compact fields answer how many legs changed; the leg arrays and position IDs provide the exact market and on-chain details for follow-up queries.
 
 Unlike a basic combo activity row, the response makes the before-and-after transition explicit. See [How this differs from Polymarket combo activity](/data/combos/redemptions#how-this-differs-from-polymarket-combo-activity) for the consumer and developer comparison.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -81,6 +85,15 @@ curl "https://api.polynode.dev/v3/wallets/0xc82f0a25aad828f59347670e63ead5ea1444
   "source": "v3.wallet_combos.redemptions"
 }
 ```
+
+## Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `redemptions[].wallet` | string | The wallet this row belongs to |
 
 ## Choosing this endpoint
 

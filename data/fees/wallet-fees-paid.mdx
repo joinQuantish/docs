@@ -3,11 +3,15 @@ title: "Wallet Fees Paid"
 description: "Query fee-bearing executed fills for one wallet."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Use this when you want the fills where a specific wallet paid a nonzero trader fee.
 
 Canonical endpoint reference: [Wallet Fees Paid](/data/wallets/fees-paid).
 
 For the exact all-time total, use [Wallet Summary](/data/wallets/summary) with `include_accounting_summary=true` and read `accounting_summary.fees_paid.amount`.
+
+<OwnerAddresses />
 
 ## Query
 
@@ -41,3 +45,12 @@ The response includes a `fees` array with the same market-enriched fill fields a
 <Note>
 `page_total_fees_paid` is page-scoped. Use `GET /v3/wallets/{address}?include_accounting_summary=true` when you need the all-time total.
 </Note>
+
+## Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `fees[].wallet` | string | The wallet this row belongs to |

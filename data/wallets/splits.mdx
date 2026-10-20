@@ -4,7 +4,11 @@ openapi: "GET /v3/wallets/{address}/splits"
 description: "Get all split events for a wallet. Splits occur when USDC is converted into outcome tokens."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns split events where USDC was converted into outcome tokens for a market condition.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -51,3 +55,12 @@ curl https://api.polynode.dev/v3/wallets/0xada100874d00e3331d00f2007a9c336a65009
 | `timestamp` | string | Unix timestamp |
 | `condition` | string | Market condition ID |
 | `amount` | string | USDC amount split (6-decimal) |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `data[].wallet` | string | The wallet this row belongs to |

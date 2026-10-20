@@ -4,11 +4,15 @@ openapi: "GET /v3/wallets/{address}/combos/trades"
 description: "List confirmed combo fills for one wallet with side, size, price, role, counterparty, and transaction data."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns confirmed combo fills where the requested wallet participated as maker
 or taker. Use this endpoint for combo-only trade history.
 
 For the same fills before confirmation, subscribe to the
 [`combo_execution` WebSocket event](/websocket/events/combo-execution).
+
+<OwnerAddresses />
 
 ## Request
 
@@ -99,6 +103,15 @@ curl -H "x-api-key: $POLYNODE_API_KEY" \
 | `log_index` | integer | Log index within the transaction |
 | `block_number` | integer | Polygon block number |
 | `timestamp` | integer | Unix timestamp in seconds |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `trades[].wallet` | string | The wallet this row belongs to |
 
 ## Maker and taker roles
 

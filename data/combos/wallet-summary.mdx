@@ -4,9 +4,13 @@ openapi: "GET /v3/wallets/{address}/combos/summary"
 description: "Get combo-only P&L and position counts for one wallet."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns a combo-only summary for a wallet. Use this endpoint when you want to inspect combo exposure separately from the standard wallet summary.
 
 For an all-in wallet summary, call `GET /v3/wallets/{address}?include_combos=true`.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -18,7 +22,7 @@ GET /v3/wallets/{address}/combos/summary
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `address` | string | Wallet address |
+| `address` | string | Wallet address or owner EOA |
 
 ## Example
 
@@ -58,3 +62,13 @@ curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d1
 | `unrealized_pnl_usdc` | string or null | Current unrealized combo P&L when available |
 | `total_pnl_usdc` | string | Realized + unrealized combo P&L |
 | `last_activity_at` | string | Last observed combo activity for this wallet |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+
+Counts and P&L are summed across the combined wallets, and `last_activity_at` is the latest of them.

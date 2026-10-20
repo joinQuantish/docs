@@ -3,11 +3,15 @@ title: "Wallet Credit Totals"
 openapi: "GET /v3/wallets/{addr}/credits/totals"
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Total credits received by a wallet, per program, in one call. Add `start_ts`/`end_ts` for time-windowed totals (for example, rebates earned this month).
 
 <Note>
 The response includes an `identity` block with `username`, controlling `eoa`, `wallet_type`, `deployed`, `current`, `wallet_details`, and `other_wallets`. `wallet_details` separates wallet type from deployment status and identifies the account's current trading wallet. Polymarket's own API does not expose this anywhere.
 </Note>
+
+<OwnerAddresses />
 
 ## Credit types
 
@@ -38,3 +42,13 @@ Rebates only, June 2026:
 curl "https://api.polynode.dev/v3/wallets/0x204f72f35326db932158cba6adff0b9a1da95e14/credits/totals?types=maker_rebate,taker_rebate&start_ts=1780272000&end_ts=1782950400" \
   -H "x-api-key: $POLYNODE_API_KEY"
 ```
+
+## Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+
+Totals are summed per program across the combined wallets, and `wallet` stays the address you passed.

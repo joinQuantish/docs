@@ -115,6 +115,56 @@ Endpoints fall into three envelope shapes:
 
 Standard ungrouped list responses also include `rows_returned`, `has_more`, `offset`, `limit`, and `elapsed_ms`. Grouped trade responses are the exception: with `group_by=order_hash`, the response includes `trades`, `rows_returned`, `grouped_by`, and `elapsed_ms`, but omits `has_more`, `offset`, and `limit`.
 
+## Owner addresses
+
+Pass an owner EOA to any wallet endpoint below and the response combines every Polymarket wallet that EOA owns (Safe, proxy, deposit wallet). Passing a Safe, proxy or deposit wallet returns just that wallet, as before.
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0xb365112c16570fd249e972e1ce91f621b090495a/positions?limit=2"
+```
+
+The response keeps its usual fields and adds the combined wallets (excerpt):
+
+```json
+{
+  "address": "0xb365112c16570fd249e972e1ce91f621b090495a",
+  "wallets": [
+    { "wallet": "0xab08afea55b32ef017970556bb578d081c9937fa", "type": "safe" },
+    { "wallet": "0xe415429c78a6d39557c4549e5af109502c373fb8", "type": "deposit_wallet" }
+  ]
+}
+```
+
+Endpoints that accept an owner EOA:
+
+| Area | Endpoints |
+|------|-----------|
+| Summary and P&L | `GET /v3/wallets/{address}`, `POST /v3/wallets/batch`, `/pnl`, `/pnl/events` |
+| Wallet history | `/positions`, `/trades`, `/activity`, `/splits`, `/merges`, `/redemptions`, `/fees-paid`, `/nrc`, `/polyusd-flows` |
+| Combos | `/combos/positions`, `/combos/activity`, `/combos/redemptions`, `/combos/trades`, `/combos/summary`, and the `wallet` filter on `/v3/combos/activity` and `/v3/combos/redemptions` |
+| Credits | `/credits`, `/credits/totals`, `/credits/series` |
+
+Combined responses:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order. Present only on combined responses. |
+| `wallets[].wallet` | string | Wallet address, lowercased |
+| `wallets[].type` | string | `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `wallet` (on each list row) | string | The wallet the row belongs to |
+
+* `address` (`wallet` on credits routes) stays the address you passed.
+* The EOA itself is listed when it has its own history. Only wallets with data for that endpoint are listed, so `wallets` can differ between endpoints.
+* Lists keep the endpoint's sort order, and `limit`, `offset`, `has_more`, and `next_offset` page through the combined list. Rows are never merged across wallets: two wallets holding the same token return two rows, and a trade between two of the owner's wallets appears once for each wallet. Include `wallet` when you key rows by `token_id` or `id`.
+* Totals, counts, and time-series buckets are summed across the combined wallets. With `period`, `after`, or `before`, every wallet uses the same window.
+* In `POST /v3/wallets/batch`, each owner EOA is combined on its own. The response keeps one element per requested address, in request order.
+* If any combined wallet returns an error, or the combination cannot finish in time (`503`), the request fails with that error. You never receive a partial combination.
+
+Nothing changes when:
+
+* You pass a Safe, proxy, or deposit wallet, or an EOA that owns no wallets with data. The response is the same as before, with no `wallets` field.
+* You call rebates, rewards, Copy PnL, webhooks, or WebSocket wallet filters. These still match only the exact address you pass. V1 and V2 wallet endpoints are also unchanged.
+
 ## Timestamps
 
 All Unix timestamps in responses are in **seconds** (e.g., `"1778674056"`). The `resolved_at` field in resolutions uses **milliseconds** (e.g., `"1778674836000"`). Datetime strings like `updated_at` are in UTC.

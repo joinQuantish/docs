@@ -5579,7 +5579,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Wallet address"
+            "description": "Wallet address, or an owner EOA to combine every Polymarket wallet it owns"
           },
           {
             "name": "period",
@@ -5623,7 +5623,24 @@
         ],
         "responses": {
           "200": {
-            "description": "Wallet P&L"
+            "description": "Wallet P&L",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Owner-address responses add the optional fields below. See the page for the full response.",
+                  "properties": {
+                    "wallets": {
+                      "type": "array",
+                      "description": "Present only when you pass an owner EOA: the combined wallets, in a fixed order.",
+                      "items": {
+                        "$ref": "#/components/schemas/OwnerWallet"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid wallet address or query parameter"
@@ -5658,7 +5675,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Wallet address"
+            "description": "Wallet address, or an owner EOA to combine every Polymarket wallet it owns"
           },
           {
             "name": "group",
@@ -5720,7 +5737,24 @@
         ],
         "responses": {
           "200": {
-            "description": "Wallet P&L buckets"
+            "description": "Wallet P&L buckets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Owner-address responses add the optional fields below. See the page for the full response.",
+                  "properties": {
+                    "wallets": {
+                      "type": "array",
+                      "description": "Present only when you pass an owner EOA: the combined wallets, in a fixed order.",
+                      "items": {
+                        "$ref": "#/components/schemas/OwnerWallet"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid wallet address or query parameter"
@@ -5752,7 +5786,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Wallet address"
+            "description": "Wallet address, or an owner EOA to combine every Polymarket wallet it owns"
           },
           {
             "name": "after",
@@ -5806,7 +5840,36 @@
         ],
         "responses": {
           "200": {
-            "description": "Fee-bearing fill rows"
+            "description": "Fee-bearing fill rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Owner-address responses add the optional fields below. See the page for the full response.",
+                  "properties": {
+                    "wallets": {
+                      "type": "array",
+                      "description": "Present only when you pass an owner EOA: the combined wallets, in a fixed order.",
+                      "items": {
+                        "$ref": "#/components/schemas/OwnerWallet"
+                      }
+                    },
+                    "fees": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "wallet": {
+                            "type": "string",
+                            "description": "Present only when you pass an owner EOA: the wallet this row belongs to."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid wallet address or query parameter"
@@ -5838,7 +5901,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Wallet address"
+            "description": "Wallet address, or an owner EOA to combine every Polymarket wallet it owns"
           },
           {
             "name": "kind",
@@ -5905,7 +5968,36 @@
         ],
         "responses": {
           "200": {
-            "description": "PolyUSD deposit and withdrawal rows"
+            "description": "PolyUSD deposit and withdrawal rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Owner-address responses add the optional fields below. See the page for the full response.",
+                  "properties": {
+                    "wallets": {
+                      "type": "array",
+                      "description": "Present only when you pass an owner EOA: the combined wallets, in a fixed order.",
+                      "items": {
+                        "$ref": "#/components/schemas/OwnerWallet"
+                      }
+                    },
+                    "flows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "wallet": {
+                            "type": "string",
+                            "description": "The wallet this flow belongs to"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid wallet address or query parameter"
@@ -6419,7 +6511,7 @@
               "type": "string",
               "pattern": "^0x[a-fA-F0-9]{40}$"
             },
-            "description": "Wallet address"
+            "description": "Wallet address, or an owner EOA to combine every Polymarket wallet it owns"
           },
           {
             "name": "market_id",
@@ -6552,6 +6644,13 @@
                         "$ref": "#/components/schemas/ComboRedemption"
                       }
                     },
+                    "wallets": {
+                      "type": "array",
+                      "description": "Present only when you pass an owner EOA: the combined wallets, in a fixed order.",
+                      "items": {
+                        "$ref": "#/components/schemas/OwnerWallet"
+                      }
+                    },
                     "rows_returned": {"type": "integer"},
                     "has_more": {"type": "boolean"},
                     "offset": {"type": "integer"},
@@ -6591,7 +6690,7 @@
               "type": "string",
               "pattern": "^0x[a-fA-F0-9]{40}$"
             },
-            "description": "Wallet address"
+            "description": "Wallet address, or an owner EOA to combine every Polymarket wallet it owns"
           },
           {
             "name": "market_id",
@@ -6703,6 +6802,13 @@
                     "redemptions": {
                       "type": "array",
                       "items": {"$ref": "#/components/schemas/ComboRedemption"}
+                    },
+                    "wallets": {
+                      "type": "array",
+                      "description": "Present only when you pass an owner EOA: the combined wallets, in a fixed order.",
+                      "items": {
+                        "$ref": "#/components/schemas/OwnerWallet"
+                      }
                     },
                     "rows_returned": {"type": "integer"},
                     "has_more": {"type": "boolean"},
@@ -10849,7 +10955,7 @@
             "name": "addr",
             "in": "path",
             "required": true,
-            "description": "Wallet (proxy) address.",
+            "description": "Wallet (proxy) address, or an owner EOA to combine every Polymarket wallet it owns.",
             "schema": {
               "type": "string"
             }
@@ -10887,6 +10993,19 @@
             "description": "Success",
             "content": {
               "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Owner-address responses add the optional fields below. See the page for the full response.",
+                  "properties": {
+                    "wallets": {
+                      "type": "array",
+                      "description": "Present only when you pass an owner EOA: the combined wallets, in a fixed order.",
+                      "items": {
+                        "$ref": "#/components/schemas/OwnerWallet"
+                      }
+                    }
+                  }
+                },
                 "example": {
                   "end_ts": null,
                   "identity": {
@@ -10942,7 +11061,7 @@
             "name": "addr",
             "in": "path",
             "required": true,
-            "description": "Wallet (proxy) address.",
+            "description": "Wallet (proxy) address, or an owner EOA to combine every Polymarket wallet it owns.",
             "schema": {
               "type": "string"
             }
@@ -11043,6 +11162,31 @@
             "description": "Success",
             "content": {
               "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Owner-address responses add the optional fields below. See the page for the full response.",
+                  "properties": {
+                    "wallets": {
+                      "type": "array",
+                      "description": "Present only when you pass an owner EOA: the combined wallets, in a fixed order.",
+                      "items": {
+                        "$ref": "#/components/schemas/OwnerWallet"
+                      }
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "wallet": {
+                            "type": "string",
+                            "description": "Present only when you pass an owner EOA: the wallet this row belongs to."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
                 "example": {
                   "count": 1,
                   "events": [
@@ -11081,7 +11225,7 @@
             "name": "addr",
             "in": "path",
             "required": true,
-            "description": "Wallet (proxy) address.",
+            "description": "Wallet (proxy) address, or an owner EOA to combine every Polymarket wallet it owns.",
             "schema": {
               "type": "string"
             }
@@ -11137,6 +11281,19 @@
             "description": "Success",
             "content": {
               "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Owner-address responses add the optional fields below. See the page for the full response.",
+                  "properties": {
+                    "wallets": {
+                      "type": "array",
+                      "description": "Present only when you pass an owner EOA: the combined wallets, in a fixed order.",
+                      "items": {
+                        "$ref": "#/components/schemas/OwnerWallet"
+                      }
+                    }
+                  }
+                },
                 "example": {
                   "wallet": "0x204f72f35326db932158cba6adff0b9a1da95e14",
                   "interval": "day",
@@ -11824,6 +11981,30 @@
   },
   "components": {
     "schemas": {
+      "OwnerWallet": {
+        "type": "object",
+        "description": "One wallet combined into an owner-address response.",
+        "required": [
+          "wallet",
+          "type"
+        ],
+        "properties": {
+          "wallet": {
+            "type": "string",
+            "description": "Wallet address, lowercased"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "eoa",
+              "safe",
+              "proxy",
+              "deposit_wallet"
+            ],
+            "description": "Wallet type"
+          }
+        }
+      },
       "CopyPnlSummary": {
         "type": "object",
         "properties": {
@@ -15067,6 +15248,10 @@
           "side": {"type": "string"},
           "module_kind": {"type": "string", "const": "Combinatorial"},
           "user_address": {"type": "string", "pattern": "^0x[a-f0-9]{40}$"},
+          "wallet": {
+            "type": "string",
+            "description": "Present only when you pass an owner EOA: the wallet this row belongs to."
+          },
           "wallet_address": {"type": "string", "pattern": "^0x[a-f0-9]{40}$"},
           "combo_condition_id": {"type": "string", "pattern": "^0x[a-f0-9]{62}$"},
           "combo_position_id": {"type": "string", "pattern": "^[0-9]+$"},
