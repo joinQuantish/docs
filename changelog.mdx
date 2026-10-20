@@ -5,6 +5,39 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-10-21 - Owner addresses on V3 wallet endpoints
+
+V3 wallet endpoints now accept an owner EOA. Pass the EOA and the response
+combines every Polymarket wallet it owns (Safe, proxy, deposit wallet), so one
+call covers an account that holds funds in more than one wallet.
+
+What's new:
+
+* Pass an owner EOA to `GET /v3/wallets/{address}`, `/pnl`, `/pnl/events`,
+  `/positions`, `/trades`, `/activity`, `/splits`, `/merges`, `/redemptions`,
+  `/fees-paid`, `/nrc`, `/polyusd-flows`, the wallet combo routes and the
+  wallet credits routes, as `wallet` on `/v3/combos/activity` and
+  `/v3/combos/redemptions`, or inside `POST /v3/wallets/batch`.
+* Combined responses add a top-level `wallets` array of `{wallet, type}`
+  objects, with `type` one of `eoa`, `safe`, `proxy` or `deposit_wallet`.
+  List rows add `wallet`, the wallet each row belongs to.
+* Totals, counts and time-series buckets are summed across the combined
+  wallets. Lists keep their usual sort order and pagination fields.
+
+Compatibility:
+
+* Passing a Safe, proxy or deposit wallet returns just that wallet, exactly as
+  before. So does an EOA that owns no wallets with data.
+* The new fields are additive. If you key positions by `token_id` or fills by
+  `id`, add `wallet` to the key for combined responses, since two of an
+  owner's wallets can return the same token or fill.
+* Rebates, rewards, Copy PnL, webhooks, WebSocket filters and the V1 and V2
+  endpoints are unchanged.
+
+Docs: [Owner addresses](/data/overview#owner-addresses)
+
+***
+
 ## 2026-10-11 - Polymarket Protocol V2 markets
 
 Polymarket is moving newly created markets to Polymarket Protocol V2, its new
