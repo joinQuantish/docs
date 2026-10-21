@@ -4,6 +4,8 @@ openapi: "GET /v3/wallets/{address}/redemptions"
 description: "Get all direct and AutoRedeemer-attributed payout redemptions for a wallet."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns all indexed redemption events attributed to the wallet across direct Conditional
 Tokens, negative-risk, and AutoRedeemer execution paths. AutoRedeemer rows use the beneficiary
 wallet rather than the protocol contract address, so the result remains complete when the
@@ -14,6 +16,8 @@ Every row includes `transaction_hash`, `block_number`, `log_index`, `redemption_
 `source_event`. Rows are enriched with market and resolution metadata when available so clients
 can identify the winning outcome without a second market lookup. Existing response fields remain
 present and unchanged.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -120,3 +124,12 @@ AutoRedeemer binary and negative-risk rows carry the market condition directly. 
 redemptions resolve their condition through the canonical combo redemption mapping. A transaction
 can contain multiple legitimate redemption events, so clients should identify rows by
 `transaction_hash` plus `log_index`, not by payout amount.
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `data[].wallet` | string | The wallet this row belongs to |

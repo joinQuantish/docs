@@ -4,7 +4,11 @@ openapi: "GET /v3/wallets/{address}/combos/activity"
 description: "List combo lifecycle activity for one wallet, including split and merge activity."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns combo lifecycle activity for a wallet. This is the combo-only counterpart to wallet splits, merges, redemptions, and lifecycle activity.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -74,6 +78,15 @@ curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d1
 | `block_number` | integer | Polygon block number |
 | `timestamp` | integer | Unix timestamp in seconds |
 | `legs` | array | Leg position IDs involved in the lifecycle event |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `activity[].wallet` | string | The wallet this row belongs to |
 
 ## Redemption semantics
 

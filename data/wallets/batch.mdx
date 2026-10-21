@@ -4,7 +4,11 @@ openapi: "POST /v3/wallets/batch"
 description: "Query P&L for up to 100 wallets in a single request. All amounts in USD."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Query multiple wallets at once. Returns the same summary data as the single wallet endpoint, but for up to 100 wallets in one call. All monetary values are in USD.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -25,7 +29,7 @@ POST /v3/wallets/batch
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `wallets` | array | Up to 100 wallet addresses |
+| `wallets` | array | Up to 100 wallet addresses or owner EOAs |
 
 ## Example
 
@@ -60,3 +64,13 @@ curl -X POST https://api.polynode.dev/v3/wallets/batch \
 ## Response fields
 
 Same fields as [Wallet Summary](/data/wallets/summary), with `wallet` instead of `address`. All amounts in USD.
+
+### Owner address fields
+
+Each owner EOA in the request is combined on its own. The response keeps one element per requested address, in request order, and each element's `wallet` stays the address you passed. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets[].wallets` | array | Present only on elements for an owner EOA. The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+
+Totals and counts in a combined element are summed across its wallets.

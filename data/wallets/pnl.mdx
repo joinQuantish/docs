@@ -4,6 +4,8 @@ openapi: "GET /v3/wallets/{address}/pnl"
 description: "Get profit and loss for a wallet in USD. Supports time-windowed P&L with ?period=1d|7d|30d|1y plus tag, category, market, event, and condition filters."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns P&L data for a wallet in USD. Without a time parameter, it returns the wallet's current all-time P&L. With `period`, `after`, or `before`, it returns this boundary calculation across all matching positions:
 
 ```text
@@ -12,6 +14,8 @@ time-window realized P&L = realized state at or before `before`
 ```
 
 Both boundaries are inclusive. A state change timestamped exactly at `after` or `before` is included.
+
+<OwnerAddresses />
 
 ## Fees and accounting scope
 
@@ -227,6 +231,16 @@ curl https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510c
 | `unrealized_pnl` | number | Current unrealized P&L for open positions (USD), not the change in unrealized P&L between the requested boundaries. |
 | `total_pnl` | number | `realized_pnl + unrealized_pnl` (USD) |
 | `open_positions_at_date` | integer | Current open position count returned with the unrealized P&L estimate |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+
+Totals and counts are summed across the combined wallets. With `period`, `after`, or `before`, every wallet uses the same window, and `address` stays the address you passed. With `include_combos=true`, `combo_pnl` is included only when it is available for every combined wallet; otherwise the response covers market positions only. A wallet whose P&L is not loaded yet is left out of the combination and of `wallets`.
 
 ## Errors
 

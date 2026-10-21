@@ -4,7 +4,11 @@ openapi: "GET /v3/wallets/{address}/nrc"
 description: "Get neg-risk conversion events for a wallet. NRC events convert between multi-outcome market positions."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns neg-risk conversion events for a wallet. These occur when positions in multi-outcome (neg-risk) markets are converted between outcome tokens.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -48,3 +52,12 @@ curl https://api.polynode.dev/v3/wallets/0x4ce73141dbfce41e65db3723e31059a730f0a
 | `amount` | string | Amount converted (6-decimal USDC) |
 | `index_set` | string | Bit-packed index indicating which outcomes were involved |
 | `question_count` | integer | Total number of outcomes in the neg-risk market |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `data[].wallet` | string | The wallet this row belongs to |

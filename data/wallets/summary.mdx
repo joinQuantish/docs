@@ -4,6 +4,8 @@ openapi: "GET /v3/wallets/{address}"
 description: "Get a complete P&L summary for any Polymarket wallet in USD. Realized and unrealized profit/loss, win rate, position count, and total volume."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns a full profile for a single wallet in USD. Includes realized P&L, unrealized P&L from open positions, gross profit and loss, win/loss record, and total trading volume.
 
 <Note>
@@ -17,6 +19,8 @@ exchange fill fee. Keep component and time scopes aligned when combining
 accounting amounts, and do not deduct that Combo fee twice.
 </Note>
 
+<OwnerAddresses />
+
 ## Request
 
 ```
@@ -27,7 +31,7 @@ GET /v3/wallets/{address}
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `address` | string | Wallet address (0x-prefixed, case-insensitive) |
+| `address` | string | Wallet address or owner EOA (0x-prefixed, case-insensitive) |
 
 ### Query parameters
 
@@ -165,3 +169,13 @@ curl "https://api.polynode.dev/v3/wallets/0x7553e42ce1b37727b819dfe4bac495b3968f
 | `accounting_summary.rewards.status` | string | Reward projection status. `not_loaded` means do not treat the amount as zero. |
 | `accounting_summary.order_filled_through_block` | string | Latest block covered by the order-filled accounting projector |
 | `accounting_summary.projector_status` | string | Current projector status |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+
+Totals and counts are summed across the combined wallets. `address` stays the address you passed.

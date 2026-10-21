@@ -4,7 +4,11 @@ openapi: "GET /v3/combos/activity"
 description: "Query combo lifecycle activity by market, condition, position, or wallet."
 ---
 
-Returns combo lifecycle activity across wallets. At least one of `market_id`, `condition_id`, or `position_id` is required. Add `wallet` to narrow results to a single wallet.
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
+Returns combo lifecycle activity across wallets. At least one of `market_id`, `condition_id`, or `position_id` is required. Add `wallet` to narrow results to a single wallet, or to every wallet an owner EOA owns.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -19,7 +23,7 @@ GET /v3/combos/activity
 | `market_id` | string | -- | Alias for `condition_id` |
 | `condition_id` | string | -- | Combo condition ID |
 | `position_id` | string | -- | Combo position ID |
-| `wallet` | string | -- | Wallet address |
+| `wallet` | string | -- | Wallet address or owner EOA |
 | `event_kind` | string | -- | Filter by event kind, for example `PositionsSplit` or `PositionRedeemed` |
 | `limit` | integer | 100 | Results per page, max 300 |
 | `offset` | integer | 0 | Pagination offset |
@@ -50,6 +54,15 @@ curl "https://api.polynode.dev/v3/combos/activity?condition_id=0x03d98f6ac4c108c
   "source": "v3.combos.activity"
 }
 ```
+
+## Owner address fields
+
+Present only when `wallet` is an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `activity[].wallet` | string | The wallet this row belongs to |
 
 ## Notes
 

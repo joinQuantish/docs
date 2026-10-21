@@ -3,6 +3,16 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-10-21 [josh] - Prepared the owner-address documentation for V3 wallet
+  endpoints: a shared "Owner addresses" section in the API overview, a shared
+  note and an "Owner address fields" table on each covered wallet, combo and
+  credits page, the batch element rule, a pointer in the deposit-wallet guide,
+  optional `wallets` and per-row `wallet` fields plus a shared `OwnerWallet`
+  schema in `openapi.json`, and the changelog entry. JSON, MDX digit,
+  whitespace, link-target and public-wording checks pass. Publication waits
+  for the API release; the merge SHA, publish date and live page checks will
+  be recorded at publication.
+
 - 2026-10-11 [claude] - LOCK-IN, Polymarket Protocol V2 documentation published.
   - Merge: PR #86 `c9953da0759fd0dbd7fc3d5e157a7d43f61aa598`.
   - Live: new guide `/guides/polymarket-protocol-v2`, callouts on the April CTF Exchange V2 guide,

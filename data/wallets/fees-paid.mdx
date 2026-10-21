@@ -4,6 +4,8 @@ openapi: "GET /v3/wallets/{address}/fees-paid"
 description: "Get fee-bearing order fills for a wallet."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns fills where the wallet was the order owner and `OrderFilled.fee` was greater than zero. Each row is enriched with the same market context used by wallet trade history.
 
 This is fees paid by the trader on executed order fills. It is not the same as maker rebates, LP rewards, or builder payouts.
@@ -11,6 +13,8 @@ This is fees paid by the trader on executed order fills. It is not the same as m
 <Note>
 `page_total_fees_paid` is the sum for the returned page only. For the exact all-time fee total, use `GET /v3/wallets/{address}?include_accounting_summary=true` and read `accounting_summary.fees_paid.amount`.
 </Note>
+
+<OwnerAddresses />
 
 ## Request
 
@@ -85,6 +89,17 @@ curl "https://api.polynode.dev/v3/wallets/0xbddf61af533ff524d27154e589d2d7a81510
 | `elapsed_ms` | integer | Server-side query time in milliseconds |
 
 The fill objects also include standard trade fields such as `maker_asset_id`, `taker_asset_id`, `maker_amount`, `taker_amount`, `token_id`, `asset`, `amount`, `amount_usd`, `transaction_hash`, `order_hash`, `builder`, `side`, `role`, `outcome`, `outcome_index`, and `image` when available.
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `fees[].wallet` | string | The wallet this row belongs to |
+
+`page_total_fees_paid` covers the combined page.
 
 ## Errors
 

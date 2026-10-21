@@ -4,7 +4,11 @@ openapi: "GET /v3/wallets/{address}/merges"
 description: "Get all merge events for a wallet. Merges occur when outcome tokens are converted back into USDC."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns merge events where outcome tokens were converted back into USDC for a market condition.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -51,3 +55,12 @@ curl https://api.polynode.dev/v3/wallets/0xada100874d00e3331d00f2007a9c336a65009
 | `timestamp` | string | Unix timestamp |
 | `condition` | string | Market condition ID |
 | `amount` | string | USDC amount received (6-decimal) |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `data[].wallet` | string | The wallet this row belongs to |

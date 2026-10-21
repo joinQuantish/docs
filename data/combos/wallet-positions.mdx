@@ -4,9 +4,13 @@ openapi: "GET /v3/wallets/{address}/combos/positions"
 description: "List combo positions for one wallet with legs, entry basis, balances, and P&L."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns combo positions for a wallet. Each row includes balance, entry basis, realized/unrealized/total P&L, status, and leg metadata when available.
 
 For a combined standard + combo position list, call `GET /v3/wallets/{address}/positions?include_combos=true`.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -81,6 +85,15 @@ curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d1
 | `total_pnl_usdc` | string | Realized + unrealized P&L |
 | `status` | string | Current combo position status |
 | `legs` | array | Leg metadata for the combo |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `positions[].wallet` | string | The wallet this row belongs to |
 
 ## Resolution semantics
 

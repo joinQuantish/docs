@@ -4,6 +4,8 @@ openapi: "GET /v3/wallets/{address}/pnl/events"
 description: "Realized P&L bucketed by hour, day, week, or month — chart-ready time series for a wallet."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns wallet P&L buckets for charting. With `period`, `after`, or `before`, each row is a fixed time window (hour, day, week, or month). A running `cumulative_pnl` is included so the response can be plotted directly.
 
 These standard spot P&L buckets exclude separately reported trader-paid
@@ -18,6 +20,8 @@ Without an explicit time filter, the endpoint returns a single all-time summary 
 In event-series mode, `wins`, `losses`, and `events` count realized P&L events in the selected window. In default summary mode, counts are position counts and the response includes `count_type: "positions"` and `summary_bucket: true`.
 
 Rows at timestamp `0` or earlier are ignored in event-series mode, so explicit event windows start at Unix second `1`.
+
+<OwnerAddresses />
 
 ## Request
 
@@ -178,6 +182,16 @@ curl "https://api.polynode.dev/v3/wallets/0x44c1dfe43260c94ed4f1d00de2e1f80fb113
 | `count_type` | string | `positions` in default summary mode |
 | `summary_bucket` | boolean | `true` in default summary mode |
 | `elapsed_ms` | integer | Server-side query time in milliseconds |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+
+Buckets are summed per bucket across the combined wallets, and `cumulative_pnl` and the `total_*` fields cover the combined series. With `period`, `after`, or `before`, every wallet uses the same window, and `address` stays the address you passed. A wallet whose P&L is not loaded yet is left out of the combination and of `wallets`.
 
 ## Errors
 

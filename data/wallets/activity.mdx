@@ -4,11 +4,15 @@ openapi: "GET /v3/wallets/{address}/activity"
 description: "Get all non-trade activity for a wallet: splits, merges, neg-risk conversions, and redemptions."
 ---
 
+import OwnerAddresses from '/snippets/owner-addresses.mdx';
+
 Returns a unified feed of all non-trade events for a wallet, sorted by timestamp. Includes splits, merges, neg-risk conversions, and redemptions.
 
 <Note>
 This endpoint is the conditional-token activity feed for splits, merges, neg-risk conversions, and redemptions. PolyUSD deposits and withdrawals are available separately through [Wallet PolyUSD Flows](/data/wallets/polyusd-flows).
 </Note>
+
+<OwnerAddresses />
 
 ## Request
 
@@ -61,3 +65,12 @@ curl https://api.polynode.dev/v3/wallets/0x56687bf447db6ffa42ffe2204a05edaa20f55
 | `ref_id` | string | Condition ID or neg-risk market ID |
 | `amount` | string | Amount (6-decimal USDC) |
 | `extra` | string | Additional data (index_sets for redemptions, question_count for NRC) |
+
+### Owner address fields
+
+Present only when you pass an owner EOA. See [Owner addresses](/data/overview#owner-addresses).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
+| `data[].wallet` | string | The wallet this row belongs to |

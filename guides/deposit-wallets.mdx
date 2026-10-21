@@ -36,7 +36,7 @@ npm install polynode-sdk@^0.15.0
 python -m pip install "polynode[trading]>=0.15.0,<0.16"
 ```
 
-**If you only read data (positions, trades, /resolve):** existing fields are unchanged. `/resolve` still returns `safe`, `eoa`, `username`, and `type` exactly as before. It also returns the deployed-only `wallets` object and a `wallet_details` list with plain `wallet_type`, `deployed`, and `current` status for each relevant address.
+**If you only read data (positions, trades, /resolve):** existing fields are unchanged. `/resolve` still returns `safe`, `eoa`, `username`, and `type` exactly as before. It also returns the deployed-only `wallets` object and a `wallet_details` list with plain `wallet_type`, `deployed`, and `current` status for each relevant address. V3 wallet endpoints also accept the owner EOA directly and combine its Safe, proxy, and deposit wallets in one response; see [Owner addresses](/data/overview#owner-addresses).
 
 **If you call the Polymarket CLOB directly (without our SDK):** you need to implement ERC-7739 TypedDataSign wrapping for `signatureType: 3` orders. See the [signing details](#how-poly_1271-signing-works) below.
 
