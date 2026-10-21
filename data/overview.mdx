@@ -120,29 +120,29 @@ Standard ungrouped list responses also include `rows_returned`, `has_more`, `off
 Pass an owner EOA to a wallet endpoint below and the response combines the EOA's Polymarket wallets (Safe, proxy, deposit wallets) that have data for that endpoint. Passing a Safe, proxy or deposit wallet returns just that wallet, as before.
 
 ```bash
-curl "https://api.polynode.dev/v3/wallets/0xb365112c16570fd249e972e1ce91f621b090495a"
+curl "https://api.polynode.dev/v3/wallets/0xb365112c16570fd249e972e1ce91f621b090495a/pnl" \
+  -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
-The response keeps its usual fields, sums them across the combined wallets, and lists those wallets in `wallets` (excerpt, illustrative values):
+The response keeps its usual fields, sums them across the combined wallets, and lists those wallets in `wallets`. Here the Safe has -292.08 over 479 positions and the deposit wallet -65.65 over 9 (excerpt, values from 2026-10-21):
 
 ```json
 {
   "address": "0xb365112c16570fd249e972e1ce91f621b090495a",
-  "net_realized_pnl": 1250.42,
-  "gross_profit": 1874.1,
-  "gross_loss": -623.68,
-  "unrealized_pnl": 38.5,
-  "total_pnl": 1288.92,
-  "wins": 121,
-  "losses": 81,
-  "position_count": 214,
-  "open_positions": 12,
-  "total_volume": 58340.25,
+  "realized_pnl": -357.729130,
+  "gross_profit": 5471.188973,
+  "gross_loss": -3277.639933,
+  "unrealized_pnl": 0.0,
+  "total_pnl": -357.729130,
+  "wins": 202,
+  "losses": 271,
+  "position_count": 488,
+  "open_positions": 0,
+  "total_volume": 69142.870196,
   "wallets": [
     { "wallet": "0xab08afea55b32ef017970556bb578d081c9937fa", "type": "safe" },
     { "wallet": "0xe415429c78a6d39557c4549e5af109502c373fb8", "type": "deposit_wallet" }
-  ],
-  "elapsed_ms": 41
+  ]
 }
 ```
 
