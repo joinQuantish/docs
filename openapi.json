@@ -5901,7 +5901,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Wallet address, or an owner EOA to combine every Polymarket wallet it owns"
+            "description": "Wallet address"
           },
           {
             "name": "kind",
@@ -5968,36 +5968,7 @@
         ],
         "responses": {
           "200": {
-            "description": "PolyUSD deposit and withdrawal rows",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "description": "Owner-address responses add the optional fields below. See the page for the full response.",
-                  "properties": {
-                    "wallets": {
-                      "type": "array",
-                      "description": "Present only when you pass an owner EOA: the combined wallets, in a fixed order.",
-                      "items": {
-                        "$ref": "#/components/schemas/OwnerWallet"
-                      }
-                    },
-                    "flows": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "wallet": {
-                            "type": "string",
-                            "description": "The wallet this flow belongs to"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+            "description": "PolyUSD deposit and withdrawal rows"
           },
           "400": {
             "description": "Invalid wallet address or query parameter"

@@ -233,7 +233,7 @@ Present only when you pass an owner EOA. See [Owner addresses](/data/overview#ow
 | `trades[].wallet` | string | The wallet this row belongs to |
 | `combo_trades[].wallet` | string | The wallet this row belongs to |
 
-`role` and `direction` are relative to the row's `wallet`. A fill between two of the owner's wallets appears once for each wallet, with the same `id`. `group_by` and `sort_by=order_hash` group fills within each wallet.
+`role` and `direction` are relative to the row's `wallet`. A fill between two of the owner's wallets appears once for each wallet, with the same `id`. With `group_by`, fills are grouped within each wallet, never across wallets, and each grouped row carries `wallet`.
 
 ### Sort fills by order hash
 

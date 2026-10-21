@@ -191,7 +191,7 @@ Present only when you pass an owner EOA. See [Owner addresses](/data/overview#ow
 |-------|------|-------------|
 | `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
 
-Buckets are summed per bucket across the combined wallets, and `cumulative_pnl` and the `total_*` fields cover the combined series.
+Buckets are summed per bucket across the combined wallets, and `cumulative_pnl` and the `total_*` fields cover the combined series. With `period`, `after`, or `before`, every wallet uses the same window, and `address` stays the address you passed. A wallet whose P&L is not loaded yet is left out of the combination and of `wallets`.
 
 ## Errors
 

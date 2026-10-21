@@ -240,7 +240,7 @@ Present only when you pass an owner EOA. See [Owner addresses](/data/overview#ow
 |-------|------|-------------|
 | `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
 
-Totals and counts are summed across the combined wallets. With `period`, `after`, or `before`, every wallet uses the same window, and `address` stays the address you passed.
+Totals and counts are summed across the combined wallets. With `period`, `after`, or `before`, every wallet uses the same window, and `address` stays the address you passed. With `include_combos=true`, `combo_pnl` is included only when it is available for every combined wallet; otherwise the response covers market positions only. A wallet whose P&L is not loaded yet is left out of the combination and of `wallets`.
 
 ## Errors
 
