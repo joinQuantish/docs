@@ -3,19 +3,16 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
-- 2026-10-22 [josh] - Prepared the combo leg market documentation:
-  `legs[].market` is described as present on every leg (absent only when
-  Polymarket has not yet published the market) and `market.token_ids` as the
-  market's CLOB token IDs (`clobTokenIds`) in outcome order, with position IDs
-  for Polymarket Protocol V2 markets. Updated combo_execution (new Leg market
-  table), combo_status_update (legs now show `market`, fixed a 65-hex-digit
-  condition ID typo), combo_lifecycle (placeholder leg replaced with real
-  legs) and the combos overview, plus the changelog entry. Example
-  `token_ids`, outcomes, titles, images and event slugs were checked against
-  Polymarket Gamma for wnba-phx-chi-2026-08-03 and
-  wta-maria-mcnally-2026-08-03. JSON, MDX digit and em dash checks pass.
-  Publication waits for the metadata fix to be live; the merge SHA, publish
-  date and live page checks will be recorded at publication.
+- 2026-10-22 [josh] - Published the combo leg market documentation:
+  `legs[].market` is included on every leg (a market listed in the last
+  couple of minutes can briefly arrive without it) and `market.token_ids`
+  holds the market's CLOB token IDs (`clobTokenIds`) in outcome order, with
+  position IDs for Polymarket Protocol V2 markets. Updated combo_execution
+  (new Leg market table), combo_status_update (legs now show `market`, fixed
+  a 65-hex-digit condition ID typo), combo_lifecycle (real example legs) and
+  the combos overview, plus the changelog entry. Example `token_ids`,
+  outcomes, titles, images and event slugs were checked against Polymarket
+  Gamma. JSON, MDX digit and em dash checks pass.
 
 - 2026-10-21 [josh] - Prepared the owner-address documentation for V3 wallet
   endpoints: a shared "Owner addresses" section in the API overview, a shared
