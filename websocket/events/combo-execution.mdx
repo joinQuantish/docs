@@ -218,9 +218,9 @@ The static endpoint additionally has confirmed-only fields such as
 `position_id` and the decoded structural fields come directly from calldata.
 Every leg also includes a nested `market` object with the leg market's title,
 slug, image, event, outcomes, and CLOB token IDs. PolyNode resolves this
-metadata ahead of trading, and attaching it never delays the event. `market`
-can be absent only in the rare case that Polymarket has not yet published the
-market.
+metadata ahead of trading, and attaching it never delays the event. A market
+Polymarket listed in the last couple of minutes can briefly arrive without
+`market`.
 
 | Field | Type | Description |
 | --- | --- | --- |

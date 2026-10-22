@@ -20,8 +20,8 @@ What's new:
   selected outcome.
 * `legs[].market` (title, slug, image, event title and slug, outcomes and
   CLOB token IDs) is filled on every leg. Leg market metadata is resolved
-  ahead of trading, so it never delays an event. It can be absent only in the
-  rare case that Polymarket has not yet published the market.
+  ahead of trading, so it never delays an event. A market Polymarket listed
+  in the last couple of minutes can briefly arrive without it.
 * For Polymarket Protocol V2 markets, Polymarket's CLOB trades by position
   ID, so `market.token_ids` carries the market's position IDs for those
   markets.
