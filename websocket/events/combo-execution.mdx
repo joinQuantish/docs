@@ -43,10 +43,12 @@ transaction.
           "title": "Phoenix Mercury vs. Chicago Sky",
           "slug": "wnba-phx-chi-2026-08-03",
           "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/wnba-logo-PAR4befDAubM.png",
+          "event_title": "Phoenix Mercury vs. Chicago Sky",
+          "event_slug": "wnba-phx-chi-2026-08-03",
           "outcomes": ["Phoenix Mercury", "Chicago Sky"],
           "token_ids": [
-            "759456036058902166074175781780133450895503656129754990757956704995918217216",
-            "759456036058902166074175781780133450895503656129754990757956704995918217217"
+            "74953064150171307888139369905607115013164923361328779028892093225372812178760",
+            "103031736784837797872355003049421848467848734930275080911268726099634278504076"
           ]
         }
       },
@@ -64,10 +66,12 @@ transaction.
           "title": "National Bank Open: Tatjana Maria vs Caty McNally",
           "slug": "wta-maria-mcnally-2026-08-03",
           "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/wta-logo-41f331bdf1.png",
+          "event_title": "National Bank Open: Tatjana Maria vs Caty McNally",
+          "event_slug": "wta-maria-mcnally-2026-08-03",
           "outcomes": ["Tatjana Maria", "Caty McNally"],
           "token_ids": [
-            "888399010527256025342625662713948815643754849506664777044908366823210090496",
-            "888399010527256025342625662713948815643754849506664777044908366823210090497"
+            "17162282412521239209404255350428236324471624953933197764496515696146602689810",
+            "74731345471819956774387334586905453869113310035587873173616096006033744318106"
           ]
         }
       }
@@ -211,14 +215,16 @@ The static endpoint additionally has confirmed-only fields such as
 
 ### Leg row
 
-`position_id` and the decoded structural fields are available directly from
-calldata. The nested `market` object is included when the market metadata is in
-PolyNode's in-memory cache; it is omitted rather than fetched synchronously on
-the latency-sensitive WebSocket path.
+`position_id` and the decoded structural fields come directly from calldata.
+Every leg also includes a nested `market` object with the leg market's title,
+slug, image, event, outcomes, and CLOB token IDs. PolyNode resolves this
+metadata ahead of trading, and attaching it never delays the event. `market`
+can be absent only in the rare case that Polymarket has not yet published the
+market.
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `position_id` | string | Leg position ID |
+| `position_id` | string | Leg position ID: the Polymarket PositionManager position ID of the selected outcome, as used by the combo contracts |
 | `module_id` / `module_name` | number / string | Combo module identity |
 | `condition_id` | string | Leg condition ID |
 | `event_id` | string | Leg event ID when encoded by the module |
@@ -226,7 +232,32 @@ the latency-sensitive WebSocket path.
 | `condition_index` | number | Condition index within the event |
 | `outcome_index` | number | Selected outcome index |
 | `leg_outcome_label` | string | Encoded combo-leg selection (`Yes` or `No` for `BinaryModule`); this is distinct from a human label in `market.outcomes` |
-| `market` | object | Optional cached title, slug, image, event metadata, outcomes, and token IDs |
+| `market` | object | Market metadata for the leg; see [Leg market](#leg-market) |
+
+### Leg market
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `title` | string | Market question |
+| `slug` | string | Polymarket market slug |
+| `image` | string | Market image URL |
+| `event_title` | string | Title of the Polymarket event that contains the market |
+| `event_slug` | string | Slug of that event |
+| `outcomes` | string[] | Outcome labels in outcome order |
+| `token_ids` | string[] | The market's CLOB token IDs (Polymarket's `clobTokenIds`) in outcome order, one per entry in `outcomes`. These are the IDs used for CLOB order books, prices, and orders. |
+
+On current markets, `market.token_ids` and the leg `position_id` are
+different identifiers. The leg `position_id` identifies the selected outcome
+inside the combo, while
+`market.token_ids[outcome_index]` is the CLOB token ID for that same outcome.
+Use the CLOB token ID with order-book, price, and trade endpoints. In the
+example, the first leg selects outcome `1` (Chicago Sky), so its CLOB token ID
+is `103031736784837797872355003049421848467848734930275080911268726099634278504076`.
+
+Polymarket Protocol V2 markets, which Polymarket plans to use for new markets
+from around November 2, 2026, trade on the CLOB by their position IDs, per
+Polymarket. For those markets `market.token_ids` therefore carries the
+market's position IDs, which are its CLOB token IDs.
 
 ## Subscribe
 

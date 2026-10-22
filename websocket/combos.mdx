@@ -27,9 +27,13 @@ The default `combos` preset emits:
 | `combo_execution` | Pending / mempool | Combo order execution decoded before confirmation. |
 | `combo_status_update` | Confirmed / receipt | Confirmation, exact receipt fills, fees, transfers, lifecycle details, and latency. |
 
-Every emitted combo includes its decoded structural legs. Cached market titles,
-slugs, images, outcomes, and token IDs are added when available, but a cache
-miss never makes a valid pending trade wait on Redis or an external API.
+Every emitted combo includes its decoded structural legs, and every leg
+includes a `market` object with the leg market's title, slug, image, event,
+outcomes, and CLOB token IDs (`market.token_ids`, Polymarket's `clobTokenIds`
+in outcome order). Leg market metadata is resolved ahead of trading, so it
+never delays a pending trade. `market` can be absent only in the rare case
+that Polymarket has not yet published the market. See
+[leg market fields](/websocket/events/combo-execution#leg-market).
 
 ## Trade model
 

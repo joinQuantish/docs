@@ -46,15 +46,39 @@ corresponding stable `redemption` event where applicable.
         "module_id": 1,
         "module_name": "BinaryModule",
         "outcome_index": 1,
-        "leg_outcome_label": "No"
+        "leg_outcome_label": "No",
+        "market": {
+          "title": "Phoenix Mercury vs. Chicago Sky",
+          "slug": "wnba-phx-chi-2026-08-03",
+          "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/wnba-logo-PAR4befDAubM.png",
+          "event_title": "Phoenix Mercury vs. Chicago Sky",
+          "event_slug": "wnba-phx-chi-2026-08-03",
+          "outcomes": ["Phoenix Mercury", "Chicago Sky"],
+          "token_ids": [
+            "74953064150171307888139369905607115013164923361328779028892093225372812178760",
+            "103031736784837797872355003049421848467848734930275080911268726099634278504076"
+          ]
+        }
       },
       {
         "position_id": "888399010527256025342625662713948815643754849506664777044908366823210090496",
-        "condition_id": "0x01f6d0e6bdba3f8d15dc0928842624b9f10000000000000000000000000000000",
+        "condition_id": "0x01f6d0e6bdba3f8d15dc0928842624b9f10000000000000000000000000000",
         "module_id": 1,
         "module_name": "BinaryModule",
         "outcome_index": 0,
-        "leg_outcome_label": "Yes"
+        "leg_outcome_label": "Yes",
+        "market": {
+          "title": "National Bank Open: Tatjana Maria vs Caty McNally",
+          "slug": "wta-maria-mcnally-2026-08-03",
+          "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/wta-logo-41f331bdf1.png",
+          "event_title": "National Bank Open: Tatjana Maria vs Caty McNally",
+          "event_slug": "wta-maria-mcnally-2026-08-03",
+          "outcomes": ["Tatjana Maria", "Caty McNally"],
+          "token_ids": [
+            "17162282412521239209404255350428236324471624953933197764496515696146602689810",
+            "74731345471819956774387334586905453869113310035587873173616096006033744318106"
+          ]
+        }
       }
     ],
     "confirmed_fills": [
@@ -87,8 +111,10 @@ corresponding stable `redemption` event where applicable.
 }
 ```
 
-The example omits empty optional arrays and cached market metadata for
-readability.
+The example omits empty optional arrays for readability. Each leg carries the
+same `market` object as a
+[`combo_execution` leg](/websocket/events/combo-execution#leg-market), whose
+`token_ids` are the market's CLOB token IDs in outcome order.
 
 `combo_status_update` is receipt-backed. Its current terminal statuses are:
 
@@ -120,8 +146,8 @@ fields are omitted.
 | `latency_ms` | number or omitted | Pending-to-receipt latency; omitted without a pending observation |
 | `combo_condition_id` | string or omitted | Derived combo condition ID when recoverable |
 | `yes_position_id` / `no_position_id` | string or omitted | Combo outcome position IDs when available |
-| `leg_position_ids` | string[] or omitted | Constituent leg position IDs when available |
-| `legs` | object[] or omitted | Decoded combo legs; cached `market` metadata is optional |
+| `leg_position_ids` | string[] or omitted | Constituent leg position IDs (PositionManager position IDs, the same values as `legs[].position_id`) when available |
+| `legs` | object[] or omitted | Decoded combo legs, each with its [`market`](/websocket/events/combo-execution#leg-market) metadata |
 | `order_hashes` | string[] or omitted | Exchange order hashes recovered from receipt fills |
 | `confirmed_fills` | object[] or omitted | Receipt-backed maker-perspective fills |
 | `execution_summaries` | object[] or omitted | OrdersMatched-style execution summaries |
