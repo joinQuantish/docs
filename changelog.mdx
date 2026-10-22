@@ -5,6 +5,39 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-10-22 - Combo leg market metadata and CLOB token IDs
+
+Combo WebSocket events now include market metadata on every leg, and each
+leg's `market.token_ids` now carries the market's CLOB token IDs.
+
+What's new:
+
+* In `combo_execution`, `combo_status_update` and `combo_lifecycle`,
+  `legs[].market.token_ids` holds the leg market's CLOB token IDs
+  (Polymarket's `clobTokenIds`) in outcome order. These are the IDs used for
+  CLOB order books, prices and orders, so
+  `market.token_ids[outcome_index]` is the CLOB token ID of the leg's
+  selected outcome.
+* `legs[].market` (title, slug, image, event title and slug, outcomes and
+  CLOB token IDs) is filled on every leg. Leg market metadata is resolved
+  ahead of trading, so it never delays an event. A market Polymarket listed
+  in the last couple of minutes can briefly arrive without it.
+* For Polymarket Protocol V2 markets, Polymarket's CLOB trades by position
+  ID, so `market.token_ids` carries the market's position IDs for those
+  markets.
+
+Compatibility:
+
+* Event shapes, subscriptions and filters are unchanged.
+* `legs[].position_id` and `leg_position_ids` still carry the leg position
+  IDs used by the combo contracts.
+* The TypeScript, Python and Rust SDK types already include these fields, so
+  no SDK upgrade is needed.
+
+Docs: [Combo leg market](/websocket/events/combo-execution#leg-market)
+
+***
+
 ## 2026-10-21 - Owner addresses on V3 wallet endpoints
 
 V3 wallet endpoints now accept an owner EOA. Pass the EOA and the response
