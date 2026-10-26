@@ -5,6 +5,33 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-10-26 - Combo win and loss counts
+
+The Combo wallet summary and every Combo leaderboard row now include each
+wallet's win count, loss count and win rate.
+
+What's new:
+
+* `GET /v3/wallets/{address}/combos/summary` and each `GET /v3/combos/leaderboard`
+  row add `win_count`, `loss_count`, `resolved_count` and `win_rate`.
+* `win_rate` is `win_count / resolved_count` as a 4-decimal fraction string
+  (`"0.6964"` = 69.64%), or `null` when the wallet has no resolved combo.
+* A combo position is won or lost once its legs resolve. The counts are all
+  time, whether or not the position was redeemed, and on the leaderboard they
+  are not window-scoped (like `open_combo_count`).
+* `GET /v3/wallets/{address}/combos/positions` now filters by outcome:
+  `status=resolved_win`, `status=resolved_loss`, or `status=resolved` for both.
+
+Compatibility:
+
+* Every existing field is unchanged; these are new fields only.
+
+Docs: [Wallet Combo Summary](/data/combos/wallet-summary#win-and-loss-counts),
+[Combo P&L Leaderboard](/data/combos/leaderboard#row-fields),
+[Wallet Combo Positions](/data/combos/wallet-positions)
+
+***
+
 ## 2026-10-22 - Combo leg market metadata and CLOB token IDs
 
 Combo WebSocket events now include market metadata on every leg, and each

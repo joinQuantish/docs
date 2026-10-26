@@ -70,7 +70,11 @@ side open; omitting `before` leaves the upper side open.
       "closed_combo_count": 4,
       "position_count": 6,
       "event_count": 18,
-      "last_activity_at": "2026-08-29T16:00:00Z"
+      "last_activity_at": "2026-08-29T16:00:00Z",
+      "win_count": 3,
+      "loss_count": 1,
+      "resolved_count": 4,
+      "win_rate": "0.7500"
     }
   ],
   "period": "all",
@@ -126,6 +130,13 @@ floating-point type when exact arithmetic matters.
 | `position_count` | Current eligible Combo position snapshot count, not window-scoped |
 | `event_count` | Eligible direct-basis events in the realized window; All Time counts all eligible direct-basis events |
 | `last_activity_at` | RFC3339 time of the wallet's latest eligible Combo activity, or `null` |
+| `win_count` | Resolved Combo positions the wallet won, all time, not window-scoped |
+| `loss_count` | Resolved Combo positions the wallet lost, all time, not window-scoped |
+| `resolved_count` | `win_count` + `loss_count` |
+| `win_rate` | `win_count` / `resolved_count` as a 4-decimal fraction string (`"0.7500"` = 75%), or `null` when the wallet has no resolved Combo |
+
+A Combo position is won or lost once its legs resolve: a YES position wins when
+every leg wins and loses as soon as any leg loses; a NO position is the reverse.
 
 ## Cost basis, marks, and exclusions
 

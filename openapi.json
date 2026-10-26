@@ -6396,7 +6396,11 @@
                       "closed_combo_count": 4,
                       "position_count": 6,
                       "event_count": 18,
-                      "last_activity_at": "2026-08-29T16:00:00Z"
+                      "last_activity_at": "2026-08-29T16:00:00Z",
+                      "win_count": 3,
+                      "loss_count": 1,
+                      "resolved_count": 4,
+                      "win_rate": "0.7500"
                     }
                   ],
                   "period": "all",
@@ -12977,7 +12981,11 @@
           "closed_combo_count",
           "position_count",
           "event_count",
-          "last_activity_at"
+          "last_activity_at",
+          "win_count",
+          "loss_count",
+          "resolved_count",
+          "win_rate"
         ],
         "properties": {
           "rank": {"type": "integer", "minimum": 1},
@@ -13023,6 +13031,25 @@
           "last_activity_at": {
             "type": ["string", "null"],
             "format": "date-time"
+          },
+          "win_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Resolved Combo positions the wallet won, all time, not window-scoped."
+          },
+          "loss_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Resolved Combo positions the wallet lost, all time, not window-scoped."
+          },
+          "resolved_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "win_count + loss_count."
+          },
+          "win_rate": {
+            "type": ["string", "null"],
+            "description": "win_count / resolved_count as a 4-decimal fraction string, or null when the wallet has no resolved Combo."
           }
         }
       },
