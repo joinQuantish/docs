@@ -539,3 +539,5 @@ evidence for production documentation changes.
   `94939346826` completed successfully. Anonymous live fetches verified the
   updated user-owned execution, TypeScript trading, Python trading,
   deposit-wallet, and position-management pages.
+
+- 2026-10-26 [josh] — Combo win/loss counts (v3-api #185, deployed 08:39 UTC): wallet combo summary, combo leaderboard row fields + OpenAPI row schema, combo positions status values (`resolved_win`, `resolved_loss`, `resolved`), changelog entry. Summary example is a live response from 2026-10-26.

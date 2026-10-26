@@ -1,7 +1,7 @@
 ---
 title: "Wallet Combo Summary"
 openapi: "GET /v3/wallets/{address}/combos/summary"
-description: "Get combo-only P&L and position counts for one wallet."
+description: "Get combo-only P&L, position counts, and win/loss counts for one wallet."
 ---
 
 import OwnerAddresses from '/snippets/owner-addresses.mdx';
@@ -27,27 +27,31 @@ GET /v3/wallets/{address}/combos/summary
 ## Example
 
 ```bash
-curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/summary"
+curl "https://api.polynode.dev/v3/wallets/0x8f73711ac46f9e9c7d97196889603a52bc42bb9e/combos/summary" \
+  -H "x-api-key: $POLYNODE_API_KEY"
 ```
 
 ```json
 {
-  "address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
+  "address": "0x8f73711ac46f9e9c7d97196889603a52bc42bb9e",
   "summary": {
     "position_type": "combo",
-    "wallet_address": "0x63613e3b96f418332d43cd2af8dc321014d15907",
-    "open_combo_count": 1495,
-    "closed_combo_count": 19995,
-    "balance_count": 21492,
-    "realized_pnl_usdc": "113.510513",
-    "unrealized_pnl_usdc": null,
-    "total_pnl_usdc": "113.510513",
-    "last_activity_at": "2026-06-11T02:04:19.887367+00:00"
+    "wallet_address": "0x8f73711ac46f9e9c7d97196889603a52bc42bb9e",
+    "open_combo_count": 17,
+    "closed_combo_count": 39,
+    "balance_count": 56,
+    "realized_pnl_usdc": "1849.109086",
+    "unrealized_pnl_usdc": "-1046.697946",
+    "total_pnl_usdc": "802.411140",
+    "last_activity_at": "2026-10-06T22:41:31.671553+00:00",
+    "win_count": 39,
+    "loss_count": 17,
+    "resolved_count": 56,
+    "win_rate": "0.6964"
   },
   "rows_returned": 1,
   "position_type": "combo",
-  "source": "v3.wallet_combos.summary",
-  "elapsed_ms": 13
+  "source": "v3.wallet_combos.summary"
 }
 ```
 
@@ -62,6 +66,20 @@ curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d1
 | `unrealized_pnl_usdc` | string or null | Current unrealized combo P&L when available |
 | `total_pnl_usdc` | string | Realized + unrealized combo P&L |
 | `last_activity_at` | string | Last observed combo activity for this wallet |
+| `win_count` | integer | Resolved combo positions the wallet won |
+| `loss_count` | integer | Resolved combo positions the wallet lost |
+| `resolved_count` | integer | `win_count` + `loss_count` |
+| `win_rate` | string or null | `win_count` / `resolved_count` as a 4-decimal fraction (`"0.6964"` = 69.64%); `null` when the wallet has no resolved combo |
+
+### Win and loss counts
+
+A combo position is won or lost once its legs resolve: a YES position wins when
+every leg wins and loses as soon as any leg loses; a NO position is the reverse.
+The counts cover every combo position the wallet has held, all time, whether or
+not it was redeemed. Open positions are not counted. To list the positions
+behind the counts, call
+[Wallet Combo Positions](/data/combos/wallet-positions) with
+`status=resolved_win`, `status=resolved_loss`, or `status=resolved` (both).
 
 ### Owner address fields
 
@@ -71,4 +89,4 @@ Present only when you pass an owner EOA. See [Owner addresses](/data/overview#ow
 |-------|------|-------------|
 | `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
 
-Counts and P&L are summed across the combined wallets, and `last_activity_at` is the latest of them.
+Counts and P&L are summed across the combined wallets, `win_rate` is recomputed from the summed counts, and `last_activity_at` is the latest of them.
