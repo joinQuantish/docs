@@ -18,7 +18,7 @@ GET /v3/combos/markets
 |-----------|------|---------|-------------|
 | `market_id` | string | -- | Alias for `condition_id` |
 | `condition_id` | string | -- | Combo condition ID |
-| `status` | string | -- | `observed`, `open`, `closed`, `resolved`, `resolved_win`, `resolved_loss`, `redeemable`, `redeemed`, or `all` |
+| `status` | string | -- | `observed` or `all`. Every combo market is `observed`; see [Resolution](#resolution) |
 | `limit` | integer | 100 | Results per page, max 300 |
 | `offset` | integer | 0 | Pagination offset |
 
@@ -67,7 +67,7 @@ curl "https://api.polynode.dev/v3/combos/markets?limit=2"
 |-------|------|-------------|
 | `combo_condition_id` | string | Combo condition ID |
 | `module_name` | string | Combo module name, usually `CombinatorialModule` |
-| `status` | string | Observed lifecycle status |
+| `status` | string | Always `observed`: the market was seen on chain. It does not change when legs resolve |
 | `observed_execution_count` | integer | Observed combo execution count |
 | `observed_lifecycle_count` | integer | Observed split/merge/lifecycle count |
 | `observed_redeem_count` | integer | Observed combo redemption count |
@@ -75,5 +75,19 @@ curl "https://api.polynode.dev/v3/combos/markets?limit=2"
 | `volume_usdc` | string | Observed combo volume formatted in USDC |
 | `last_activity_at` | string | Last observed combo activity timestamp |
 | `legs` | array | Market legs that define the combo |
+
+## Resolution
+
+A combo market has no resolution of its own: each leg is a normal market that
+resolves on its own schedule, so a combo can have some legs resolved and others
+still open. Read each leg's result from `legs[].leg_status` (`RESOLVED_WIN` or
+`RESOLVED_LOSS` once that leg resolves) with `leg_resolved_at`; the market-level
+`status` stays `observed`.
+
+A combo's YES side wins when every leg wins and loses as soon as any leg loses;
+the NO side is the reverse. Per-wallet outcomes are on
+[Wallet Combo Positions](/data/combos/wallet-positions) (`status=resolved_win`,
+`resolved_loss`, or `resolved`) and as counts on
+[Wallet Combo Summary](/data/combos/wallet-summary#win-and-loss-counts).
 
 Resolved leg metadata is refreshed from Polymarket combo metadata when available. Leg rows can include `leg_status` values such as `RESOLVED_WIN` or `RESOLVED_LOSS`, `leg_resolved_at`, and `leg_current_price`.
