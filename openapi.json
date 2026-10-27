@@ -6648,6 +6648,242 @@
         ]
       }
     },
+    "/v3/wallets/{address}/combos/summary": {
+      "get": {
+        "tags": [
+          "V3 Combos"
+        ],
+        "summary": "Wallet combo summary",
+        "description": "Combo-only P&L, position counts, and win/loss counts for one wallet. Win/loss counts are all time, or only the combo positions that settled inside a time window (period, or period=custom with after/before). A combo settles at its first payout to any holder. P&L and position counts are always all time.",
+        "operationId": "v3_wallet_combo_summary",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{40}$"
+            },
+            "description": "Wallet address, or an owner EOA to combine every Polymarket wallet it owns"
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "description": "Window for the win/loss counts. All Time is the default. Custom requires after or before. Fixed periods and All Time forbid explicit bounds.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "1d",
+                "7d",
+                "30d",
+                "custom"
+              ],
+              "default": "all"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive custom lower bound in Unix seconds. Accepted only with period=custom (or no period).",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9999999999
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Exclusive custom upper bound in Unix seconds. Accepted only with period=custom (or no period).",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "maximum": 9999999999
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet combo summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "address": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "position_type": {
+                              "type": "string"
+                            },
+                            "wallet_address": {
+                              "type": "string"
+                            },
+                            "open_combo_count": {
+                              "type": "integer"
+                            },
+                            "closed_combo_count": {
+                              "type": "integer"
+                            },
+                            "balance_count": {
+                              "type": "integer"
+                            },
+                            "realized_pnl_usdc": {
+                              "type": "string"
+                            },
+                            "unrealized_pnl_usdc": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "total_pnl_usdc": {
+                              "type": "string"
+                            },
+                            "last_activity_at": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "win_count": {
+                              "type": "integer",
+                              "description": "Resolved combo positions won; inside the window when one is given"
+                            },
+                            "loss_count": {
+                              "type": "integer",
+                              "description": "Resolved combo positions lost; inside the window when one is given"
+                            },
+                            "resolved_count": {
+                              "type": "integer",
+                              "description": "win_count + loss_count"
+                            },
+                            "win_rate": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "description": "win_count / resolved_count as a 4-decimal fraction string, or null when resolved_count is 0"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rows_returned": {
+                      "type": "integer"
+                    },
+                    "position_type": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "elapsed_ms": {
+                      "type": "integer"
+                    },
+                    "period": {
+                      "type": "string",
+                      "description": "Present only with a window: 1d, 7d, 30d, or custom"
+                    },
+                    "window": {
+                      "type": "object",
+                      "description": "Present only with a window: the bounds the counts used, after inclusive and before exclusive",
+                      "properties": {
+                        "after": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "format": "int64"
+                        },
+                        "before": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "format": "int64"
+                        }
+                      }
+                    },
+                    "wallets": {
+                      "type": "array",
+                      "description": "Present only for an owner EOA: the combined wallets",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "wallet": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid period or bound combination.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V3ComboPnlInvalidRequest"
+                },
+                "example": {
+                  "error": "invalid_request",
+                  "message": "period must be all, 1d, 7d, 30d, or custom."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Windowed counts are briefly unavailable while payout data catches up; all-time counts are still served.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "error": "combo_window_unavailable",
+                  "message": "Windowed combo win/loss counts are temporarily unavailable."
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "api_key": []
+          }
+        ]
+      }
+    },
     "/v3/wallets/{address}/combos/redemptions": {
       "get": {
         "tags": [

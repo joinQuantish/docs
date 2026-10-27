@@ -3,6 +3,19 @@
 Append-only. Newest first. Record source, merge, validation, and deployment
 evidence for production documentation changes.
 
+- 2026-10-27 [josh] - Published the windowed combo win rate documentation:
+  Wallet Combo Summary gains `period`, `after` and `before` query parameters,
+  a past-7-days example, the windowed `period` / `window` response fields and
+  a Time windows section (settlement = first payout to any holder, positions
+  with no recorded payout count all time only, half-open bounds unlike Wallet
+  Combo Redemptions, 400 and 503 cases); the all-time counts note now says
+  they include positions sold or transferred before resolution. The
+  leaderboard row fields point to the summary for windowed counts.
+  `openapi.json` gains the missing `/v3/wallets/{address}/combos/summary`
+  path. Changelog entry added. The 7-day example is a real production
+  response. JSON, `git diff --check`, Mintlify validation and broken-link
+  checks pass.
+
 - 2026-10-22 [josh] - Published the combo leg market documentation:
   `legs[].market` is included on every leg (a market listed in the last
   couple of minutes can briefly arrive without it) and `market.token_ids`

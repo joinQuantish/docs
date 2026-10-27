@@ -138,6 +138,12 @@ floating-point type when exact arithmetic matters.
 A Combo position is won or lost once its legs resolve: a YES position wins when
 every leg wins and loses as soon as any leg loses; a NO position is the reverse.
 
+For one wallet's win and loss counts inside a time window, call
+[Wallet Combo Summary](/data/combos/wallet-summary#time-windows) with
+`period=custom` and this response's `window.after` / `window.before`. The two
+place activity differently: ranged leaderboard P&L follows realized events,
+and windowed win/loss counts follow when each combo settled.
+
 ## Cost basis, marks, and exclusions
 
 `coverage.status` is always `direct_cost_basis_only`. The leaderboard uses

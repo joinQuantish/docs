@@ -1,11 +1,18 @@
 ---
 title: "Wallet Combo Summary"
-description: "Get combo-only P&L and position counts for one wallet."
+description: "Get combo-only P&L, position counts, and win/loss counts (all time or windowed) for one wallet."
 ---
 
 Canonical reference: [Wallet Combo Summary](/data/combos/wallet-summary)
 
 ```bash
 curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/summary" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+Win and loss counts for the past 7 days:
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x63613e3b96f418332d43cd2af8dc321014d15907/combos/summary?period=7d" \
   -H "x-api-key: $POLYNODE_API_KEY"
 ```
