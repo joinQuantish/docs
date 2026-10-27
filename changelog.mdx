@@ -5,6 +5,32 @@ description: "Recent polynode API, SDK, account, and product changes, with older
 icon: "clock-rotate-left"
 ---
 
+## 2026-10-27 - Combo win rate by time window
+
+The Wallet Combo Summary can now count a wallet's combo wins and losses inside
+a time window, so you can see its win rate over the past day, week or month.
+
+What's new:
+
+* `GET /v3/wallets/{address}/combos/summary` accepts `period=1d`, `7d`, `30d`,
+  or `custom` with `after` (inclusive) and `before` (exclusive) Unix seconds,
+  the same window rules as the [Combo P&L Leaderboard](/data/combos/leaderboard).
+* With a window, `win_count`, `loss_count`, `resolved_count` and `win_rate`
+  count only the combo positions that settled inside it, and the response adds
+  top-level `period` and `window`. A combo settles at its first payout to any
+  holder.
+* P&L and position counts on the summary stay all time.
+
+Compatibility:
+
+* Without a window the response is unchanged.
+* An invalid window, or `window=` (use `period`), returns 400 `invalid_request`.
+* Leaderboard rows keep their all-time win and loss counts.
+
+Docs: [Wallet Combo Summary](/data/combos/wallet-summary#time-windows)
+
+***
+
 ## 2026-10-26 - Combo win and loss counts
 
 The Combo wallet summary and every Combo leaderboard row now include each

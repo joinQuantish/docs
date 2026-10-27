@@ -1,7 +1,7 @@
 ---
 title: "Wallet Combo Summary"
 openapi: "GET /v3/wallets/{address}/combos/summary"
-description: "Get combo-only P&L, position counts, and win/loss counts for one wallet."
+description: "Get combo-only P&L, position counts, and win/loss counts for one wallet, all time or inside a time window."
 ---
 
 import OwnerAddresses from '/snippets/owner-addresses.mdx';
@@ -23,6 +23,16 @@ GET /v3/wallets/{address}/combos/summary
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `address` | string | Wallet address or owner EOA |
+
+### Query parameters
+
+All optional. They scope only the win and loss counts; see [Time windows](#time-windows).
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `period` | string | `all` | `all`, `1d`, `7d`, `30d`, or `custom`. `1d` / `7d` / `30d` end now. |
+| `after` | integer | none | Window start, Unix seconds, inclusive. Requires `period=custom` (or no `period`) |
+| `before` | integer | none | Window end, Unix seconds, exclusive. Requires `period=custom` (or no `period`) |
 
 ## Example
 
@@ -55,6 +65,42 @@ curl "https://api.polynode.dev/v3/wallets/0x8f73711ac46f9e9c7d97196889603a52bc42
 }
 ```
 
+### Past 7 days
+
+```bash
+curl "https://api.polynode.dev/v3/wallets/0x1109da04152c38666464f5adb5d7c55618810b2c/combos/summary?period=7d" \
+  -H "x-api-key: $POLYNODE_API_KEY"
+```
+
+```json
+{
+  "address": "0x1109da04152c38666464f5adb5d7c55618810b2c",
+  "summary": {
+    "position_type": "combo",
+    "wallet_address": "0x1109da04152c38666464f5adb5d7c55618810b2c",
+    "open_combo_count": 10307,
+    "closed_combo_count": 44089,
+    "balance_count": 54396,
+    "realized_pnl_usdc": "7725995.313053",
+    "unrealized_pnl_usdc": "-4222707.461465",
+    "total_pnl_usdc": "3503287.851588",
+    "last_activity_at": "2026-10-27T07:39:59.108677+00:00",
+    "win_count": 483,
+    "loss_count": 0,
+    "resolved_count": 483,
+    "win_rate": "1.0000"
+  },
+  "rows_returned": 1,
+  "position_type": "combo",
+  "source": "v3.wallet_combos.summary",
+  "period": "7d",
+  "window": {
+    "after": 1792484127,
+    "before": 1793088927
+  }
+}
+```
+
 ## Response fields
 
 | Field | Type | Description |
@@ -71,15 +117,46 @@ curl "https://api.polynode.dev/v3/wallets/0x8f73711ac46f9e9c7d97196889603a52bc42
 | `resolved_count` | integer | `win_count` + `loss_count` |
 | `win_rate` | string or null | `win_count` / `resolved_count` as a 4-decimal fraction (`"0.6964"` = 69.64%); `null` when the wallet has no resolved combo |
 
+With a window, the response also has these top-level fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `period` | string | The requested period: `1d`, `7d`, `30d`, or `custom` |
+| `window` | object | `{after, before}` in Unix seconds that the counts used; `after` inclusive, `before` exclusive, `null` when open |
+
 ### Win and loss counts
 
 A combo position is won or lost once its legs resolve: a YES position wins when
 every leg wins and loses as soon as any leg loses; a NO position is the reverse.
 The counts cover every combo position the wallet has held, all time, whether or
-not it was redeemed. Open positions are not counted. To list the positions
-behind the counts, call
+not it was redeemed, including positions it sold or transferred before the
+combo resolved. Open positions are not counted. To list the positions behind
+the all-time counts, call
 [Wallet Combo Positions](/data/combos/wallet-positions) with
 `status=resolved_win`, `status=resolved_loss`, or `status=resolved` (both).
+That listing is not window-scoped.
+
+### Time windows
+
+With `period=1d`, `7d`, `30d`, or `custom`, `win_count`, `loss_count`,
+`resolved_count` and `win_rate` count only the combo positions that settled
+inside the window. P&L, `open_combo_count`, `closed_combo_count`,
+`balance_count` and `last_activity_at` are always all time.
+
+* A combo settles at its first payout to any holder. Both sides of a combo
+  share that time, so a lost position is placed when the winning side was
+  paid.
+* A small share of resolved combos has no recorded payout. Their positions
+  count in the all-time totals but in no window, until a payout is recorded.
+  Most of them are losses, so a windowed `win_rate` can read slightly high.
+* The window is half-open: `after` is inclusive and `before` is exclusive,
+  like the [Combo P&L Leaderboard](/data/combos/leaderboard). Wallet Combo
+  Redemptions treats `before` as inclusive.
+* An invalid window returns 400 `invalid_request`, for example `period=1y`,
+  `period=custom` with no bound, `after` not less than `before`, or `window=7d`
+  (use `period`). Windowed counts can briefly return 503
+  `combo_window_unavailable` when the payout data is catching up; retry, or
+  call without a window for the all-time counts.
 
 ### Owner address fields
 
@@ -89,4 +166,4 @@ Present only when you pass an owner EOA. See [Owner addresses](/data/overview#ow
 |-------|------|-------------|
 | `wallets` | array | The combined wallets, in a fixed order, each `{wallet, type}` with `type` one of `eoa`, `safe`, `proxy`, or `deposit_wallet` |
 
-Counts and P&L are summed across the combined wallets, `win_rate` is recomputed from the summed counts, and `last_activity_at` is the latest of them.
+Counts and P&L are summed across the combined wallets, `win_rate` is recomputed from the summed counts, and `last_activity_at` is the latest of them. With a window, every combined wallet uses the same window.
